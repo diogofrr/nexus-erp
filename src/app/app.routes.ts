@@ -1,10 +1,14 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, moduleGuard } from './core/auth/guards';
+import { authGuard, guestGuard, moduleGuard, roleGuard } from './core/auth/guards';
 
 /**
  * Roteador central. Cada módulo é carregado sob demanda de `features/<slug>/<slug>.routes.ts`, que
  * exporta `ROUTES` (e, quando o módulo tem mais de uma rota base, `COMPANY_ROUTES`, `INDICATORS_ROUTES`...).
  * Os devs de módulo só preenchem a própria pasta e NÃO mexem neste arquivo.
+ *
+ * Shells (layout): `/app/**` abre dentro do shell da equipe (menu lateral, barra superior, rodapé), `/portal/**`
+ * dentro do shell do portal do profissional (barra inferior) e `/login`, `/403` e `**` não têm shell. O
+ * conteúdo de cada tela entra no `<router-outlet>` do shell.
  *
  * Guards (core/auth/guards.ts): `authGuard` exige sessão; `moduleGuard(chave)` aplica a matriz de
  * permissões do módulo (mapa de módulos, escopo seção 2). Rota sem permissão leva a `/403` e grava `denied`.
@@ -24,20 +28,63 @@ export const routes: Routes = [
     loadChildren: () => import('./features/auth/auth.routes').then((m) => m.FORBIDDEN_ROUTES),
   },
 
-  // M14 Portal do profissional credenciado
+  // M14 Portal do profissional credenciado, dentro do shell do portal (barra inferior)
   {
     path: 'portal',
     canActivate: [authGuard, moduleGuard('provider-portal')],
-    loadChildren: () =>
-      import('./features/provider-portal/provider-portal.routes').then((m) => m.ROUTES),
+    loadComponent: () =>
+      import('./layout/shell/portal-shell.component').then((m) => m.PortalShellComponent),
+    children: [
+      // Páginas de rodapé, abertas a todos os perfis (LP-23 e SCR-M12-10).
+      {
+        path: 'canal-do-titular',
+        data: { title: 'Privacidade e canal do titular' },
+        loadComponent: () =>
+          import('./layout/pages/privacy-channel.page').then((m) => m.PrivacyChannelPageComponent),
+      },
+      {
+        path: 'meus-dados',
+        data: { title: 'Meus dados no navegador' },
+        loadComponent: () =>
+          import('./layout/pages/browser-data.page').then((m) => m.BrowserDataPageComponent),
+      },
+      {
+        path: '',
+        loadChildren: () =>
+          import('./features/provider-portal/provider-portal.routes').then((m) => m.ROUTES),
+      },
+    ],
   },
 
-  // Back-office (equipe Nexus)
+  // Back-office (equipe Nexus), dentro do shell da equipe (menu lateral e barra superior)
   {
     path: 'app',
     canActivate: [authGuard],
+    loadComponent: () =>
+      import('./layout/shell/team-shell.component').then((m) => m.TeamShellComponent),
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'painel' },
+      // Páginas de rodapé, abertas a todos os perfis da equipe (LP-23 e SCR-M12-10).
+      {
+        path: 'canal-do-titular',
+        canActivate: [roleGuard('partner', 'technical_lead', 'psychologist', 'support')],
+        data: { title: 'Privacidade e canal do titular' },
+        loadComponent: () =>
+          import('./layout/pages/privacy-channel.page').then((m) => m.PrivacyChannelPageComponent),
+      },
+      {
+        path: 'meus-dados',
+        canActivate: [roleGuard('partner', 'technical_lead', 'psychologist', 'support')],
+        data: { title: 'Meus dados no navegador' },
+        loadComponent: () =>
+          import('./layout/pages/browser-data.page').then((m) => m.BrowserDataPageComponent),
+      },
+      // Catálogo de componentes (só para quem constrói telas).
+      {
+        path: '_kit',
+        canActivate: [roleGuard('partner', 'technical_lead', 'psychologist', 'support')],
+        loadChildren: () => import('./features/kit/kit.routes').then((m) => m.ROUTES),
+      },
       {
         path: 'painel',
         canActivate: [moduleGuard('dashboard')],

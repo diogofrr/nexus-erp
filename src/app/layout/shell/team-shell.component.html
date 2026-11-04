@@ -1,0 +1,218 @@
+<div
+  class="app-shell"
+  [attr.data-nav-open]="drawerOpen() ? 'true' : 'false'"
+  [attr.data-nav]="navMode()"
+  (keydown.escape)="onShellEscape()"
+>
+  <a class="skip-link" href="#conteudo" (click)="skipToContent($event)">Ir para o conteúdo</a>
+
+  <aside class="sidebar" id="menu" aria-label="Navegação principal">
+    <a class="sidebar__brand" routerLink="/app/painel" aria-label="Nexus, ir ao painel">
+      <svg class="brand-symbol" aria-hidden="true"><use href="icons/sprite.svg#nx-symbol" /></svg>
+      <span class="wordmark">Nexus</span>
+    </a>
+
+    <nav class="sidebar__nav" aria-label="Módulos">
+      @if (pinned().length > 0) {
+        <div class="nav-group" data-role="pinned">
+          <p class="nav-group__title" id="nx-nav-pinned">Fixados</p>
+          <ul class="nav-list" aria-labelledby="nx-nav-pinned">
+            @for (link of pinned(); track link.key) {
+              <ng-container
+                [ngTemplateOutlet]="navLink"
+                [ngTemplateOutletContext]="{ $implicit: link, pinnedRow: true }"
+              />
+            }
+          </ul>
+        </div>
+      }
+      @for (entry of entries(); track entryId(entry)) {
+        @if (entry.kind === 'link') {
+          <ul class="nav-list">
+            <ng-container
+              [ngTemplateOutlet]="navLink"
+              [ngTemplateOutletContext]="{ $implicit: entry.link, pinnedRow: false }"
+            />
+          </ul>
+        } @else {
+          <div class="nav-group" [attr.data-group]="entry.id">
+            <button
+              type="button"
+              class="nav-group__title"
+              [attr.aria-expanded]="isExpanded(entry.id)"
+              [attr.aria-controls]="'nx-nav-' + entry.id"
+              (click)="toggleGroup(entry.id)"
+            >
+              {{ entry.title }}
+              <svg appGlyph="chevron-down" glyphSize="sm"></svg>
+            </button>
+            @if (isExpanded(entry.id)) {
+              <ul class="nav-list" [id]="'nx-nav-' + entry.id">
+                @for (link of entry.links; track link.key) {
+                  <ng-container
+                    [ngTemplateOutlet]="navLink"
+                    [ngTemplateOutletContext]="{ $implicit: link, pinnedRow: false }"
+                  />
+                }
+              </ul>
+            }
+          </div>
+        }
+      }
+    </nav>
+
+    <div class="sidebar__foot">
+      @if (auth.user(); as user) {
+        <div class="sidebar__profile">
+          <span class="avatar avatar--sm avatar--nav">{{ initials() }}</span>
+          <div>
+            <strong>{{ user.displayName }}</strong>
+            <span>{{ role() }}</span>
+          </div>
+        </div>
+      }
+      <button
+        type="button"
+        class="nav-item nav-collapse"
+        [attr.aria-pressed]="prefs.menuRail()"
+        (click)="prefs.setMenuRail(!prefs.menuRail())"
+      >
+        <svg appGlyph="panel-left"></svg>
+        <span class="nav-item__label">{{
+          prefs.menuRail() ? 'Expandir o menu' : 'Recolher o menu'
+        }}</span>
+      </button>
+    </div>
+  </aside>
+
+  <header class="topbar" [attr.inert]="drawerOpen() ? '' : null">
+    <button
+      #menuButton
+      type="button"
+      class="btn btn--ghost btn--icon topbar__menu"
+      aria-label="Menu"
+      aria-controls="menu"
+      [attr.aria-expanded]="menuExpanded()"
+      (click)="toggleNav()"
+    >
+      <svg appGlyph="menu"></svg>
+    </button>
+    <div class="topbar__brand">
+      <svg class="brand-symbol" aria-hidden="true"><use href="icons/sprite.svg#nx-symbol" /></svg>
+    </div>
+
+    <app-breadcrumbs />
+
+    <div class="topbar__search">
+      <button
+        type="button"
+        class="search-trigger"
+        aria-label="Buscar ou ir para (Ctrl K)"
+        (click)="palette.open()"
+      >
+        <svg appGlyph="search"></svg>
+        <span>Buscar ou ir para...</span>
+        <kbd class="kbd hide-sm">Ctrl K</kbd>
+      </button>
+    </div>
+
+    <div class="topbar__actions">
+      @if (clock.isSimulated()) {
+        @if (canOpenClock()) {
+          <a
+            class="badge badge--gold badge--lg topbar__chip"
+            routerLink="/app/configuracoes/relogio"
+            [attr.aria-label]="clockLabel()"
+          >
+            <ng-container [ngTemplateOutlet]="clockChip" />
+          </a>
+        } @else {
+          <span
+            class="badge badge--gold badge--lg topbar__chip"
+            role="status"
+            [attr.aria-label]="clockLabel()"
+          >
+            <ng-container [ngTemplateOutlet]="clockChip" />
+          </span>
+        }
+      }
+      <app-notification-bell />
+      <button
+        type="button"
+        class="btn btn--ghost btn--icon hide-sm"
+        aria-label="Ajuda e atalhos de teclado"
+        (click)="dialogs.openShortcuts()"
+      >
+        <svg appGlyph="circle-help"></svg>
+      </button>
+      <app-user-menu area="team" />
+    </div>
+  </header>
+
+  <main
+    class="main"
+    id="conteudo"
+    tabindex="-1"
+    [attr.inert]="drawerOpen() ? '' : null"
+    (click)="onMainClick($event)"
+  >
+    <app-system-banners />
+    <router-outlet />
+  </main>
+
+  <footer class="app-footer" [attr.inert]="drawerOpen() ? '' : null">
+    <svg appGlyph="info"></svg>
+    <span>{{ notice }}</span>
+    <nav class="app-footer__links" aria-label="Rodapé">
+      <a routerLink="/app/canal-do-titular">Privacidade e canal do titular</a>
+      <a routerLink="/app/meus-dados">Meus dados no navegador</a>
+      <button type="button" class="btn-link" (click)="dialogs.openShortcuts()">Atalhos</button>
+      <button type="button" class="btn-link" (click)="dialogs.openAbout()">Sobre</button>
+    </nav>
+  </footer>
+
+  <div class="scrim" aria-hidden="true" (click)="closeNav(true)"></div>
+</div>
+
+<app-command-palette />
+<app-layout-dialogs area="team" />
+
+<ng-template #navLink let-link let-pinnedRow="pinnedRow">
+  <li class="nav-row" [class.nav-row--pin]="canPin()">
+    <a
+      class="nav-item"
+      [routerLink]="link.path"
+      routerLinkActive="is-active"
+      ariaCurrentWhenActive="page"
+      [attr.aria-label]="linkLabel(link)"
+      [attr.title]="link.label"
+    >
+      <svg [appGlyph]="link.icon"></svg>
+      <span class="nav-item__label">{{ link.label }}</span>
+      @if (counterOf(link.key); as counter) {
+        <span class="nav-item__badge" aria-hidden="true">{{ counter.count }}</span>
+      }
+    </a>
+    @if (canPin()) {
+      <button
+        type="button"
+        class="nav-pin"
+        [attr.aria-pressed]="isPinned(link.key)"
+        [attr.aria-label]="
+          (isPinned(link.key) ? 'Desafixar ' : 'Fixar ') +
+          link.label +
+          (isPinned(link.key) ? ' do topo do menu' : ' no topo do menu')
+        "
+        (click)="togglePin(link)"
+      >
+        <svg appGlyph="star" glyphSize="sm"></svg>
+      </button>
+    }
+  </li>
+</ng-template>
+
+<ng-template #clockChip>
+  <svg appGlyph="clock" glyphSize="sm"></svg>
+  <span class="hide-sm">Hoje (simulado): {{ clock.today() | dateBr }}</span>
+  <span class="show-sm" aria-hidden="true">{{ clock.today() | dateBr }}</span>
+</ng-template>

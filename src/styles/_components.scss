@@ -6,3 +6,7 @@
 @use 'components/feedback';
 @use 'components/flow';
 @use 'components/charts';
+// Complementos da biblioteca de componentes Angular (src/app/shared/ui).
+@use 'components/kit-forms';
+@use 'components/kit-data';
+@use 'components/kit-display';

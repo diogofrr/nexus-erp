@@ -1,0 +1,40 @@
+// Biblioteca de componentes (shared/ui): tabela de dados, paginação e filtros.
+@use '../tokens' as *;
+
+app-data-table, app-pagination { display: block; }
+
+// A barra de ferramentas some quando não há busca, filtros nem ações.
+.table-toolbar:empty { display: none; }
+
+// "Por página": rótulo e seletor lado a lado, com o seletor do tamanho do conteúdo.
+.pagination label.cluster { flex-wrap: nowrap; }
+.pagination .select { width: auto; }
+
+// Barra de ferramentas: as ações quebram de linha em vez de espremer o seletor de ordem no celular.
+.table-toolbar .toolbar-end { flex-wrap: wrap; }
+@include down(md) {
+  .table-toolbar .toolbar-end { width: 100%; margin-left: 0; }
+  .table-toolbar .toolbar-end .select { min-width: 13rem; }
+}
+
+// Selos dentro do cartão do quadro não esticam até a borda.
+.kanban__card > .badge { justify-self: start; }
+
+// Linha clicável e focável por teclado (setas movem o foco entre linhas).
+tr[data-clickable] {
+  cursor: pointer;
+  &:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+}
+
+// Chip de filtro ativo e removível: preenchido, com texto, nunca só cor.
+.chip--removable {
+  cursor: default;
+  background: var(--brand-soft);
+  border-color: var(--brand);
+  color: var(--brand-soft-text);
+  font-weight: var(--fw-semibold);
+}
+
+// Cartão do quadro de estados: botão que abre a decisão.
+button.kanban__card { width: 100%; cursor: pointer; text-align: left; }
+h3.kanban__head { font-family: var(--font-sans); }

@@ -11,13 +11,13 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   selector: 'app-module-placeholder',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <main>
+    <div class="page">
       <h1>{{ title() }}</h1>
       @if (moduleId()) {
         <p>{{ moduleId() }}</p>
       }
       <p>Módulo em construção</p>
-    </main>
+    </div>
   `,
 })
 export class ModulePlaceholderComponent {

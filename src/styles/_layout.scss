@@ -211,7 +211,7 @@ button.nav-group__title {
   min-width: 0;
 
   strong { display: block; font-size: var(--fs-sm); color: var(--nav-text-active); font-weight: var(--fw-semibold); }
-  span { display: block; font-size: var(--fs-xs); color: var(--nav-text-muted); }
+  div > span { display: block; font-size: var(--fs-xs); color: var(--nav-text-muted); }
 }
 
 // Trilho (só ícones): esconde textos quando o menu é estreito.
@@ -683,3 +683,106 @@ button.nav-group__title {
   background: var(--border-subtle);
   border: 0;
 }
+
+// =============================================================================
+// Acréscimos do shell em Angular (menu por perfil, barra superior, menu do usuário, painel de notificações)
+// =============================================================================
+
+// Linha do menu com o botão de fixar (U-01): a estrela aparece ao passar o mouse, ao focar e quando fixado.
+.nav-row { position: relative; display: block; }
+.nav-pin {
+  position: absolute;
+  top: 50%;
+  right: var(--space-1);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  border-radius: var(--radius-sm);
+  color: var(--nav-text-muted);
+  transform: translateY(-50%);
+  &:hover { color: var(--nav-text-active); background: var(--nav-bg-hover); }
+  &[aria-pressed='true'] { color: var(--nav-accent); .icon { fill: currentColor; } }
+}
+.nav-row--pin:hover .nav-pin,
+.nav-row--pin:focus-within .nav-pin,
+.nav-row--pin .nav-pin[aria-pressed='true'] { display: inline-flex; }
+// com a estrela visível, o contador sai da frente dela
+.nav-row--pin:hover .nav-item__badge,
+.nav-row--pin:focus-within .nav-item__badge { margin-right: var(--space-8); }
+@container nav (max-width: 6rem) { .nav-pin { display: none !important; } }
+
+// Botão "Recolher o menu": só no menu completo (a partir de 1280 px).
+.nav-collapse { display: none; width: 100%; background: none; text-align: left; @include up(xl) { display: flex; } }
+@container nav (max-width: 6rem) { .nav-collapse .nav-item__label { display: none; } .nav-collapse { justify-content: center; } }
+
+// Migalhas na barra superior (UX 3.4: posição 2) e o chip do relógio simulado (posição 4).
+.topbar__crumbs { flex: 1 1 8rem; min-width: 0; overflow: hidden; }
+.topbar__crumbs .breadcrumb { flex-wrap: nowrap; white-space: nowrap; }
+.topbar__title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--fw-semibold); color: var(--text-strong); font-size: var(--fs-sm); }
+.back-link { display: inline-flex; align-items: center; gap: var(--space-1); max-width: 100%; min-height: var(--control-h); color: var(--text-link); font-size: var(--fs-sm); font-weight: var(--fw-medium); text-decoration: none; span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }
+.topbar__search { flex: 0 1 14rem; @include up(lg) { flex-basis: 18rem; } @include up(xl) { flex-basis: 26rem; } @include down(md) { flex: 0 0 auto; } }
+.topbar__chip { text-decoration: none; flex-shrink: 0; }
+.topbar__brand { text-decoration: none; @include down(sm) { display: none; } }
+
+// O banner da primeira visita não cobre o menu lateral (menu em trilho a partir de lg, completo a partir de xl).
+body:has(.app-shell) .banner--consent {
+  @include up(lg) { left: calc(var(--sidebar-w-rail) + var(--space-6)); }
+  @include up(xl) { left: calc(var(--sidebar-w) + var(--space-6)); }
+}
+.topbar__bell { position: relative; }
+.topbar__badge { position: absolute; top: 4px; right: 2px; min-width: 1rem; height: 1rem; font-size: 0.625rem; }
+
+// Botão do menu do usuário: avatar, nome e perfil por extenso (o perfil aparece sempre, em demonstração troca-se muito de perfil).
+.user-trigger { padding: 0 var(--space-2); gap: var(--space-2); > .icon { @include down(sm) { display: none; } } }
+.user-trigger__text { display: grid; text-align: left; line-height: 1.2; }
+.user-trigger__name { font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--text-strong); max-width: 11rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-trigger__role { font-size: var(--fs-xs); color: var(--text-muted); max-width: 11rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu--user { min-width: 17rem; max-width: calc(100vw - var(--space-4)); }
+.menu__group-label { padding: var(--space-2) var(--space-3) var(--space-1); font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-muted); }
+.menu__state { font-size: var(--fs-xs); color: var(--text-muted); }
+.menu__item[aria-checked='true'] .menu__state { color: var(--text-accent); font-weight: var(--fw-semibold); }
+
+// Faixas de sistema no topo do conteúdo (sem internet, armazenamento cheio).
+.system-banners { display: grid; gap: var(--space-2); max-width: var(--content-max); margin-inline: auto; padding: var(--space-3) var(--gutter) 0; &:empty { display: none; } }
+
+// Rodapé: aviso literal de protótipo e links (AC-GL-05, LP-23).
+.app-footer__links { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin-left: auto; .btn-link { font-size: inherit; font-weight: var(--fw-regular); } }
+
+// Teclas da tela de atalhos.
+.keys { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+
+// Modo discreto (U-04): nomes e contatos borrados; um clique revela. Telas marcam o dado com .discreet.
+:root[data-discreet='true'] .discreet:not([data-revealed]) { filter: blur(0.375rem); cursor: pointer; user-select: none; }
+:root[data-discreet='true'] .discreet { transition: filter var(--dur-2) var(--ease); }
+
+// Reduzir movimento escolhido no menu do usuário (vale além da preferência do sistema).
+:root[data-reduce-motion='true'] {
+  --dur-1: 0.01ms;
+  --dur-2: 0.01ms;
+  --dur-3: 0.01ms;
+  scroll-behavior: auto;
+}
+:root[data-reduce-motion='true'] *,
+:root[data-reduce-motion='true'] *::before,
+:root[data-reduce-motion='true'] *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+
+// Portal: barra inferior com botão "Mais" e folha de destinos.
+.bottom-nav button.bottom-nav__item { background: none; border: 0; cursor: pointer; }
+.more-sheet { display: grid; gap: var(--space-4); }
+
+// No portal o conteúdo já tem margem própria: a página do shell não soma a dela.
+.portal-main .page { padding: 0; max-width: none; }
+.portal-main .system-banners { padding-inline: 0; }
+
+// Entrada e telas sem shell (M01): painel de login, segundo fator, 403, 404 e sessão expirada.
+.login__panel .banner--prototype { border-width: 1px; border-radius: var(--radius-md); justify-content: flex-start; text-align: left; }
+.list-row__meta--wrap { white-space: normal; }
+.login__form { display: grid; gap: var(--space-5); max-width: 28rem; }
+.code-display { display: inline-block; padding: var(--space-3) var(--space-5); border: 1px dashed var(--accent); border-radius: var(--radius-md); background: var(--accent-soft); color: var(--text-heading); letter-spacing: 0.12em; line-height: 1.1; }
+.code-input { font-size: var(--fs-2xl); letter-spacing: 0.4em; text-align: center; font-variant-numeric: tabular-nums; }
+.standalone { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 100vh; min-height: 100dvh; background: var(--canvas); }
+.standalone__brand { display: flex; align-items: center; gap: var(--space-3); height: var(--topbar-h); padding: 0 var(--gutter); color: var(--accent); .wordmark { color: var(--text-heading); font-size: var(--fs-sm); } }
+.standalone__main { display: grid; align-content: center; justify-items: center; padding: var(--space-8) var(--gutter); }
+.profile-group h2 { font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: var(--fw-semibold); letter-spacing: 0; color: var(--text-muted); }

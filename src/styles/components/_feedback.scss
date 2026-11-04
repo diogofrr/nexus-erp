@@ -25,6 +25,8 @@
 .banner__title { font-weight: var(--fw-semibold); color: var(--text-strong); }
 .banner__text { color: inherit; }
 .banner__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.banner__actions:empty { display: none; }
+.banner__text:empty { display: none; }
 
 .banner--success { background: var(--success-bg); border-color: var(--success-border); color: var(--success-fg); > .icon { color: var(--success-icon); } }
 .banner--attention { background: var(--attention-bg); border-color: var(--attention-border); color: var(--attention-fg); > .icon { color: var(--attention-icon); } }
@@ -83,6 +85,9 @@
 
   .portal-shell ~ & { bottom: calc(var(--bottom-nav-h) + var(--space-4)); }
 }
+
+// No portal (barra inferior fixa abaixo de lg) o toast sobe acima da barra e da área segura do aparelho.
+.toast-region--above-nav { @include down(lg) { bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + var(--space-4)); } }
 
 .toast {
   --toast-bg: var(--nx-slate-900);
@@ -229,6 +234,9 @@
 .drawer__footer { display: flex; justify-content: flex-end; gap: var(--space-2); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); background: var(--surface-sunken); }
 
 @keyframes nx-drawer-in { from { transform: translateX(2rem); opacity: 0; } }
+.drawer__footer:empty { display: none; }
+// O host do componente não gera caixa: a gaveta acoplada participa da grade da lista e detalhe.
+.drawer-host { display: contents; }
 
 // =============================================================================
 // Popover (painel de notificações, motivo de acesso): mesma superfície do menu, mais larga.
@@ -333,4 +341,15 @@
   line-height: var(--lh-ui);
   box-shadow: var(--shadow-2);
   :root[data-theme='dark'] & { background: #2a3b4e; }
+}
+
+// Painel de notificações (UX 3.6): popover ancorado ao sino; no celular ocupa a página inteira.
+.menu-anchor > .popover { position: absolute; top: calc(100% + var(--space-2)); right: 0; }
+.popover--panel { width: min(22.5rem, calc(100vw - var(--space-4))); }
+.popover__body--flush { padding: 0; gap: 0; }
+.popover__group { padding: var(--space-3) var(--space-4) var(--space-1); font-family: var(--font-sans); font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-muted); }
+.popover__seen { border-top: 1px solid var(--border-subtle); summary { display: flex; align-items: center; min-height: var(--control-h); padding: 0 var(--space-4); cursor: pointer; font-size: var(--fs-sm); font-weight: var(--fw-medium); color: var(--text-muted); } }
+@include down(md) {
+  .popover--panel { position: fixed !important; inset: var(--topbar-h) 0 0 0 !important; width: auto; max-height: none; border: 0; border-radius: 0; display: flex; flex-direction: column; }
+  .popover--panel .popover__body { flex: 1; max-height: none; }
 }

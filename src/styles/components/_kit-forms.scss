@@ -1,0 +1,75 @@
+// Biblioteca de componentes (shared/ui): complementos de formulário.
+// Só completa o que o design system não tinha; usa apenas tokens.
+@use '../tokens' as *;
+
+// Hospedeiros dos componentes de formulário.
+:is(app-checkbox, app-radio-group, app-rating, app-filter-chips, app-active-filters) { display: block; }
+app-switch { display: inline-block; }
+
+// Grupo de opção única sem nada marcado (nada vem pré-marcado) casa com `:indeterminate`, e o estilo da caixa de
+// seleção pintaria a bolinha de azul. Opção só é "marcada" quando `:checked`.
+.radio input:indeterminate:not(:checked) {
+  background: var(--surface);
+  border-color: var(--border-control);
+  &::after { transform: scale(0); }
+}
+
+// A lupa do campo de busca já tem o "Limpar" próprio: esconde o botão nativo do navegador.
+input[type='search']::-webkit-search-cancel-button { appearance: none; display: none; }
+
+// ---- Campo mascarado (PD-13) ---------------------------------------------------------------------
+app-masked-field {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+
+// Sem botão de copiar e, enquanto mascarado, sem seleção de texto (UX 6.1).
+.masked[data-state='hidden'] .masked__value { user-select: none; }
+.masked__print { display: none; }
+.masked__note { color: var(--text-muted); }
+
+// O popover de motivo fica fixo na janela: um menu absoluto dentro de tabela com rolagem seria cortado.
+.reason-popover { position: fixed; z-index: var(--z-popover); }
+
+// Impressão e captura: o valor revelado sai MASCARADO (UX 6.1).
+@media print {
+  .masked[data-state='revealed'] .masked__real { display: none; }
+  .masked[data-state='revealed'] .masked__print { display: inline; }
+  .masked__toggle, .masked__note, .reason-popover { display: none; }
+}
+
+// ---- Consentimento ------------------------------------------------------------------------------------
+app-consent-toggle { > div { min-width: 0; } }
+
+.consent .consent__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.consent__details {
+  margin-top: var(--space-2);
+
+  summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--control-h-sm);
+    color: var(--text-link);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    cursor: pointer;
+  }
+}
+
+.consent__list {
+  display: grid;
+  gap: var(--space-1);
+  padding-bottom: var(--space-2);
+
+  dt { margin-top: var(--space-2); font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-strong); }
+  dd { font-size: var(--fs-xs); color: var(--text-muted); }
+}
