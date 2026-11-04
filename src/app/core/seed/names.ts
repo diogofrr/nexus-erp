@@ -1,0 +1,183 @@
+/**
+ * Listas FIXAS de nomes fictícios (60 nomes e 60 sobrenomes, escopo 5.6) para os cuidadores de volume,
+ * pessoas idosas e demais figurantes. Nenhum nome real de pessoa identificável é usado.
+ */
+import { Sex } from '../models/caregivers';
+
+export interface FirstName {
+  name: string;
+  sex: Sex;
+}
+
+/** 60 nomes: 44 femininos e 16 masculinos (o público é majoritariamente feminino, RN-USR-20). */
+export const FIRST_NAMES: readonly FirstName[] = [
+  'Adelaide',
+  'Alice',
+  'Amanda',
+  'Beatriz',
+  'Bianca',
+  'Camila',
+  'Carla',
+  'Carolina',
+  'Cecília',
+  'Clara',
+  'Daniela',
+  'Eduarda',
+  'Elaine',
+  'Fernanda',
+  'Flávia',
+  'Gabriela',
+  'Helena',
+  'Ingrid',
+  'Isabela',
+  'Jaqueline',
+  'Joana',
+  'Juliana',
+  'Kátia',
+  'Larissa',
+  'Laura',
+  'Lívia',
+  'Luana',
+  'Luiza',
+  'Manuela',
+  'Marcela',
+  'Mariana',
+  'Michele',
+  'Natália',
+  'Olívia',
+  'Paula',
+  'Priscila',
+  'Rafaela',
+  'Renata',
+  'Sabrina',
+  'Tatiana',
+  'Valentina',
+  'Vanda',
+  'Viviane',
+  'Yara',
+]
+  .map((name): FirstName => ({ name, sex: 'female' }))
+  .concat(
+    [
+      'André',
+      'Bruno',
+      'Caio',
+      'Diego',
+      'Enzo',
+      'Felipe',
+      'Gustavo',
+      'Henrique',
+      'Igor',
+      'Júlio',
+      'Leandro',
+      'Mateus',
+      'Nelson',
+      'Otávio',
+      'Rodrigo',
+      'Samuel',
+    ].map((name): FirstName => ({ name, sex: 'male' })),
+  );
+
+/** 60 sobrenomes. */
+export const LAST_NAMES: readonly string[] = [
+  'Abreu',
+  'Albuquerque',
+  'Almeida',
+  'Andrade',
+  'Araújo',
+  'Assis',
+  'Barbosa',
+  'Barreto',
+  'Batista',
+  'Bento',
+  'Bittencourt',
+  'Braga',
+  'Brito',
+  'Cabral',
+  'Campos',
+  'Cardoso',
+  'Carvalho',
+  'Castro',
+  'Cavalcante',
+  'Coelho',
+  'Correia',
+  'Cunha',
+  'Dantas',
+  'Diniz',
+  'Duarte',
+  'Esteves',
+  'Farias',
+  'Ferraz',
+  'Figueiredo',
+  'Fontes',
+  'Gomes',
+  'Guerra',
+  'Lacerda',
+  'Lima',
+  'Lobo',
+  'Macedo',
+  'Machado',
+  'Magalhães',
+  'Medeiros',
+  'Mendonça',
+  'Miranda',
+  'Moraes',
+  'Nascimento',
+  'Nogueira',
+  'Novaes',
+  'Oliveira',
+  'Paiva',
+  'Peixoto',
+  'Pereira',
+  'Queiroz',
+  'Ramos',
+  'Rangel',
+  'Rocha',
+  'Sampaio',
+  'Santana',
+  'Siqueira',
+  'Soares',
+  'Teixeira',
+  'Vasconcelos',
+  'Viana',
+];
+
+/** Nomes de pessoas idosas (geração mais velha), para o campo da pessoa idosa. */
+export const ELDER_FIRST_NAMES: readonly string[] = [
+  'Anita',
+  'Aurora',
+  'Benedita',
+  'Conceição',
+  'Dalva',
+  'Edite',
+  'Francisca',
+  'Geralda',
+  'Iracema',
+  'Josefa',
+  'Lídia',
+  'Maria José',
+  'Nair',
+  'Odete',
+  'Raimunda',
+  'Zilda',
+  'Antônio',
+  'Benedito',
+  'Domingos',
+  'Geraldo',
+  'Joaquim',
+  'Lázaro',
+  'Milton',
+  'Orlando',
+  'Sebastião',
+  'Vicente',
+];
+
+/** Remove acentos e vira minúsculo, para montar e-mails fictícios (`ana.ferraz`). */
+export function slugify(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.+|\.+$/g, '');
+}

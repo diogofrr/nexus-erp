@@ -1,0 +1,15 @@
+/** Regras de negócio PURAS (sem Angular, sem relógio, sem armazenamento). Cada função cita o RN no comentário. */
+export * from './numbers';
+export * from './validators';
+export * from './zarit';
+export * from './zarit-items';
+export * from './arbe';
+export * from './pop05';
+export * from './plans';
+export * from './arp';
+export * from './eqp';
+export * from './finance';
+export * from './sla';
+export * from './kpi';
+export * from './lgpd';
+export * from './governance';
