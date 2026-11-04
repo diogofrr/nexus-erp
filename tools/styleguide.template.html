@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexus ERP: guia de estilo</title>
+<link rel="icon" type="image/svg+xml" href="../public/brand/favicon.svg">
+<style id="app-css">
+{{CSS}}
+</style>
+<style>
+/* Somente a moldura deste guia. Nada daqui vai para o app. */
+.sg-top { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: var(--space-4); padding: var(--space-2) var(--gutter); background: var(--surface); border-bottom: 1px solid var(--border-subtle); }
+.sg-top nav { display: flex; gap: var(--space-1); overflow-x: auto; scrollbar-width: none; flex: 1; }
+.sg-top nav a { padding: 0 var(--space-3); min-height: 2.75rem; display: inline-flex; align-items: center; font-size: var(--fs-sm); font-weight: 500; color: var(--text-muted); text-decoration: none; white-space: nowrap; border-radius: var(--radius-sm); }
+.sg-top nav a:hover { background: var(--surface-sunken); color: var(--text-strong); }
+.sg-wrap { max-width: 78rem; margin: 0 auto; padding: var(--space-8) var(--gutter) var(--space-24); }
+.sg-section { padding-top: var(--space-12); scroll-margin-top: 4rem; }
+.sg-section > h2 { margin-bottom: var(--space-2); }
+.sg-section > .lede { color: var(--text-muted); max-width: 68ch; margin-bottom: var(--space-6); }
+.sg-block { margin-top: var(--space-8); }
+.sg-block > h3 { margin-bottom: var(--space-3); font-size: var(--fs-md); }
+.sg-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+.sg-cap { font-size: var(--fs-xs); color: var(--text-muted); margin-top: var(--space-2); }
+.sg-panel { padding: var(--space-6); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.sg-panel--canvas { background: var(--canvas); }
+.sg-panel--nav { background: var(--nav-bg); border-color: transparent; }
+.sg-panel--gold { background: var(--nx-paper-50); }
+.sg-sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: var(--space-2); }
+.sg-sw__i { border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); font-size: var(--fs-xs); }
+.sg-sw__c { height: 3rem; }
+.sg-sw__t { padding: var(--space-2); display: grid; gap: 1px; }
+.sg-sw__t b { font-weight: 600; color: var(--text-strong); }
+.sg-sw__t span { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.sg-type > div { display: grid; grid-template-columns: 8rem minmax(0,1fr); gap: var(--space-4); align-items: baseline; padding: var(--space-3) 0; border-bottom: 1px solid var(--border-subtle); }
+.sg-type small { color: var(--text-muted); font-size: var(--fs-xs); }
+.sg-space i { display: block; height: 0.75rem; background: var(--brand); border-radius: 2px; }
+.sg-space > div { display: grid; grid-template-columns: 6rem 4rem minmax(0,1fr); gap: var(--space-3); align-items: center; font-size: var(--fs-xs); color: var(--text-muted); padding: 3px 0; }
+.sg-tile { display: grid; place-items: center; width: 4.75rem; height: 3.5rem; background: var(--surface); border: 1px solid var(--border-control); font-size: var(--fs-xs); color: var(--text-muted); }
+.sg-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr)); gap: var(--space-2); }
+.sg-icons div { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-1); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.6875rem; color: var(--text-muted); background: var(--surface); text-align: center; word-break: break-all; }
+.sg-icons .icon { color: var(--text-strong); }
+.sg-device { position: relative; margin-top: var(--space-4); overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-sunken); }
+.sg-device iframe { display: block; border: 0; background: var(--canvas); transform-origin: 0 0; }
+.sg-device__cap { margin-top: var(--space-2); font-size: var(--fs-xs); color: var(--text-muted); }
+.sg-force-hover.btn--primary { background: var(--brand-hover); }
+.sg-force-hover.btn--soft { background: var(--brand-soft-hover); }
+.sg-force-hover:not(.btn--primary):not(.btn--soft):not(.btn--danger) { background: var(--surface-sunken); }
+.sg-force-focus { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sg-force-active { transform: translateY(1px); background: var(--brand-active) !important; }
+.sg-inline-input-focus { border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus), 0 0 0 4px var(--focus-halo); }
+.sg-2col { display: grid; gap: var(--space-6); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .sg-2col { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+{{SPRITE}}
+<a class="skip-link" href="#main">Ir para o conteúdo</a>
+
+<header class="sg-top">
+  <svg class="brand-symbol" style="color:var(--accent);width:2.25rem;height:1.5rem" aria-hidden="true"><use href="#nx-symbol"/></svg>
+  <strong class="wordmark" style="font-size:var(--fs-sm);color:var(--text-heading)">Nexus</strong>
+  <nav aria-label="Seções do guia">
+    <a href="#marca">Marca</a><a href="#cores">Cores</a><a href="#tipografia">Tipografia</a><a href="#medidas">Medidas</a><a href="#icones">Ícones</a>
+    <a href="#acoes">Ações</a><a href="#formularios">Formulários</a><a href="#dados">Dados</a><a href="#graficos">Gráficos</a><a href="#feedback">Feedback</a><a href="#fluxos">Fluxos</a><a href="#telas">Telas e responsivo</a>
+  </nav>
+  <button class="btn btn--sm" id="theme-toggle" aria-pressed="false">{{i:moon:sm}}<span>Tema escuro</span></button>
+</header>
+
+<main id="main" class="sg-wrap">
+
+<header class="page-header">
+  <div class="page-header__titles">
+    <h1>Nexus ERP: guia de estilo</h1>
+    <p class="page-header__desc">Tokens e componentes do sistema de design, com todos os estados. O CSS desta página é o mesmo de <code>src/styles</code>; a descrição de cada componente está em <code>docs/03-design-system.md</code>. Protótipo: todos os nomes e dados são fictícios.</p>
+  </div>
+</header>
+
+<!-- ============================ MARCA ============================ -->
+<section class="sg-section" id="marca">
+  <h2>Marca</h2>
+  <p class="lede">O símbolo foi redesenhado do logo: duas mãos abertas sustentando três pessoas, em linha fina dourada. A linha fina é o traço-assinatura da interface: sublinha o título de página, marca a aba atual e fecha o símbolo.</p>
+  <div class="sg-2col">
+    <div class="sg-panel sg-panel--gold" style="display:grid;place-items:center;min-height:16rem"><img src="../public/brand/nexus-logo.svg" alt="Logo Nexus" style="width:min(100%,20rem)"></div>
+    <div class="sg-panel sg-panel--nav" style="display:grid;place-items:center;min-height:16rem;color:var(--nav-accent)"><svg viewBox="-50 -2 220 152" style="width:min(100%,20rem);fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round" role="img" aria-label="Logo Nexus sobre azul">{{LOGO_INNER}}</svg></div>
+  </div>
+  <div class="sg-block sg-row" style="gap:var(--space-6)">
+    <div class="sg-panel" style="display:grid;gap:var(--space-2);justify-items:center"><img src="../public/brand/nexus-symbol.svg" alt="Símbolo" width="140"><span class="sg-cap">nexus-symbol.svg (traço 1,6)</span></div>
+    <div class="sg-panel" style="display:grid;gap:var(--space-2);justify-items:center"><img src="../public/brand/nexus-symbol-bold.svg" alt="Símbolo em traço grosso" width="64"><span class="sg-cap">nexus-symbol-bold.svg (até 64 px)</span></div>
+    <div class="sg-panel" style="display:grid;gap:var(--space-2);justify-items:center"><img src="../public/brand/nexus-wordmark.svg" alt="Palavra Nexus" width="180"><span class="sg-cap">nexus-wordmark.svg</span></div>
+    <div class="sg-panel" style="display:grid;gap:var(--space-2);justify-items:center"><img src="../public/brand/favicon.svg" alt="Favicon" width="64"><span class="sg-cap">favicon.svg (simplificado)</span></div>
+  </div>
+</section>
+
+<!-- ============================ CORES ============================ -->
+<section class="sg-section" id="cores">
+  <h2>Cores</h2>
+  <p class="lede">Azul institucional nos títulos e nas peças principais; dourado só em detalhes (linha, aba atual, destaque); off-white no fundo e branco nas áreas de leitura. Texto sobre fundo cumpre 4,5:1. Estados nunca dependem só da cor.</p>
+  <div class="sg-block"><h3>Azul institucional (Cuida #2D6EA3, Essencial #4A90C8)</h3><div class="sg-sw" data-sw="--nx-blue-" data-steps="50 100 200 300 400 500 600 700 800 900 950"></div></div>
+  <div class="sg-block"><h3>Dourado (Sustenta #B8901F). Texto sempre no 800.</h3><div class="sg-sw" data-sw="--nx-gold-" data-steps="50 100 200 300 400 500 600 700 800 900"></div></div>
+  <div class="sg-block"><h3>Neutros azulados (Livre #7B8794) e papel off-white</h3><div class="sg-sw" data-sw="--nx-slate-" data-steps="0 50 100 200 300 400 500 600 700 800 900 950"></div><div class="sg-sw" style="margin-top:var(--space-2)" data-sw="--nx-paper-" data-steps="50 100 200 300 400"></div></div>
+  <div class="sg-block"><h3>Semânticas</h3>
+    <div class="sg-sw" data-vars="--success-fg --success-icon --success-bg --attention-fg --attention-icon --attention-bg --danger-fg --danger-icon --danger-bg --info-fg --info-icon --info-bg"></div>
+  </div>
+  <div class="sg-block"><h3>Planos (Figura 1)</h3>
+    <div class="sg-sw" data-vars="--plan-livre --plan-essencial --plan-cuida --plan-sustenta --plan-livre-text --plan-essencial-text --plan-cuida-text --plan-sustenta-text"></div>
+  </div>
+  <div class="sg-block"><h3>Faixas do Zarit: cor + ícone + rótulo</h3>
+    <div class="sg-row">
+      <span class="badge badge--lg badge--zarit-1">{{i:circle-check}}0 a 20 · Ausente ou pequena</span>
+      <span class="badge badge--lg badge--zarit-2">{{i:info}}21 a 40 · Moderada</span>
+      <span class="badge badge--lg badge--zarit-3">{{i:triangle-alert}}41 a 60 · Moderada a severa</span>
+      <span class="badge badge--lg badge--zarit-4">{{i:octagon-alert}}61 a 88 · Severa</span>
+    </div>
+  </div>
+  <div class="sg-block"><h3>Superfícies e texto</h3>
+    <div class="sg-sw" data-vars="--canvas --surface --surface-sunken --nav-bg --text-strong --text --text-muted --text-heading --text-link --border-subtle --border --border-control --brand --accent --accent-brand"></div>
+  </div>
+</section>
+
+<!-- ============================ TIPOGRAFIA ============================ -->
+<section class="sg-section" id="tipografia">
+  <h2>Tipografia</h2>
+  <p class="lede">DM Serif Display nos títulos de página e de seção (a face da Figura 1); Figtree em todo o resto. Dados e números usam algarismos tabulares. Escala fixa em rem, sem tamanho fluido.</p>
+  <div class="sg-type sg-panel">
+    <div><small>display · 40/1,15</small><p class="t-display">Quem cuida também precisa de sustentação</p></div>
+    <div><small>h1 · 32/1,15</small><h1>Cuidadores acompanhados</h1></div>
+    <div><small>h2 · 24/1,25</small><h2>Fila de acompanhamento</h2></div>
+    <div><small>h3 · sans 18 semibold</small><h3>Resumo do mês de novembro</h3></div>
+    <div><small>corpo · 16/1,55</small><p>Aplicar a escala leva cerca de dez minutos. As respostas ficam salvas como rascunho e o resultado só aparece ao concluir. Texto corrido mantém 65 a 75 caracteres por linha.</p></div>
+    <div><small>interface · 14/1,35</small><p class="t-ui">Rótulos, botões, células de tabela e menus usam 14 px com peso 500 ou 600.</p></div>
+    <div><small>legenda · 12/1,35</small><p class="t-caption">Cabeçalho de tabela, selo, dica de campo e data de atualização.</p></div>
+    <div><small>números tabulares</small><p class="t-num" style="font-size:var(--fs-xl)">R$ 1.234,56 &nbsp; R$ 11.111,11 &nbsp; 86,3% &nbsp; 04/11/2026 &nbsp; 23:59</p></div>
+    <div><small>código pseudonimizado</small><p><span class="code-chip">{{i:shield-check}}CUI-0042</span></p></div>
+    <div><small>palavra NEXUS</small><p class="wordmark" style="font-size:var(--fs-xl);color:var(--accent)">Nexus</p></div>
+  </div>
+</section>
+
+<!-- ============================ MEDIDAS ============================ -->
+<section class="sg-section" id="medidas">
+  <h2>Espaçamento, raios, sombras e movimento</h2>
+  <p class="lede">Grade de 8 px. Os passos ímpares (4, 12, 20) existem só dentro de componentes. Sombras sempre com deslocamento e desfoque; bordas de 1 px fazem a maior parte da separação.</p>
+  <div class="sg-2col">
+    <div class="sg-panel sg-space">
+      <div><span>--space-1</span><span>4 px</span><i style="width:4px"></i></div>
+      <div><span>--space-2</span><span>8 px</span><i style="width:8px"></i></div>
+      <div><span>--space-3</span><span>12 px</span><i style="width:12px"></i></div>
+      <div><span>--space-4</span><span>16 px</span><i style="width:16px"></i></div>
+      <div><span>--space-5</span><span>20 px</span><i style="width:20px"></i></div>
+      <div><span>--space-6</span><span>24 px</span><i style="width:24px"></i></div>
+      <div><span>--space-8</span><span>32 px</span><i style="width:32px"></i></div>
+      <div><span>--space-10</span><span>40 px</span><i style="width:40px"></i></div>
+      <div><span>--space-12</span><span>48 px</span><i style="width:48px"></i></div>
+      <div><span>--space-16</span><span>64 px</span><i style="width:64px"></i></div>
+    </div>
+    <div class="sg-panel stack stack--6">
+      <div class="sg-row" style="align-items:flex-end">
+        <div><div class="sg-tile" style="border-radius:var(--radius-xs)">4</div><p class="sg-cap">xs · checkbox</p></div>
+        <div><div class="sg-tile" style="border-radius:var(--radius-sm)">8</div><p class="sg-cap">sm · botão, campo</p></div>
+        <div><div class="sg-tile" style="border-radius:var(--radius-md)">12</div><p class="sg-cap">md · cartão</p></div>
+        <div><div class="sg-tile" style="border-radius:var(--radius-lg)">16</div><p class="sg-cap">lg · diálogo</p></div>
+        <div><div class="sg-tile" style="border-radius:var(--radius-xl)">24</div><p class="sg-cap">xl · plano</p></div>
+      </div>
+      <div class="sg-row" style="gap:var(--space-5);background:var(--canvas);padding:var(--space-5);border-radius:var(--radius-md)">
+        <div class="sg-tile" style="box-shadow:var(--shadow-1);border-radius:var(--radius-sm);border-color:var(--border-subtle)">sombra 1</div>
+        <div class="sg-tile" style="box-shadow:var(--shadow-2);border-radius:var(--radius-sm);border-color:var(--border-subtle)">sombra 2</div>
+        <div class="sg-tile" style="box-shadow:var(--shadow-3);border-radius:var(--radius-sm);border-color:var(--border-subtle)">sombra 3</div>
+        <div class="sg-tile" style="box-shadow:var(--shadow-4);border-radius:var(--radius-sm);border-color:var(--border-subtle)">sombra 4</div>
+      </div>
+      <p class="t-ui t-muted">Movimento: 120 ms (hover), 200 ms (estado), 320 ms (gaveta e diálogo), saída exponencial. Com <code>prefers-reduced-motion</code> as durações caem a zero e o esqueleto para de brilhar.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ ÍCONES ============================ -->
+<section class="sg-section" id="icones">
+  <h2>Ícones</h2>
+  <p class="lede">Lucide (ISC), traço de 1,75 px, via sprite local <code>public/icons/sprite.svg</code>. Sem fonte de ícones e sem requisição externa. O tamanho vem de <code>.icon</code>, <code>.icon--sm</code>, <code>.icon--lg</code>.</p>
+  <div class="sg-icons" id="icon-grid"></div>
+</section>
+
+<!-- ============================ AÇÕES ============================ -->
+<section class="sg-section" id="acoes">
+  <h2>Ações e navegação</h2>
+  <div class="sg-block"><h3>Botões: padrão, hover, foco, ativo, desabilitado, carregando</h3>
+    <div class="sg-panel stack stack--6">
+      <div class="sg-row"><b class="t-ui" style="width:6rem">Primário</b>
+        <button class="btn btn--primary">{{i:plus:sm}}Novo cuidador</button>
+        <button class="btn btn--primary sg-force-hover">Hover</button>
+        <button class="btn btn--primary sg-force-focus">Foco</button>
+        <button class="btn btn--primary sg-force-active">Ativo</button>
+        <button class="btn btn--primary" disabled>Desabilitado</button>
+        <button class="btn btn--primary" aria-busy="true">Salvando</button>
+      </div>
+      <div class="sg-row"><b class="t-ui" style="width:6rem">Secundário</b>
+        <button class="btn">{{i:download:sm}}Exportar CSV</button>
+        <button class="btn sg-force-hover">Hover</button>
+        <button class="btn sg-force-focus">Foco</button>
+        <button class="btn" disabled>Desabilitado</button>
+        <button class="btn" aria-busy="true">Carregando</button>
+      </div>
+      <div class="sg-row"><b class="t-ui" style="width:6rem">Suave e fantasma</b>
+        <button class="btn btn--soft">Ver histórico</button>
+        <button class="btn btn--ghost">Cancelar</button>
+        <button class="btn btn--ghost btn--icon" aria-label="Mais ações">{{i:ellipsis}}</button>
+        <button class="btn btn--sm">Pequeno (32 px, 44 em toque)</button>
+        <button class="btn btn--lg btn--primary">Grande</button>
+      </div>
+      <div class="sg-row"><b class="t-ui" style="width:6rem">Perigo</b>
+        <button class="btn btn--danger">{{i:trash-2:sm}}Eliminar dados</button>
+        <button class="btn btn--danger-quiet">Encerrar cadastro</button>
+        <button class="btn btn--danger" disabled>Desabilitado</button>
+        <a class="btn-link" href="#acoes">Link de texto</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="sg-2col sg-block">
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Abas (a aba atual leva a linha dourada)</h3>
+      <div class="sg-panel">
+        <div class="tabs" role="tablist" aria-label="Perfil do cuidador" id="demo-tabs">
+          <button class="tab" role="tab" aria-selected="true">Resumo</button>
+          <button class="tab" role="tab" aria-selected="false">Pessoa idosa</button>
+          <button class="tab" role="tab" aria-selected="false">Plano e cartão <span class="badge badge--count">2</span></button>
+          <button class="tab" role="tab" aria-selected="false">Consentimentos</button>
+          <button class="tab" role="tab" aria-disabled="true" disabled>Acompanhamento</button>
+        </div>
+        <div class="tab-panel" role="tabpanel"><p class="t-muted">Conteúdo da aba selecionada. A aba "Acompanhamento" aparece desabilitada para quem não tem acesso clínico.</p></div>
+      </div>
+    </div>
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Segmentado, breadcrumb, paginação</h3>
+      <div class="sg-panel stack stack--6">
+        <div class="sg-row">
+          <div class="segmented" role="group" aria-label="Visão da agenda"><button class="segmented__btn" aria-pressed="true">Semana</button><button class="segmented__btn" aria-pressed="false">Mês</button></div>
+          <div class="segmented" role="group" aria-label="Densidade"><button class="segmented__btn" aria-pressed="false" aria-label="Compacta">{{i:layout-list:sm}}Compacta</button><button class="segmented__btn" aria-pressed="true">{{i:table:sm}}Confortável</button></div>
+        </div>
+        <nav aria-label="Você está em"><ol class="breadcrumb"><li><a href="#acoes">Cuidadores</a></li><li><a href="#acoes">CUI-0042</a></li><li aria-current="page">Acompanhamento</li></ol></nav>
+        <div class="pagination"><span>Mostrando 1 a 10 de 340</span><div class="pagination__pages"><button class="pagination__page" disabled aria-label="Anterior">{{i:chevron-left:sm}}</button><button class="pagination__page" aria-current="page">1</button><button class="pagination__page">2</button><button class="pagination__page">3</button><span class="t-muted">…</span><button class="pagination__page">34</button><button class="pagination__page" aria-label="Próxima">{{i:chevron-right:sm}}</button></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sg-block"><h3>Menu do usuário</h3>
+    <div class="sg-panel sg-panel--canvas" style="min-height:17rem">
+      <div class="menu" style="max-width:17rem" role="menu">
+        <div class="menu__header"><strong>Dra. Cecília Montenegro</strong><span>Responsável técnica · CRP-04/00001 (fictício)</span></div>
+        <a class="menu__item" role="menuitem" href="#acoes">{{i:user}}Meu perfil</a>
+        <button class="menu__item" role="menuitemradio" aria-checked="false">{{i:moon}}Tema escuro</button>
+        <a class="menu__item" role="menuitem" href="#acoes">{{i:database}}Meus dados no navegador</a>
+        <div class="menu__sep"></div>
+        <button class="menu__item menu__item--danger" role="menuitem">{{i:log-out}}Sair e trocar de perfil</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ FORMULÁRIOS ============================ -->
+<section class="sg-section" id="formularios">
+  <h2>Formulários</h2>
+  <p class="lede">Rótulo sempre visível, dica antes do campo, erro logo abaixo com ícone e texto (mensagem igual no resumo do topo). Campos de 44 px; texto de 16 px.</p>
+  <div class="sg-panel">
+    <div class="form-grid">
+      <div class="field"><label class="field__label" for="f1">Nome completo</label><input class="input" id="f1" value="Ana Paula Ferraz" autocomplete="off"></div>
+      <div class="field"><label class="field__label" for="f2">Data de nascimento <span class="field__opt">(obrigatório)</span></label><span class="field__hint" id="f2h">Formato dd/mm/aaaa. Maior de 18 anos.</span><input class="input" id="f2" placeholder="dd/mm/aaaa" inputmode="numeric" aria-describedby="f2h"></div>
+      <div class="field"><label class="field__label" for="f3">CPF fictício</label><span class="field__hint" id="f3h">Use um CPF fictício. O sistema rejeita números válidos.</span>
+        <input class="input" id="f3" value="123.456.789-10" aria-invalid="true" aria-describedby="f3h f3e"><span class="field__error" id="f3e">{{i:circle-alert}}<span><span class="sr-only">Erro: </span>Parece um CPF real. Use um CPF fictício.</span></span></div>
+      <div class="field"><label class="field__label" for="f4">E-mail</label><div class="input-wrap">{{i:mail}}<input class="input" id="f4" value="ana.ferraz@exemplo.com.br"></div></div>
+      <div class="field"><label class="field__label" for="f5">Cidade</label><select class="select" id="f5"><option>Uberlândia</option><option>Uberaba</option><option>Araguari</option></select></div>
+      <div class="field"><label class="field__label" for="f6">Horas diárias de cuidado</label><input class="input input--num" id="f6" value="11" inputmode="numeric"></div>
+      <div class="field"><label class="field__label" for="f7">Campo desabilitado</label><input class="input" id="f7" value="Gerado pelo sistema" disabled></div>
+      <div class="field"><label class="field__label" for="f8">Somente leitura</label><input class="input" id="f8" value="CUI-0042" readonly></div>
+      <div class="field span-2"><label class="field__label" for="f9">Observação administrativa</label><span class="field__hint">Não registre informação de saúde aqui.</span><textarea class="textarea" id="f9" placeholder="Escreva aqui"></textarea></div>
+      <div class="field"><span class="field__label">Foco no campo</span><input class="input sg-inline-input-focus" value="Campo com foco" aria-label="Exemplo de foco"></div>
+    </div>
+  </div>
+
+  <div class="sg-2col sg-block">
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Seleção, opção única e interruptor</h3>
+    <div class="sg-panel stack stack--2">
+      <label class="check"><input type="checkbox" checked><span>Consentimento de dados de saúde<small>Versão 2 · aceito em 12/10/2026</small></span></label>
+      <label class="check"><input type="checkbox"><span>Compartilhar com familiares</span></label>
+      <label class="check"><input type="checkbox" id="indet"><span>Estado misto (marcar todos)</span></label>
+      <label class="check"><input type="checkbox" disabled><span>Desabilitado</span></label>
+      <fieldset><legend class="field__label" style="margin:var(--space-2) 0">Modalidade da sessão</legend>
+        <label class="radio"><input type="radio" name="mod" checked><span>On-line</span></label>
+        <label class="radio"><input type="radio" name="mod"><span>Presencial no coworking</span></label>
+        <label class="radio"><input type="radio" name="mod"><span>Em domicílio</span></label></fieldset>
+      <label class="switch"><input type="checkbox" role="switch" checked><span>Contato por WhatsApp</span></label>
+      <label class="switch"><input type="checkbox" role="switch"><span>Participar do piloto (TCLE)</span></label>
+    </div></div>
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Dado sensível: mascarado, revelado e pseudonimizado</h3>
+    <div class="sg-panel stack stack--3">
+      <dl class="dl">
+        <dt>CPF</dt><dd><span class="masked" data-state="hidden"><span class="masked__value" aria-label="CPF oculto">***.***.***-**</span><button class="masked__toggle" aria-label="Mostrar CPF (pede justificativa)">{{i:eye}}<span>Mostrar</span></button></span></dd>
+        <dt>Telefone</dt><dd><span class="masked" data-state="hidden"><span aria-label="Telefone oculto">(34) 9****-0123</span><button class="masked__toggle" aria-label="Mostrar telefone">{{i:eye}}<span>Mostrar</span></button></span></dd>
+        <dt>E-mail revelado</dt><dd><span class="masked" data-state="revealed"><span>ana.ferraz@exemplo.com.br</span><button class="masked__toggle" aria-label="Ocultar e-mail">{{i:eye-off}}<span>Ocultar</span></button></span> <span class="t-caption">registrado no log</span></dd>
+        <dt>Visão da gestão</dt><dd><span class="code-chip">{{i:shield-check}}CUI-0042</span> <span class="t-caption">sem nome, sem contato</span></dd>
+      </dl>
+    </div></div>
+  </div>
+
+  <div class="sg-block"><h3>Resumo de erros (topo do formulário)</h3>
+    <div class="error-summary" role="alert" tabindex="-1"><h2>{{i:circle-alert}}Há 2 pontos para corrigir</h2><ul><li><a href="#f2">Informe a data de nascimento</a></li><li><a href="#f3">Parece um CPF real. Use um CPF fictício.</a></li></ul></div>
+  </div>
+
+  <div class="sg-block"><h3>Consentimento LGPD (linha com histórico)</h3>
+    <div class="list-card">
+      <div class="consent"><div><h4>Dados de saúde</h4><p>Versão 2 · concedido em 12/10/2026 · canal: aplicativo</p></div><div class="cluster"><span class="badge badge--success badge--dot">Ativo</span><label class="switch"><input type="checkbox" role="switch" checked aria-label="Dados de saúde"></label></div></div>
+      <div class="consent"><div><h4>Imagem e depoimento</h4><p>Versão 1 · revogado em 28/10/2026</p></div><div class="cluster"><span class="badge badge--danger badge--dot">Revogado</span><label class="switch"><input type="checkbox" role="switch" aria-label="Imagem e depoimento"></label></div></div>
+      <div class="consent"><div><h4>Compartilhar com familiares</h4><p>Versão 1 · recusado em 12/10/2026 · nenhum compartilhamento</p></div><div class="cluster"><span class="badge badge--outline badge--dot">Recusado</span><label class="switch"><input type="checkbox" role="switch" aria-label="Compartilhar com familiares"></label></div></div>
+      <div class="consent"><div><h4>Contato por WhatsApp</h4><p>Versão 1 · ainda não respondido</p></div><div class="cluster"><span class="badge badge--attention badge--dot">Pendente</span><label class="switch"><input type="checkbox" role="switch" aria-label="WhatsApp"></label></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ DADOS ============================ -->
+<section class="sg-section" id="dados">
+  <h2>Dados</h2>
+  <div class="sg-block"><h3>Faixa de KPIs com sparkline</h3>
+    <div class="kpi-strip">
+      <div class="kpi"><span class="kpi__label">Assinantes</span><span class="kpi__value">17</span><span class="kpi__meta"><span class="kpi__delta kpi__delta--good">{{i:trending-up}}+2</span> desde outubro</span><svg class="spark kpi__spark" viewBox="0 0 104 32" aria-hidden="true"><path d="M2 26 L18 22 L34 24 L50 16 L66 18 L82 9 L100 6"/><circle cx="100" cy="6" r="2.5"/></svg></div>
+      <div class="kpi"><span class="kpi__label">Conversão</span><span class="kpi__value t-num">5,0<small>%</small></span><span class="kpi__meta">Metas: 3%, 5% e 7%</span></div>
+      <div class="kpi"><span class="kpi__label">Resultado do mês</span><span class="kpi__value t-num">-R$&nbsp;843,51</span><span class="kpi__meta"><span class="kpi__delta kpi__delta--good">{{i:trending-up}}+R$ 310</span> sobre o mês anterior</span></div>
+      <a class="kpi" href="#dados"><span class="kpi__label">Faltam para o equilíbrio</span><span class="kpi__value">10<small>assinantes</small></span><div class="meter" style="margin-top:var(--space-2)"><div class="meter__track"><span class="meter__fill" style="--value:63%"></span></div></div><span class="kpi__meta">17 de 27</span></a>
+    </div>
+  </div>
+
+  <div class="sg-block"><h3>Tabela: ordenação, seleção, densidade, filtros em chips</h3>
+    <div class="table-toolbar">
+      <div class="input-wrap">{{i:search}}<input class="input input--sm" aria-label="Buscar cuidador" placeholder="Buscar por código ou nome"></div>
+      <div class="chip-group" role="group" aria-label="Filtrar por plano">
+        <button class="chip" aria-pressed="true">Todos <span class="chip__count">340</span></button>
+        <button class="chip" aria-pressed="false">Livre <span class="chip__count">323</span></button>
+        <button class="chip" aria-pressed="false">Essencial <span class="chip__count">7</span></button>
+        <button class="chip" aria-pressed="false">Cuida <span class="chip__count">5</span></button>
+        <button class="chip" aria-pressed="false">Sustenta <span class="chip__count">5</span></button>
+      </div>
+      <div class="toolbar-end">
+        <div class="segmented" role="group" aria-label="Densidade" id="density"><button class="segmented__btn" aria-pressed="false">Compacta</button><button class="segmented__btn" aria-pressed="true">Confortável</button></div>
+        <button class="btn btn--sm">{{i:download:sm}}CSV</button>
+      </div>
+    </div>
+    <div class="selection-bar" id="sel-bar" hidden><span id="sel-count">2 selecionados</span><div class="cluster"><button class="btn btn--sm">Atribuir psicólogo</button><button class="btn btn--sm btn--ghost">Limpar seleção</button></div></div>
+    <div class="table-wrap">
+      <table class="table table--stack" id="demo-table" data-density="comfortable">
+        <caption class="sr-only">Cuidadores cadastrados</caption>
+        <thead><tr>
+          <th class="col-select"><label class="check" style="padding:0 0 0 var(--space-4)"><input type="checkbox" id="sel-all" aria-label="Selecionar todos"></label></th>
+          <th aria-sort="ascending"><button class="th-sort" data-col="1">Cuidador {{i:arrow-up}}</button></th>
+          <th aria-sort="none"><button class="th-sort" data-col="2">Plano {{i:chevrons-up-down}}</button></th>
+          <th aria-sort="none"><button class="th-sort" data-col="3">Status {{i:chevrons-up-down}}</button></th>
+          <th>Escala de Zarit</th>
+          <th class="col-num" aria-sort="none"><button class="th-sort" data-col="5">Horas/dia {{i:chevrons-up-down}}</button></th>
+          <th class="col-actions"><span class="sr-only">Ações</span></th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="col-select" data-label="Selecionar"><label class="check" style="padding:0 0 0 var(--space-4)"><input type="checkbox" aria-label="Selecionar CUI-0042"></label></td><td data-label="Cuidador"><a class="row-link" href="#dados">Ana Paula Ferraz</a> <span class="code-chip" style="margin-left:var(--space-2)">CUI-0042</span></td><td data-label="Plano"><span class="badge badge--plan-cuida badge--dot">Cuida</span></td><td data-label="Status"><span class="badge badge--success badge--dot">Ativo</span></td><td data-label="Escala de Zarit"><span class="badge badge--plan-livre">Em dia · próx. 12/01/2027</span></td><td class="col-num" data-label="Horas/dia">11</td><td class="col-actions"><button class="btn btn--ghost btn--icon btn--sm" aria-label="Mais ações">{{i:ellipsis}}</button></td></tr>
+          <tr><td class="col-select" data-label="Selecionar"><label class="check" style="padding:0 0 0 var(--space-4)"><input type="checkbox" aria-label="Selecionar CUI-0043"></label></td><td data-label="Cuidador"><a class="row-link" href="#dados">João Batista Carneiro</a> <span class="code-chip" style="margin-left:var(--space-2)">CUI-0043</span></td><td data-label="Plano"><span class="badge badge--plan-sustenta badge--dot">Sustenta</span></td><td data-label="Status"><span class="badge badge--success badge--dot">Ativo</span></td><td data-label="Escala de Zarit"><span class="badge badge--attention">{{i:clock}}Pendente · venceu 02/11</span></td><td class="col-num" data-label="Horas/dia">9</td><td class="col-actions"><button class="btn btn--ghost btn--icon btn--sm" aria-label="Mais ações">{{i:ellipsis}}</button></td></tr>
+          <tr><td class="col-select" data-label="Selecionar"><label class="check" style="padding:0 0 0 var(--space-4)"><input type="checkbox" aria-label="Selecionar CUI-0044"></label></td><td data-label="Cuidador"><a class="row-link" href="#dados">Maria Aparecida Lemos</a> <span class="code-chip" style="margin-left:var(--space-2)">CUI-0044</span></td><td data-label="Plano"><span class="badge badge--plan-livre badge--dot">Livre</span></td><td data-label="Status"><span class="badge badge--attention badge--dot">Consentimento pausado</span></td><td data-label="Escala de Zarit"><span class="badge badge--plan-livre">Sem consentimento</span></td><td class="col-num" data-label="Horas/dia">6</td><td class="col-actions"><button class="btn btn--ghost btn--icon btn--sm" aria-label="Mais ações">{{i:ellipsis}}</button></td></tr>
+          <tr><td class="col-select" data-label="Selecionar"><label class="check" style="padding:0 0 0 var(--space-4)"><input type="checkbox" aria-label="Selecionar CUI-0045"></label></td><td data-label="Cuidador"><a class="row-link" href="#dados">Lúcia Helena Arantes</a> <span class="code-chip" style="margin-left:var(--space-2)">CUI-0045</span></td><td data-label="Plano"><span class="badge badge--plan-essencial badge--dot">Essencial</span></td><td data-label="Status"><span class="badge badge--danger badge--dot">Encerramento pedido</span></td><td data-label="Escala de Zarit"><span class="badge badge--plan-livre">Em dia · próx. 20/12/2026</span></td><td class="col-num" data-label="Horas/dia">4</td><td class="col-actions"><button class="btn btn--ghost btn--icon btn--sm" aria-label="Mais ações">{{i:ellipsis}}</button></td></tr>
+          <tr><td class="col-select" data-label="Selecionar"><label class="check" style="padding:0 0 0 var(--space-4)"><input type="checkbox" aria-label="Selecionar CUI-0046"></label></td><td data-label="Cuidador"><a class="row-link" href="#dados">Rogério Tavares Neto</a> <span class="code-chip" style="margin-left:var(--space-2)">CUI-0046</span></td><td data-label="Plano"><span class="badge badge--plan-essencial badge--dot">Essencial</span></td><td data-label="Status"><span class="badge badge--success badge--dot">Ativo</span></td><td data-label="Escala de Zarit"><span class="badge badge--plan-livre">Em dia · próx. 03/02/2027</span></td><td class="col-num" data-label="Horas/dia">8</td><td class="col-actions"><button class="btn btn--ghost btn--icon btn--sm" aria-label="Mais ações">{{i:ellipsis}}</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer"><span>5 de 340 cuidadores</span><div class="pagination__pages"><button class="pagination__page" disabled aria-label="Anterior">{{i:chevron-left:sm}}</button><button class="pagination__page" aria-current="page">1</button><button class="pagination__page">2</button><button class="pagination__page" aria-label="Próxima">{{i:chevron-right:sm}}</button></div></div>
+    <p class="sg-cap">Abaixo de 768 px a tabela vira cartões (<code>.table--stack</code> + <code>data-label</code>). Em qualquer largura a rolagem horizontal fica dentro de <code>.table-wrap</code>.</p>
+  </div>
+
+  <div class="sg-2col sg-block">
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Selos: status, planos, rede (ARP)</h3>
+    <div class="sg-panel stack stack--3">
+      <div class="sg-row"><span class="badge badge--success badge--dot">Ativo</span><span class="badge badge--attention badge--dot">Em monitoramento</span><span class="badge badge--danger badge--dot">Suspenso</span><span class="badge badge--info badge--dot">Em análise</span><span class="badge badge--dot">Rascunho</span></div>
+      <div class="sg-row"><span class="badge badge--plan-livre badge--dot">Livre</span><span class="badge badge--plan-essencial badge--dot">Essencial</span><span class="badge badge--plan-cuida badge--dot">Cuida</span><span class="badge badge--plan-sustenta badge--dot">Sustenta</span></div>
+      <div class="sg-row"><span class="badge badge--success">{{i:award}}Em destaque</span><span class="badge badge--attention">{{i:triangle-alert}}Em acompanhamento</span><span class="badge badge--danger">{{i:ban}}Descredenciamento</span><span class="badge badge--gold">{{i:star}}Excelência</span><span class="badge badge--plan-livre">Sem média (4 avaliações)</span></div>
+      <div class="sg-row"><span class="badge badge--attention badge--lg">{{i:triangle-alert}}Risco de saída</span><span class="badge badge--outline">Parcial</span><span class="badge badge--info">{{i:gauge}}Agenda acima de 80%</span></div>
+    </div></div>
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Avatares, chips removíveis, caixa de entrada</h3>
+    <div class="sg-panel stack stack--6">
+      <div class="sg-row"><span class="avatar avatar--sm">HP</span><span class="avatar">RM</span><span class="avatar avatar--lg">BN</span><span class="avatar avatar--gold">EF</span><span class="avatar-group"><span class="avatar avatar--sm">CD</span><span class="avatar avatar--sm">WL</span><span class="avatar avatar--sm">+2</span></span></div>
+      <div class="chip-group"><span class="chip chip--removable">Plano Cuida <button class="chip__remove" aria-label="Remover filtro Plano Cuida">{{i:x}}</button></span><span class="chip chip--removable">Uberlândia <button class="chip__remove" aria-label="Remover filtro Uberlândia">{{i:x}}</button></span><button class="chip" disabled>Desabilitado</button></div>
+      <div class="list-card">
+        <button class="list-row list-row--unread" aria-current="true"><span class="avatar avatar--sm">AF</span><span><span class="list-row__title">Ana Paula Ferraz</span><span class="list-row__meta">Preciso remarcar a sessão de quinta</span></span><span class="badge badge--danger">{{i:clock}}atrasada 2 h</span></button>
+        <button class="list-row"><span class="avatar avatar--sm">JB</span><span><span class="list-row__title">João Batista Carneiro</span><span class="list-row__meta">Obrigado pelo retorno!</span></span><span class="t-caption">há 1 h</span></button>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="sg-block"><h3>Cartões de plano (Figura 1) e cartão comum</h3>
+    <div class="grid grid--4">
+      <article class="plan-card"><div class="plan-card__head">Nexus Livre</div><div class="plan-card__price">R$ 0<small>GRATUITO</small></div><ul class="plan-card__list"><li>{{i:check}}Acesso ao aplicativo</li><li>{{i:check}}Organização básica</li><li>{{i:check}}Agenda e lembretes</li></ul></article>
+      <article class="plan-card plan-card--essencial"><div class="plan-card__head">Essencial</div><div class="plan-card__price">R$ 49,90<small>POR MÊS</small></div><ul class="plan-card__list"><li>{{i:check}}Organização ampliada</li><li>{{i:check}}Descontos do Cartão Nexus</li><li>{{i:check}}Conteúdos exclusivos</li></ul></article>
+      <article class="plan-card plan-card--cuida"><div class="plan-card__head">Cuida</div><div class="plan-card__price">R$ 119,90<small>POR MÊS</small></div><ul class="plan-card__list"><li>{{i:check}}Maior suporte à organização</li><li>{{i:check}}Grupos de apoio</li><li>{{i:check}}Capacitações</li></ul></article>
+      <article class="plan-card plan-card--sustenta"><div class="plan-card__head">Sustenta</div><div class="plan-card__price">R$ 149,90<small>POR MÊS</small></div><ul class="plan-card__list"><li>{{i:check}}Acompanhamento mais próximo</li><li>{{i:check}}Maior nível de suporte</li><li>{{i:check}}Benefícios diferenciados</li></ul></article>
+    </div>
+    <div class="grid grid--3" style="margin-top:var(--space-4)">
+      <article class="card card--interactive"><div class="card__header"><div><h3 class="card__title">Resumo do mês</h3><p class="card__sub">Atualizado hoje, 09:12</p></div><button class="btn btn--ghost btn--icon btn--sm" aria-label="Mais ações">{{i:ellipsis}}</button></div><div class="card__body"><p class="t-muted">Cartão com cabeçalho, corpo e rodapé. Em hover ganha sombra 2; com foco interno, a borda fica azul.</p></div><div class="card__footer"><a class="btn-link" href="#dados">Ver detalhes</a></div></article>
+      <article class="card card--pad card--sunken"><h3 class="card__title">Cartão rebaixado</h3><p class="t-muted" style="margin-top:var(--space-2)">Para agrupar conteúdo dentro de outro cartão, sem aninhar bordas.</p></article>
+      <article class="card card--pad card--raised"><h3 class="card__title">Cartão elevado</h3><p class="t-muted" style="margin-top:var(--space-2)">Só para o que precisa se destacar do restante da página.</p></article>
+    </div>
+  </div>
+
+  <div class="sg-2col sg-block">
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Linha do tempo</h3>
+    <div class="sg-panel"><ol class="timeline">
+      <li class="timeline__item timeline__item--danger"><span class="timeline__dot"></span><div><span class="timeline__time">03/11/2026 · 16:40</span><p class="timeline__title">Escala aplicada: 79 pontos</p><p class="timeline__text">Alerta vermelho aberto. Prazo de contato: 23:59.</p></div></li>
+      <li class="timeline__item timeline__item--done"><span class="timeline__dot"></span><div><span class="timeline__time">03/11/2026 · 16:55</span><p class="timeline__title">Contato registrado</p><p class="timeline__text">Dra. Beatriz Nogueira, por telefone.</p></div></li>
+      <li class="timeline__item timeline__item--gold"><span class="timeline__dot"></span><div><span class="timeline__time">04/11/2026 · 09:10</span><p class="timeline__title">Encaminhamento criado</p><p class="timeline__text">Rede de apoio municipal.</p></div></li>
+      <li class="timeline__item"><span class="timeline__dot"></span><div><span class="timeline__time">Próximo passo</span><p class="timeline__title">Revisão em 7 dias</p></div></li>
+    </ol></div></div>
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Checklist de credenciamento (5 critérios)</h3>
+    <div class="sg-panel"><ul class="checklist">
+      <li class="checklist__item" data-state="ok">{{i:circle-check}}<div><p class="checklist__title">Registro ativo no conselho</p><p class="checklist__text">CRO-MG 00000 (fictício) · válido até 30/06/2027</p></div><span class="badge badge--success">Cumprido</span></li>
+      <li class="checklist__item" data-state="ok">{{i:circle-check}}<div><p class="checklist__title">Comprovação de formação</p></div><span class="badge badge--success">Cumprido</span></li>
+      <li class="checklist__item" data-state="fail">{{i:circle-alert}}<div><p class="checklist__title">Documento dentro da validade</p><p class="checklist__text">CREFITO vencido em 15/09/2026. Peça um novo anexo.</p></div><span class="badge badge--danger">Vencido</span></li>
+      <li class="checklist__item" data-state="pending">{{i:clock}}<div><p class="checklist__title">Integração concluída</p><p class="checklist__text">Ciência dos POPs ainda não registrada.</p></div><span class="badge badge--attention">Pendente</span></li>
+      <li class="checklist__item" data-state="na">{{i:circle-dashed}}<div><p class="checklist__title">Registro em conselho de classe</p><p class="checklist__text">Não se aplica a esta categoria.</p></div><span class="badge">N/A</span></li>
+    </ul>
+    <div class="cluster" style="margin-top:var(--space-4)"><button class="btn btn--primary" disabled>Aprovar credenciamento</button><span class="t-caption">Faltam 2 critérios para aprovar.</span></div></div></div>
+  </div>
+
+  <div class="sg-block"><h3>Kanban simples (credenciamento por estado)</h3>
+    <div class="kanban">
+      <div class="kanban__col"><button class="kanban__head" aria-expanded="true"><span>Solicitado </span><span class="cluster"><span class="badge badge--count">1</span><span class="kanban__chevron">{{i:chevron-down:sm}}</span></span></button><div class="kanban__card"><strong>Dra. Sônia Peixoto</strong><span class="t-caption">Odontologia · CRO fictício</span><span class="badge badge--info">{{i:clock}}há 2 dias</span></div></div>
+      <div class="kanban__col"><button class="kanban__head" aria-expanded="true"><span>Em análise </span><span class="cluster"><span class="badge badge--count">1</span><span class="kanban__chevron">{{i:chevron-down:sm}}</span></span></button><div class="kanban__card"><strong>Fisio em Casa Uberlândia</strong><span class="t-caption">Fisioterapia · domiciliar</span><div class="progress"><span class="progress__bar" style="--value:60%"></span></div><span class="t-caption">3 de 5 critérios</span></div></div>
+      <div class="kanban__col"><button class="kanban__head" aria-expanded="true"><span>Documentos pendentes </span><span class="cluster"><span class="badge badge--count">1</span><span class="kanban__chevron">{{i:chevron-down:sm}}</span></span></button><div class="kanban__card"><strong>Candidata a fisioterapeuta</strong><span class="t-caption">CREFITO vencido</span><span class="badge badge--danger">{{i:triangle-alert}}Documento vencido</span></div></div>
+      <div class="kanban__col"><button class="kanban__head" aria-expanded="true"><span>Aprovado </span><span class="cluster"><span class="badge badge--count">0</span><span class="kanban__chevron">{{i:chevron-down:sm}}</span></span></button><div class="kanban__empty">Nenhum processo aqui.</div></div>
+      <div class="kanban__col"><button class="kanban__head" aria-expanded="true"><span>Reprovado </span><span class="cluster"><span class="badge badge--count">0</span><span class="kanban__chevron">{{i:chevron-down:sm}}</span></span></button><div class="kanban__empty">Nenhum processo aqui.</div></div>
+    </div>
+  </div>
+
+  <div class="sg-block"><h3>Agenda semanal do psicólogo (cada vaga tem ícone e texto, não só cor)</h3>
+    <div class="agenda-legend" style="margin-bottom:var(--space-3)">
+      <span>{{i:circle-dashed:sm}}Vaga aberta</span><span>{{i:user:sm}}Reservada</span><span>{{i:circle-check:sm}}Confirmada</span><span>{{i:star:sm}}Prioritária</span><span>{{i:ban:sm}}Bloqueada</span><span>{{i:check:sm}}Realizada</span><span>{{i:circle-alert:sm}}Falta</span>
+    </div>
+    <div class="agenda" id="agenda" role="grid" aria-label="Agenda da semana de 02 a 06 de novembro"></div>
+  </div>
+</section>
+
+<!-- ============================ GRÁFICOS ============================ -->
+<section class="sg-section" id="graficos">
+  <h2>Gráficos</h2>
+  <p class="lede">SVG feito à mão, sem biblioteca. Cada gráfico tem tabela alternativa, legenda que muda de forma e cores só por tokens. Abaixo de 34 rem o gráfico rola dentro do cartão.</p>
+  <div class="sg-2col">
+    <article class="card"><div class="card__header"><div><h3 class="card__title">Resultado mensal</h3><p class="card__sub">Projeção de 12 meses, cenário 5%</p></div></div><div class="card__body chart"><div class="chart__scroll"><svg class="chart__svg" id="ch-bars" viewBox="0 0 560 230" role="img" aria-label="Barras do resultado mensal: prejuízo nos primeiros meses, lucro a partir do mês 8"></svg></div>
+      <ul class="legend"><li class="legend__item" style="--sw:var(--chart-pos)">Resultado positivo</li><li class="legend__item" style="--sw:var(--chart-neg)">Resultado negativo</li></ul>
+      <details class="chart-alt"><summary>{{i:table:sm}}Ver como tabela</summary><p class="t-muted t-ui" style="margin-top:var(--space-2)">Mês, resultado e saldo em uma tabela acessível (mesmo componente <code>.table</code>).</p></details></div></article>
+    <article class="card"><div class="card__header"><div><h3 class="card__title">Assinantes por plano</h3><p class="card__sub">17 assinaturas pagas</p></div></div><div class="card__body" style="display:flex;flex-wrap:wrap;gap:var(--space-6);align-items:center">
+      <div class="donut" role="img" aria-label="Rosca: 7 Essencial, 5 Cuida, 5 Sustenta"><svg viewBox="0 0 36 36" id="donut-svg"></svg><div class="donut__center"><strong>17</strong><span>assinantes</span></div></div>
+      <ul class="legend" style="flex-direction:column;gap:var(--space-3)"><li class="legend__item" style="--sw:var(--plan-essencial)">Essencial · 7 · 41,2%</li><li class="legend__item" style="--sw:var(--plan-cuida)">Cuida · 5 · 29,4%</li><li class="legend__item" style="--sw:var(--accent-brand)">Sustenta · 5 · 29,4%</li></ul></div></article>
+  </div>
+  <div class="sg-2col sg-block">
+    <article class="card"><div class="card__header"><div><h3 class="card__title">Ocupação da agenda (mês anterior)</h3><p class="card__sub">A linha dourada marca 80%</p></div></div><div class="card__body occ">
+      <div class="occ__row"><span class="occ__name">Dr. Rafael Moreira</span><div class="occ__track"><span class="occ__fill occ__fill--over" style="--v:91.3%"></span><span class="occ__limit"></span></div><span class="occ__value">91,3%</span></div>
+      <div class="occ__row"><span class="occ__name">Dra. Letícia Amaral</span><div class="occ__track"><span class="occ__fill" style="--v:80%"></span><span class="occ__limit"></span></div><span class="occ__value">80,0%</span></div>
+      <div class="occ__row"><span class="occ__name">Dra. Beatriz Nogueira</span><div class="occ__track"><span class="occ__fill" style="--v:70%"></span><span class="occ__limit"></span></div><span class="occ__value">70,0%</span></div>
+      <div class="occ__row"><span class="occ__name">Dr. Tiago Brandão</span><div class="occ__track"><span class="occ__fill" style="--v:50%"></span><span class="occ__limit"></span></div><span class="occ__value">50,0%</span></div>
+      <p class="t-caption">{{i:triangle-alert:sm}} Dr. Rafael: acima de 80% por dois meses seguidos.</p></div></article>
+    <article class="card"><div class="card__header"><div><h3 class="card__title">Matriz de risco 5 × 5</h3><p class="card__sub">Cada célula mostra P × I</p></div></div><div class="card__body" id="heat-host"></div></article>
+  </div>
+  <div class="sg-block"><h3>Linha, área, sparkline, progresso e medidor</h3>
+    <div class="sg-2col">
+      <article class="card"><div class="card__header"><div><h3 class="card__title">Saldo acumulado</h3><p class="card__sub">A linha pontilhada marca o retorno do investimento</p></div></div><div class="card__body chart"><div class="chart__scroll"><svg class="chart__svg" id="ch-saldo" viewBox="0 0 560 200" role="img" aria-label="Saldo acumulado em 12 meses: cai até menos 25.485 reais no mês 7 e volta a subir, ainda negativo no mês 12"></svg></div><ul class="legend"><li class="legend__item legend__item--line" style="--sw:var(--chart-1)">Saldo acumulado</li><li class="legend__item legend__item--dash">Saldo zero (retorno)</li></ul></div></article>
+      <article class="card"><div class="card__header"><h3 class="card__title">Evolução média da sobrecarga</h3><span class="badge badge--success">{{i:trending-down}}-21,2%</span></div><div class="card__body chart"><div class="chart__scroll"><svg class="chart__svg" id="ch-line" viewBox="0 0 560 200" role="img" aria-label="Evolução da média de pontuação ao longo de quatro aplicações"></svg></div></div></article>
+    </div>
+    <div class="sg-2col" style="margin-top:var(--space-4)">
+      <div class="sg-panel stack stack--6">
+        <div class="sg-row"><svg class="spark" viewBox="0 0 104 32"><path d="M2 26 L18 22 L34 24 L50 16 L66 18 L82 9 L100 6"/><circle cx="100" cy="6" r="2.5"/></svg><svg class="spark spark--gold" viewBox="0 0 104 32"><path d="M2 8 L18 12 L34 10 L50 18 L66 16 L82 22 L100 24"/><circle cx="100" cy="24" r="2.5"/></svg><span class="t-caption">sparklines (6,5 × 2 rem)</span></div>
+        <div class="stack stack--2"><div class="cluster cluster--between t-ui"><span>Aplicação em andamento</span><b class="t-num">7 de 22</b></div><div class="progress progress--lg" role="progressbar" aria-valuenow="7" aria-valuemin="0" aria-valuemax="22" aria-label="Progresso da aplicação"><span class="progress__bar" style="--value:31.8%"></span></div></div>
+        <div class="stack stack--2"><div class="cluster cluster--between t-ui"><span>Ponto de equilíbrio</span><b class="t-num">17 de 27 assinantes</b></div><div class="meter"><div class="meter__track" role="img" aria-label="17 de 27 assinantes; faltam 10"><span class="meter__fill" style="--value:63%"></span><span class="meter__target"></span></div><div class="meter__scale"><span>0</span><span><b>Faltam 10</b></span><span>Meta: 27</span></div></div></div>
+      </div>
+      <div class="stack stack--2"><p class="t-ui t-strong">Alternativa em tabela do gráfico de resultado mensal</p>
+        <div class="table-wrap"><table class="table" data-density="compact"><caption class="sr-only">Resultado e saldo por mês</caption><thead><tr><th>Mês</th><th class="col-num">Resultado</th><th class="col-num">Saldo acumulado</th></tr></thead><tbody>
+          <tr><td>Mês 1</td><td class="col-num">-R$ 2.355,00</td><td class="col-num">-R$ 19.555,00</td></tr>
+          <tr><td>Mês 6</td><td class="col-num">-R$ 450,00</td><td class="col-num">-R$ 25.395,00</td></tr>
+          <tr><td>Mês 8</td><td class="col-num">R$ 270,00</td><td class="col-num">-R$ 25.215,00</td></tr>
+          <tr><td>Mês 12</td><td class="col-num">R$ 1.420,00</td><td class="col-num">-R$ 21.085,00</td></tr></tbody></table></div></div>
+    </div>
+  </div>
+  <div class="sg-block"><h3>Termômetro da faixa do Zarit (marcador + faixa por extenso)</h3>
+    <div class="sg-2col" id="thermo-host"></div>
+  </div>
+</section>
+
+<!-- ============================ FEEDBACK ============================ -->
+<section class="sg-section" id="feedback">
+  <h2>Feedback e sobreposições</h2>
+  <div class="sg-2col">
+    <div class="stack">
+      <div class="banner" role="note">{{i:info}}<div class="banner__body"><p class="banner__title">Seus dados ficam só neste navegador</p><p class="banner__text">Nenhuma informação é enviada a servidor. Você pode apagar tudo em Configurações.</p></div></div>
+      <div class="banner banner--success" role="status">{{i:circle-check}}<div class="banner__body"><p class="banner__title">Contato registrado</p><p class="banner__text">O alerta passou para avaliação de risco.</p></div></div>
+      <div class="banner banner--attention" role="status">{{i:triangle-alert}}<div class="banner__body"><p class="banner__title">Documento vence em 12 dias</p><p class="banner__text">Peça ao profissional que envie o novo registro do conselho.</p><div class="banner__actions"><button class="btn btn--sm">Ver documento</button></div></div></div>
+      <div class="banner banner--danger" role="alert">{{i:octagon-alert}}<div class="banner__body"><p class="banner__title">Não foi possível salvar</p><p class="banner__text">O armazenamento do navegador está cheio. Libere espaço em Meus dados e tente de novo.</p></div></div>
+    </div>
+    <div class="stack">
+      <div class="deadline" role="timer" aria-label="Prazo de contato">{{i:clock:lg}}<div><div class="deadline__time">06h 42min</div><div class="deadline__label">para o contato de hoje, até 23h59</div></div></div>
+      <div class="banner banner--consent" data-static role="region" aria-label="Aviso de privacidade">{{i:shield-check}}<div class="banner__body"><p class="banner__title">Este é um protótipo de demonstração</p><p class="banner__text">Todos os dados são fictícios e ficam apenas neste navegador. Nada é enviado para fora.</p><div class="banner__actions"><button class="btn btn--primary btn--sm">Entendi</button><button class="btn btn--sm btn--ghost">Ver detalhes</button></div></div></div>
+      <div style="border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden"><div class="banner banner--prototype">{{i:info}}Protótipo de demonstração. Todos os dados são fictícios e ficam apenas neste navegador.</div></div>
+      <div class="sg-row"><button class="btn" data-toast="success">Toast de sucesso</button><button class="btn" data-toast="attention">Toast de atenção</button><button class="btn" data-toast="danger">Toast de erro</button></div>
+    </div>
+  </div>
+
+  <div class="sg-block"><h3>Diálogo de confirmação com efeito descrito, e gaveta lateral</h3>
+    <div class="sg-row"><button class="btn btn--danger-quiet" data-open="dlg">Abrir diálogo (destrutivo)</button><button class="btn" data-open="drw">Abrir gaveta</button></div>
+    <div class="sg-2col" style="margin-top:var(--space-4);align-items:start">
+      <div class="dialog dialog--static" role="dialog" aria-labelledby="sd-t">
+        <div class="dialog__header"><span class="dialog__icon dialog__icon--danger">{{i:trash-2:lg}}</span><h2 class="dialog__title" id="sd-t">Encerrar o cadastro?</h2></div>
+        <div class="dialog__body"><p>Isto inicia o encerramento de <strong>CUI-0042</strong>. Veja o que acontece:</p>
+          <ul class="effects"><li class="is-erase">{{i:trash-2}}<span>Serão eliminados: contatos, anotações administrativas e preferências.</span></li><li class="is-block">{{i:lock}}<span>Ficarão bloqueados, por obrigação de guarda: registros do atendimento psicológico.</span></li><li class="is-keep">{{i:shield-check}}<span>Continua registrado: o log de acesso.</span></li></ul></div>
+        <div class="dialog__footer"><button class="btn">Voltar</button><button class="btn btn--danger">Encerrar cadastro</button></div>
+      </div>
+      <aside class="drawer drawer--static" aria-label="Detalhe da solicitação">
+        <div class="drawer__header"><div><h2 class="drawer__title">Solicitação de acesso</h2><p class="t-caption">Recebida em 02/11/2026 · prazo 17/11/2026</p></div><button class="btn btn--ghost btn--icon" aria-label="Fechar">{{i:x}}</button></div>
+        <div class="drawer__body"><dl class="dl"><dt>Titular</dt><dd><span class="code-chip">{{i:shield-check}}CUI-0042</span></dd><dt>Tipo</dt><dd>Acesso aos dados</dd><dt>Dias restantes</dt><dd><span class="badge badge--attention">{{i:clock}}3 dias</span></dd></dl></div>
+        <div class="drawer__footer"><button class="btn">Cancelar</button><button class="btn btn--primary">Atender</button></div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="sg-2col sg-block">
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Estado vazio acolhedor</h3>
+      <div class="sg-panel"><div class="empty empty--compact">
+        <svg class="empty__art" viewBox="-18 3 156 98" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#nx-hands"/><circle class="art-soft" cx="60" cy="38" r="12" stroke-dasharray="3 4"/></svg>
+        <h3 class="empty__title">Nenhum alerta aberto por aqui</h3>
+        <p class="empty__text">Quando uma aplicação da escala indicar atenção, o caso aparece nesta fila para você acompanhar.</p>
+        <div class="empty__actions"><button class="btn btn--primary">Aplicar a escala</button><button class="btn">Ver histórico</button></div>
+      </div></div></div>
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Esqueleto de carregamento</h3>
+      <div class="sg-panel stack stack--6" aria-busy="true" aria-label="Carregando"><div class="cluster"><span class="skeleton skeleton--circle"></span><div class="stack stack--2" style="flex:1"><span class="skeleton skeleton--text" style="width:50%"></span><span class="skeleton skeleton--text skeleton--short"></span></div></div>
+        <span class="skeleton skeleton--title"></span><div class="stack stack--2"><span class="skeleton skeleton--text"></span><span class="skeleton skeleton--text"></span><span class="skeleton skeleton--text skeleton--short"></span></div><span class="skeleton skeleton--block"></span></div></div>
+  </div>
+<div class="sg-block"><h3>Painel de notificações, motivo de acesso e paleta de comandos</h3>
+    <div class="sg-2col" style="align-items:start">
+      <div class="popover" role="dialog" aria-label="Notificações"><div class="popover__header"><h3>Notificações</h3><button class="btn btn--sm btn--ghost">Marcar tudo como visto</button></div>
+        <div class="popover__body" style="padding:0;gap:0">
+          <button class="list-row list-row--unread"><span class="avatar avatar--sm">{{i:octagon-alert:sm}}</span><span><span class="list-row__title">Contato pendente: CUI-0042</span><span class="list-row__meta">Prazo hoje, 23h59</span></span><span class="t-caption">há 2 h</span></button>
+          <button class="list-row list-row--unread"><span class="avatar avatar--sm">{{i:clock:sm}}</span><span><span class="list-row__title">Solicitação do titular vence em 3 dias</span><span class="list-row__meta">Acesso aos dados · CUI-0051</span></span><span class="t-caption">ontem</span></button>
+          <button class="list-row"><span class="avatar avatar--sm">{{i:file-check:sm}}</span><span><span class="list-row__title">Documento enviado</span><span class="list-row__meta">Dr. Eduardo Falcão</span></span><span class="t-caption">02/11</span></button></div>
+        <div class="popover__footer"><a class="btn-link" href="#feedback">Ver todas</a></div></div>
+      <div class="popover" role="dialog" aria-labelledby="rp-t"><div class="popover__header"><h3 id="rp-t">Mostrar o CPF?</h3></div>
+        <div class="popover__body"><p class="t-ui t-muted">O acesso fica registrado no log com o motivo.</p>
+          <fieldset><legend class="sr-only">Motivo</legend><label class="radio"><input type="radio" name="rp" checked><span>Confirmar identidade no atendimento</span></label><label class="radio"><input type="radio" name="rp"><span>Corrigir cadastro</span></label><label class="radio"><input type="radio" name="rp"><span>Outro</span></label></fieldset>
+          <div class="field"><label class="field__label" for="rp-o">Descreva o motivo</label><input class="input input--sm" id="rp-o"></div></div>
+        <div class="popover__footer"><button class="btn btn--sm">Cancelar</button><button class="btn btn--sm btn--primary">Mostrar por 30 segundos</button></div></div>
+    </div>
+    <div class="dialog dialog--static cmdk" role="dialog" aria-label="Busca global" style="margin-top:var(--space-4)"><div class="cmdk__input"><div class="input-wrap">{{i:search}}<input class="input" value="Ana" aria-label="Buscar"></div></div>
+      <div class="cmdk__list"><p class="cmdk__group">Cuidadores</p><button class="cmdk__item" aria-selected="true">{{i:user}}Ana Paula Ferraz<span class="code-chip" style="margin-left:auto">CUI-0042</span></button><button class="cmdk__item">{{i:user}}Ana Lúcia Teixeira<span class="code-chip" style="margin-left:auto">CUI-0107</span></button><p class="cmdk__group">Ir para</p><button class="cmdk__item">{{i:heart-pulse}}Acompanhamento</button></div>
+      <div class="cmdk__foot"><span><kbd class="kbd">Setas</kbd>navegar</span><span><kbd class="kbd">Enter</kbd>abrir</span><span><kbd class="kbd">Esc</kbd>fechar</span><span class="t-caption">Só mostra o que o seu perfil pode ver.</span></div></div>
+  </div>
+
+  <div class="sg-2col sg-block">
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Erro de carregamento</h3><div class="sg-panel"><div class="empty empty--compact"><span class="empty__icon empty__icon--danger">{{i:octagon-alert:lg}}</span><h3 class="empty__title">Não foi possível carregar a fila</h3><p class="empty__text">Seus dados não foram perdidos. Tente de novo; se continuar, avise a equipe.</p><div class="empty__actions"><button class="btn btn--primary">Tentar de novo</button></div></div></div></div>
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Sem permissão (página 403)</h3><div class="sg-panel"><div class="empty empty--compact"><span class="empty__icon">{{i:lock:lg}}</span><h3 class="empty__title">Esta página não está disponível para o seu perfil</h3><p class="empty__text">Volte ao painel para continuar.</p><div class="empty__actions"><button class="btn">Ir ao painel</button></div></div></div></div>
+  </div>
+</section>
+
+<!-- ============================ FLUXOS ============================ -->
+<section class="sg-section" id="fluxos">
+  <h2>Fluxos: stepper e assistente da escala de Zarit</h2>
+  <div class="sg-block"><h3>Stepper (cadastro em etapas)</h3>
+    <div class="sg-panel"><ol class="stepper" aria-label="Etapas do cadastro">
+      <li class="stepper__item is-done"><span class="stepper__dot">{{i:check}}</span><span class="stepper__label">Cuidador</span></li>
+      <li class="stepper__item is-done"><span class="stepper__dot">{{i:check}}</span><span class="stepper__label">Pessoa idosa</span></li>
+      <li class="stepper__item" aria-current="step"><span class="stepper__dot">3</span><span class="stepper__label">Consentimentos</span></li>
+      <li class="stepper__item"><span class="stepper__dot">4</span><span class="stepper__label">Plano</span></li>
+      <li class="stepper__item"><span class="stepper__dot">5</span><span class="stepper__label">Resumo</span></li>
+    </ol>
+    <div class="step-counter">Etapa <b>3</b> de 5: Consentimentos<div class="progress" role="progressbar" aria-valuenow="3" aria-valuemin="1" aria-valuemax="5" aria-label="Etapa 3 de 5"><span class="progress__bar" style="--value:60%"></span></div></div>
+    <p class="sg-cap">O stepper é só indicativo (não clicável). Abaixo de 768 px ele some e entra o texto da etapa com a barra.</p></div></div>
+  <div class="sg-block"><h3>Assistente de uma pergunta por tela (item 7 de 22)</h3>
+    <div class="sg-panel sg-panel--canvas">
+      <div class="wizard">
+        <div class="wizard__head"><div class="wizard__count"><span>Item <strong>7</strong> de 22</span><span class="wizard__status" style="display:inline-flex;align-items:center;gap:6px">{{i:circle-check:sm}}Rascunho salvo às 14:32</span></div><div class="progress progress--lg" role="progressbar" aria-valuenow="6" aria-valuemin="0" aria-valuemax="22" aria-label="6 de 22 itens respondidos"><span class="progress__bar" style="--value:27.3%"></span></div></div>
+        <fieldset class="wizard__body"><legend class="sr-only">Item 7</legend>
+          <div><p class="wizard__question">Tenho receio do que o futuro reserva para ela.</p><p class="wizard__hint">Pense nas últimas semanas. Não há resposta certa ou errada.</p></div>
+          <div class="likert" role="radiogroup" aria-label="Com que frequência?">
+            <label class="likert__option"><input type="radio" name="z7"><span class="likert__num">0</span><span class="likert__label">Nunca</span></label>
+            <label class="likert__option"><input type="radio" name="z7"><span class="likert__num">1</span><span class="likert__label">Raramente</span></label>
+            <label class="likert__option"><input type="radio" name="z7" checked><span class="likert__num">2</span><span class="likert__label">Algumas vezes</span></label>
+            <label class="likert__option"><input type="radio" name="z7"><span class="likert__num">3</span><span class="likert__label">Frequentemente</span></label>
+            <label class="likert__option"><input type="radio" name="z7" aria-label="4, sempre ou quase sempre"><span class="likert__num">4</span><span class="likert__label">Sempre</span></label>
+          </div>
+        </fieldset>
+        <details class="chart-alt" open><summary>Mapa dos itens (1 sem resposta)</summary><p class="t-caption" style="margin:var(--space-2) 0">Respondido, atual e sem resposta (tracejado). No celular fica recolhido.</p><div class="item-map" id="item-map"></div></details>
+        <div class="wizard__foot"><button class="btn btn--ghost">{{i:arrow-left:sm}}Voltar</button><span class="wizard__status">Resultado e faixa só aparecem ao concluir.</span><button class="btn">Salvar e sair</button><button class="btn btn--primary">Próximo{{i:arrow-right:sm}}</button></div>
+      </div>
+    </div>
+  </div>
+<div class="sg-2col sg-block" style="align-items:start">
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Nota de 1 a 5 (avaliação da rede)</h3>
+      <div class="sg-panel stack stack--3"><div class="field"><span class="field__label" id="rt">Nota do atendimento</span><div class="rating" role="radiogroup" aria-labelledby="rt"><label class="rating__option"><input type="radio" name="rt" aria-label="1, ruim">1</label><label class="rating__option"><input type="radio" name="rt" aria-label="2">2</label><label class="rating__option"><input type="radio" name="rt" aria-label="3">3</label><label class="rating__option"><input type="radio" name="rt" checked aria-label="4">4</label><label class="rating__option"><input type="radio" name="rt" aria-label="5, excelente">5</label></div><div class="rating__ends"><span>Ruim</span><span>Excelente</span></div></div>
+      <label class="switch"><input type="checkbox" role="switch"><span>Avançar automaticamente ao responder</span></label></div></div>
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Agenda do dia (celular)</h3>
+      <div class="sg-panel stack stack--3" style="max-width:26rem"><div class="day-picker" role="group" aria-label="Dia da agenda"><button class="chip" aria-pressed="false"><span>seg</span><b>02</b></button><button class="chip" aria-pressed="false"><span>ter</span><b>03</b></button><button class="chip" aria-pressed="true"><span>qua</span><b>04</b></button><button class="chip" aria-pressed="false"><span>qui</span><b>05</b></button><button class="chip" aria-pressed="false"><span>sex</span><b>06</b></button></div>
+        <div class="list-card"><button class="list-row"><span class="t-num t-strong">09:00</span><span><span class="list-row__title">CUI-0044</span><span class="list-row__meta">Em domicílio</span></span><span class="badge badge--info">{{i:user}}Reservada</span></button><button class="list-row"><span class="t-num t-strong">10:00</span><span><span class="list-row__title">CUI-0060</span><span class="list-row__meta">Presencial no coworking</span></span><span class="badge badge--danger">{{i:circle-alert}}Falta</span></button><button class="list-row"><span class="t-num t-strong">11:00</span><span><span class="list-row__title">Vaga aberta</span></span><span class="badge">{{i:circle-dashed}}Aberta</span></button></div>
+        <div class="action-bar" style="margin-inline:0"><button class="btn">Cancelar</button><button class="btn btn--primary">Agendar sessão</button></div>
+        <p class="sg-cap">Barra de ação fixa: no celular fica presa ao rodapé (acima da barra do portal); de 768 px em diante vai para o cabeçalho ou para o fim do formulário.</p></div></div>
+  </div>
+</section>
+
+<!-- ============================ TELAS ============================ -->
+<section class="sg-section" id="telas">
+  <h2>Telas-chave e comportamento responsivo</h2>
+  <p class="lede">Cada moldura abaixo é uma página real carregada na largura indicada, com o mesmo CSS. Menu lateral completo a partir de 1280 px, trilho de ícones de 1024 a 1279 px, gaveta abaixo de 1024 px. O portal do profissional é mobile first, com barra de navegação inferior.</p>
+  <div class="sg-block"><h3>Painel da equipe, 1440 × 800</h3><div class="sg-device" data-w="1440" data-h="800" data-tpl="shell"></div></div>
+  <div class="sg-block"><h3>Trilho de ícones, 1024 × 700</h3><div class="sg-device" data-w="1024" data-h="700" data-tpl="shell"></div></div>
+  <div class="sg-2col sg-block" style="align-items:start">
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Tablet, 768 × 800</h3><div class="sg-device" data-w="768" data-h="800" data-tpl="shell"></div></div>
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Celular 390, com a gaveta aberta</h3><div class="sg-device" data-w="390" data-h="800" data-tpl="shell" data-open="true"></div></div>
+  </div>
+  <div class="sg-2col sg-block" style="align-items:start">
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Portal do profissional, 390 × 800 (mobile first)</h3><div class="sg-device" data-w="390" data-h="800" data-tpl="portal"></div></div>
+    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Celular 360, painel da equipe</h3><div class="sg-device" data-w="360" data-h="800" data-tpl="shell"></div></div>
+  </div>
+  <div class="sg-block"><h3>Entrada: seleção de perfil, 1280 × 800</h3><div class="sg-device" data-w="1280" data-h="800" data-tpl="login"></div></div>
+</section>
+
+</main>
+
+<div class="toast-region" id="toasts" aria-live="polite"></div>
+
+<dialog class="dialog" id="dlg" aria-labelledby="dlg-t">
+  <div class="dialog__header"><span class="dialog__icon dialog__icon--danger">{{i:trash-2:lg}}</span><h2 class="dialog__title" id="dlg-t">Eliminar dados do titular?</h2></div>
+  <div class="dialog__body"><p>Esta ação <strong>não pode ser desfeita</strong>. Os dados de contato serão apagados; os registros de atendimento ficam bloqueados.</p></div>
+  <form method="dialog" class="dialog__footer"><button class="btn" value="cancel">Cancelar</button><button class="btn btn--danger" value="ok">Eliminar</button></form>
+</dialog>
+<dialog class="drawer" id="drw" aria-labelledby="drw-t">
+  <div class="drawer__header"><div><h2 class="drawer__title" id="drw-t">Detalhe da mensagem</h2><p class="t-caption">WhatsApp · há 2 h</p></div><form method="dialog"><button class="btn btn--ghost btn--icon" aria-label="Fechar">{{i:x}}</button></form></div>
+  <div class="drawer__body"><p>Preciso remarcar a sessão de quinta. Posso ir na sexta de manhã?</p><div class="field"><label class="field__label" for="reply">Resposta</label><textarea class="textarea" id="reply"></textarea></div></div>
+  <div class="drawer__footer"><button class="btn btn--primary">Enviar resposta</button></div>
+</dialog>
+
+<!-- ===== Modelos das molduras responsivas ===== -->
+<template id="tpl-main">
+  <div class="page">
+    <header class="page-header">
+      <nav aria-label="Você está em"><ol class="breadcrumb"><li><a href="#">Painel</a></li></ol></nav>
+      <div class="page-header__row">
+        <div class="page-header__titles"><h1>Bom dia, Beatriz</h1><p class="page-header__desc">Hoje você tem 5 sessões e 2 casos pedindo atenção.</p></div>
+        <div class="page-header__actions"><button class="btn">{{i:calendar-days:sm}}Minha agenda</button><button class="btn btn--primary">{{i:plus:sm}}Aplicar escala</button></div>
+      </div>
+    </header>
+    <div class="stack stack--6">
+      <div class="banner banner--danger" role="alert">{{i:octagon-alert}}<div class="banner__body"><p class="banner__title">1 caso pede contato até 23h59 de hoje</p><p class="banner__text">Ana Paula Ferraz · escala aplicada às 08:40 com 63 pontos.</p><div class="banner__actions"><button class="btn btn--sm btn--danger-quiet">Registrar contato</button></div></div></div>
+      <div class="kpi-strip">
+        <div class="kpi"><span class="kpi__label">Sessões hoje</span><span class="kpi__value">5</span><span class="kpi__meta">2 on-line, 3 presenciais</span></div>
+        <div class="kpi"><span class="kpi__label">Ocupação do mês</span><span class="kpi__value t-num">74,5<small>%</small></span><span class="kpi__meta">parcial</span></div>
+        <div class="kpi"><span class="kpi__label">Escalas a vencer</span><span class="kpi__value">3</span><span class="kpi__meta">em até 14 dias</span></div>
+      </div>
+      <div class="layout-main-aside">
+        <div class="card"><div class="card__header"><h2 class="card__title" style="font-family:var(--font-sans);font-size:var(--fs-lg)">Fila de acompanhamento</h2><span class="badge badge--count badge--danger">3</span></div>
+          <button class="list-row"><span class="avatar avatar--sm">AF</span><span><span class="list-row__title">Ana Paula Ferraz</span><span class="list-row__meta">Escala aplicada hoje, contato pendente</span></span><span class="badge badge--zarit-4">{{i:octagon-alert}}Severa · 63</span></button>
+          <button class="list-row"><span class="avatar avatar--sm">MA</span><span><span class="list-row__title">Maria Aparecida Lemos</span><span class="list-row__meta">Contato do dia anterior pendente</span></span><span class="badge badge--danger">{{i:clock}}vencido</span></button>
+          <button class="list-row"><span class="avatar avatar--sm">JB</span><span><span class="list-row__title">João Batista Carneiro</span><span class="list-row__meta">Revisar rede de apoio da família</span></span><span class="badge badge--zarit-3">{{i:triangle-alert}}Moderada a severa · 52</span></button>
+        </div>
+        <div class="card card--pad"><h3 class="card__title">Hoje</h3><ol class="timeline" style="margin-top:var(--space-4)"><li class="timeline__item timeline__item--done"><span class="timeline__dot"></span><div><span class="timeline__time">09:00</span><p class="timeline__title">Sessão on-line</p></div></li><li class="timeline__item"><span class="timeline__dot"></span><div><span class="timeline__time">10:00</span><p class="timeline__title">Sessão presencial</p></div></li><li class="timeline__item"><span class="timeline__dot"></span><div><span class="timeline__time">14:00</span><p class="timeline__title">Aplicar escala</p></div></li></ol></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-shell">
+  <div class="app-shell" id="shell">
+    <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+    <aside class="sidebar" aria-label="Navegação principal">
+      <a class="sidebar__brand" href="#"><svg class="brand-symbol" style="stroke-width:3.2" aria-hidden="true"><use href="#nx-symbol"/></svg><span class="wordmark">Nexus</span></a>
+      <nav class="sidebar__nav" aria-label="Módulos">
+        <ul class="nav-list"><li><a class="nav-item" href="#" aria-current="page">{{i:layout-dashboard}}<span class="nav-item__label">Painel</span></a></li><li><a class="nav-item" href="#">{{i:users}}<span class="nav-item__label">Cuidadores</span></a></li></ul>
+        <div class="nav-group"><button class="nav-group__title" aria-expanded="true">Cuidado{{i:chevron-down}}</button><ul class="nav-list"><li><a class="nav-item" href="#">{{i:calendar-days}}<span class="nav-item__label">Atendimento</span></a></li><li><a class="nav-item" href="#">{{i:heart-pulse}}<span class="nav-item__label">Acompanhamento</span><span class="nav-item__badge" aria-label="3 alertas vermelhos do dia">3</span></a></li><li><a class="nav-item" href="#">{{i:users-round}}<span class="nav-item__label">Grupos</span></a></li></ul></div>
+        <ul class="nav-list"><li><a class="nav-item" href="#">{{i:messages-square}}<span class="nav-item__label">Mensagens</span></a></li><li><a class="nav-item" href="#">{{i:landmark}}<span class="nav-item__label">Governança</span></a></li></ul>
+      </nav>
+      <div class="sidebar__foot"><div class="sidebar__profile"><span class="avatar avatar--sm avatar--nav">BN</span><div><strong>Dra. Beatriz Nogueira</strong><span>Psicóloga</span></div></div></div>
+    </aside>
+    <header class="topbar">
+      <button class="btn btn--ghost btn--icon topbar__menu" aria-label="Abrir menu" aria-expanded="false" aria-controls="shell">{{i:menu}}</button>
+      <div class="topbar__brand"><svg class="brand-symbol" style="stroke-width:3.2" aria-hidden="true"><use href="#nx-symbol"/></svg></div>
+      <div class="topbar__search"><button class="search-trigger" aria-label="Buscar (Ctrl K)">{{i:search}}<span>Buscar cuidador, prestador, parceiro</span><kbd class="kbd hide-sm">Ctrl K</kbd></button></div>
+      <div class="topbar__actions"><button class="btn btn--ghost btn--icon" aria-label="Notificações: 3 novas" style="position:relative">{{i:bell}}<span class="nav-item__badge" style="position:absolute;top:4px;right:2px;min-width:1rem;height:1rem;font-size:.625rem">3</span></button><button class="btn btn--ghost" style="padding:0 var(--space-2)" aria-label="Menu do usuário"><span class="avatar avatar--sm">BN</span><span class="hide-md t-ui" style="font-weight:600">Beatriz</span>{{i:chevron-down:sm}}</button></div>
+    </header>
+    <main class="main" id="conteudo">{{MAIN}}</main>
+    <footer class="app-footer">{{i:info}}<span>Protótipo de demonstração. Todos os dados são fictícios e ficam apenas neste navegador.</span><a href="#">Meus dados no navegador</a></footer>
+    <div class="scrim" aria-hidden="true"></div>
+  </div>
+</template>
+
+<template id="tpl-portal">
+  <div class="portal-shell">
+    <header class="portal-header"><div class="topbar__brand"><svg class="brand-symbol" style="stroke-width:3.2" aria-hidden="true"><use href="#nx-symbol"/></svg><span class="wordmark">Nexus</span></div><div class="topbar__actions"><button class="btn btn--ghost btn--icon" aria-label="Notificações">{{i:bell}}</button><span class="avatar avatar--sm avatar--gold">EF</span></div></header>
+    <nav class="bottom-nav" aria-label="Portal"><a class="bottom-nav__item" href="#" aria-current="page">{{i:layout-dashboard}}<span>Início</span></a><a class="bottom-nav__item" href="#">{{i:clipboard-list}}<span>Solicitações</span></a><a class="bottom-nav__item" href="#">{{i:calendar-days}}<span>Disponibilidade</span></a><a class="bottom-nav__item" href="#">{{i:messages-square}}<span>Mensagens</span></a><a class="bottom-nav__item" href="#">{{i:ellipsis}}<span>Mais</span></a></nav>
+    <main class="portal-main stack stack--6">
+      <div class="page-header__titles"><h1>Olá, Dr. Eduardo</h1><p class="page-header__desc">Você tem 2 pedidos novos e 1 documento a vencer.</p></div>
+      <div class="card card--pad stack stack--3"><div class="cluster cluster--between"><h3 class="card__title">Pedido novo</h3><span class="badge badge--info badge--dot">Aguardando você</span></div><p class="t-muted t-ui">Atendimento odontológico domiciliar · Uberlândia. Os dados do cuidador aparecem depois que você aceita.</p><div class="cluster"><button class="btn btn--primary" style="flex:1">Aceitar</button><button class="btn" style="flex:1">Recusar</button></div></div>
+      <div class="kpi-strip"><div class="kpi"><span class="kpi__label">Sua avaliação</span><span class="kpi__value t-num">4,7</span><span class="badge badge--success" style="justify-self:start">{{i:award}}Em destaque</span></div><div class="kpi"><span class="kpi__label">Recusas em 30 dias</span><span class="kpi__value t-num">12,5<small>%</small></span></div></div>
+      <div class="banner banner--attention">{{i:triangle-alert}}<div class="banner__body"><p class="banner__title">Registro no conselho vence em 12 dias</p><div class="banner__actions"><button class="btn btn--sm">Enviar novo documento</button></div></div></div>
+    </main>
+    <footer class="app-footer">{{i:info}}<span>Protótipo de demonstração. Dados fictícios, só neste navegador.</span></footer>
+  </div>
+</template>
+
+<template id="tpl-login">
+  <div class="login">
+    <section class="login__brand">
+      <div class="login__logo"><svg class="brand-symbol" style="stroke-width:2.4" aria-hidden="true"><use href="#nx-symbol"/></svg><span class="wordmark">Nexus</span></div>
+      <svg class="login__art" viewBox="-18 3 156 98" aria-hidden="true"><use href="#nx-hands"/></svg>
+      <div class="stack stack--3"><p class="login__tagline">Quem cuida também precisa de sustentação.</p><p class="login__note">Back-office da Nexus. Escolha um perfil de demonstração para entrar.</p></div>
+    </section>
+    <section class="login__panel">
+      <div class="banner banner--prototype" style="border-radius:var(--radius-md);border-width:1px;justify-content:flex-start;text-align:left">{{i:info}}<span>Protótipo de demonstração. Todos os dados são fictícios e ficam apenas neste navegador.</span></div>
+      <div><h1>Entrar como</h1><p class="page-header__desc" style="margin-top:var(--space-2);color:var(--text-muted)">Não há senha. A equipe confirma um código de 6 dígitos.</p></div>
+      <div class="profile-group"><h3>Equipe Nexus</h3><div class="list-card">
+        <button class="list-row"><span class="avatar">HP</span><span><span class="list-row__title">Helena Prado Vasconcelos</span><span class="list-row__meta">Sócia e gestão · vê indicadores sem identificar ninguém</span></span><span class="badge">{{i:key-round}}Código</span></button>
+        <button class="list-row"><span class="avatar">CM</span><span><span class="list-row__title">Dra. Cecília Montenegro</span><span class="list-row__meta">Responsável técnica · supervisão de todos os casos</span></span><span class="badge">{{i:key-round}}Código</span></button>
+        <button class="list-row"><span class="avatar">BN</span><span><span class="list-row__title">Dra. Beatriz Nogueira</span><span class="list-row__meta">Psicóloga · agenda e acompanhamento dos seus cuidadores</span></span><span class="badge">{{i:key-round}}Código</span></button>
+        <button class="list-row"><span class="avatar">CD</span><span><span class="list-row__title">Camila Duarte</span><span class="list-row__meta">Atendimento · cadastros, mensagens e solicitações</span></span><span class="badge">{{i:key-round}}Código</span></button>
+      </div></div>
+      <div class="profile-group"><h3>Profissionais credenciados</h3><div class="list-card">
+        <button class="list-row"><span class="avatar avatar--gold">EF</span><span><span class="list-row__title">Dr. Eduardo Falcão</span><span class="list-row__meta">Cirurgião-dentista · portal do profissional</span></span>{{i:chevron-right}}</button>
+      </div></div>
+    </section>
+  </div>
+</template>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var $ = function (s, c) { return (c || document).querySelector(s); };
+  var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
+  var brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+  var spriteHTML = $('svg[style*="display:none"]').outerHTML;
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function icon(name, cls) { return '<svg class="icon' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#i-' + name + '"/></svg>'; }
+
+  /* --- tema --- */
+  var themeBtn = $('#theme-toggle');
+  function setTheme(t) {
+    if (t === 'dark') root.setAttribute('data-theme', 'dark'); else root.removeAttribute('data-theme');
+    themeBtn.setAttribute('aria-pressed', t === 'dark');
+    themeBtn.querySelector('span').textContent = t === 'dark' ? 'Tema claro' : 'Tema escuro';
+    $$('.sg-device iframe').forEach(function (f) { var d = f.contentDocument; if (d) { if (t === 'dark') d.documentElement.setAttribute('data-theme', 'dark'); else d.documentElement.removeAttribute('data-theme'); } });
+    fillSwatches();
+  }
+  themeBtn.addEventListener('click', function () { setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); });
+
+  /* --- cores --- */
+  function toHex(v) {
+    v = v.trim();
+    var m = v.match(/^#([0-9a-f]{3,8})$/i); if (m) return v.toUpperCase();
+    var c = document.createElement('canvas').getContext('2d'); c.fillStyle = '#000'; c.fillStyle = v; var out = c.fillStyle;
+    if (out.charAt(0) === '#') return out.toUpperCase();
+    return out;
+  }
+  function resolveVar(name) {
+    var probe = document.createElement('i'); probe.style.background = 'var(' + name + ')'; document.body.appendChild(probe);
+    var rgb = getComputedStyle(probe).backgroundColor; document.body.removeChild(probe);
+    var m = rgb.match(/\d+(\.\d+)?/g); if (!m) return rgb;
+    return '#' + m.slice(0, 3).map(function (n) { return ('0' + Math.round(+n).toString(16)).slice(-2); }).join('').toUpperCase();
+  }
+  function swatch(name, label) { return '<div class="sg-sw__i"><div class="sg-sw__c" style="background:var(' + name + ')"></div><div class="sg-sw__t"><b>' + label + '</b><span>' + resolveVar(name) + '</span></div></div>'; }
+  function fillSwatches() {
+    $$('[data-sw]').forEach(function (el) { var p = el.getAttribute('data-sw'); el.innerHTML = el.getAttribute('data-steps').split(' ').map(function (s) { return swatch(p + s, s); }).join(''); });
+    $$('[data-vars]').forEach(function (el) { el.innerHTML = el.getAttribute('data-vars').split(' ').map(function (v) { return swatch(v, v.replace('--', '')); }).join(''); });
+  }
+
+  /* --- ícones --- */
+  var names = $$('symbol[id^="i-"]').map(function (s) { return s.id.slice(2); });
+  $('#icon-grid').innerHTML = names.map(function (n) { return '<div>' + icon(n, 'icon--lg') + '<span>' + n + '</span></div>'; }).join('');
+
+  /* --- abas, chips, segmentado --- */
+  $$('#demo-tabs .tab:not([disabled])').forEach(function (t) { t.addEventListener('click', function () { $$('#demo-tabs .tab').forEach(function (x) { x.setAttribute('aria-selected', x === t); }); }); });
+  $$('.kanban__head').forEach(function (h) { h.addEventListener('click', function () { var c = h.parentElement, col = c.getAttribute('data-collapsed') === 'true'; c.setAttribute('data-collapsed', !col); h.setAttribute('aria-expanded', col); }); });
+  $$('.chip-group .chip[aria-pressed]').forEach(function (c) { c.addEventListener('click', function () { c.setAttribute('aria-pressed', c.getAttribute('aria-pressed') !== 'true'); }); });
+  $$('.segmented').forEach(function (g) { $$('.segmented__btn', g).forEach(function (b) { b.addEventListener('click', function () { $$('.segmented__btn', g).forEach(function (x) { x.setAttribute('aria-pressed', x === b); }); if (g.id === 'density') $('#demo-table').setAttribute('data-density', b.textContent.trim() === 'Compacta' ? 'compact' : 'comfortable'); }); }); });
+  var ind = $('#indet'); if (ind) ind.indeterminate = true;
+  $$('.masked__toggle').forEach(function (b) { b.addEventListener('click', function () { var m = b.parentElement, hid = m.getAttribute('data-state') === 'hidden'; m.setAttribute('data-state', hid ? 'revealed' : 'hidden'); b.innerHTML = icon(hid ? 'eye-off' : 'eye') + '<span>' + (hid ? 'Ocultar' : 'Mostrar') + '</span>'; }); });
+
+  /* --- tabela: ordenação e seleção --- */
+  var tbl = $('#demo-table'), tb = tbl.tBodies[0];
+  $$('.th-sort', tbl).forEach(function (b) { b.addEventListener('click', function () {
+    var th = b.closest('th'), col = +b.getAttribute('data-col'), asc = th.getAttribute('aria-sort') !== 'ascending';
+    $$('th[aria-sort]', tbl).forEach(function (x) { x.setAttribute('aria-sort', 'none'); var u = x.querySelector('use'); if (u) u.setAttribute('href', '#i-chevrons-up-down'); });
+    th.setAttribute('aria-sort', asc ? 'ascending' : 'descending'); th.querySelector('use').setAttribute('href', '#i-arrow-up');
+    var rows = $$('tr', tb).sort(function (a, c) { var x = a.cells[col].textContent.trim(), y = c.cells[col].textContent.trim(); var r = isNaN(+x) ? x.localeCompare(y, 'pt-BR') : (+x) - (+y); return asc ? r : -r; });
+    rows.forEach(function (r) { tb.appendChild(r); });
+  }); });
+  function syncSel() { var on = $$('tbody input[type=checkbox]:checked', tbl); $$('tbody tr', tbl).forEach(function (r) { r.setAttribute('aria-selected', !!r.querySelector('input:checked')); }); $('#sel-bar').hidden = !on.length; $('#sel-count').textContent = on.length + (on.length === 1 ? ' selecionado' : ' selecionados'); }
+  tbl.addEventListener('change', function (e) { if (e.target.id === 'sel-all') { $$('tbody input[type=checkbox]', tbl).forEach(function (i) { i.checked = e.target.checked; }); } syncSel(); });
+
+  /* --- diálogos e toasts --- */
+  $$('[data-open]').forEach(function (b) { b.addEventListener('click', function () { $('#' + b.getAttribute('data-open')).showModal(); }); });
+  var toastText = { success: ['circle-check', 'Contato registrado', 'O alerta passou para avaliação de risco.'], attention: ['triangle-alert', 'Documento vence em 12 dias', 'Peça o envio de um novo registro.'], danger: ['octagon-alert', 'Não foi possível salvar', 'O armazenamento do navegador está cheio.'] };
+  $$('[data-toast]').forEach(function (b) { b.addEventListener('click', function () { var k = b.getAttribute('data-toast'), t = toastText[k]; var el = document.createElement('div'); el.className = 'toast toast--' + k; el.setAttribute('role', k === 'danger' ? 'alert' : 'status'); el.innerHTML = icon(t[0]) + '<div style="flex:1"><strong>' + t[1] + '</strong><span>' + t[2] + '</span></div>' + (k === 'success' ? '<button class="toast__action">Desfazer</button>' : '') + '<button class="btn btn--ghost btn--icon btn--sm toast__close" aria-label="Fechar aviso">' + icon('x', 'icon--sm') + '</button>'; $('#toasts').appendChild(el); var close = el.querySelector('.toast__close'); close.addEventListener('click', function () { el.remove(); }); var undo = el.querySelector('.toast__action'); if (undo) undo.addEventListener('click', function () { el.remove(); }); var timer; function arm() { timer = setTimeout(function () { el.remove(); }, 6000); } function pause() { clearTimeout(timer); } el.addEventListener('mouseenter', pause); el.addEventListener('focusin', pause); el.addEventListener('mouseleave', arm); el.addEventListener('focusout', arm); arm(); }); });
+
+  /* --- agenda --- */
+  var days = [['Seg', 2], ['Ter', 3], ['Qua', 4], ['Qui', 5], ['Sex', 6]];
+  var hours = [8, 9, 10, 11, 13, 14, 15, 16];
+  var slotsData = { '0-9': ['booked', 'user', 'CUI-0042', 'On-line'], '0-10': ['done', 'check', 'CUI-0043', 'Realizada'], '1-8': ['confirmed', 'circle-check', 'CUI-0051', 'Presencial'], '1-14': ['priority', 'star', 'Vaga prioritária', 'Alerta amarelo'], '2-9': ['booked', 'user', 'CUI-0044', 'Em domicílio'], '2-10': ['noshow', 'circle-alert', 'CUI-0060', 'Falta'], '2-13': ['blocked', 'ban', 'Bloqueada', 'Reunião'], '3-11': ['confirmed', 'circle-check', 'CUI-0042', 'On-line'], '3-15': ['booked', 'user', 'CUI-0071', 'Presencial'], '4-8': ['priority', 'star', 'Vaga prioritária', 'Plano Cuida'] };
+  var ag = '<div class="agenda__corner"><span class="sr-only">Hora</span></div>';
+  days.forEach(function (d, i) { ag += '<div class="agenda__dayhead' + (i === 2 ? ' is-today' : '') + '" role="columnheader">' + d[0] + '<strong>' + ('0' + d[1]).slice(-2) + '/11</strong></div>'; });
+  hours.forEach(function (h) {
+    ag += '<div class="agenda__time">' + ('0' + h).slice(-2) + ':00</div>';
+    days.forEach(function (d, i) {
+      var s = slotsData[i + '-' + h], html;
+      if (s) html = '<button class="slot slot--' + s[0] + '"' + (s[0] === 'blocked' ? ' disabled' : '') + '><b>' + icon(s[1]) + s[2] + '</b><span>' + s[3] + '</span></button>';
+      else html = '<button class="slot slot--open"><b>' + icon('circle-dashed') + 'Aberta</b></button>';
+      ag += '<div class="agenda__cell" role="gridcell">' + html + '</div>';
+    });
+  });
+  $('#agenda').innerHTML = ag;
+
+  /* --- mapa de itens --- */
+  var im = ''; for (var i = 1; i <= 22; i++) { im += '<button class="item-map__btn' + (i < 7 ? ' is-done' : '') + (i === 3 ? ' is-missing' : '') + '"' + (i === 7 ? ' aria-current="step"' : '') + ' aria-label="Item ' + i + '">' + i + '</button>'; }
+  $('#item-map').innerHTML = im.replace('is-done is-missing', 'is-missing').replace('class="item-map__btn is-done"', 'class="item-map__btn is-done"');
+  var b3 = $('#item-map').children[2]; b3.className = 'item-map__btn is-missing'; b3.setAttribute('aria-label', 'Item 3, sem resposta');
+
+  /* --- gráfico de barras (resultado mensal) e área (saldo acumulado) --- */
+  (function () {
+    var res = [-2355, -1950, -1500, -1120, -820, -450, -90, 270, 620, 910, 1180, 1420], bal = [], acc = -17200;
+    res.forEach(function (r) { acc += r; bal.push(acc); });
+    /* barras */
+    var W = 560, H = 230, L = 70, R = 12, T = 12, B = 30, pw = W - L - R, ph = H - T - B;
+    var min = -3000, max = 2000, y = function (v) { return T + (max - v) / (max - min) * ph; };
+    var s = '';
+    [-3000, -2000, -1000, 0, 1000, 2000].forEach(function (g) { s += '<line class="' + (g === 0 ? 'ch-axis' : 'ch-grid') + '" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '"/><text class="ch-text ch-text--end" x="' + (L - 8) + '" y="' + (y(g) + 4) + '">' + brl.format(g) + '</text>'; });
+    var step = pw / res.length, bw = step * 0.56;
+    res.forEach(function (r, i) {
+      var x = L + step * i + (step - bw) / 2, y0 = y(0), y1 = y(r);
+      s += '<rect class="ch-bar ' + (r < 0 ? 'ch-bar--neg' : '') + '" x="' + x + '" y="' + Math.min(y0, y1) + '" width="' + bw + '" height="' + Math.max(2, Math.abs(y1 - y0)) + '" rx="3"/>';
+      s += '<text class="ch-text ch-text--mid" x="' + (x + bw / 2) + '" y="' + (H - 8) + '">M' + (i + 1) + '</text>';
+    });
+    $('#ch-bars').innerHTML = s;
+    /* área do saldo */
+    var H2 = 200, B2 = 30, ph2 = H2 - T - B2, min2 = -30000, max2 = 0, y2 = function (v) { return T + (max2 - v) / (max2 - min2) * ph2; };
+    var s2 = '';
+    [-30000, -20000, -10000, 0].forEach(function (g) { s2 += '<line class="' + (g === 0 ? 'ch-ref' : 'ch-grid') + '" x1="' + L + '" x2="' + (W - R) + '" y1="' + y2(g) + '" y2="' + y2(g) + '"/><text class="ch-text ch-text--end" x="' + (L - 8) + '" y="' + (y2(g) + 4) + '">' + brl.format(g) + '</text>'; });
+    var pts = bal.map(function (v, i) { return [L + step * i + step / 2, y2(v)]; }), ps = pts.map(function (p) { return p.join(','); });
+    s2 += '<polygon class="ch-area" points="' + pts[0][0] + ',' + y2(0) + ' ' + ps.join(' ') + ' ' + pts[pts.length - 1][0] + ',' + y2(0) + '"/><polyline class="ch-line" points="' + ps.join(' ') + '"/>';
+    [0, pts.length - 1].forEach(function (i) { s2 += '<circle class="ch-dot" cx="' + pts[i][0] + '" cy="' + pts[i][1] + '" r="4.5"/><text class="ch-text ch-text--strong ch-text--mid" x="' + pts[i][0] + '" y="' + (pts[i][1] + (i ? 20 : -10)) + '">' + brl.format(bal[i]) + '</text>'; });
+    for (var m = 0; m < 12; m += 1) if (m % 3 === 0 || m === 11) s2 += '<text class="ch-text ch-text--mid" x="' + pts[m][0] + '" y="' + (H2 - 8) + '">M' + (m + 1) + '</text>';
+    $('#ch-saldo').innerHTML = s2;
+  })();
+
+  /* --- gráfico de linha / área (Zarit) --- */
+  (function () {
+    var vals = [66, 52, 41, 33], W = 560, H = 200, L = 40, R = 36, T = 20, B = 30, pw = W - L - R, ph = H - T - B;
+    var y = function (v) { return T + (80 - v) / 80 * ph; }, x = function (i) { return L + pw * i / (vals.length - 1); };
+    var s = '';
+    [0, 20, 40, 60, 80].forEach(function (g) { s += '<line class="ch-grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '"/><text class="ch-text ch-text--end" x="' + (L - 8) + '" y="' + (y(g) + 4) + '">' + g + '</text>'; });
+    s += '<line class="ch-ref" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(41) + '" y2="' + y(41) + '"/><text class="ch-ref-label" x="' + (L + 8) + '" y="' + (y(41) - 7) + '">Faixa amarela começa em 41</text>';
+    var pts = vals.map(function (v, i) { return x(i) + ',' + y(v); });
+    s += '<polygon class="ch-area" points="' + x(0) + ',' + y(0) + ' ' + pts.join(' ') + ' ' + x(vals.length - 1) + ',' + y(0) + '"/><polyline class="ch-line" points="' + pts.join(' ') + '"/>';
+    ['Adesão', '3 meses', '6 meses', '9 meses'].forEach(function (l, i) { s += '<circle class="ch-dot" cx="' + x(i) + '" cy="' + y(vals[i]) + '" r="4.5"/><text class="ch-text ch-text--strong ch-text--mid" x="' + (x(i) + (i === 0 ? 12 : 0)) + '" y="' + (y(vals[i]) - 12) + '">' + vals[i] + '</text><text class="ch-text ch-text--mid" x="' + x(i) + '" y="' + (H - 8) + '">' + l + '</text>'; });
+    $('#ch-line').innerHTML = s;
+  })();
+
+  /* --- rosca --- */
+  (function () {
+    var segs = [[7, 'var(--plan-essencial)'], [5, 'var(--plan-cuida)'], [5, 'var(--accent-brand)']], tot = 17, off = 0;
+    var s = '<circle class="donut__track" cx="18" cy="18" r="15.9155"/>';
+    segs.forEach(function (g) { var p = g[0] / tot * 100; s += '<circle class="donut__seg" cx="18" cy="18" r="15.9155" stroke="' + g[1] + '" stroke-dasharray="' + (p - 0.8) + ' ' + (100 - p + 0.8) + '" stroke-dashoffset="' + (-off) + '"/>'; off += p; });
+    $('#donut-svg').innerHTML = s;
+  })();
+
+  /* --- matriz de risco 5x5 --- */
+  (function () {
+    var risks = { '4-4': ['R3'], '3-5': ['R5'], '5-3': ['R1', 'R8'], '2-5': ['R10'], '3-3': ['R2'], '2-2': ['R12'] };
+    var h = '<div class="heat" role="img" aria-label="Matriz de risco: probabilidade por impacto">';
+    for (var p = 5; p >= 1; p--) {
+      h += '<div class="heat__axis">' + p + '</div>';
+      for (var i = 1; i <= 5; i++) { var c = p * i, lvl = c >= 12 ? 'high' : c >= 5 ? 'mid' : 'low'; var rs = (risks[p + '-' + i] || []).map(function (r) { return '<span class="heat__risk">' + r + '</span>'; }).join(''); h += '<div class="heat__cell" data-level="' + lvl + '"><span class="heat__score">' + c + '</span>' + rs + '</div>'; }
+    }
+    h += '<div></div>'; for (var j = 1; j <= 5; j++) h += '<div class="heat__axis">' + j + '</div>';
+    h += '</div><ul class="legend" style="margin-top:var(--space-3)"><li class="legend__item" style="--sw:var(--success-bg);">C até 4</li><li class="legend__item" style="--sw:var(--attention-bg)">C de 5 a 11</li><li class="legend__item" style="--sw:var(--danger-bg)">C 12 ou mais (prioritário)</li></ul><p class="t-caption" style="margin-top:var(--space-2)">Eixo vertical: probabilidade (P). Eixo horizontal: impacto (I).</p>';
+    $('#heat-host').innerHTML = h;
+  })();
+
+  /* --- termômetro --- */
+  (function () {
+    var bands = [[0, 20, 1, 'circle-check', 'Ausente ou pequena'], [21, 40, 2, 'info', 'Moderada'], [41, 60, 3, 'triangle-alert', 'Moderada a severa'], [61, 88, 4, 'octagon-alert', 'Severa']];
+    function band(s) { return s <= 20 ? 1 : s <= 40 ? 2 : s <= 60 ? 3 : 4; }
+    var out = [12, 28, 52, 63].map(function (score) {
+      var b = band(score), pos = ((score + 0.5) / 89 * 100).toFixed(2);
+      var segs = bands.map(function (x) { return '<span class="thermo__seg thermo__seg--' + x[2] + '"' + (x[2] === b ? ' aria-current="true"' : '') + '></span>'; }).join('');
+      var labels = bands.map(function (x) { return '<div class="thermo__label thermo__label--' + x[2] + '"' + (x[2] === b ? ' aria-current="true"' : '') + '>' + icon(x[3]) + '<span><b>' + x[0] + ' a ' + x[1] + '</b><br>' + x[4] + '</span></div>'; }).join('');
+      return '<div class="sg-panel"><div class="thermo" style="--pos:' + pos + '%" role="img" aria-label="Pontuação ' + score + ' de 88, faixa ' + bands[b - 1][4] + '"><div class="thermo__track"><div class="thermo__marker"><span>' + score + '</span></div>' + segs + '</div><div class="thermo__labels">' + labels + '</div></div></div>';
+    });
+    $('#thermo-host').innerHTML = out.join('');
+  })();
+
+  /* --- molduras responsivas --- */
+  function mountDevices() {
+    var main = $('#tpl-main').innerHTML;
+    $$('.sg-device').forEach(function (box) {
+      var w = +box.getAttribute('data-w'), h = +box.getAttribute('data-h'), tpl = box.getAttribute('data-tpl');
+      var iframe = document.createElement('iframe'); iframe.title = 'Pré-visualização ' + w + ' px'; iframe.width = w; iframe.height = h; box.appendChild(iframe);
+      var d = iframe.contentDocument; d.open(); d.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"></head><body></body></html>'); d.close();
+      var st = d.createElement('style'); st.textContent = $('#app-css').textContent; d.head.appendChild(st);
+      d.body.innerHTML = spriteHTML + $('#tpl-' + tpl).innerHTML.replace('{{MAIN}}', main);
+      if (box.getAttribute('data-open') === 'true') { var sh = d.querySelector('.app-shell'); if (sh) { sh.setAttribute('data-nav-open', 'true'); } }
+      var menu = d.querySelector('.topbar__menu'); if (menu) menu.addEventListener('click', function () { var sh = d.querySelector('.app-shell'); if (d.documentElement.clientWidth >= 1024) { var ex = sh.getAttribute('data-nav') === 'expanded'; sh.setAttribute('data-nav', ex ? '' : 'expanded'); menu.setAttribute('aria-expanded', !ex); return; } var o = sh.getAttribute('data-nav-open') === 'true'; sh.setAttribute('data-nav-open', !o); menu.setAttribute('aria-expanded', !o); });
+      var sc = d.querySelector('.scrim'); if (sc) sc.addEventListener('click', function () { var sh = d.querySelector('.app-shell'); sh.setAttribute('data-nav-open', 'false'); sh.setAttribute('data-nav', ''); });
+    });
+    fit();
+  }
+  function fit() { $$('.sg-device').forEach(function (box) { var w = +box.getAttribute('data-w'), h = +box.getAttribute('data-h'), f = box.firstElementChild, k = Math.min(1, box.clientWidth / w); f.style.transform = 'scale(' + k + ')'; box.style.height = (h * k) + 'px'; }); }
+  window.addEventListener('resize', fit);
+
+  fillSwatches();
+  mountDevices();
+  if (location.hash === '#dark') setTheme('dark');
+})();
+</script>
+</body>
+</html>

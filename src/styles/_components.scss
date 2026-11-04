@@ -1,0 +1,8 @@
+// Componentes de interface, 100% CSS (sem JavaScript). A marcação esperada de
+// cada um está em docs/03-design-system.md e em docs/styleguide.html.
+@use 'components/actions';
+@use 'components/forms';
+@use 'components/data';
+@use 'components/feedback';
+@use 'components/flow';
+@use 'components/charts';

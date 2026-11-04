@@ -1,0 +1,472 @@
+// =============================================================================
+// Nexus ERP: tokens de design
+// Fonte única de cores, tipografia, espaçamento, raios, sombras e movimento.
+// Regra: componentes só usam tokens SEMÂNTICOS (--text, --surface, --brand...).
+// Os tokens PRIMITIVOS (--nx-*) existem para montar os semânticos e o tema escuro.
+// Documentação: docs/03-design-system.md
+// =============================================================================
+@use 'sass:map';
+
+// ---------------------------------------------------------------------------
+// Breakpoints (mobile first). Alvos de teste: 360, 768, 1024 e 1440.
+// ---------------------------------------------------------------------------
+$breakpoints: (
+  sm: 480px,
+  md: 768px,
+  lg: 1024px,
+  xl: 1280px,
+  xxl: 1440px,
+);
+
+@mixin up($bp) {
+  @media (min-width: map.get($breakpoints, $bp)) {
+    @content;
+  }
+}
+
+@mixin down($bp) {
+  @media (max-width: map.get($breakpoints, $bp) - 0.02px) {
+    @content;
+  }
+}
+
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ---------------------------------------------------------------------------
+// Paletas primitivas (mapas SCSS). Valores conferidos contra a Figura 1 do
+// documento (planos.png): azul Cuida #2D6EA3, azul Essencial #4A90C8,
+// dourado Sustenta #B8901F, cinza-azulado Livre #7B8794.
+// ---------------------------------------------------------------------------
+$blue: (
+  50: #eff5fa,
+  100: #dce9f4,
+  200: #b9d3e8,
+  300: #8db7d8,
+  400: #66a0cf,
+  500: #4a90c8,
+  600: #2d6ea3,
+  700: #235a87,
+  800: #1b4669,
+  900: #133350,
+  950: #0b2238,
+);
+
+$gold: (
+  50: #fbf6e8,
+  100: #f5eacb,
+  200: #ead598,
+  300: #e3c15e,
+  400: #cba32e,
+  500: #b8901f,
+  600: #a67f15,
+  700: #8a6812,
+  800: #6e520f,
+  900: #4a380a,
+);
+
+$slate: (
+  0: #ffffff,
+  50: #f7f8fa,
+  100: #eef1f4,
+  200: #e1e6eb,
+  300: #cbd3db,
+  400: #a5b0bb,
+  500: #7b8794,
+  600: #5a6673,
+  700: #3f4a56,
+  800: #28323d,
+  900: #17202a,
+  950: #0f161d,
+);
+
+// Papel: os neutros quentes do fundo off-white da marca.
+$paper: (
+  50: #fbfaf7,
+  100: #f7f5f0,
+  200: #f0ede5,
+  300: #e5e1d6,
+  400: #d5d0c2,
+);
+
+$green: (
+  50: #e9f6ef,
+  100: #cfebdd,
+  500: #2a8c72,
+  600: #1f7a4d,
+  700: #17613d,
+);
+
+$amber: (
+  50: #fff5dc,
+  100: #ffe8b0,
+  500: #b87500,
+  700: #8f5200,
+  800: #6b3d00,
+);
+
+$red: (
+  50: #fdeeec,
+  100: #f9d6d2,
+  500: #d14534,
+  600: #b42318,
+  700: #912018,
+  800: #7a1a12,
+);
+
+@mixin emit-scale($name, $scale) {
+  @each $step, $value in $scale {
+    --nx-#{$name}-#{$step}: #{$value};
+  }
+}
+
+// ---------------------------------------------------------------------------
+// :root  (tema claro, o padrão)
+// ---------------------------------------------------------------------------
+:root {
+  color-scheme: light;
+
+  // Primitivos
+  @include emit-scale('blue', $blue);
+  @include emit-scale('gold', $gold);
+  @include emit-scale('slate', $slate);
+  @include emit-scale('paper', $paper);
+  @include emit-scale('green', $green);
+  @include emit-scale('amber', $amber);
+  @include emit-scale('red', $red);
+
+  // ---- Superfícies -------------------------------------------------------
+  --canvas: var(--nx-paper-100); // fundo do app (off-white da marca)
+  --surface: var(--nx-slate-0); // cartões, tabelas, formulários
+  --surface-raised: var(--nx-slate-0); // diálogos, gavetas, menus
+  --surface-sunken: var(--nx-paper-200); // cabeçalho de tabela, hover de linha, trilhas
+  --surface-hover: var(--nx-paper-100);
+  --nav-bg: var(--nx-blue-900); // menu lateral (azul institucional escuro)
+  --nav-bg-hover: rgb(255 255 255 / 0.07);
+  --nav-bg-active: rgb(255 255 255 / 0.12);
+  --nav-text: #d5e3f0;
+  --nav-text-muted: #9dbfdd;
+  --nav-text-active: #ffffff;
+  --nav-accent: var(--nx-gold-300);
+  --nav-border: rgb(255 255 255 / 0.1);
+  --scrim: rgb(11 34 56 / 0.5);
+
+  // ---- Texto -------------------------------------------------------------
+  --text-strong: var(--nx-slate-900); // 16,5:1 sobre branco
+  --text: var(--nx-slate-800);
+  --text-muted: var(--nx-slate-600); // 5,9:1 sobre branco, 5,4:1 sobre o canvas
+  --text-placeholder: #6b7683; // 4,6:1 sobre branco
+  --text-disabled: var(--nx-slate-400);
+  --text-on-brand: #ffffff;
+  --text-heading: var(--nx-blue-800); // títulos: azul institucional (9,1:1)
+  --text-link: var(--nx-blue-600); // 5,4:1
+  --text-link-hover: var(--nx-blue-800);
+  --text-accent: var(--nx-gold-800); // dourado seguro para texto (6,6:1)
+
+  // ---- Bordas ------------------------------------------------------------
+  --border-subtle: #e8e5dc; // separadores decorativos
+  --border: #d8d4c8; // contorno de cartão e tabela
+  --border-strong: var(--nx-slate-400);
+  --border-control: #838f9b; // contorno de campo e checkbox (3,3:1, exigência de UI)
+
+  // ---- Marca e ação ------------------------------------------------------
+  --brand: var(--nx-blue-600);
+  --brand-hover: var(--nx-blue-700);
+  --brand-active: var(--nx-blue-800);
+  --brand-soft: var(--nx-blue-50);
+  --brand-soft-hover: var(--nx-blue-100);
+  --brand-soft-text: var(--nx-blue-800);
+  --accent: var(--nx-gold-600); // linhas e destaques (3,7:1)
+  --accent-brand: var(--nx-gold-500); // o dourado exato da marca, só decoração
+  --accent-soft: var(--nx-gold-50);
+  --accent-soft-border: var(--nx-gold-200);
+  --focus: var(--nx-blue-600);
+  --focus-halo: rgb(45 110 163 / 0.18);
+
+  // ---- Semânticas --------------------------------------------------------
+  // fg = texto e ícone sobre bg; icon = gráfico (3:1); bg = fundo suave
+  --success-fg: var(--nx-green-700);
+  --success-icon: var(--nx-green-600);
+  --success-bg: var(--nx-green-50);
+  --success-border: var(--nx-green-100);
+  --success-solid: var(--nx-green-600);
+
+  --attention-fg: var(--nx-amber-800);
+  --attention-icon: var(--nx-amber-500);
+  --attention-bg: var(--nx-amber-50);
+  --attention-border: var(--nx-amber-100);
+  --attention-solid: var(--nx-amber-700);
+
+  --danger-fg: var(--nx-red-800);
+  --danger-icon: var(--nx-red-600);
+  --danger-bg: var(--nx-red-50);
+  --danger-border: var(--nx-red-100);
+  --danger-solid: var(--nx-red-600);
+  --danger-solid-hover: var(--nx-red-700);
+
+  --info-fg: var(--nx-blue-800);
+  --info-icon: var(--nx-blue-600);
+  --info-bg: var(--nx-blue-50);
+  --info-border: var(--nx-blue-100);
+
+  // ---- Os quatro planos (Figura 1) ---------------------------------------
+  --plan-livre: var(--nx-slate-500);
+  --plan-livre-text: #4a5560;
+  --plan-livre-bg: var(--nx-slate-100);
+  --plan-essencial: var(--nx-blue-500);
+  --plan-essencial-text: var(--nx-blue-700);
+  --plan-essencial-bg: #e6f0f8;
+  --plan-cuida: var(--nx-blue-600);
+  --plan-cuida-text: var(--nx-blue-800);
+  --plan-cuida-bg: var(--nx-blue-100);
+  --plan-sustenta: var(--nx-gold-500);
+  --plan-sustenta-text: var(--nx-gold-800);
+  --plan-sustenta-bg: #fbf3da;
+
+  // ---- Faixas do Zarit (cor + ícone + rótulo, nunca só cor) --------------
+  --zarit-1-fill: var(--nx-green-500); // 0 a 20   Ausente ou pequena
+  --zarit-1-fg: var(--nx-green-700);
+  --zarit-1-bg: var(--nx-green-50);
+  --zarit-2-fill: var(--nx-blue-500); // 21 a 40  Moderada
+  --zarit-2-fg: var(--nx-blue-800);
+  --zarit-2-bg: #eaf2f9;
+  --zarit-3-fill: var(--nx-amber-500); // 41 a 60  Moderada a severa (alerta amarelo)
+  --zarit-3-fg: var(--nx-amber-800);
+  --zarit-3-bg: var(--nx-amber-50);
+  --zarit-4-fill: var(--nx-red-600); // 61 a 88  Severa (alerta vermelho)
+  --zarit-4-fg: var(--nx-red-800);
+  --zarit-4-bg: var(--nx-red-50);
+
+  // ---- Gráficos ----------------------------------------------------------
+  --chart-1: var(--nx-blue-600);
+  --chart-2: var(--nx-gold-500);
+  --chart-3: var(--nx-blue-300);
+  --chart-4: var(--nx-slate-500);
+  --chart-5: var(--nx-green-500);
+  --chart-grid: var(--nx-paper-300);
+  --chart-axis: var(--text-muted);
+  --chart-neg: var(--nx-red-600);
+  --chart-pos: var(--nx-blue-600);
+
+  // ---- Tipografia --------------------------------------------------------
+  --font-sans: 'Figtree Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'DM Serif Display', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, 'Liberation Mono', monospace;
+
+  // escala fixa (razão aproximada de 1,2; sem clamp em UI de produto)
+  --fs-xs: 0.75rem; // 12  legendas, cabeçalho de tabela, selos
+  --fs-sm: 0.875rem; // 14  UI densa: tabela, botão, rótulo, menu
+  --fs-md: 1rem; // 16  texto corrido, campos de formulário
+  --fs-lg: 1.125rem; // 18  título de cartão, introdução
+  --fs-xl: 1.25rem; // 20  subtítulo de página
+  --fs-2xl: 1.5rem; // 24  título de seção (serifa)
+  --fs-3xl: 2rem; // 32  título de página (serifa)
+  --fs-4xl: 2.5rem; // 40  destaque: entrada, resultado do Zarit (serifa)
+
+  --lh-tight: 1.15;
+  --lh-title: 1.25;
+  --lh-ui: 1.35;
+  --lh-body: 1.55;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  --tracking-title: -0.01em;
+  --tracking-ui: 0;
+  --tracking-wide: 0.04em;
+  --tracking-brand: 0.32em; // a palavra NEXUS, bem espaçada como no logo
+
+  // ---- Espaçamento (grade de 8 px; os ímpares são meio passo de 4 px) ----
+  --space-1: 0.25rem; //  4  só dentro de componentes
+  --space-2: 0.5rem; //  8
+  --space-3: 0.75rem; // 12  só dentro de componentes
+  --space-4: 1rem; // 16
+  --space-5: 1.25rem; // 20  só dentro de componentes
+  --space-6: 1.5rem; // 24
+  --space-8: 2rem; // 32
+  --space-10: 2.5rem; // 40
+  --space-12: 3rem; // 48
+  --space-16: 4rem; // 64
+  --space-20: 5rem; // 80
+  --space-24: 6rem; // 96
+
+  // ---- Raios -------------------------------------------------------------
+  --radius-xs: 0.25rem; //  4  checkbox, tecla
+  --radius-sm: 0.5rem; //  8  botão, campo, chip de menu
+  --radius-md: 0.75rem; // 12  cartão, tabela, aviso
+  --radius-lg: 1rem; // 16  diálogo, gaveta
+  --radius-xl: 1.5rem; // 24  cartão de plano, entrada (Figura 1)
+  --radius-pill: 62.5rem;
+
+  // ---- Sombras (sempre com deslocamento e desfoque; tom azul-tinta) -------
+  --shadow-1: 0 1px 2px rgb(19 51 80 / 0.06), 0 1px 1px rgb(19 51 80 / 0.04);
+  --shadow-2: 0 2px 6px rgb(19 51 80 / 0.07), 0 8px 16px -4px rgb(19 51 80 / 0.08);
+  --shadow-3: 0 4px 8px rgb(19 51 80 / 0.06), 0 16px 32px -8px rgb(19 51 80 / 0.16);
+  --shadow-4: 0 8px 16px rgb(11 34 56 / 0.1), 0 32px 64px -16px rgb(11 34 56 / 0.28);
+
+  // ---- Movimento: curto e funcional --------------------------------------
+  --dur-1: 120ms; // hover, foco
+  --dur-2: 200ms; // troca de estado
+  --dur-3: 320ms; // gaveta, diálogo
+  --ease: cubic-bezier(0.22, 1, 0.36, 1); // saída exponencial
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  // ---- Camadas -----------------------------------------------------------
+  --z-sticky: 10;
+  --z-nav: 20;
+  --z-popover: 30;
+  --z-drawer: 40;
+  --z-dialog: 50;
+  --z-toast: 60;
+
+  // ---- Medidas de layout e controle --------------------------------------
+  --control-h: 2.75rem; // 44 px: alvo mínimo em toque
+  --control-h-sm: 2rem; // 32 px: densidade compacta (sobe a 44 em toque)
+  --sidebar-w: 16.5rem; // 264 px (alinhado ao 04-ux.md)
+  --sidebar-w-rail: 4.5rem;
+  --topbar-h: 4rem;
+  --content-max: 80rem;
+  --gutter: var(--space-4);
+  --bottom-nav-h: 3.5rem; // 56 px mais a área segura do aparelho
+
+  @media (pointer: coarse) {
+    --control-h-sm: 2.75rem;
+  }
+
+  @include up(md) {
+    --gutter: var(--space-6);
+  }
+
+  @include up(lg) {
+    --gutter: var(--space-8);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tema escuro (opcional): ativado por [data-theme='dark'] no <html>.
+// Cena de uso: fim de expediente, monitor em sala com pouca luz.
+// ---------------------------------------------------------------------------
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --canvas: #0f1620;
+  --surface: #172230;
+  --surface-raised: #1d2b3b;
+  --surface-sunken: #121b27;
+  --surface-hover: #1c2a3a;
+  --nav-bg: #0b1722;
+  --scrim: rgb(3 8 14 / 0.62);
+
+  --text-strong: #f1f5f9;
+  --text: #dce4ec;
+  --text-muted: #a3b1c0;
+  --text-placeholder: #8797a8;
+  --text-disabled: #5c6e82;
+  --text-on-brand: #0b2238;
+  --text-heading: #cfe3f5;
+  --text-link: #7fb6e6;
+  --text-link-hover: #a9cdee;
+  --text-accent: var(--nx-gold-300);
+
+  --border-subtle: #213245;
+  --border: #2c4157;
+  --border-strong: #46607a;
+  --border-control: #6c8199;
+
+  --brand: #7fb6e6;
+  --brand-hover: #a3cbee;
+  --brand-active: #c4dcf3;
+  --brand-soft: #14304a;
+  --brand-soft-hover: #1a3d5c;
+  --brand-soft-text: #cfe3f5;
+  --accent: var(--nx-gold-300);
+  --accent-brand: var(--nx-gold-300);
+  --accent-soft: #2f2711;
+  --accent-soft-border: #54431a;
+  --focus: #9ccaf0;
+  --focus-halo: rgb(156 202 240 / 0.22);
+
+  --success-fg: #5cc595;
+  --success-icon: #5cc595;
+  --success-bg: #11301f;
+  --success-border: #1d4d33;
+  --success-solid: #2e9a68;
+
+  --attention-fg: #f2b84b;
+  --attention-icon: #f2b84b;
+  --attention-bg: #3a2b0c;
+  --attention-border: #5d4413;
+  --attention-solid: #c98a12;
+
+  --danger-fg: #ff8a7d;
+  --danger-icon: #ff8a7d;
+  --danger-bg: #3a1b1a;
+  --danger-border: #5f2b28;
+  --danger-solid: #d4493a;
+  --danger-solid-hover: #e05a4b;
+
+  --info-fg: #9ccaf0;
+  --info-icon: #7fb6e6;
+  --info-bg: #14304a;
+  --info-border: #1f4668;
+
+  --plan-livre: #8a97a5;
+  --plan-livre-text: #c1cbd6;
+  --plan-livre-bg: #222f3d;
+  --plan-essencial: #6fa8d8;
+  --plan-essencial-text: #a9cdee;
+  --plan-essencial-bg: #172e44;
+  --plan-cuida: #5b9bd0;
+  --plan-cuida-text: #bcd8f1;
+  --plan-cuida-bg: #1a3a58;
+  --plan-sustenta: var(--nx-gold-300);
+  --plan-sustenta-text: #ecd283;
+  --plan-sustenta-bg: #2f2711;
+
+  --zarit-1-fill: #3fae82;
+  --zarit-1-fg: #5cc595;
+  --zarit-1-bg: #11301f;
+  --zarit-2-fill: #5b9bd0;
+  --zarit-2-fg: #9ccaf0;
+  --zarit-2-bg: #14304a;
+  --zarit-3-fill: #d99a1c;
+  --zarit-3-fg: #f2b84b;
+  --zarit-3-bg: #3a2b0c;
+  --zarit-4-fill: #e0594a;
+  --zarit-4-fg: #ff8a7d;
+  --zarit-4-bg: #3a1b1a;
+
+  --chart-1: #7fb6e6;
+  --chart-2: var(--nx-gold-300);
+  --chart-3: #4a7ba3;
+  --chart-4: #8a97a5;
+  --chart-5: #3fae82;
+  --chart-grid: #243447;
+  --chart-neg: #ff8a7d;
+  --chart-pos: #7fb6e6;
+
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-2: 0 2px 6px rgb(0 0 0 / 0.35), 0 8px 16px -4px rgb(0 0 0 / 0.4);
+  --shadow-3: 0 4px 8px rgb(0 0 0 / 0.35), 0 16px 32px -8px rgb(0 0 0 / 0.5);
+  --shadow-4: 0 8px 16px rgb(0 0 0 / 0.4), 0 32px 64px -16px rgb(0 0 0 / 0.6);
+}
+
+// Movimento reduzido: tira duração, não tira estado.
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-1: 0.01ms;
+    --dur-2: 0.01ms;
+    --dur-3: 0.01ms;
+  }
+}

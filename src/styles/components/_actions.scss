@@ -1,0 +1,284 @@
+// Ações e navegação: ícone, botão, segmentado, menu, paginação, breadcrumb.
+@use '../tokens' as *;
+
+// ---- Ícone (sprite lucide em public/icons/sprite.svg; traço fino, como a marca) ----
+.icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icon--sm { width: 1rem; height: 1rem; }
+.icon--lg { width: 1.5rem; height: 1.5rem; }
+.icon--xl { width: 2rem; height: 2rem; stroke-width: 1.5; }
+
+// ---- Botão -----------------------------------------------------------------------
+// Estados: padrão, hover, foco (global), ativo, desabilitado, carregando (aria-busy).
+.btn {
+  --btn-bg: var(--surface);
+  --btn-fg: var(--text-strong);
+  --btn-bd: var(--border-control);
+  --btn-bg-hover: var(--surface-sunken);
+  --btn-bg-active: var(--border-subtle);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-h);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--btn-bd);
+  border-radius: var(--radius-sm);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+
+  &:hover { background: var(--btn-bg-hover); color: var(--btn-fg); }
+  &:active { background: var(--btn-bg-active); transform: translateY(1px); }
+
+  &[disabled],
+  &[aria-disabled='true'] {
+    background: var(--surface-sunken);
+    border-color: var(--border-subtle);
+    color: var(--text-disabled);
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  &[aria-busy='true'] {
+    color: transparent;
+    pointer-events: none;
+
+    > * { opacity: 0; }
+
+    &::after {
+      content: '';
+      position: absolute;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid var(--btn-fg);
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: nx-spin 0.7s linear infinite;
+    }
+  }
+}
+
+.btn--primary {
+  --btn-bg: var(--brand);
+  --btn-fg: var(--text-on-brand);
+  --btn-bd: var(--brand);
+  --btn-bg-hover: var(--brand-hover);
+  --btn-bg-active: var(--brand-active);
+  &:hover { border-color: var(--brand-hover); }
+}
+
+.btn--ghost {
+  --btn-bg: transparent;
+  --btn-bd: transparent;
+  --btn-fg: var(--text-muted);
+  &:hover { color: var(--text-strong); }
+}
+
+.btn--soft {
+  --btn-bg: var(--brand-soft);
+  --btn-bd: transparent;
+  --btn-fg: var(--brand-soft-text);
+  --btn-bg-hover: var(--brand-soft-hover);
+  --btn-bg-active: var(--nx-blue-200);
+}
+
+.btn--danger {
+  --btn-bg: var(--danger-solid);
+  --btn-fg: #ffffff;
+  --btn-bd: var(--danger-solid);
+  --btn-bg-hover: var(--danger-solid-hover);
+  --btn-bg-active: var(--nx-red-800);
+}
+
+.btn--danger-quiet {
+  --btn-bg: var(--surface);
+  --btn-fg: var(--danger-fg);
+  --btn-bd: var(--danger-border);
+  --btn-bg-hover: var(--danger-bg);
+  --btn-bg-active: var(--danger-border);
+}
+
+.btn--sm { min-height: var(--control-h-sm); padding: 0 var(--space-3); }
+.btn--lg { min-height: 3rem; padding: 0 var(--space-6); font-size: var(--fs-md); }
+.btn--block { width: 100%; }
+
+.btn--icon {
+  width: var(--control-h);
+  padding: 0;
+  &.btn--sm { width: var(--control-h-sm); }
+}
+
+.btn-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-link);
+  font-weight: var(--fw-medium);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  &:hover { color: var(--text-link-hover); }
+}
+
+@keyframes nx-spin { to { transform: rotate(360deg); } }
+
+// ---- Controle segmentado (semana/mês, densidade) ------------------------------------
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.segmented__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: calc(var(--control-h-sm) - 4px);
+  padding: 0 var(--space-3);
+  border-radius: calc(var(--radius-sm) - 2px);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+
+  &:hover { color: var(--text-strong); }
+
+  &[aria-pressed='true'],
+  &[aria-checked='true'] {
+    background: var(--surface);
+    color: var(--text-heading);
+    font-weight: var(--fw-semibold);
+    box-shadow: var(--shadow-1);
+  }
+
+  &[disabled] { color: var(--text-disabled); cursor: not-allowed; }
+}
+
+// ---- Menu (usuário, ações da linha) -----------------------------------------------------
+// Em Angular, posicione com @angular/cdk/overlay ou o atributo popover: um menu
+// absoluto dentro de contêiner com overflow é cortado.
+.menu-anchor { position: relative; display: inline-block; }
+
+.menu {
+  --item-h: 2.25rem;
+  min-width: 14rem;
+  padding: var(--space-2);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-3);
+  z-index: var(--z-popover);
+
+  @media (pointer: coarse) { --item-h: 2.75rem; }
+}
+
+.menu-anchor > .menu {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+}
+
+.menu__header {
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  margin: 0 calc(var(--space-2) * -1) var(--space-2);
+  padding-inline: var(--space-5);
+
+  strong { display: block; font-size: var(--fs-sm); color: var(--text-strong); }
+  span { font-size: var(--fs-xs); color: var(--text-muted); }
+}
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--item-h);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  text-decoration: none;
+  cursor: pointer;
+
+  .icon { color: var(--text-muted); width: 1.125rem; height: 1.125rem; }
+  &:hover, &:focus-visible { background: var(--surface-sunken); color: var(--text-strong); }
+  &[aria-checked='true'] { font-weight: var(--fw-semibold); }
+  &[disabled] { color: var(--text-disabled); cursor: not-allowed; }
+}
+
+.menu__item--danger {
+  color: var(--danger-fg);
+  .icon { color: var(--danger-icon); }
+  &:hover { background: var(--danger-bg); color: var(--danger-fg); }
+}
+
+.menu__sep { height: 1px; margin: var(--space-2) calc(var(--space-2) * -1); background: var(--border-subtle); }
+
+// ---- Paginação e breadcrumb --------------------------------------------------------------
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.pagination__pages { display: flex; align-items: center; gap: var(--space-1); }
+
+.pagination__page {
+  min-width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  padding: 0 var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--fw-medium);
+
+  &:hover { background: var(--surface-sunken); }
+  &[aria-current='page'] { background: var(--brand-soft); color: var(--brand-soft-text); font-weight: var(--fw-semibold); }
+  &[disabled] { color: var(--text-disabled); cursor: not-allowed; background: none; }
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+
+  li + li::before { content: '/'; margin-right: var(--space-2); color: var(--border-strong); }
+  a { color: var(--text-muted); text-decoration: none; &:hover { color: var(--text-link); text-decoration: underline; } }
+  [aria-current='page'] { color: var(--text-strong); font-weight: var(--fw-medium); }
+}

@@ -1,0 +1,336 @@
+// Feedback e sobreposição: banner, toast, diálogo, gaveta, estado vazio,
+// esqueleto de carregamento, prazo de alerta e dica.
+@use '../tokens' as *;
+
+// =============================================================================
+// Banner (informação, sucesso, atenção, perigo, protótipo, consentimento LGPD)
+// =============================================================================
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-md);
+  background: var(--info-bg);
+  color: var(--info-fg);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-ui);
+
+  > .icon { margin-top: 1px; color: var(--info-icon); }
+  a { color: inherit; font-weight: var(--fw-semibold); }
+}
+
+.banner__body { flex: 1; min-width: 0; display: grid; gap: var(--space-1); }
+.banner__title { font-weight: var(--fw-semibold); color: var(--text-strong); }
+.banner__text { color: inherit; }
+.banner__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+
+.banner--success { background: var(--success-bg); border-color: var(--success-border); color: var(--success-fg); > .icon { color: var(--success-icon); } }
+.banner--attention { background: var(--attention-bg); border-color: var(--attention-border); color: var(--attention-fg); > .icon { color: var(--attention-icon); } }
+.banner--danger { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-fg); > .icon { color: var(--danger-icon); } }
+
+// Protótipo: faixa fina no rodapé de toda tela e na entrada (AC-GL-05).
+.banner--prototype {
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--gutter, var(--space-4));
+  border-width: 0 0 1px;
+  border-radius: 0;
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-border);
+  color: var(--text-accent);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  text-align: center;
+  > .icon { width: 1rem; height: 1rem; margin-top: 0; color: var(--accent); }
+}
+
+// Consentimento LGPD (LP-01): não bloqueia; "Entendi" e "Ver detalhes".
+.banner--consent {
+  position: fixed;
+  z-index: var(--z-toast);
+  inset: auto var(--space-4) var(--space-4) var(--space-4);
+  max-width: 30rem;
+  padding: var(--space-5);
+  border-color: var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: var(--shadow-4);
+  font-size: var(--fs-sm);
+
+  > .icon { width: 1.5rem; height: 1.5rem; color: var(--accent); }
+  .banner__title { font-family: var(--font-serif); font-weight: var(--fw-regular); font-size: var(--fs-xl); color: var(--text-heading); }
+
+  @include up(md) { inset: auto auto var(--space-6) var(--space-6); }
+  &[data-static] { position: static; max-width: 34rem; }
+}
+
+// =============================================================================
+// Toast (confirmação leve; alerta de erro usa role="alert")
+// =============================================================================
+.toast-region {
+  position: fixed;
+  z-index: var(--z-toast);
+  inset: auto var(--space-4) var(--space-4) var(--space-4);
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  pointer-events: none;
+
+  @include up(md) { inset: auto var(--space-6) var(--space-6) auto; justify-items: end; width: 26rem; }
+
+  .portal-shell ~ & { bottom: calc(var(--bottom-nav-h) + var(--space-4)); }
+}
+
+.toast {
+  --toast-bg: var(--nx-slate-900);
+  --toast-fg: #f1f5f9;
+  --toast-icon: #9ccaf0;
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--toast-bg);
+  color: var(--toast-fg);
+  box-shadow: var(--shadow-3);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-ui);
+  pointer-events: auto;
+  animation: nx-toast-in var(--dur-2) var(--ease) both;
+
+  > .icon { margin-top: 1px; color: var(--toast-icon); }
+  strong { display: block; font-weight: var(--fw-semibold); }
+  span { color: #c9d4df; }
+
+  :root[data-theme='dark'] & { --toast-bg: #2a3b4e; --toast-fg: #f1f5f9; }
+}
+
+.toast--success { --toast-icon: #5cc595; }
+.toast--attention { --toast-icon: #f2b84b; }
+.toast--danger { --toast-icon: #ff8a7d; }
+.toast__action { align-self: center; padding: 0 var(--space-2); min-height: var(--control-h-sm); border-radius: var(--radius-sm); color: #9ccaf0; font-weight: var(--fw-semibold); &:hover { background: rgb(255 255 255 / 0.1); color: #fff; } }
+.toast__close { margin: -0.25rem -0.5rem -0.25rem auto; color: #c9d4df; &:hover { color: #fff; background: rgb(255 255 255 / 0.1); } }
+
+@keyframes nx-toast-in { from { opacity: 0; transform: translateY(0.5rem); } }
+
+// =============================================================================
+// Diálogo de confirmação (<dialog>.showModal()). Ações destrutivas descrevem o efeito.
+// =============================================================================
+.dialog {
+  width: min(32rem, calc(100vw - var(--space-8)));
+  max-height: calc(100dvh - var(--space-8));
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: var(--shadow-4);
+  overflow: auto;
+
+  &::backdrop { background: var(--scrim); }
+  &[open] { animation: nx-dialog-in var(--dur-3) var(--ease) both; }
+  &[open]::backdrop { animation: nx-fade var(--dur-3) var(--ease) both; }
+}
+
+// Formulário no celular: folha inferior (quase tela cheia). Confirmação continua diálogo compacto central.
+.dialog--sheet {
+  @include down(md) {
+    width: 100%;
+    max-width: none;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    &[open] { animation: nx-sheet-in var(--dur-3) var(--ease) both; }
+  }
+}
+@keyframes nx-sheet-in { from { transform: translateY(2rem); opacity: 0; } }
+
+.dialog--lg { width: min(44rem, calc(100vw - var(--space-8))); }
+.dialog--static { position: static; display: block; margin: 0 auto; max-height: none; box-shadow: var(--shadow-3); border: 1px solid var(--border); }
+
+.dialog__header { display: flex; align-items: flex-start; gap: var(--space-4); padding: var(--space-6) var(--space-6) 0; }
+.dialog__title { font-size: var(--fs-2xl); padding-top: var(--space-1); }
+.dialog__body { padding: var(--space-3) var(--space-6) var(--space-6); color: var(--text-muted); display: grid; gap: var(--space-4); }
+.dialog__body strong { color: var(--text-strong); }
+
+.dialog__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--info-bg);
+  color: var(--info-icon);
+  &--danger { background: var(--danger-bg); color: var(--danger-icon); }
+  &--attention { background: var(--attention-bg); color: var(--attention-icon); }
+}
+
+.dialog__footer {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-sunken);
+
+  @include up(sm) { flex-direction: row; justify-content: flex-end; }
+}
+
+// Lista do que acontece ao confirmar (eliminado, bloqueado, mantido).
+.effects { display: grid; gap: var(--space-2); margin: 0; padding: var(--space-3) var(--space-4); list-style: none; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--surface-sunken); font-size: var(--fs-sm); }
+.effects li { display: flex; gap: var(--space-2); align-items: flex-start; color: var(--text); }
+.effects .icon { width: 1rem; height: 1rem; margin-top: 3px; }
+.effects .is-erase .icon { color: var(--danger-icon); }
+.effects .is-block .icon { color: var(--attention-icon); }
+.effects .is-keep .icon { color: var(--success-icon); }
+
+@keyframes nx-dialog-in { from { opacity: 0; transform: translateY(0.75rem) scale(0.98); } }
+@keyframes nx-fade { from { opacity: 0; } }
+
+// =============================================================================
+// Gaveta lateral (detalhe sem perder a lista). Tela cheia no celular.
+// =============================================================================
+.drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(30rem, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  background: var(--surface-raised);
+  color: var(--text);
+  box-shadow: var(--shadow-4);
+  z-index: var(--z-drawer);
+
+  &[open] { display: flex; flex-direction: column; animation: nx-drawer-in var(--dur-3) var(--ease) both; }
+  &::backdrop { background: var(--scrim); }
+
+  @include down(sm) { width: 100vw; border-radius: 0; }
+}
+
+// Gaveta acoplada (PD-02): não é modal; ocupa a coluna da direita e a lista continua navegável.
+.drawer--docked { position: sticky; top: calc(var(--topbar-h) + var(--space-4)); inset: auto; display: flex; flex-direction: column; width: 100%; height: auto; max-height: calc(100dvh - var(--topbar-h) - var(--space-8)); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: none; animation: none; z-index: auto; }
+
+.drawer--static { position: relative; inset: auto; display: flex; flex-direction: column; height: auto; min-height: 20rem; width: 100%; border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-3); }
+
+.drawer__header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle); }
+.drawer__title { font-size: var(--fs-2xl); }
+.drawer__body { flex: 1; overflow-y: auto; padding: var(--space-6); display: grid; gap: var(--space-6); align-content: start; }
+.drawer__footer { display: flex; justify-content: flex-end; gap: var(--space-2); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); background: var(--surface-sunken); }
+
+@keyframes nx-drawer-in { from { transform: translateX(2rem); opacity: 0; } }
+
+// =============================================================================
+// Popover (painel de notificações, motivo de acesso): mesma superfície do menu, mais larga.
+// =============================================================================
+.popover {
+  width: min(22.5rem, calc(100vw - var(--space-8)));
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-3);
+  z-index: var(--z-popover);
+}
+.popover__header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-subtle); h3 { font-size: var(--fs-md); } }
+.popover__body { padding: var(--space-4); display: grid; gap: var(--space-3); max-height: 22rem; overflow-y: auto; }
+.popover__footer { display: flex; justify-content: flex-end; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border-subtle); background: var(--surface-sunken); border-radius: 0 0 var(--radius-md) var(--radius-md); }
+
+// Paleta de comandos e busca global (Ctrl+K): janela de 640 px, tela cheia no celular. Usa <dialog class="dialog cmdk">.
+.cmdk { width: min(40rem, 100vw - var(--space-8)); @include down(md) { width: 100%; max-width: none; height: 100dvh; max-height: none; border-radius: 0; } }
+.cmdk__input { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-subtle); .input { border: 0; box-shadow: none; min-height: 2.5rem; } .input:focus-visible { box-shadow: none; } }
+.cmdk__list { max-height: 22rem; overflow-y: auto; padding: var(--space-2); }
+.cmdk__group { padding: var(--space-2) var(--space-3) var(--space-1); font-size: var(--fs-xs); font-weight: var(--fw-semibold); color: var(--text-muted); }
+.cmdk__item { display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: var(--control-h); padding: 0 var(--space-3); border-radius: var(--radius-sm); font-size: var(--fs-sm); color: var(--text); text-align: left; .icon { color: var(--text-muted); } &[aria-selected='true'], &:hover { background: var(--brand-soft); color: var(--brand-soft-text); .icon { color: var(--brand); } } }
+.cmdk__foot { display: flex; flex-wrap: wrap; gap: var(--space-4); padding: var(--space-2) var(--space-4); border-top: 1px solid var(--border-subtle); background: var(--surface-sunken); font-size: var(--fs-xs); color: var(--text-muted); span { display: inline-flex; align-items: center; gap: var(--space-2); } }
+
+// =============================================================================
+// Estado vazio: acolhedor, com ilustração da marca e ação sugerida (AC-GL-01)
+// =============================================================================
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  max-width: 34rem;
+  margin-inline: auto;
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+}
+
+// Erro, sem permissão e offline usam o mesmo bloco, com ícone em vez das mãos.
+.empty__icon { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; margin-bottom: var(--space-2); border-radius: 50%; background: var(--surface-sunken); color: var(--text-muted); &--danger { background: var(--danger-bg); color: var(--danger-icon); } &--attention { background: var(--attention-bg); color: var(--attention-icon); } }
+.empty__art { width: 9rem; height: auto; margin-bottom: var(--space-2); color: var(--accent-brand); }
+.empty__art .art-soft { stroke: var(--border-strong); }
+.empty__title { font-family: var(--font-serif); font-weight: var(--fw-regular); font-size: var(--fs-2xl); color: var(--text-heading); line-height: var(--lh-title); text-wrap: balance; }
+.empty__text { color: var(--text-muted); max-width: 42ch; text-wrap: pretty; }
+.empty__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; margin-top: var(--space-2); }
+.empty--compact { padding: var(--space-8) var(--space-4); .empty__art { width: 6rem; } .empty__title { font-size: var(--fs-xl); } }
+
+// =============================================================================
+// Esqueleto de carregamento (no lugar de spinner no meio do conteúdo)
+// =============================================================================
+.skeleton {
+  display: block;
+  min-height: 1em;
+  border-radius: var(--radius-xs);
+  background: linear-gradient(90deg, var(--surface-sunken) 30%, var(--border-subtle) 50%, var(--surface-sunken) 70%);
+  background-size: 300% 100%;
+  animation: nx-shimmer 1.6s ease-in-out infinite;
+}
+
+.skeleton--text { height: 0.875rem; width: 100%; }
+.skeleton--short { width: 40%; }
+.skeleton--title { height: 1.75rem; width: 45%; }
+.skeleton--value { height: 2rem; width: 6rem; }
+.skeleton--circle { width: 2.5rem; height: 2.5rem; border-radius: 50%; }
+.skeleton--block { height: 7rem; border-radius: var(--radius-md); }
+
+@keyframes nx-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background: var(--surface-sunken); }
+}
+
+// =============================================================================
+// Prazo de alerta (cronômetro até 23h59). Sério, sem piscar, sem exclamação.
+// =============================================================================
+.deadline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+
+  .icon { color: var(--danger-icon); }
+}
+
+.deadline__time { font-size: var(--fs-2xl); font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 1; color: var(--text-strong); }
+.deadline__label { font-size: var(--fs-xs); color: var(--danger-fg); font-weight: var(--fw-medium); }
+
+// =============================================================================
+// Dica (tooltip leve, ligada por aria-describedby)
+// =============================================================================
+.tooltip {
+  display: inline-block;
+  max-width: 16rem;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--nx-slate-900);
+  color: #f1f5f9;
+  font-size: var(--fs-xs);
+  line-height: var(--lh-ui);
+  box-shadow: var(--shadow-2);
+  :root[data-theme='dark'] & { background: #2a3b4e; }
+}

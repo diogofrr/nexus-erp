@@ -1,0 +1,137 @@
+// Tipografia: DM Serif Display nos títulos de página e de seção (a face da
+// Figura 1) e Figtree no corpo e na interface. Só o subconjunto latino é
+// carregado: cobre todo o português. Arquivos locais, sem requisição externa.
+@use 'tokens' as *;
+
+@font-face {
+  font-family: 'Figtree Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 900;
+  src: url('../../node_modules/@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'DM Serif Display';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('../../node_modules/@fontsource/dm-serif-display/files/dm-serif-display-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'DM Serif Display';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400;
+  src: url('../../node_modules/@fontsource/dm-serif-display/files/dm-serif-display-latin-400-italic.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+// ---- Títulos: serifa, azul institucional, uma só peso (400) -----------------
+h1, h2, .t-display, .t-h1, .t-h2 {
+  font-family: var(--font-serif);
+  font-weight: var(--fw-regular);
+  color: var(--text-heading);
+  letter-spacing: var(--tracking-title);
+  text-wrap: balance;
+}
+
+.t-display {
+  font-size: var(--fs-4xl);
+  line-height: var(--lh-tight);
+}
+
+h1, .t-h1 {
+  font-size: var(--fs-3xl);
+  line-height: var(--lh-tight);
+}
+
+h2, .t-h2 {
+  font-size: var(--fs-2xl);
+  line-height: var(--lh-title);
+}
+
+// h3 a h6 são rótulos de interface: sem serifa, para a leitura dos dados.
+h3, h4, h5, h6, .t-h3, .t-h4 {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-semibold);
+  color: var(--text-strong);
+  line-height: var(--lh-title);
+  text-wrap: balance;
+}
+
+h3, .t-h3 { font-size: var(--fs-lg); }
+h4, .t-h4 { font-size: var(--fs-md); }
+h5, h6 { font-size: var(--fs-sm); }
+
+p { text-wrap: pretty; }
+
+// ---- Papéis de texto ---------------------------------------------------------
+.t-body { font-size: var(--fs-md); line-height: var(--lh-body); }
+.t-lead { font-size: var(--fs-lg); line-height: var(--lh-body); color: var(--text-muted); }
+.t-ui { font-size: var(--fs-sm); line-height: var(--lh-ui); }
+.t-caption { font-size: var(--fs-xs); line-height: var(--lh-ui); color: var(--text-muted); }
+.t-muted { color: var(--text-muted); }
+.t-strong { font-weight: var(--fw-semibold); color: var(--text-strong); }
+.t-accent { color: var(--text-accent); }
+.t-serif { font-family: var(--font-serif); font-weight: var(--fw-regular); letter-spacing: var(--tracking-title); }
+.t-center { text-align: center; }
+.t-right { text-align: right; }
+.t-nowrap { white-space: nowrap; }
+.t-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+// Números alinhados em coluna: obrigatório em tabela, KPI e relógio de prazo.
+.t-num,
+.num {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+// Códigos pseudonimizados (CUI-0042) e identificadores: monoespaçada, só aqui.
+.t-code,
+code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  letter-spacing: 0;
+}
+
+// Texto corrido com medida de leitura confortável (65 a 75 caracteres).
+.prose {
+  max-width: 68ch;
+
+  > * + * { margin-top: var(--space-4); }
+  h2 { margin-top: var(--space-8); }
+  h3 { margin-top: var(--space-6); }
+  ul, ol { padding-left: 1.25rem; }
+  li + li { margin-top: var(--space-2); }
+}
+
+// A palavra NEXUS, bem espaçada como no logo.
+.wordmark {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-brand);
+  text-transform: uppercase;
+  margin-right: calc(var(--tracking-brand) * -1);
+}
+
+kbd,
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+}

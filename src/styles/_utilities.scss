@@ -1,0 +1,61 @@
+// Utilitários pequenos e previsíveis. Espaçamento só com tokens da grade de 8 px.
+@use 'tokens' as *;
+
+.sr-only { @include visually-hidden; }
+.sr-only-focusable:focus-visible { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip-path: none; white-space: normal; }
+
+// Link de pular para o conteúdo (primeiro elemento focável da página).
+.skip-link {
+  position: fixed;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: calc(var(--z-toast) + 1);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-strong);
+  font-weight: var(--fw-semibold);
+  box-shadow: var(--shadow-3);
+  transform: translateY(-200%);
+  &:focus-visible { transform: none; }
+}
+
+.hide-sm { @include down(md) { display: none !important; } }
+.show-sm { @include up(md) { display: none !important; } }
+.hide-md { @include down(lg) { display: none !important; } }
+.show-md { @include up(lg) { display: none !important; } }
+
+.flex { display: flex; }
+.flex-1 { flex: 1; min-width: 0; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.wrap { flex-wrap: wrap; }
+.w-full { width: 100%; }
+.min-w-0 { min-width: 0; }
+.relative { position: relative; }
+.block { display: block; }
+.overflow-hidden { overflow: hidden; }
+
+@each $n in 0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 16 {
+  .mt-#{$n} { margin-top: var(--space-#{$n}) !important; }
+  .mb-#{$n} { margin-bottom: var(--space-#{$n}) !important; }
+  .gap-#{$n} { gap: var(--space-#{$n}) !important; }
+  .p-#{$n} { padding: var(--space-#{$n}) !important; }
+}
+
+.ml-auto { margin-left: auto; }
+.mx-auto { margin-inline: auto; }
+
+// Cor de texto por significado.
+.text-success { color: var(--success-fg); }
+.text-attention { color: var(--attention-fg); }
+.text-danger { color: var(--danger-fg); }
+.text-brand { color: var(--text-heading); }
+.text-muted { color: var(--text-muted); }
+
+// Superfícies prontas.
+.surface { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
+.sunken { background: var(--surface-sunken); }
+
+// Dado sensível: mostra marca d'água "Confidencial" na impressão (ver _reset.scss).
+.sensitive { position: relative; }

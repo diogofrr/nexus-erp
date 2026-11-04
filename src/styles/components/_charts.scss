@@ -1,0 +1,146 @@
+// Gráficos feitos à mão em SVG (sem biblioteca) e medidores em CSS.
+// Todo gráfico tem alternativa em tabela e usa só tokens (acompanha o tema escuro).
+// SVG de gráfico: viewBox 560 de largura; abaixo disso rola dentro do .chart__scroll.
+@use '../tokens' as *;
+
+.chart { display: grid; gap: var(--space-3); }
+.chart__scroll { overflow-x: auto; margin-inline: calc(var(--space-1) * -1); padding-inline: var(--space-1); }
+.chart__svg { display: block; width: 100%; min-width: 34rem; height: auto; overflow: visible; font-family: var(--font-sans); }
+
+.ch-grid { stroke: var(--chart-grid); stroke-width: 1; }
+.ch-axis { stroke: var(--border-strong); stroke-width: 1; }
+.ch-text { fill: var(--chart-axis); font-size: 12px; font-variant-numeric: tabular-nums; }
+.ch-text--strong { fill: var(--text-strong); font-weight: 600; }
+.ch-text--end { text-anchor: end; }
+.ch-text--mid { text-anchor: middle; }
+
+.ch-bar { fill: var(--chart-1); }
+.ch-bar--2 { fill: var(--chart-2); }
+.ch-bar--3 { fill: var(--chart-3); }
+.ch-bar--4 { fill: var(--chart-4); }
+.ch-bar--neg { fill: var(--chart-neg); }
+.ch-bar--muted { fill: var(--border-strong); }
+
+.ch-line { fill: none; stroke: var(--chart-1); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.ch-line--2 { stroke: var(--chart-2); }
+.ch-line--dash { stroke-dasharray: 6 5; }
+.ch-area { fill: var(--chart-1); opacity: 0.12; }
+.ch-dot { fill: var(--surface); stroke: var(--chart-1); stroke-width: 2.25; }
+.ch-ref { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.ch-ref-label { fill: var(--text-accent); font-size: 12px; font-weight: 600; }
+.ch-slice { fill: none; stroke-width: 18; }
+
+// Legenda: o marcador muda de forma (quadrado, traço) para não depender só da cor.
+.legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); margin: 0; padding: 0; list-style: none; font-size: var(--fs-xs); color: var(--text-muted); }
+.legend__item { display: inline-flex; align-items: center; gap: var(--space-2); }
+.legend__item::before { content: ''; width: 0.75rem; height: 0.75rem; border-radius: 3px; background: var(--sw, var(--chart-1)); }
+.legend__item--line::before { height: 0.1875rem; width: 1rem; border-radius: 2px; }
+.legend__item--dash::before { height: 0; width: 1rem; border-radius: 0; background: none; border-top: 2px dashed var(--sw, var(--accent)); }
+
+.chart-alt { font-size: var(--fs-sm); summary { cursor: pointer; color: var(--text-link); font-weight: var(--fw-medium); min-height: var(--control-h-sm); display: inline-flex; align-items: center; gap: var(--space-2); } }
+
+// Rosca: círculos com stroke-dasharray (r = 15,915 deixa a circunferência em 100).
+.donut { position: relative; display: grid; place-items: center; width: 10rem; height: 10rem; flex-shrink: 0; }
+.donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.donut__track { fill: none; stroke: var(--surface-sunken); stroke-width: 4.2; }
+.donut__seg { fill: none; stroke-width: 4.2; }
+.donut__center { position: absolute; display: grid; justify-items: center; line-height: 1.1; text-align: center; }
+.donut__center strong { font-size: var(--fs-2xl); font-weight: var(--fw-semibold); color: var(--text-strong); font-variant-numeric: tabular-nums; }
+.donut__center span { font-size: var(--fs-xs); color: var(--text-muted); }
+
+.spark { display: block; width: 6.5rem; height: 2rem; overflow: visible; }
+.spark path { fill: none; stroke: var(--chart-1); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.spark circle { fill: var(--chart-1); }
+.spark--gold path { stroke: var(--chart-2); }
+.spark--gold circle { fill: var(--chart-2); }
+
+// ---- Barra de progresso -----------------------------------------------------------------------
+.progress { height: 0.5rem; border-radius: var(--radius-pill); background: var(--surface-sunken); box-shadow: inset 0 0 0 1px var(--border-subtle); overflow: hidden; }
+.progress--lg { height: 0.75rem; }
+// O preenchimento anima por clip-path (não por largura): nada de layout se move e a ponta continua arredondada.
+// Com movimento reduzido a duração vai a zero.
+.progress__bar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--brand);
+  clip-path: inset(0 calc(100% - var(--value, 0%)) 0 0 round var(--radius-pill));
+  transition: clip-path var(--dur-3) var(--ease);
+}
+.progress--gold .progress__bar { background: var(--accent); }
+.progress--success .progress__bar { background: var(--success-icon); }
+
+// ---- Medidor com meta (ponto de equilíbrio: faltam N assinantes) --------------------------------
+.meter { display: grid; gap: var(--space-2); }
+.meter__track { position: relative; height: 0.875rem; border-radius: var(--radius-pill); background: var(--surface-sunken); box-shadow: inset 0 0 0 1px var(--border-subtle); }
+.meter__fill { display: block; height: 100%; width: var(--value, 0%); border-radius: inherit; background: var(--brand); }
+.meter__target { position: absolute; top: -0.375rem; bottom: -0.375rem; left: var(--target, 100%); width: 2px; background: var(--accent); transform: translateX(-1px); }
+.meter__scale { display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.meter__scale b { color: var(--text-strong); font-weight: var(--fw-semibold); }
+
+// ---- Barras de ocupação com linha de 80% (agenda dos psicólogos) -------------------------------------
+.occ { display: grid; gap: var(--space-4); }
+.occ__row { display: grid; grid-template-columns: minmax(6.5rem, 9rem) minmax(0, 1fr) 4.5rem; align-items: center; gap: var(--space-3); font-size: var(--fs-sm); }
+.occ__name { color: var(--text-strong); font-weight: var(--fw-medium); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.occ__track { position: relative; height: 0.875rem; border-radius: var(--radius-pill); background: var(--surface-sunken); box-shadow: inset 0 0 0 1px var(--border-subtle); }
+.occ__fill { display: block; height: 100%; width: var(--v); border-radius: inherit; background: var(--chart-1); }
+.occ__fill--over { background: var(--attention-icon); }
+.occ__fill--na { background: repeating-linear-gradient(135deg, var(--border) 0 4px, transparent 4px 8px); }
+.occ__limit { position: absolute; top: -0.3125rem; bottom: -0.3125rem; left: 80%; width: 2px; background: var(--accent); }
+.occ__value { text-align: right; font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; color: var(--text-strong); }
+
+// ---- Termômetro da faixa do Zarit ----------------------------------------------------------------------------
+// Quatro segmentos proporcionais (89 valores: 0 a 88). A faixa atual fica cheia;
+// as outras recuam. O marcador mostra o total. Cada segmento tem ícone e rótulo.
+.thermo { --pos: 50%; display: grid; gap: var(--space-2); padding-top: 2.25rem; }
+.thermo__track { position: relative; display: flex; gap: 3px; height: 1rem; }
+.thermo__seg { flex: var(--w) 1 0; border-radius: var(--radius-pill); background: var(--fill); opacity: 0.32; }
+.thermo__seg[aria-current='true'] { opacity: 1; }
+.thermo__seg--1 { --fill: var(--zarit-1-fill); --w: 21; }
+.thermo__seg--2 { --fill: var(--zarit-2-fill); --w: 20; }
+.thermo__seg--3 { --fill: var(--zarit-3-fill); --w: 20; }
+.thermo__seg--4 { --fill: var(--zarit-4-fill); --w: 28; }
+
+.thermo__marker {
+  position: absolute;
+  bottom: calc(100% + 0.25rem);
+  left: var(--pos);
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  transform: translateX(-50%);
+  color: var(--text-strong);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  pointer-events: none;
+
+  span { padding: 3px var(--space-2); border-radius: var(--radius-xs); background: var(--text-strong); color: var(--surface); }
+  // seta do marcador: triângulo por clip-path (sem truque de borda)
+  &::after { content: ''; width: 0.625rem; height: 0.375rem; background: var(--text-strong); clip-path: polygon(0 0, 100% 0, 50% 100%); }
+}
+
+.thermo__labels { display: flex; gap: 3px; }
+.thermo__label { flex: var(--w) 1 0; display: grid; gap: 2px; justify-items: start; min-width: 0; font-size: var(--fs-xs); line-height: 1.25; color: var(--text-muted); }
+.thermo__label .icon { width: 0.9375rem; height: 0.9375rem; }
+.thermo__label b { font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; }
+.thermo__label[aria-current='true'] { color: var(--text-strong); font-weight: var(--fw-medium); }
+.thermo__label--1 { --w: 21; .icon { color: var(--zarit-1-fg); } }
+.thermo__label--2 { --w: 20; .icon { color: var(--zarit-2-fg); } }
+.thermo__label--3 { --w: 20; .icon { color: var(--zarit-3-fg); } }
+.thermo__label--4 { --w: 28; .icon { color: var(--zarit-4-fg); } }
+
+@include down(sm) {
+  // no celular, só o rótulo da faixa atual aparece por extenso
+  .thermo__label:not([aria-current='true']) > span { @include visually-hidden; }
+}
+
+// ---- Matriz de risco 5 x 5 (M13): número em cada célula, não só cor ----------------------------------------------
+.heat { display: grid; grid-template-columns: 2.5rem repeat(5, minmax(0, 1fr)); gap: 3px; font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.heat__axis { display: grid; place-items: center; color: var(--text-muted); font-weight: var(--fw-semibold); }
+.heat__cell { position: relative; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 3px; min-height: 3rem; padding: var(--space-1); border-radius: var(--radius-xs); background: var(--success-bg); color: var(--success-fg); }
+.heat__cell[data-level='mid'] { background: var(--attention-bg); color: var(--attention-fg); }
+.heat__cell[data-level='high'] { background: var(--danger-bg); color: var(--danger-fg); }
+.heat__score { position: absolute; top: 2px; right: 4px; font-size: 0.6875rem; opacity: 0.8; }
+.heat__risk { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.5rem; padding: 0 4px; border-radius: var(--radius-pill); background: var(--surface); color: var(--text-strong); font-weight: var(--fw-bold); box-shadow: 0 0 0 1px var(--border); }

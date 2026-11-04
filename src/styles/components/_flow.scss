@@ -1,0 +1,282 @@
+// Fluxos: stepper, assistente (Zarit), mapa de itens, kanban e agenda semanal.
+@use '../tokens' as *;
+
+// =============================================================================
+// Stepper (cadastro em etapas, credenciamento). Estados: feita, atual, pendente.
+// =============================================================================
+.stepper {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepper__item {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+
+  &:not(:last-child)::after {
+    content: '';
+    flex: 1;
+    min-width: var(--space-4);
+    height: 1px;
+    margin-inline: var(--space-2);
+    background: var(--border-control);
+  }
+
+  &:last-child { flex: none; }
+  &.is-done:not(:last-child)::after { height: 2px; background: var(--brand); }
+}
+
+.stepper__dot {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border: 1.5px solid var(--border-control);
+  border-radius: 50%;
+  background: var(--surface);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+  .icon { width: 1rem; height: 1rem; stroke-width: 2.25; }
+}
+
+.stepper__label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.stepper__item.is-done {
+  color: var(--text-strong);
+  .stepper__dot { background: var(--brand); border-color: var(--brand); color: var(--text-on-brand); }
+}
+
+.stepper__item[aria-current='step'] {
+  color: var(--text-heading);
+  font-weight: var(--fw-semibold);
+  .stepper__dot { border: 2px solid var(--brand); background: var(--brand-soft); color: var(--brand-soft-text); }
+}
+
+// Celular: o stepper cede lugar ao texto "Etapa 2 de 5: Pessoa idosa" mais a barra (.step-counter).
+// O stepper é só indicativo, nunca clicável.
+@include down(md) {
+  .stepper { display: none; }
+}
+.step-counter { display: grid; gap: var(--space-2); font-size: var(--fs-sm); color: var(--text-muted); b { color: var(--text-strong); } @include up(md) { display: none; } }
+
+// =============================================================================
+// Assistente (wizard) de uma pergunta por tela: aplicação da escala de Zarit.
+// =============================================================================
+.wizard {
+  display: grid;
+  gap: var(--space-6);
+  max-width: 52rem;
+  margin-inline: auto;
+}
+
+.wizard__head { display: grid; gap: var(--space-3); }
+.wizard__count { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); font-size: var(--fs-sm); color: var(--text-muted); font-variant-numeric: tabular-nums; strong { color: var(--text-strong); } }
+
+.wizard__body {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  @include up(md) { padding: var(--space-10) var(--space-8); }
+}
+
+.wizard__question { font-family: var(--font-serif); font-size: var(--fs-2xl); line-height: var(--lh-title); color: var(--text-heading); text-wrap: balance; @include up(md) { font-size: var(--fs-3xl); } }
+.wizard__hint { color: var(--text-muted); font-size: var(--fs-sm); margin-top: var(--space-2); }
+
+// barra de ações fixa no rodapé: nunca some atrás do teclado ou da rolagem
+.wizard__foot {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  background: var(--canvas);
+  border-top: 1px solid var(--border-subtle);
+
+  .wizard__status { margin-right: auto; display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--fs-xs); color: var(--text-muted); .icon { width: 1rem; height: 1rem; color: var(--success-icon); } }
+}
+
+// Mapa dos 22 itens: respondido, atual, pendente. Mostra o que falta (AC-M06-02).
+.item-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.25rem, 1fr)); gap: var(--space-2); }
+
+.item-map__btn {
+  display: grid;
+  place-items: center;
+  height: 2.25rem;
+  border: 1px solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+  &:hover { border-color: var(--text-muted); color: var(--text-strong); }
+
+  &.is-done { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-soft-text); }
+  &[aria-current='step'] { background: var(--brand); border-color: var(--brand); color: var(--text-on-brand); }
+  &.is-missing { border-style: dashed; border-color: var(--attention-icon); color: var(--attention-fg); background: var(--attention-bg); }
+}
+
+// =============================================================================
+// Kanban simples (credenciamento por estado). Rola na horizontal no celular.
+// =============================================================================
+.kanban {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(16rem, 1fr);
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+}
+
+.kanban__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 14rem;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  scroll-snap-align: start;
+}
+
+.kanban__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) var(--space-2) var(--space-1); font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--text-strong); }
+
+.kanban__card {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  font-size: var(--fs-sm);
+  transition: box-shadow var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);
+  &:hover { box-shadow: var(--shadow-2); border-color: var(--border-strong); }
+  strong { color: var(--text-strong); font-weight: var(--fw-semibold); }
+}
+
+// Celular: acordeão por estado (cada coluna recolhe; a contagem fica no título).
+.kanban__chevron { display: none; }
+@include down(md) {
+  .kanban { grid-auto-flow: row; grid-auto-columns: auto; overflow: visible; }
+  .kanban__col { min-height: 0; }
+  .kanban__head { cursor: pointer; min-height: var(--control-h); }
+  .kanban__chevron { display: inline-flex; transition: transform var(--dur-2) var(--ease); }
+  .kanban__col[data-collapsed='true'] > :not(.kanban__head) { display: none; }
+  .kanban__col[data-collapsed='true'] .kanban__chevron { transform: rotate(-90deg); }
+}
+
+.kanban__empty { padding: var(--space-4) var(--space-2); font-size: var(--fs-xs); color: var(--text-muted); text-align: center; }
+
+// =============================================================================
+// Agenda semanal (M05). Horas na vertical, seg a sex. Estado = cor + ícone + texto.
+// No celular rola dentro do contêiner, com a coluna de horas fixa.
+// =============================================================================
+.agenda {
+  --hour-h: 3.5rem;
+  display: grid;
+  grid-template-columns: 3.5rem repeat(5, minmax(8.5rem, 1fr));
+  overflow: auto;
+  max-height: 34rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.agenda__corner,
+.agenda__dayhead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: var(--space-2);
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+
+  strong { font-size: var(--fs-md); color: var(--text-strong); font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; }
+  & + & { border-left: 1px solid var(--border-subtle); }
+
+  &.is-today { color: var(--text-accent); strong { color: var(--text-heading); } box-shadow: inset 0 -2px 0 var(--accent); }
+}
+
+.agenda__corner { left: 0; z-index: 3; }
+
+.agenda__time {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  height: var(--hour-h);
+  padding: var(--space-1) var(--space-2) 0 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border-subtle);
+  text-align: right;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.agenda__cell {
+  height: var(--hour-h);
+  padding: 3px;
+  border-top: 1px solid var(--border-subtle);
+  border-left: 1px solid var(--border-subtle);
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  line-height: 1.25;
+  text-align: left;
+  overflow: hidden;
+  transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+
+  b { display: flex; align-items: center; gap: 4px; font-weight: var(--fw-semibold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .icon { width: 0.8125rem; height: 0.8125rem; flex-shrink: 0; }
+  span { color: inherit; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+.slot--open { border: 1px dashed var(--border); background: transparent; color: var(--text-muted); opacity: 0.85; cursor: pointer; &:hover { background: var(--brand-soft); border-style: solid; border-color: var(--brand); color: var(--brand-soft-text); } }
+.slot--booked { background: var(--brand-soft); border-color: var(--nx-blue-200); color: var(--brand-soft-text); cursor: pointer; &:hover { border-color: var(--brand); } }
+.slot--confirmed { background: var(--success-bg); border-color: var(--success-border); color: var(--success-fg); cursor: pointer; }
+.slot--priority { background: var(--accent-soft); border-color: var(--accent-soft-border); color: var(--text-accent); cursor: pointer; }
+.slot--blocked { border-style: dashed; color: var(--text-muted); background: repeating-linear-gradient(135deg, var(--surface-sunken) 0 6px, var(--surface) 6px 12px); cursor: not-allowed; }
+.slot--done { background: var(--surface-sunken); border-color: var(--border-subtle); color: var(--text-muted); }
+.slot--noshow { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-fg); }
+
+// Celular: visão do dia (seletor de dias e lista de vagas); a grade semanal não é espremida.
+.day-picker { display: flex; gap: var(--space-2); overflow-x: auto; padding-bottom: var(--space-1); scrollbar-width: none; .chip { flex-direction: column; gap: 0; justify-content: center; min-width: 3.75rem; min-height: 3.75rem; border-radius: var(--radius-md); line-height: 1.2; b { font-size: var(--fs-lg); font-variant-numeric: tabular-nums; } } }
+
+.agenda-legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); font-size: var(--fs-xs); color: var(--text-muted); }
+.agenda-legend span { display: inline-flex; align-items: center; gap: var(--space-2); }
+.agenda-legend i { width: 0.875rem; height: 0.875rem; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); }

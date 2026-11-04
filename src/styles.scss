@@ -1,1 +1,13 @@
-/* You can add global styles to this file, and also import other style files */
+/*
+  Nexus ERP: estilos globais.
+  Ordem: tokens (variáveis CSS) > reset > tipografia > layout > componentes > utilitários.
+  Fontes: DM Serif Display (títulos) e Figtree Variable (interface), arquivos locais
+  declarados em src/styles/_typography.scss (só o subconjunto latino, cobre o português).
+  Guia: docs/03-design-system.md. Exemplos vivos: docs/styleguide.html.
+*/
+@use 'styles/tokens';
+@use 'styles/reset';
+@use 'styles/typography';
+@use 'styles/layout';
+@use 'styles/components';
+@use 'styles/utilities';
