@@ -1,0 +1,1 @@
+function r(e){return e===`support`||e===`technical_lead`||e===`psychologist`}function i(e,o){let t=r(e);return{text:t?o.fullName:o.code,code:o.code,pseudonymized:!t}}export{r as n,i as t};

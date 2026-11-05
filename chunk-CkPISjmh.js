@@ -1,0 +1,1 @@
+function n(e){return e.target?.value??``}function l(e){return e.target?.checked??!1}export{n,l as t};

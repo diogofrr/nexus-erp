@@ -1,0 +1,1 @@
+function i(s){let t=Math.round(Math.abs(s));if(t<60)return`${t} min`;let n=Math.floor(t/1440),o=Math.floor(t%1440/60),r=t%60;if(n===0)return r===0?`${o} h`:`${o} h ${r} min`;let a=`${n} ${n===1?`dia`:`dias`}`;return n<3&&o>0?`${a} ${o} h`:a}export{i as t};

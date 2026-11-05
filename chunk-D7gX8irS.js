@@ -1,0 +1,1 @@
+function s(a,e){let t=a.subscriptions.query(r=>r.caregiverId===e);return(t.find(r=>r.status===`active`||r.status===`cancel_scheduled`)??t.at(-1))?.planId??`livre`}export{s as t};

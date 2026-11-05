@@ -1,0 +1,2 @@
+function c(e,n,r,o=`application/json`){try{let i=URL.createObjectURL(new Blob([r],{type:o})),t=e.createElement(`a`);return t.href=i,t.download=n,t.rel=`noopener`,e.body.appendChild(t),t.click(),t.remove(),setTimeout(()=>URL.revokeObjectURL(i),1e3),!0}catch{return!1}}function s(e){let n=/^[=+\-@]/.test(e)?`'${e}`:e;return/[;"\n\r]/.test(n)?`"${n.replace(/"/g,`""`)}"`:n}function a(e,n){return[e,...n].map(r=>r.map(o=>s(o)).join(`;`)).join(`
+`)}export{c as n,a as t};
