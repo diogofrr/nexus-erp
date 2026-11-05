@@ -1,14 +1,30 @@
 import { Routes } from '@angular/router';
-import { ModulePlaceholderComponent } from '../_placeholder/module-placeholder.component';
 
 /**
  * M04 Planos, assinaturas e Cartão Nexus, montado em `/app/assinaturas`.
- * Telas: `planos`, lista, `:id`, `cartoes`, registrar uso do cartão (modal).
+ * Telas: lista, `planos` (comparativo), `cartoes` (com o registro de uso em gaveta) e `:id` (detalhe da
+ * assinatura). O módulo é do `partner`, do `support` (edita) e do `technical_lead` (lê); o psicólogo só vê
+ * o plano do próprio cuidador dentro da ficha (M03).
  */
 export const ROUTES: Routes = [
   {
     path: '',
-    component: ModulePlaceholderComponent,
-    data: { title: 'Planos e assinaturas', moduleId: 'M04' },
+    data: { title: 'Assinaturas' },
+    loadComponent: () => import('./pages/subscriptions-list.page').then((m) => m.SubscriptionsListPage),
+  },
+  {
+    path: 'planos',
+    data: { title: 'Planos' },
+    loadComponent: () => import('./pages/plans.page').then((m) => m.PlansPage),
+  },
+  {
+    path: 'cartoes',
+    data: { title: 'Cartões' },
+    loadComponent: () => import('./pages/cards.page').then((m) => m.CardsPage),
+  },
+  {
+    path: ':id',
+    data: { title: 'Detalhe da assinatura' },
+    loadComponent: () => import('./pages/subscription-detail.page').then((m) => m.SubscriptionDetailPage),
   },
 ];

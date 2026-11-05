@@ -52,6 +52,16 @@ export type DsrType =
 
 export type DsrStatus = 'open' | 'in_progress' | 'completed' | 'rejected_with_reason';
 
+/** Correção feita a pedido do titular, com o valor anterior em histórico (escopo 6.6). */
+export interface DsrCorrection {
+  at: ISODateTime;
+  /** Nome do campo em pt-BR ("E-mail", "Telefone"). */
+  field: string;
+  previous: string;
+  next: string;
+  byUserId: ID;
+}
+
 export interface DataSubjectRequest extends Audited {
   /** `DSR-0001`. */
   protocol: string;
@@ -67,6 +77,12 @@ export interface DataSubjectRequest extends Audited {
   rejectedReason?: string;
   /** Eliminação parcial: o que ficou retido por registro documental e por quê. */
   retentionBlockNote?: string;
+  /** Canal por onde o pedido chegou (F12). */
+  channel?: Channel | 'in_person';
+  /** O que o titular pediu, em palavras simples (sem dado clínico). */
+  description?: string;
+  /** Correções feitas por esta solicitação, com o valor anterior. */
+  corrections?: DsrCorrection[];
 }
 
 export interface IncidentCommunication {

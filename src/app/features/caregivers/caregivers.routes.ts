@@ -1,14 +1,36 @@
 import { Routes } from '@angular/router';
-import { ModulePlaceholderComponent } from '../_placeholder/module-placeholder.component';
+import { permissionGuard } from '@core/auth';
+import { leaveNewCaregiverGuard } from './pages/caregiver-new.page';
+import { caregiverRecordGuard } from './state/record-guards';
 
 /**
  * M03 Cuidadores e pessoas idosas, montado em `/app/cuidadores`.
- * Telas (escopo, seção 3): lista, `novo`, `:id` (perfil com abas), `:id/idoso`, encerrar cadastro (modal), elegibilidade ao piloto, exportar dados do titular.
+ * Telas: lista, `novo` (assistente), `:id` (perfil com abas; encerrar cadastro e exportar dados do titular
+ * são gaveta e botão dentro dele) e `:id/idoso`. O psicólogo só abre os cuidadores dele (guard do registro).
  */
 export const ROUTES: Routes = [
   {
     path: '',
-    component: ModulePlaceholderComponent,
-    data: { title: 'Cuidadores e pessoas idosas', moduleId: 'M03' },
+    data: { title: 'Cuidadores' },
+    loadComponent: () => import('./pages/caregiver-list.page').then((m) => m.CaregiverListPage),
+  },
+  {
+    path: 'novo',
+    canActivate: [permissionGuard('caregiver_registry', 'create')],
+    canDeactivate: [leaveNewCaregiverGuard],
+    data: { title: 'Novo cuidador' },
+    loadComponent: () => import('./pages/caregiver-new.page').then((m) => m.CaregiverNewPage),
+  },
+  {
+    path: ':id/idoso',
+    canActivate: [permissionGuard('elder_care'), caregiverRecordGuard],
+    data: { title: 'Pessoa idosa' },
+    loadComponent: () => import('./pages/elder.page').then((m) => m.ElderPage),
+  },
+  {
+    path: ':id',
+    canActivate: [caregiverRecordGuard],
+    data: { title: 'Perfil do cuidador' },
+    loadComponent: () => import('./pages/caregiver-profile.page').then((m) => m.CaregiverProfilePage),
   },
 ];

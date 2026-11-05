@@ -1,0 +1,37 @@
+# Status de aceite: M10 Financeiro, indicadores e piloto (`finance`)
+
+Telas: SCR-M10-01 a 05 em `/app/financeiro` (visão geral, `projecao`, `parametros`, `investimento`, `custos`), SCR-M10-06 em `/app/indicadores` (abas na URL: `?aba=cuidadores|rede|equipe|atendimento`), SCR-M10-07 em `/app/piloto` e SCR-M10-08 (exportar) nos botões "Baixar tabela (CSV)" e "Baixar parâmetros (JSON)". Data de referência dos testes: 04/11/2026, 12:00. Perfis: `u1` Helena (sócia, financeiro inteiro), `u2` Dra. Cecília (responsável técnico, só agregados clínicos), `u3` Dr. Rafael (psicólogo, só os casos dele), `u7` Camila (atendimento, só SLA e reclamações). Fluxo F14 completo.
+
+| AC | Status | Onde ver (rota e perfil) | Observações |
+|---|---|---|---|
+| AC-M10-01 | feito | `/app/financeiro`, sócia: "Como chegamos a 27" (aberto por padrão) | Mostra "R$ 2.355,00 ÷ R$ 89,80 = 26,2, arredondado para cima: 27 assinantes". Medidor "17 de 27 assinantes", "faltam 10" e "63% do caminho". A conta sai de `breakEvenExact`/`breakEvenSubscribers`, não está escrita na tela. |
+| AC-M10-02 | feito | `/app/financeiro/projecao`, sócia, cenário 5% (o padrão) | Primeiro lucro mês 7, retorno mês 14, 85 assinantes no mês 12 e 212 no mês 24. A tabela de 24 linhas é a A.13.1 (a regra `projectScenario` é conferida contra a tabela copiada do documento em `rules/finance.spec.ts`). Também vai em CSV. |
+| AC-M10-03 | feito | `/app/financeiro/projecao`, sócia: botões 3% e 7%; `/app/financeiro/investimento` | 3%: primeiro lucro no mês 9, retorno no mês 18, aporte extra R$ 2.755,91 (maior prejuízo R$ 12.055,91 no mês 8). 7%: primeiro lucro no mês 6 e retorno no mês 12. |
+| AC-M10-04 | feito | `/app/financeiro/projecao`, sócia, cenário 5% | "Primeiro ano: mensalidades de R$ 41.066,30 e resultado de R$ 7.889,00", com a "Referência do plano: R$ 41.084,00 e R$ 7.905,00" na mesma frase (sempre visível no cenário-base). O interruptor "Comparar com o plano" abre a tabela de conferência com todos os marcos e a diferença em %, todas dentro de 0,5%. Decisão: o UX pede o interruptor desligado por padrão (A-36); a frase curta com a referência fica à vista para o AC não depender do interruptor. |
+| AC-M10-05 | feito | `/app/financeiro`, sócia | 17 assinantes, receita bruta R$ 1.698,30, líquida R$ 1.511,49, gastos R$ 2.355,00, resultado -R$ 843,51 e "Faltam 10 assinantes para o ponto de equilíbrio". Tudo de `realizedFinance` sobre as assinaturas do banco: mudar uma assinatura muda a tela na hora. Rótulo "Dado do sistema". |
+| AC-M10-06 | feito | `/app/financeiro/parametros`, sócia | Mudar o preço do Essencial para R$ 59,90 grava na hora e recalcula média bruta (R$ 104,90), líquida (R$ 93,36) e ponto de equilíbrio (26), e também a Visão geral, a Projeção, o Investimento e o painel. O campo ganha "(alterado)" e aparece a faixa "Parâmetros diferentes do plano". "Restaurar valores do plano" (1 clique, sem diálogo) volta a 27, com "Desfazer" no toast. Participações que não somam 100% mostram "As participações dos planos precisam somar 100%. Hoje somam 90%." e NÃO são gravadas. |
+| AC-M10-07 | feito | `/app/financeiro/investimento`, sócia | "R$ 15.000,00 + R$ 1.200,00 + R$ 1.000,00 = R$ 17.200,00", reserva R$ 9.300,00, aporte total R$ 26.500,00, "Empréstimos: nenhum". Aporte extra por cenário em tabela. |
+| AC-M10-08 | feito | `/app/financeiro/custos`, sócia | R$ 499,00, R$ 250,00, R$ 300,00 e R$ 1.306,00 = R$ 2.355,00 por mês; R$ 28.260,00 por ano; manutenção do site R$ 400,00 por ano; hospedagem "A confirmar, não incluída"; recorrente conhecido R$ 28.660,00. |
+| AC-M10-09 | feito | `/app/financeiro/projecao`, sócia: coluna "Marco" e gráfico | Meses 3 e 15 com gasto de R$ 2.755,00 e o selo "Manutenção do site". A nota abaixo do gráfico diz "meses 3 e 15" e muda se os meses forem editados em Parâmetros. |
+| AC-M10-10 | feito | `/app/financeiro` (cartão Conversão), `/app/indicadores?aba=cuidadores` e `/app/painel`, sócia | "5,0%" com "17 de 340 usuários gratuitos" ao lado das referências 3%, 5% e 7%. |
+| AC-M10-11 | feito | `/app/indicadores?aba=cuidadores`, sócia, RT e psicólogo | Distribuição por faixa da última aplicação (sem nome, sem escore individual). Recorte com menos de 5 vira "menos de 5" com cadeado e sem número (barra hachurada no gráfico, KPI suprimido). No seed, alertas e ARBE abertos, evolução do psicólogo e contato no mesmo dia aparecem assim. O mínimo vem de `settings.minGroupSizeForAggregates`. |
+| AC-M10-12 | feito | `/app/piloto`, sócia e RT | Lista os 15 cuidadores com TCLE ativo, só por código `CUI-0000`. C25 (Uberaba) não aparece. Revogar o TCLE de um deles tira da coorte na hora. |
+| AC-M10-13 | feito | `/app/piloto`, sócia e RT: "Os 7 indicadores do piloto" | Os 7 do Quadro 10 com instrumento e momento. Sobrecarga mostra média na adesão, aos 3 e aos 6 meses (no seed, 6 meses fica "menos de 5", porque só C12 chegou lá) e a evolução média. O texto fala em "indício" e "não é prova"; não há "eficácia" nem "diagnóstico". |
+| AC-M10-14 | feito | `/app/piloto`, sócia | O seed já começou o piloto (30/04/2026), então as metas aparecem travadas e "Registrar mudança de meta" exige justificativa com ao menos 10 caracteres, pede confirmação com efeito e grava na linha "Mudanças de meta registradas". O caminho "antes do início" (edição direta, sem justificativa, botão "Iniciar o piloto") existe e é coberto por teste, mas só aparece com o piloto sem data de início, que o seed não oferece: para ver na tela, edite o JSON exportado (Configurações, dados) e importe. |
+| AC-M10-15 | feito | `/app/financeiro` com `u2`, `u3`, `u7`; `/app/indicadores` com `u2` e `u7` | Atendimento e RT vão a `/403` no financeiro e nada vaza no DOM. Atendimento vê só a aba Atendimento (SLA, reclamações, LGPD), sem saúde nem R$. RT vê Cuidadores e Equipe, sem R$ e sem conversão. Psicólogo e atendimento também vão a `/403` em `/app/piloto`. |
+
+## Decisões e suposições de protótipo
+
+- **Janela do SLA e das reclamações (K29, K30):** últimos 30 dias, não o mês calendário do escopo, porque o seed é relativo a "hoje" e num começo de mês a janela do mês ficaria vazia. A tela diz "últimos 30 dias".
+- **Agregados clínicos para o RT e o psicólogo:** o mínimo de 5 vale também para eles nesta tela (a matriz lhes dá nível A em Indicadores). No painel o RT vê os números exatos, porque ali é a fila operacional dele.
+- **Hospedagem:** o escopo a lista como "a confirmar" e o núcleo a deixa fora do cálculo; por isso não há campo para editá-la (um campo sem efeito seria botão morto).
+- **Autosave dos parâmetros:** cada mudança válida grava na hora (F14: "tudo recalcula ao vivo"); o log recebe uma linha ao sair da tela, não uma por tecla.
+- **Rótulos de origem:** todo valor de projeção tem o selo "Estimativa do plano" (RN-FIN-32); o realizado tem "Dado do sistema".
+- **Fora da projeção (RN-FIN-10):** canal corporativo, economia do Cartão e horas de atendimento aparecem à parte na Visão geral, nunca somados ao resultado.
+
+## Também entregue
+
+- Exportar CSV (separador `;`, decimal com vírgula, BOM, sem dado pessoal) e JSON dos parâmetros, com linha `export` no log.
+- Gráfico de barras vermelhas e azuis com a linha do saldo e o zero do retorno; todo gráfico tem "Ver como tabela" e leitura em palavras.
+- Faixa de abas entre as telas do financeiro (`app-link-tabs`, componente novo em `shared/ui/display`).
+- 6 telas com um `h1`, 360 a 1440 px sem rolagem horizontal da página (conferido em 390 e 1440).

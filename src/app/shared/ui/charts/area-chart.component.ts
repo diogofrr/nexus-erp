@@ -93,8 +93,9 @@ export interface AreaReference {
             @for (dot of area.labelled; track dot.index) {
               <circle class="ch-dot" [attr.cx]="dot.x" [attr.cy]="dot.y" r="4.5" />
               <text
-                class="ch-text ch-text--strong ch-text--mid"
-                [attr.x]="dot.x"
+                class="ch-text ch-text--strong"
+                [attr.text-anchor]="dot.anchor"
+                [attr.x]="dot.labelX"
                 [attr.y]="dot.labelY"
               >
                 {{ dot.label }}
@@ -239,11 +240,15 @@ export class AreaChartComponent {
               .filter((i, pos, arr) => arr.indexOf(i) === pos && dots[i] !== undefined)
               .map((i) => {
                 const dot = dots[i] as (typeof dots)[number];
+                // O primeiro rótulo começa ao lado do ponto e o último termina nele: não cobrem o eixo
+                // vertical nem saem do gráfico.
                 return {
                   index: i,
                   x: dot.x,
                   y: dot.y,
                   label: format(dot.value),
+                  labelX: px(i === first ? dot.x + 8 : dot.x - 8),
+                  anchor: i === first ? 'start' : 'end',
                   labelY: px(i === first ? dot.y - 10 : dot.y + 20),
                 };
               }),
