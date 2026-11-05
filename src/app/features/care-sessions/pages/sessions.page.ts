@@ -18,7 +18,7 @@ import {
   TableSort,
   createListState,
 } from '@shared/ui';
-import { KIND_LABELS, MODALITY_SHORT, SESSION_STATUS_VIEW } from '../state/care-labels';
+import { KIND_LABELS, MODALITY_SHORT, sessionStatusView } from '../state/care-labels';
 
 interface SessionRow {
   id: string;
@@ -29,6 +29,8 @@ interface SessionRow {
   modality: string;
   kind: string;
   status: CareSession['status'];
+  rescheduledToId?: string;
+  rescheduleRequestedBy?: 'user' | 'psychologist';
   note: 'signed' | 'draft' | 'pending' | 'none';
 }
 
@@ -187,6 +189,8 @@ export class SessionsPageComponent {
           modality: MODALITY_SHORT[s.modality],
           kind: KIND_LABELS[s.kind],
           status: s.status,
+          ...(s.rescheduledToId ? { rescheduledToId: s.rescheduledToId } : {}),
+          ...(s.rescheduleRequestedBy ? { rescheduleRequestedBy: s.rescheduleRequestedBy } : {}),
           note: !this.canSeeNotes() || s.status !== 'done' ? 'none' : noteStatus === 'signed' ? 'signed' : noteStatus === 'draft' ? 'draft' : 'pending',
         } satisfies SessionRow;
       });
@@ -201,7 +205,7 @@ export class SessionsPageComponent {
       { key: 'psychologist', header: 'Psicólogo', sortable: true },
       { key: 'modality', header: 'Como', sortable: true, noSearch: true },
       { key: 'kind', header: 'Tipo', sortable: true, noSearch: true },
-      { key: 'status', header: 'Estado', sortable: true, sortValue: (r) => SESSION_STATUS_VIEW[r.status].label, noSearch: true },
+      { key: 'status', header: 'Estado', sortable: true, sortValue: (r) => sessionStatusView(r).label, noSearch: true },
     ];
     if (this.canSeeNotes()) {
       cols.push({ key: 'note', header: 'Anotação', sortable: true, noSearch: true });
@@ -227,7 +231,7 @@ export class SessionsPageComponent {
   }
 
   protected statusView(row: SessionRow) {
-    return SESSION_STATUS_VIEW[row.status];
+    return sessionStatusView(row);
   }
 
   protected noteText(row: SessionRow): string {

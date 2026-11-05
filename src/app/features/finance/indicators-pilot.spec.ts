@@ -186,8 +186,23 @@ describe('M10 Piloto (SCR-M10-07, AC-M10-12 a 14)', () => {
     expect(pickAll(app.root, 'app-data-table tbody tr')).toHaveLength(15);
   });
 
-  it.each(['u3', 'u7'])('%s não abre o piloto', async (userId) => {
-    const app = await open(userId, '/app/piloto');
+  it('o psicólogo abre o piloto só em agregado, nos seus casos, sem editar metas (QA-017)', async () => {
+    const app = await open('u3', '/app/piloto');
+    expect(app.router.url).toBe('/app/piloto');
+    expect(app.root.querySelector('[data-role="edit-goals"]')).toBeNull();
+    expect(app.root.querySelector('[data-role="start"]')).toBeNull();
+    const t = main(app);
+    expect(t).toContain('Disponível só para a gestão');
+    expect(t).not.toContain('R$');
+    const rows = pickAll(app.root, 'app-data-table tbody tr');
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.length).toBeLessThan(15);
+    const mine = app.db.caregivers.query((c) => c.assignedPsychologistId === 'psy_0001').map((c) => c.code);
+    rows.forEach((row) => expect(mine.some((code) => (row.textContent ?? '').includes(code))).toBe(true));
+  });
+
+  it('o atendimento não abre o piloto', async () => {
+    const app = await open('u7', '/app/piloto');
     expect(app.router.url).toBe('/403');
   });
 });

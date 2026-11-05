@@ -108,7 +108,7 @@ interface Process {
           @for (view of deadlines; track view.due) { <app-deadline-badge [due]="view.due" [unit]="view.unit" [done]="view.done" /> }
         </div>
         <div class="cluster">
-          <app-avatar name="Ana Paula Ferraz" size="sm" />
+          <app-avatar name="Pessoa Exemplo" size="sm" />
           <app-avatar name="Dra. Beatriz Nogueira" />
           <app-avatar name="Cecília Braga" size="lg" gold />
           <app-avatar pseudonymized />

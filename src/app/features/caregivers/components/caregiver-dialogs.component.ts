@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, model, signal, untracked } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { AuthService } from '@core/auth';
 import { Clock } from '@core/clock';
 import { Database } from '@core/data';
 import type { Caregiver, Channel, Relationship, Sex } from '@core/models';
-import { RetentionService } from '@core/privacy';
+import { RetentionService, erasurePlanFor } from '@core/privacy';
 import { ErrorSummaryComponent, FormFieldComponent, NxInputDirective } from '@shared/ui';
 import { DialogService, DrawerComponent, ToastService } from '@shared/ui/overlay';
 import { CaregiverFieldsFormComponent } from './caregiver-fields-form.component';
@@ -146,6 +147,7 @@ export class CaregiverEditDrawerComponent {
 export class CaregiverClosureDrawerComponent {
   private readonly db = inject(Database);
   private readonly retention = inject(RetentionService);
+  private readonly auth = inject(AuthService);
   private readonly service = inject(CaregiverService);
   private readonly dialogs = inject(DialogService);
   private readonly toasts = inject(ToastService);
@@ -163,14 +165,18 @@ export class CaregiverClosureDrawerComponent {
   private readonly plan = computed(() => {
     this.db.messages.all();
     this.db.zaritAssessments.all();
-    return this.retention.plan(this.caregiver().id);
+    // CX-033: o atendimento (e a gestão) não descobrem pela lista se há Zarit, alerta ou ocorrência.
+    return erasurePlanFor(this.retention.plan(this.caregiver().id), this.auth.role());
   });
   protected readonly erased = computed(() => this.plan().willErase.map((i) => `${i.label}${i.count > 1 ? ` (${i.count})` : ''}`).join('; '));
   protected readonly blocked = computed(() => {
     const items = this.plan().willBlock;
-    return items.length === 0 ? 'nada (o cadastro não tem registro documental)' : items.map((i) => `${i.label} (${i.count})`).join('; ');
+    return items.length === 0
+      ? 'nada (o cadastro não tem registro documental)'
+      : items.map((i) => (i.key === 'clinical' ? i.label : `${i.label} (${i.count})`)).join('; ');
   });
-  protected readonly note = computed(() => this.plan().note);
+  // Texto lido ao titular: sem a observação interna "(a confirmar)" (CX-038).
+  protected readonly note = computed(() => this.plan().note?.replace(' (a confirmar)', '') ?? null);
 
   protected async request(): Promise<void> {
     this.reasonError.set(null);
@@ -191,7 +197,7 @@ export class CaregiverClosureDrawerComponent {
       message: 'O cadastro passa a "Encerramento pedido" e entra na fila de solicitações do titular (POP-10). A eliminação é executada pela gestão ou pelo responsável técnico.',
       effects: {
         erase: plan.willErase.map((i) => i.label),
-        block: plan.willBlock.map((i) => `${i.label} (${plan.note ?? 'registro documental'})`),
+        block: plan.willBlock.map((i) => (i.key === 'clinical' ? i.label : `${i.label} (${plan.note ?? 'registro documental'})`)),
         keep: ['o histórico de consentimentos', 'o log de acessos'],
       },
       confirmLabel: 'Pedir encerramento',

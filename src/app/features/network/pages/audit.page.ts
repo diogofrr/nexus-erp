@@ -4,7 +4,7 @@ import { Clock, daysBetween } from '@core/clock';
 import { formatDate, formatNumber } from '@core/format';
 import { ArpBand } from '@core/models';
 import { nextAuditDate } from '@core/rules';
-import { CellDirective, DataTableComponent, PageHeaderComponent, TableColumn } from '@shared/ui';
+import { CellDirective, DataTableComponent, PageHeaderComponent, SwitchComponent, TableColumn } from '@shared/ui';
 import { BannerComponent, DialogService, ToastService } from '@shared/ui/overlay';
 import { ArpBandComponent } from '../components/badges.component';
 import { AuditResult, AuditRow, NetworkAdminService } from '../state/network-admin.service';
@@ -22,6 +22,8 @@ interface PreviewRow {
   graves: number;
   actionText: string;
   suspends: boolean;
+  /** Muda de faixa, de estado ou é a primeira classificação (CX-013). */
+  changes: boolean;
 }
 
 interface Pending {
@@ -47,7 +49,7 @@ const ACTION_TEXT: Readonly<Record<AuditRow['action'], string>> = {
  */
 @Component({
   selector: 'app-network-audit-page',
-  imports: [RouterLink, ArpBandComponent, BannerComponent, CellDirective, DataTableComponent, PageHeaderComponent],
+  imports: [RouterLink, ArpBandComponent, BannerComponent, CellDirective, DataTableComponent, PageHeaderComponent, SwitchComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -91,14 +93,22 @@ const ACTION_TEXT: Readonly<Record<AuditRow['action'], string>> = {
                 }
               </app-banner>
             } @else {
-              <app-banner variant="success" heading="O que muda se você rodar agora">
-                Nenhum prestador entra em descredenciamento. Ninguém sai da busca.
+              <app-banner variant="success" heading="O que muda se você rodar agora" data-role="no-suspension">
+                Nenhum prestador é suspenso agora. Ninguém sai da busca.
+                @if (alertBandCount() > 0) {
+                  {{ pluralize(alertBandCount(), 'prestador fica', 'prestadores ficam') }} na faixa "Alerta para Descredenciamento",
+                  sem suspensão automática: a decisão continua sendo da gestão.
+                }
               </app-banner>
             }
+            <div class="cluster cluster--between">
+              <p class="t-ui" data-role="preview-summary">{{ summaryText() }}</p>
+              <app-switch [(checked)]="showAll" data-role="show-all">Ver todos os prestadores</app-switch>
+            </div>
             <app-data-table
               caption="Classificação que sairia na auditoria"
               noun="prestadores"
-              [rows]="previewRows()"
+              [rows]="visibleRows()"
               [columns]="columns"
               searchable
               searchLabel="Buscar prestador na prévia"
@@ -156,6 +166,8 @@ export class AuditPage {
   protected readonly pluralize = pluralize;
   protected readonly manager = computed(() => this.admin.isManager());
   protected readonly showPreview = signal(false);
+  /** A prévia começa só com quem muda; "Ver todos" mostra a rede inteira (CX-013). */
+  protected readonly showAll = signal(false);
   protected readonly lastResult = signal<AuditResult | null>(null);
 
   protected readonly preview = computed(() => this.admin.previewAudit());
@@ -206,9 +218,28 @@ export class AuditPage {
         graves: s.graveCount,
         actionText: ACTION_TEXT[row.action],
         suspends: row.action === 'suspend' || row.action === 'suspend_document',
+        changes: changed || row.previousBand === null || row.action !== 'none',
       };
     }),
   );
+
+  /** Quem muda vem primeiro; sem o interruptor, só eles aparecem. */
+  protected readonly visibleRows = computed<PreviewRow[]>(() => {
+    const rows = this.previewRows();
+    if (this.showAll()) {
+      return [...rows].sort((a, b) => Number(b.changes) - Number(a.changes));
+    }
+    return rows.filter((r) => r.changes);
+  });
+  protected readonly summaryText = computed(() => {
+    const total = this.previewRows().length;
+    const changing = this.previewRows().filter((r) => r.changes).length;
+    if (changing === 0) {
+      return `Nenhum dos ${total} prestadores muda de faixa ou de estado. Ligue "Ver todos" para conferir a rede inteira.`;
+    }
+    return `${changing} de ${total} prestadores mudam de faixa ou de estado. Os outros ${total - changing} ficam como estão.`;
+  });
+  protected readonly alertBandCount = computed(() => this.preview().rows.filter((r) => r.nextBand === 'deaccreditation' && r.action === 'none').length);
 
   protected readonly groups = computed(() => {
     const summaries = this.network.summaries();

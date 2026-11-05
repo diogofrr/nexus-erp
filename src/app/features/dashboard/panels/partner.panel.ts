@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { formatMoney, formatNumber, formatPercent, formatYearMonth } from '@core/format';
 import { Aggregate } from '@core/privacy';
@@ -17,7 +17,7 @@ import {
 } from '@shared/ui';
 import { PanelKpiComponent } from '../components/panel-kpi.component';
 import { PanelSectionComponent } from '../components/panel-section.component';
-import { DashboardStore } from '../state/dashboard.store';
+import { DashboardStore, MAX_DECISIONS_SHOWN } from '../state/dashboard.store';
 
 /**
  * Painel da sócia (`partner`, SCR-M02-01): começa pelo que precisa da decisão dela (até 3 itens), depois o
@@ -48,6 +48,13 @@ import { DashboardStore } from '../state/dashboard.store';
       margin: 0;
       padding: 0;
     }
+    /* CX-014: a frase da decisão quebra em mais linhas em vez de ser cortada com reticências. */
+    .decision-row__text {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      overflow-wrap: anywhere;
+    }
   `,
   template: `
     <div class="page stack stack--6" data-role="partner-panel">
@@ -57,19 +64,39 @@ import { DashboardStore } from '../state/dashboard.store';
       />
 
       <section class="stack stack--3" aria-labelledby="decisions-title">
-        <h2 id="decisions-title" class="t-strong">Precisa da sua decisão</h2>
-        @if (store.decisions().length === 0) {
+        <h2 id="decisions-title" class="t-strong">
+          Precisa da sua decisão
+          @if (total() > 0) {
+            <span class="t-muted t-ui" data-role="decisions-count">
+              ({{ total() }} {{ total() === 1 ? 'item' : 'itens' }})
+            </span>
+          }
+        </h2>
+        @if (total() === 0) {
           <app-empty-state compact title="Nada exige a sua decisão hoje" text="Quando algo pedir uma decisão, aparece aqui com o caminho até a tela certa." />
         } @else {
           <div class="list-card" role="list" data-role="decisions">
-            @for (item of store.decisions(); track item.key) {
-              <a class="list-row" role="listitem" [routerLink]="item.link" [queryParams]="item.queryParams">
+            @for (item of shown(); track item.key) {
+              <a class="list-row decision-row" role="listitem" [routerLink]="item.link" [queryParams]="item.queryParams">
                   <span><svg [appIcon]="item.icon"></svg></span>
-                  <span class="list-row__title">{{ item.text }}</span>
+                  <span class="list-row__title decision-row__text">{{ item.text }}</span>
                   <svg appIcon="chevron-right"></svg>
                 </a>
             }
           </div>
+          @if (hiddenCount() > 0 || expanded()) {
+            <div>
+              <button
+                type="button"
+                class="btn btn--sm"
+                data-role="decisions-toggle"
+                [attr.aria-expanded]="expanded()"
+                (click)="expanded.set(!expanded())"
+              >
+                {{ expanded() ? 'Ver só os primeiros ' + limit : 'Ver todos os ' + total() + ' itens' }}
+              </button>
+            </div>
+          }
         }
       </section>
 
@@ -102,15 +129,12 @@ import { DashboardStore } from '../state/dashboard.store';
         />
       </app-kpi-strip>
 
-      <app-card title="Ponto de equilíbrio" subtitle="Dado do sistema">
+      <app-card title="Como chegamos ao ponto de equilíbrio" subtitle="Dado do sistema">
         <div class="stack stack--3" data-role="break-even">
-          <p class="t-strong" data-role="summary">
-            {{ real().subscribers }} assinantes.
-            @if (real().missing > 0) {
-              Faltam {{ real().missing }} para o ponto de equilíbrio.
-            } @else {
-              Acima do ponto de equilíbrio.
-            }
+          <p class="t-ui" data-role="how">
+            {{ money(real().costsCents) }} de gastos por mês ÷ {{ money(store.planAverageNetCents()) }} de receita
+            líquida por assinante = {{ exact() }}, arredondado para cima:
+            <strong>{{ real().breakEven }} assinantes</strong>.
           </p>
           <app-meter label="Assinantes" [value]="real().subscribers" [target]="real().breakEven" unit="assinantes" />
           <div><a class="btn btn--sm" routerLink="/app/financeiro">Ver o financeiro</a></div>
@@ -145,7 +169,7 @@ import { DashboardStore } from '../state/dashboard.store';
         </app-card>
       </div>
 
-      <app-panel-section title="Rede credenciada" hint="Prestadores, credenciamentos e risco de saída" open>
+      <app-panel-section title="Rede credenciada" hint="Prestadores, credenciamentos e prestadores que podem deixar a rede" open>
         <app-kpi-strip>
           <app-panel-kpi label="Em excelência" [value]="band('excellence')" link="/app/rede/prestadores" [queryParams]="{ filtro: 'excelencia' }" />
           <app-panel-kpi label="Em alerta" [value]="band('alert')" link="/app/rede/prestadores" [queryParams]="{ filtro: 'alerta' }" />
@@ -153,7 +177,7 @@ import { DashboardStore } from '../state/dashboard.store';
           <app-panel-kpi
             label="Risco de saída"
             [value]="store.exitRiskCount()"
-            context="recusa alta ou queda de disponibilidade"
+            context="pode deixar a rede: recusa alta ou menos disponibilidade"
             link="/app/rede/prestadores"
             [queryParams]="{ filtro: 'risco-de-saida' }"
           />
@@ -233,6 +257,14 @@ export class PartnerPanelComponent {
   protected readonly references = CONVERSION_REFERENCES.map((r) => `${r}%`).join(', ');
 
   protected readonly real = this.store.realized;
+  protected readonly limit = MAX_DECISIONS_SHOWN;
+  protected readonly expanded = signal(false);
+  protected readonly total = computed(() => this.store.allDecisions().length);
+  protected readonly shown = computed(() =>
+    this.expanded() ? this.store.allDecisions() : this.store.decisions(),
+  );
+  protected readonly hiddenCount = computed(() => this.total() - this.store.decisions().length);
+  protected readonly exact = computed(() => formatNumber(this.store.breakEvenExact(), 1));
   protected readonly free = computed(() => formatNumber(this.store.freeUsers()));
   protected readonly conversionText = computed(() => {
     const v = this.store.conversion();

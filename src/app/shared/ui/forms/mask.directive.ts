@@ -143,10 +143,27 @@ export class NxMaskDirective implements ControlValueAccessor, Validator {
         if (value === null) {
           return { format: { message: 'Informe um número.' } };
         }
-        return this.rangeError(Number(value));
+        return this.negativeError(Number(value), 'Use um número a partir de 0, sem o sinal de menos.') ?? this.rangeError(Number(value));
       case 'currency':
-        return value === null ? null : this.rangeError(Number(value));
+        if (text === '-') {
+          return { format: { message: 'Informe um valor em reais.' } };
+        }
+        return value === null
+          ? null
+          : (this.negativeError(Number(value), 'O valor não pode ser negativo.') ?? this.rangeError(Number(value)));
     }
+  }
+
+  /**
+   * QA-016: o sinal de menos não some em silêncio ("-1" virar 1, "-10" virar R$ 0,10). Ele fica no campo e,
+   * quando o campo não aceita negativo (sem `min` abaixo de zero), o validador recusa com uma frase.
+   */
+  private negativeError(value: number, fallback: string): ValidationErrors | null {
+    const min = this.min() ?? 0;
+    if (value >= 0 || min < 0) {
+      return null;
+    }
+    return { range: { min, max: this.max(), message: this.rangeMessage() ?? fallback } };
   }
 
   // ===== Eventos =====
@@ -188,11 +205,17 @@ export class NxMaskDirective implements ControlValueAccessor, Validator {
         return { text, value: parseDateText(text) };
       }
       case 'currency': {
+        const negative = /[-\u2212\u2013]/.test(raw);
         const cents = parseCurrencyCents(raw);
-        return { text: cents === null ? '' : formatMoney(cents), value: cents };
+        if (cents === null) {
+          return { text: negative ? '-' : '', value: null };
+        }
+        const signed = negative ? -cents : cents;
+        return { text: formatMoney(signed), value: signed };
       }
       case 'number': {
-        const text = sanitizeNumberText(raw, this.decimals(), (this.min() ?? 0) < 0);
+        // O sinal de menos é mantido (QA-016); quem não aceita negativo recusa na validação.
+        const text = sanitizeNumberText(raw.replace(/[\u2212\u2013]/g, '-'), this.decimals(), true);
         return { text, value: parseNumberText(text) };
       }
     }

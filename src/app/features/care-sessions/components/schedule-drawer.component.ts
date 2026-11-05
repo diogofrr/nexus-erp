@@ -57,9 +57,25 @@ const MAX_CAREGIVERS = 30;
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-drawer [(open)]="open" heading="Agendar sessão" subtitle="O psicólogo confirma depois, no detalhe da sessão.">
+    <app-drawer
+      [(open)]="open"
+      [heading]="rescheduling() ? 'Remarcar sessão' : 'Agendar sessão'"
+      [subtitle]="rescheduling() ? 'A sessão atual só é liberada depois que você salvar o novo horário.' : 'O psicólogo confirma depois, no detalhe da sessão.'"
+    >
       <form class="stack stack--6" novalidate (submit)="$event.preventDefault(); submit()" data-role="schedule-form">
         <app-error-summary [items]="summary()" />
+
+        @if (rescheduling()) {
+          <!-- Remarcar: quem pediu e o efeito na sessão atual (CX-027) -->
+          @if (isSupport()) {
+            <p class="t-ui" data-role="requested-by-fixed">Remarcação a pedido do cuidador.</p>
+          } @else {
+            <app-form-field label="Quem pediu para remarcar" group controlId="sched-requested-by" [error]="err('requestedBy')">
+              <app-radio-group [options]="requestedByOptions" [value]="requestedBy()" (valueChange)="requestedBy.set($event)" />
+            </app-form-field>
+          }
+          <p class="banner banner--attention" role="status" data-role="reschedule-effect">{{ rescheduleEffect() }}</p>
+        }
 
         <!-- 1. Quem -->
         <app-form-field label="Cuidador" controlId="sched-caregiver-select" [error]="err('caregiver')" hint="Busque pelo nome ou pelo código e escolha na lista.">
@@ -99,16 +115,19 @@ const MAX_CAREGIVERS = 30;
           <p class="banner banner--attention" role="note" data-role="overload-note">{{ note }}</p>
         }
 
-        <!-- 3. Quando -->
+        <!-- 3. Quando: as vagas só aparecem depois de escolher o cuidador (CX-030) -->
         <app-form-field label="Vaga" group controlId="sched-slot" [error]="err('slot')">
           @if (!caregiverId()) {
-            <p class="t-muted t-ui">Escolha o cuidador para ver as vagas disponíveis para ele.</p>
-          }
-          @if (psychologistId()) {
-            @if (slotOptions().length > 0) {
-              @if (caregiverId()) {
-                <p class="t-caption">Mostrando as vagas disponíveis para este cuidador.</p>
+            <p class="t-muted t-ui" data-role="slots-wait">
+              @if (presetSlotLabel(); as chosen) {
+                Vaga escolhida na agenda: {{ chosen }}. Escolha o cuidador para continuar.
+              } @else {
+                Escolha o cuidador para ver as vagas disponíveis para ele.
               }
+            </p>
+          } @else if (psychologistId()) {
+            @if (slotOptions().length > 0) {
+              <p class="t-caption">Mostrando as vagas disponíveis para este cuidador.</p>
               <div class="stack stack--2" style="max-height: 16rem; overflow: auto">
                 <app-radio-group [options]="slotOptions()" [value]="slotId()" (valueChange)="slotId.set($event)" />
               </div>
@@ -166,7 +185,7 @@ const MAX_CAREGIVERS = 30;
       <ng-container drawerFooter>
         <button type="button" class="btn" (click)="open.set(false)">Voltar</button>
         <button type="button" class="btn btn--primary" [disabled]="busy()" (click)="submit()" data-role="schedule-submit">
-          <svg appIcon="calendar-days" size="sm"></svg>{{ busy() ? 'Agendando...' : 'Agendar sessão' }}
+          <svg appIcon="calendar-days" size="sm"></svg>{{ busy() ? 'Salvando...' : rescheduling() ? 'Remarcar sessão' : 'Agendar sessão' }}
         </button>
       </ng-container>
     </app-drawer>
@@ -204,10 +223,28 @@ export class ScheduleDrawerComponent {
   protected readonly homeSafe = signal(false);
   protected readonly kind = signal<CareSession['kind'] | null>(null);
   protected readonly kindPrefilled = signal(false);
+  protected readonly requestedBy = signal<'user' | 'psychologist' | null>(null);
+  protected readonly requestedByOptions: RadioOption<'user' | 'psychologist'>[] = [
+    { value: 'user', label: 'O cuidador pediu para remarcar' },
+    { value: 'psychologist', label: 'Eu preciso remarcar' },
+  ];
   protected readonly errors = signal<FieldError[]>([]);
   protected readonly busy = signal(false);
 
-  private readonly isSupport = computed(() => this.auth.role() === 'support');
+  protected readonly isSupport = computed(() => this.auth.role() === 'support');
+  protected readonly rescheduling = computed(() => this.rescheduleFrom() !== null);
+  private readonly original = computed(() => {
+    const id = this.rescheduleFrom();
+    return id ? this.db.careSessions.get(id) : undefined;
+  });
+  protected readonly rescheduleEffect = computed(() => {
+    const session = this.original();
+    return session ? this.svc.rescheduleEffect(session, this.isSupport() ? 'user' : this.requestedBy()) : '';
+  });
+  protected readonly presetSlotLabel = computed(() => {
+    const slot = this.presetSlotId() ? this.db.availabilitySlots.get(this.presetSlotId() as string) : undefined;
+    return slot ? dayAndTime(slot.date, slot.start) : null;
+  });
   private readonly myPsychologist = computed(() => this.auth.actor()?.psychologistId ?? null);
   protected readonly lockedPsychologist = computed(() => this.myPsychologist() !== null);
 
@@ -328,6 +365,7 @@ export class ScheduleDrawerComponent {
     this.homeSafe.set(false);
     this.kind.set(null);
     this.kindPrefilled.set(false);
+    this.requestedBy.set(null);
     const slot = this.presetSlotId() ? this.db.availabilitySlots.get(this.presetSlotId() as string) : undefined;
     this.slotId.set(slot?.id ?? null);
     const caregiver = this.presetCaregiverId();
@@ -337,6 +375,18 @@ export class ScheduleDrawerComponent {
     );
     if (caregiver) {
       this.prefillKind(caregiver);
+    }
+    // Remarcar: o que já foi informado na sessão atual chega preenchido (CX-027).
+    const original = this.original();
+    if (original) {
+      this.caregiverId.set(original.caregiverId);
+      this.psychologistId.set(this.myPsychologist() ?? original.psychologistId);
+      this.modality.set(original.modality);
+      this.roomId.set(original.roomId ?? null);
+      this.homeAddress.set(original.homeAddress ?? '');
+      this.homeSafe.set(original.homeVisitConfirmedSafe === true);
+      this.kind.set(original.kind);
+      this.slotId.set(null);
     }
   }
 
@@ -379,8 +429,7 @@ export class ScheduleDrawerComponent {
   }
 
   protected submit(): void {
-    this.busy.set(true);
-    const result = this.svc.schedule({
+    const input = {
       caregiverId: this.caregiverId(),
       psychologistId: this.psychologistId(),
       slotId: this.slotId() ?? '',
@@ -389,23 +438,30 @@ export class ScheduleDrawerComponent {
       homeAddress: this.homeAddress(),
       homeSafe: this.homeSafe(),
       kind: this.kind(),
-    });
+    };
+    const from = this.rescheduleFrom();
+    const by = this.isSupport() ? 'user' : this.requestedBy();
+    if (from && by === null) {
+      this.errors.set([{ field: 'requestedBy', message: 'Diga quem pediu para remarcar.' }]);
+      return;
+    }
+    this.busy.set(true);
+    const result = from && by ? this.svc.reschedule(from, input, by) : this.svc.schedule(input);
     this.busy.set(false);
     if (!result.ok) {
       this.errors.set(result.errors);
       return;
     }
     const session = result.value;
-    const from = this.rescheduleFrom();
-    if (from) {
-      this.svc.cancel(from, 'user');
-    }
     this.errors.set([]);
     this.open.set(false);
     const date = session.startAt.slice(0, 10);
     const psychologist = this.db.psychologists.get(session.psychologistId);
+    const when = `${dayAndTime(date, session.startAt.slice(11, 16))}, com ${psychologist?.displayName ?? 'o psicólogo'}`;
     this.toasts.show({
-      message: `Sessão agendada para ${dayAndTime(date, session.startAt.slice(11, 16))}, com ${psychologist?.displayName ?? 'o psicólogo'}.`,
+      message: from
+        ? `Sessão remarcada para ${when}. A anterior ficou como remarcada ${by === 'psychologist' ? 'pelo psicólogo' : 'a pedido do cuidador'}.`
+        : `Sessão agendada para ${when}.`,
       action: {
         label: 'Ver na agenda',
         run: () => void this.router.navigate(['/app/atendimento/agenda'], { queryParams: { semana: date } }),
@@ -424,4 +480,5 @@ const FIELD_IDS: Record<string, string> = {
   homeAddress: 'sched-address',
   homeSafe: 'sched-home-safe',
   kind: 'sched-kind',
+  requestedBy: 'sched-requested-by',
 };

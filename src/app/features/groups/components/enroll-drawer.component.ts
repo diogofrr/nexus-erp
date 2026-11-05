@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, model, output, signal, untracked } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth';
 import { Clock } from '@core/clock';
 import { Database } from '@core/data';
@@ -30,7 +31,7 @@ const MAX_OPTIONS = 30;
  */
 @Component({
   selector: 'app-enroll-drawer',
-  imports: [CheckboxComponent, ChecklistComponent, DrawerComponent, FormFieldComponent, IconComponent, NxInputDirective, RadioGroupComponent],
+  imports: [CheckboxComponent, ChecklistComponent, DrawerComponent, FormFieldComponent, IconComponent, NxInputDirective, RadioGroupComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-drawer [(open)]="open" [heading]="full() ? 'Entrar na lista de espera' : 'Inscrever participante'" [subtitle]="activity()?.title ?? ''">
@@ -50,6 +51,9 @@ const MAX_OPTIONS = 30;
                 <option [value]="c.id" [selected]="c.id === caregiverId()">{{ label(c) }}</option>
               }
             </select>
+            @if (moreHint(); as hint) {
+              <span class="t-caption" data-role="more-options">{{ hint }}</span>
+            }
           </app-form-field>
         } @else {
           <app-form-field label="Nome do participante externo" controlId="enroll-ext-name" [error]="err('externalName')">
@@ -63,6 +67,12 @@ const MAX_OPTIONS = 30;
         <section class="stack stack--2" aria-labelledby="enroll-checks-title">
           <h3 id="enroll-checks-title" class="card__title">Checagens da inscrição</h3>
           <app-checklist label="Checagens da inscrição" [items]="checklist()" />
+          @if (planBlocked() && changePlanLink(); as link) {
+            <div class="cluster" data-role="plan-shortcut">
+              <a class="btn btn--sm" [routerLink]="link" data-role="change-plan">Trocar o plano</a>
+              <span class="t-caption">Abre a assinatura do cuidador. Depois de trocar o plano, volte e inscreva.</span>
+            </div>
+          }
         </section>
 
         @if (showEligibility()) {
@@ -184,6 +194,26 @@ export class EnrollDrawerComponent {
 
   protected readonly errorText = computed(() => this.errors().map((e) => e.message).join(' '));
 
+  /** O plano do cuidador escolhido não dá acesso à atividade (CX-042). */
+  protected readonly planBlocked = computed(
+    () => this.type() === 'caregiver' && this.caregiverId() !== '' && this.checklist().some((c) => c.id === 'plan' && c.state === 'fail'),
+  );
+  /** Caminho até a assinatura do cuidador, só para quem abre o módulo de assinaturas (sem importar de outro módulo). */
+  protected readonly changePlanLink = computed<string[] | null>(() => {
+    if (!this.auth.can('plans_subscriptions', 'view')) {
+      return null;
+    }
+    const subscription = this.db.subscriptions.find((s) => s.caregiverId === this.caregiverId());
+    return subscription ? ['/app/assinaturas', subscription.id] : ['/app/assinaturas', 'planos'];
+  });
+  /** Avisa que a lista mostra só os primeiros nomes até a pessoa digitar (CX-042). */
+  protected readonly moreHint = computed<string | null>(() => {
+    const total = this.svc.eligibleCaregivers().length;
+    return this.term().trim() === '' && total > MAX_OPTIONS
+      ? `A lista mostra ${MAX_OPTIONS} de ${total} pessoas. Digite o nome ou o código para achar as outras.`
+      : null;
+  });
+
   constructor() {
     effect(() => {
       if (this.open()) {
@@ -253,7 +283,7 @@ export class EnrollDrawerComponent {
         : (caregiver?.fullName ?? 'Participante');
     const { enrollment, waitlisted } = result.value;
     this.toasts.success(
-      waitlisted ? `${name} entrou na lista de espera, posição ${enrollment.waitlistPosition}.` : `${name} inscrito no grupo.`,
+      waitlisted ? `${name} entrou na lista de espera, posição ${enrollment.waitlistPosition}.` : `Inscrição registrada para ${name}.`,
     );
     this.enrolled.emit(result.value);
   }

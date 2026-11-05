@@ -147,7 +147,13 @@ export const PERMISSION_MATRIX: Readonly<Record<Resource, Row>> = {
     { level: 'A', note: 'seus casos' },
     { level: 'L', note: 'operacionais: SLA, reclamações', subAreas: ['operational'] },
   ),
-  pilot: row({ level: 'T' }, { level: 'A', note: 'indicadores clínicos agregados' }, NONE, NONE),
+  // QA-017: o psicólogo abre o piloto só em agregado, com os seus casos (escopo M10, UX 3.3: "Piloto: sim (agregado)").
+  pilot: row(
+    { level: 'T' },
+    { level: 'A', note: 'indicadores clínicos agregados' },
+    { level: 'A', note: 'seus casos, agregado' },
+    NONE,
+  ),
   // M11
   message_inbox: row(
     { level: 'T' },

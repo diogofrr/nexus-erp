@@ -263,7 +263,8 @@
 
   b { display: flex; align-items: center; gap: 4px; font-weight: var(--fw-semibold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .icon { width: 0.8125rem; height: 0.8125rem; flex-shrink: 0; }
-  span { color: inherit; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  // Sem `opacity`: o nome na vaga mantém 4,5:1 (a "Realizada" em cinza chegava a 3,7:1).
+  span { color: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 
 .slot--open { border: 1px dashed var(--border); background: transparent; color: var(--text-muted); opacity: 0.85; cursor: pointer; &:hover { background: var(--brand-soft); border-style: solid; border-color: var(--brand); color: var(--brand-soft-text); } }

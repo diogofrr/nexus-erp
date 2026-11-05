@@ -107,6 +107,17 @@ hr {
   outline: none;
 }
 
+// CX-045: o título da página recebe foco por código (para o leitor de tela anunciar onde a pessoa está), mas não é um
+// controle: sem contorno que pareça um campo. Os controles de verdade continuam com o contorno abaixo.
+h1[tabindex='-1']:focus,
+h1[tabindex='-1']:focus-visible,
+main[tabindex='-1']:focus,
+main[tabindex='-1']:focus-visible,
+#conteudo[tabindex='-1']:focus,
+#conteudo[tabindex='-1']:focus-visible {
+  outline: none;
+}
+
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;

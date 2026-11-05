@@ -25,9 +25,11 @@ describe('casos de risco (POP-05, RN-ZRT-15, A-29)', () => {
     const done = risk.stepDone(occurrence.id, 2, { byUserId: 'u3', at: '2026-11-04T10:42:00-03:00', note: 'Contato feito.' });
     expect(done?.status).toBe('in_progress');
     expect(done?.steps[1]).toMatchObject({ doneAt: '2026-11-04T10:42:00-03:00', byUserId: 'u3', note: 'Contato feito.' });
-    const again = risk.stepDone(occurrence.id, 2, { byUserId: 'u2', at: '2026-11-04T11:00:00-03:00' });
+    const again = risk.stepDone(occurrence.id, 2, { byUserId: 'u2', at: '2026-11-04T11:00:00-03:00', note: 'Texto de outra pessoa.' });
     expect(again?.steps[1]?.byUserId).toBe('u3');
     expect(again?.steps[1]?.doneAt).toBe('2026-11-04T10:42:00-03:00');
+    // CX-017: o texto de quem veio depois não é gravado num passo que outra pessoa já concluiu.
+    expect(again?.steps[1]?.note).toBe('Contato feito.');
     db.occurrences.update(occurrence.id, { status: 'closed' });
     const closed = risk.stepDone(occurrence.id, 3, { byUserId: 'u3' });
     expect(closed?.status).toBe('closed');

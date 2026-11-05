@@ -54,7 +54,7 @@ Legenda: `-` sem acesso. `L` leitura. `E` leitura e edição (criar, editar; sem
 | M01 Acesso e perfis | L (próprio) | L (próprio) | L (próprio) | L (próprio) |
 | M02 Painel | T (o seu) | T (o seu) | T (o seu) | T (o seu) |
 | M03 Cuidadores e pessoas idosas, dados cadastrais | A | S | P (seus cuidadores) | E |
-| M03 Pessoa idosa, medicamentos e agenda de cuidados | - | S | P | L |
+| M03 Pessoa idosa, medicamentos e agenda de cuidados | - | S | P | L (só a agenda de cuidados; condições de saúde e medicamentos ficam ocultos, decisão de minimização da LGPD tomada após o CS/CX, CX-034) |
 | M04 Planos, assinaturas e Cartão Nexus | T | L | L (plano do próprio cuidador) | E |
 | M05 Agenda e sessões (sem conteúdo clínico) | A (horas) | L | P (E) | E (agendar em nome do usuário) |
 | M05 Anotações sigilosas de sessão | - | S | C (autor) | - |

@@ -7,6 +7,8 @@ import type {
   ArbeAlert,
   Caregiver,
   Channel,
+  DataSubjectRequest,
+  DsrType,
   ID,
   ISODateTime,
   Message,
@@ -15,7 +17,7 @@ import type {
   Provider,
   Role,
 } from '@core/models';
-import { ConsentService } from '@core/privacy';
+import { ConsentService, DataSubjectRequestService } from '@core/privacy';
 import {
   POP05_STEPS,
   countSupportRequests,
@@ -44,7 +46,10 @@ export interface SupportRequestOutcome {
 }
 
 export interface RiskFlagOutcome {
-  occurrenceId: ID;
+  /** Ocorrência POP-05 aberta ou reaproveitada; `null` quando o aviso foi em dúvida e nada foi aberto. */
+  occurrenceId: ID | null;
+  /** O atendimento avisou a responsável técnica em dúvida (CX-040). */
+  doubt?: boolean;
   /** Instante em que o responsável técnico foi avisado. */
   at: ISODateTime;
   /** Já havia uma ocorrência aberta do mesmo cuidador: nada foi duplicado. */
@@ -72,6 +77,7 @@ export class MessagesService {
   private readonly auth = inject(AuthService);
   private readonly audit = inject(AuditLogService);
   private readonly consents = inject(ConsentService);
+  private readonly dsr = inject(DataSubjectRequestService);
 
   // ===== Leitura =====
 
@@ -269,7 +275,7 @@ export class MessagesService {
    * técnico e ao psicólogo do caso, com o passo 1 (acolhimento) já feito por quem sinalizou. O atendimento não
    * vê a ocorrência. Se o cuidador já tem ocorrência de risco em andamento, ela é reaproveitada.
    */
-  flagRisk(messageId: ID, caregiverId?: ID): RiskFlagOutcome {
+  flagRisk(messageId: ID, caregiverId?: ID, options: { doubt?: boolean } = {}): RiskFlagOutcome {
     const message = this.db.messages.require(messageId);
     const cgId = caregiverId ?? message.caregiverId;
     if (!cgId) {
@@ -277,12 +283,19 @@ export class MessagesService {
     }
     const caregiver = this.db.caregivers.require(cgId);
     const now = this.clock.now();
+    const doubt = options.doubt === true;
     this.db.messages.update(messageId, {
       riskFlag: true,
+      riskDoubt: doubt,
       caregiverId: cgId,
       status: message.status === 'answered' ? 'answered' : 'in_progress',
       assignedToUserId: message.assignedToUserId ?? this.userId(),
     });
+    if (doubt) {
+      // Em dúvida: a responsável técnica é avisada e decide. O POP-05 só começa se ela decidir (CX-040).
+      this.audit.write('update', 'message', messageId, cgId, 'risco sinalizado em dúvida, sem iniciar o POP-05');
+      return { occurrenceId: null, at: now, reused: false, doubt: true };
+    }
     const existing = this.db.occurrences.find(
       (o) => o.kind === 'pop05_risk' && o.caregiverId === cgId && o.status !== 'closed',
     );
@@ -322,6 +335,51 @@ export class MessagesService {
     this.audit.write('create', 'occurrence', created.id, cgId, 'POP-05 aberto por mensagem sinalizada');
     this.audit.write('update', 'message', messageId, cgId, 'risco sinalizado');
     return { occurrenceId: created.id, at: now, reused: false };
+  }
+
+  /**
+   * A responsável técnica decide o que fazer com uma mensagem enviada em dúvida (CX-040): inicia o POP-05 ou
+   * registra que não há risco. Só ela decide; o atendimento não volta atrás por conta própria.
+   */
+  resolveDoubt(messageId: ID, decision: 'start_pop05' | 'no_risk'): RiskFlagOutcome | null {
+    if (this.auth.role() !== 'technical_lead') {
+      throw new Error('Só a responsável técnica decide sobre uma mensagem enviada em dúvida.');
+    }
+    const message = this.db.messages.require(messageId);
+    if (!message.riskDoubt || !message.caregiverId) {
+      return null;
+    }
+    if (decision === 'no_risk') {
+      this.db.messages.update(messageId, { riskFlag: false, riskDoubt: false });
+      this.audit.write('update', 'message', messageId, message.caregiverId, 'dúvida de risco avaliada: sem risco');
+      return null;
+    }
+    this.db.messages.update(messageId, { riskDoubt: false });
+    return this.flagRisk(messageId, message.caregiverId);
+  }
+
+  /**
+   * Registra a solicitação do titular a partir da mensagem (CX-035): usa o serviço do núcleo de privacidade, com
+   * o canal da mensagem e um texto curto que a pessoa pode editar. Só quem registra em nome do titular.
+   */
+  registerSubjectRequest(
+    messageId: ID,
+    input: { type: DsrType; description: string },
+  ): DataSubjectRequest {
+    const message = this.db.messages.require(messageId);
+    if (!message.caregiverId) {
+      throw new Error('Vincule o cuidador à mensagem antes de registrar a solicitação.');
+    }
+    if (!this.auth.can('lgpd_consents_requests', 'create')) {
+      throw new Error('Seu perfil não registra solicitações do titular.');
+    }
+    const opened = this.dsr.open({ caregiverId: message.caregiverId, type: input.type });
+    const updated = this.db.dataSubjectRequests.update(opened.id, {
+      channel: message.channel,
+      description: input.description.trim(),
+    });
+    this.audit.write('update', 'message', messageId, message.caregiverId, `solicitação ${updated.protocol} registrada a partir da mensagem`);
+    return updated;
   }
 
   /** Registrar contato recebido por telefone ou WhatsApp, em nome do usuário (RN-CAN-05, AC-M11-07). */

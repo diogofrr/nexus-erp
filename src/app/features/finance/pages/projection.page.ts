@@ -96,6 +96,41 @@ function scenarioFromQuery(value: string | null): ScenarioKey {
         </div>
       </section>
 
+      <section class="stack stack--3" aria-labelledby="proj-compare">
+        <h2 id="proj-compare" class="t-strong">Os três cenários lado a lado</h2>
+        <div class="table-wrap">
+          <table class="table" data-density="comfortable" data-role="scenario-compare">
+            <caption class="sr-only">
+              Comparação dos três cenários de conversão, estimativa do plano
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Cenário de conversão</th>
+                <th scope="col" class="col-num">Primeiro lucro</th>
+                <th scope="col" class="col-num">Retorno do investimento</th>
+                <th scope="col" class="col-num">Aporte extra dos sócios</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of compareRows(); track row.key) {
+                <tr [attr.data-selected]="row.selected ? 'true' : null" [attr.data-scenario]="row.key">
+                  <th scope="row">
+                    {{ row.label }}
+                    @if (row.selected) {
+                      <span class="badge badge--info">em tela</span>
+                    }
+                  </th>
+                  <td class="col-num">{{ row.firstProfit }}</td>
+                  <td class="col-num">{{ row.payback }}</td>
+                  <td class="col-num">{{ row.extra }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="t-caption">Escolha um cenário acima para ver o gráfico e a tabela mês a mês dele.</p>
+      </section>
+
       <section class="stack stack--3" aria-labelledby="proj-milestones">
         <h2 id="proj-milestones" class="t-strong">Marcos do cenário de {{ label() }}</h2>
         <ul class="cluster plain-list" data-role="milestones">
@@ -243,6 +278,21 @@ export class ProjectionPageComponent {
   protected readonly label = computed(() => this.store.scenarioLabel(this.scenario()));
   protected readonly result = computed(() => this.store.scenarios()[this.scenario()]);
   protected readonly referenceRows = computed(() => this.store.referenceRows(this.scenario()));
+
+  /** CX-005: os três cenários na mesma tela, sem trocar de aba para comparar. */
+  protected readonly compareRows = computed(() =>
+    SCENARIO_ORDER.map((key) => {
+      const r = this.store.scenarios()[key];
+      return {
+        key,
+        label: this.store.scenarioLabel(key),
+        selected: key === this.scenario(),
+        firstProfit: this.monthText(r.firstProfitMonth),
+        payback: this.monthText(r.paybackMonth),
+        extra: formatMoney(r.extraContributionCents),
+      };
+    }),
+  );
 
   protected readonly maintenanceMonths = computed(() =>
     [...this.params().annualSiteMaintenanceMonths]

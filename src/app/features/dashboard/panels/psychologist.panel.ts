@@ -122,7 +122,7 @@ const STATUS: Record<SessionStatus, { label: string; variant: 'success' | 'info'
                     <span><svg [appIcon]="row.kind === 'red' ? 'octagon-alert' : row.kind === 'yellow' ? 'triangle-alert' : 'clock'"></svg></span>
                     <span>
                       <span class="list-row__title discreet">{{ row.name }}</span>
-                      <span class="list-row__meta">{{ row.text }}</span>
+                      <span class="list-row__meta list-row__meta--wrap">{{ row.text }}</span>
                     </span>
                     <svg appIcon="chevron-right"></svg>
                   </a>

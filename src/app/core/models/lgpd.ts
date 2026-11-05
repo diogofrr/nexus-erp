@@ -73,6 +73,8 @@ export interface DataSubjectRequest extends Audited {
   dueAt: ISODate;
   completedAt?: ISODate;
   handledByUserId?: ID;
+  /** Quem concluiu, quando é outra pessoa além de quem trata o pedido (o responsável não troca sozinho, CX-002). */
+  completedByUserId?: ID;
   resolutionNote?: string;
   rejectedReason?: string;
   /** Eliminação parcial: o que ficou retido por registro documental e por quê. */

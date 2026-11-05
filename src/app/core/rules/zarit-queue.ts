@@ -6,7 +6,8 @@ import { zaritAssessmentState } from './zarit';
 /**
  * Fila de acompanhamento (SCR-M06-01, SCR-M05-09, AC-M06-16). Ordem de prioridade:
  * vermelho vencido, vermelho do dia, ARBE crítico, amarelo, ARBE de atenção, Zarit vencida, Zarit a vencer.
- * Funções puras: recebem os dados, o instante e a data, e devolvem as linhas já ordenadas. Ficam no núcleo para
+ * Dentro do mesmo motivo, vem primeiro quem tem a pontuação mais alta e, em empate, quem está mais atrasado
+ * (CX-028). Funções puras: recebem os dados, o instante e a data, e devolvem as linhas já ordenadas. Ficam no núcleo para
  * o painel e os indicadores usarem a mesma conta (um módulo não importa de outro).
  */
 export type QueueReason =
@@ -124,12 +125,21 @@ export function buildQueue(input: QueueInput): QueueRow[] {
     });
   });
   const nameOf = new Map(input.caregivers.map((c) => [c.id, c.fullName] as const));
-  return rows.sort(
-    (a, b) =>
-      a.rank - b.rank ||
-      (a.alert?.deadlineAt ?? a.dueDate ?? '').localeCompare(b.alert?.deadlineAt ?? b.dueDate ?? '') ||
-      (nameOf.get(a.caregiverId) ?? '').localeCompare(nameOf.get(b.caregiverId) ?? '', 'pt-BR'),
-  );
+  const byDate = (a: QueueRow, b: QueueRow): number =>
+    (a.alert?.deadlineAt ?? a.dueDate ?? '').localeCompare(b.alert?.deadlineAt ?? b.dueDate ?? '');
+  const byScore = (a: QueueRow, b: QueueRow): number => (b.score ?? -1) - (a.score ?? -1);
+  return rows.sort((a, b) => {
+    if (a.rank !== b.rank) {
+      return a.rank - b.rank;
+    }
+    // Vermelho: o prazo que vence (ou venceu) primeiro. Os demais: o mais grave primeiro (maior pontuação) e,
+    // em empate, o mais atrasado (CX-028).
+    const isRed = a.reason === 'red_overdue' || a.reason === 'red_today';
+    return (
+      (isRed ? byDate(a, b) || byScore(a, b) : byScore(a, b) || byDate(a, b)) ||
+      (nameOf.get(a.caregiverId) ?? '').localeCompare(nameOf.get(b.caregiverId) ?? '', 'pt-BR')
+    );
+  });
 }
 
 /** Filtros da fila (chips e chaves do sino, `?filtro=`). */

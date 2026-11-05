@@ -69,6 +69,23 @@
   &[data-static] { position: static; max-width: 34rem; }
 }
 
+// Banner da primeira visita (QA-003): abaixo de lg ele entra no FLUXO da página, grudado no pé da janela, em vez de
+// ficar fixo por cima do conteúdo. Como ocupa espaço no fim da página, nunca cobre o código do segundo fator nem o
+// "Confirmar": a pessoa rola até o fim e vê tudo. Em telas largas continua no canto, sem cobrir o menu nem o formulário.
+app-consent-banner { display: contents; }
+.banner--consent.banner--dock {
+  @include down(lg) {
+    position: sticky;
+    inset: auto auto var(--space-3) auto;
+    max-width: none;
+    margin: var(--space-4);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-3);
+    .banner__title { font-size: var(--fs-lg); }
+    .banner__text { margin: 0; }
+  }
+}
+
 // =============================================================================
 // Toast (confirmação leve; alerta de erro usa role="alert")
 // =============================================================================

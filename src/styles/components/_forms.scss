@@ -148,9 +148,10 @@
   input {
     appearance: none;
     flex-shrink: 0;
-    width: 1.25rem;
-    height: 1.25rem;
-    margin: 1px 0 0;
+    // 24 px: alvo mínimo da caixa e da opção (QA-014); no celular a LINHA inteira tem 44 px (regra abaixo).
+    width: 1.5rem;
+    height: 1.5rem;
+    margin: 0;
     display: grid;
     place-content: center;
     border: 1.5px solid var(--border-control);
@@ -182,7 +183,12 @@
     &:disabled::after { background: var(--text-disabled); }
   }
 
-  &:has(input:disabled) { color: var(--text-disabled); cursor: not-allowed; }
+  // QA-013 e QA-019: o texto de uma opção indisponível continua legível (4,5:1). Quem vê precisa ler por que não pode
+  // escolher; o estado desabilitado aparece na caixa apagada, no cursor e no `small` de apoio, nunca só no contraste.
+  &:has(input:disabled) { color: var(--text-muted); cursor: not-allowed; }
+
+  // Celular: a linha toda é o alvo de toque (44 px, V34).
+  @include down(md) { min-height: var(--control-h); align-items: center; }
 }
 
 .radio input {
@@ -360,6 +366,9 @@
   font-weight: var(--fw-semibold);
   &:hover { color: var(--text-link-hover); background: var(--border-subtle); }
   .icon { width: 1rem; height: 1rem; }
+  // CX-044: o botão não quebra a palavra ("Mostra / r") em painel estreito: não encolhe e não parte o texto.
+  flex-shrink: 0;
+  white-space: nowrap;
   .masked[data-state='revealed'] & { color: var(--text-accent); }
 }
 

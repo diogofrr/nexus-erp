@@ -5,9 +5,10 @@ import { map } from 'rxjs';
 import { AuthService } from '@core/auth';
 import { SubscriptionService } from '@core/commerce/subscription.service';
 import { Database } from '@core/data';
+import { AssignmentRequestService } from '@core/notifications/assignment-requests';
 import { caregiverLabel } from '@core/privacy/caregiver-label';
 import { BadgeComponent, EmptyStateComponent, IconComponent, PageHeaderComponent, TabItem, TabsComponent } from '@shared/ui';
-import { BannerComponent, PageContextService } from '@shared/ui/overlay';
+import { BannerComponent, PageContextService, ToastService } from '@shared/ui/overlay';
 import { SubscriptionPanelComponent } from '@shared/ui/plan/subscription-panel.component';
 import { CaregiverClosureDrawerComponent, CaregiverEditDrawerComponent } from '../components/caregiver-dialogs.component';
 import { ElderCareComponent } from '../components/elder-care.component';
@@ -71,7 +72,12 @@ import { STATUS_BADGES, STATUS_LABELS } from '../state/caregiver-labels';
           <app-banner variant="success" [heading]="'Cadastro criado: ' + cg.code" [dismissible]="true" (dismissed)="dismissCreated()">
             Falta aplicar a escala de adesão. O psicólogo do caso faz essa etapa.
             @if (cg.assignedPsychologistId === undefined && canEdit()) {
-              Peça ao responsável técnico para atribuir o psicólogo responsável.
+              O responsável técnico atribui o psicólogo responsável.
+              @if (assignmentAsked()) {
+                <span data-role="assignment-asked">Ele já foi avisado.</span>
+              } @else {
+                <button type="button" class="btn btn--sm mt-2" data-role="request-assignment" (click)="requestAssignment(cg.id)">Pedir atribuição de psicólogo</button>
+              }
             }
           </app-banner>
         }
@@ -104,6 +110,8 @@ export class CaregiverProfilePage {
   private readonly db = inject(Database);
   private readonly page = inject(PageContextService);
   private readonly subscriptions = inject(SubscriptionService);
+  private readonly assignments = inject(AssignmentRequestService);
+  private readonly toasts = inject(ToastService);
 
   private readonly id = toSignal(this.route.paramMap.pipe(map((p) => p.get('id') ?? '')), { initialValue: '' });
   private readonly query = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });
@@ -128,6 +136,24 @@ export class CaregiverProfilePage {
   protected readonly canClose = computed(() => {
     const status = this.caregiver()?.status;
     return status === 'active' || status === 'paused_by_consent_revocation';
+  });
+  /** CX-041: avisa o responsável técnico, que atribui o psicólogo do cadastro novo. */
+  protected requestAssignment(id: string): void {
+    const result = this.assignments.request(id);
+    if (!result.ok) {
+      this.toasts.attention(result.reason);
+      return;
+    }
+    this.toasts.success(
+      result.alreadyAsked
+        ? 'O responsável técnico já tinha sido avisado.'
+        : 'Pedido enviado. O responsável técnico foi avisado e atribui o psicólogo.',
+    );
+  }
+
+  protected readonly assignmentAsked = computed(() => {
+    const id = this.id();
+    return !!id && this.assignments.isRequested(id);
   });
   protected readonly justCreated = computed(() => this.query().get('novo') === '1' && !this.createdDismissed());
 

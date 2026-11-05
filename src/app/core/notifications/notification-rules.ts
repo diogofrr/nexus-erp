@@ -17,6 +17,7 @@ import { Role } from '../models/access';
 import { Caregiver } from '../models/caregivers';
 import { ISODate, ISODateTime } from '../models/primitives';
 import { formatDate } from '../format/format';
+import { formatSpan } from '../format/span';
 import { isAuditDue, nextAuditDate } from '../rules/arp';
 import { isArbeAlertOpen } from '../rules/arbe';
 import { hasOverloadAlert } from '../rules/eqp';
@@ -29,6 +30,7 @@ import {
   BUSINESS_HOURS_PER_DAY,
 } from '../rules/sla';
 import { zaritAssessmentState, zaritDaysToDue } from '../rules/zarit';
+import { assignmentRequestDrafts } from './assignment-requests';
 
 export type NotificationGroup = 'action_today' | 'to_follow';
 export type NotificationSeverity = 'danger' | 'attention' | 'info';
@@ -56,6 +58,11 @@ export interface NotificationDraft {
   count: number;
   /** Item do menu que mostra o contador, se houver. */
   navModule?: ModuleKey;
+  /**
+   * `at` é o momento em que o aviso nasceu (e não uma data de vencimento): só então o sino mostra "aviso criado há
+   * 9 horas". Sem isso, a idade confundiria com a data do contexto (CX-012).
+   */
+  showAge?: boolean;
 }
 
 export interface RuleContext {
@@ -67,6 +74,28 @@ export interface RuleContext {
 
 const SEVERITY_ORDER: Record<NotificationSeverity, number> = { danger: 0, attention: 1, info: 2 };
 const MAX_PER_TYPE = 8;
+/** A partir disso, as aplicações da escala atrasadas viram uma linha só (CX-029). */
+const ASSESSMENT_GROUP_MIN = 3;
+
+/**
+ * Dentro do mesmo grupo e da mesma gravidade, o que é de risco ou de gente esperando vem antes do que é rotina
+ * (CX-029): pedido da responsável técnica, vermelho, mensagem sinalizada, mensagem atrasada, e por último a
+ * escala atrasada.
+ */
+const TYPE_PRIORITY: Readonly<Record<string, number>> = {
+  contact_requested: 0,
+  red_contact_overdue: 1,
+  red_contact_pending: 2,
+  message_flagged: 3,
+  message_overdue: 4,
+  message_overdue_more: 4,
+  dsr_due: 5,
+  complaint_overdue: 5,
+  review_request: 6,
+  assessment_due: 8,
+  assessment_overdue_group: 9,
+};
+const DEFAULT_PRIORITY = 7;
 
 const CHANNEL_LABEL = {
   app: 'Aplicativo',
@@ -86,16 +115,7 @@ function dueIn(days: number): string {
 
 /** Atraso em texto: `3 h 12 min`, `18 h`, `2 dias`. */
 function elapsedText(minutes: number): string {
-  const m = Math.abs(Math.round(minutes));
-  if (m < 60) {
-    return `${m} min`;
-  }
-  if (m < 60 * 24) {
-    const h = Math.floor(m / 60);
-    const rest = m % 60;
-    return rest === 0 ? `${h} h` : `${h} h ${rest} min`;
-  }
-  return plural(Math.floor(m / (60 * 24)), 'dia', 'dias');
+  return formatSpan(minutes);
 }
 
 function nameOf(caregiver: Caregiver | undefined, role: Role): string {
@@ -147,6 +167,7 @@ function careRules(ctx: RuleContext, out: NotificationDraft[]): void {
           at: alert.createdAt,
           count: 1,
           navModule: 'zarit',
+          showAge: true,
         });
       } else if (state === 'overdue') {
         const left = redAlertMinutesLeft(alert, now) ?? 0;
@@ -204,21 +225,43 @@ function careRules(ctx: RuleContext, out: NotificationDraft[]): void {
         queryParams: { filtro: 'tarefas' },
         at: alert.createdAt,
         count: 1,
+        showAge: true,
       }),
     );
 
-  // Aplicação da escala vencendo ou atrasada (cuidador ativo, com consentimento de saúde).
-  db.zaritAssessments
+  // Aplicação da escala vencendo ou atrasada (cuidador ativo, com consentimento de saúde). Quando há muitas
+  // atrasadas, viram UMA linha, para não esconder o que é de risco (CX-029).
+  const due = db.zaritAssessments
     .query((a) => a.status === 'scheduled' && caregivers.has(a.caregiverId))
-    .forEach((assessment) => {
+    .flatMap((assessment) => {
       const caregiver = caregivers.get(assessment.caregiverId);
       if (!caregiver || caregiver.status !== 'active' || actor.role !== 'psychologist') {
-        return;
+        return [];
       }
       const state = zaritAssessmentState(assessment.dueDate, today, false);
-      if (state !== 'overdue' && state !== 'due') {
-        return;
-      }
+      return state === 'overdue' || state === 'due' ? [{ assessment, caregiver, state }] : [];
+    });
+  const overdueRows = due.filter((row) => row.state === 'overdue');
+  const grouped = overdueRows.length >= ASSESSMENT_GROUP_MIN;
+  if (grouped) {
+    const oldest = Math.max(...overdueRows.map((row) => Math.abs(zaritDaysToDue(row.assessment.dueDate, today))));
+    out.push({
+      key: 'assessment_overdue:group',
+      type: 'assessment_overdue_group',
+      group: 'to_follow',
+      severity: 'attention',
+      icon: 'calendar-days',
+      title: `${overdueRows.length} aplicações da escala atrasadas`,
+      context: `A mais antiga venceu há ${plural(oldest, 'dia', 'dias')}`,
+      link: '/app/acompanhamento',
+      queryParams: { filtro: 'aplicacao-vencendo' },
+      at: `${today}T00:00:00-03:00`,
+      count: overdueRows.length,
+    });
+  }
+  due
+    .filter((row) => !(grouped && row.state === 'overdue'))
+    .forEach(({ assessment, caregiver, state }) => {
       const days = zaritDaysToDue(assessment.dueDate, today);
       out.push({
         key: `assessment_due:${assessment.id}`,
@@ -254,6 +297,7 @@ function careRules(ctx: RuleContext, out: NotificationDraft[]): void {
         queryParams: { filtro: 'alertas-a-confirmar' },
         at: alert.generatedAt,
         count: 1,
+        showAge: true,
       }),
     );
 
@@ -276,6 +320,7 @@ function careRules(ctx: RuleContext, out: NotificationDraft[]): void {
         queryParams: { filtro: 'pedidos-de-revisao' },
         at: request.createdAt,
         count: 1,
+        showAge: true,
       });
     });
 
@@ -294,8 +339,36 @@ function careRules(ctx: RuleContext, out: NotificationDraft[]): void {
         link: '/app/governanca/ocorrencias',
         at: occurrence.openedAt,
         count: 1,
+        showAge: true,
       }),
     );
+
+  // A responsável técnica pediu o contato agora (CX-019): o aviso nasce do pedido dela, não de uma regra de prazo.
+  db.notifications
+    .query(
+      (n) =>
+        n.userId === actor.userId && n.kind.startsWith('contact_requested:') && n.status !== 'resolved',
+    )
+    .forEach((request) => {
+      const alert = db.zaritAlerts.get(request.kind.slice('contact_requested:'.length));
+      if (!alert || alert.status === 'closed' || alert.contact || !caregivers.has(alert.caregiverId)) {
+        return;
+      }
+      out.push({
+        key: request.kind,
+        type: 'contact_requested',
+        group: 'action_today',
+        severity: 'danger',
+        icon: 'phone',
+        title: 'A responsável técnica pediu o contato agora',
+        context: nameOf(caregivers.get(alert.caregiverId), actor.role),
+        link: `/app/acompanhamento/alertas/${alert.id}`,
+        at: request.at,
+        count: 1,
+        navModule: 'zarit',
+        showAge: true,
+      });
+    });
 }
 
 // ===== Psicólogo: anotações e agenda ===========================================================
@@ -374,12 +447,13 @@ function messageRules(ctx: RuleContext, out: NotificationDraft[]): void {
         group: 'action_today',
         severity: 'attention',
         icon: 'messages-square',
-        title: 'Mensagem sinalizada à equipe técnica',
+        title: m.riskDoubt ? 'Mensagem enviada em dúvida: avalie se há risco' : 'Mensagem sinalizada à equipe técnica',
         context: nameOf(m.caregiverId ? caregivers.get(m.caregiverId) : undefined, role),
         link: '/app/mensagens',
         queryParams: { filtro: 'sinalizadas' },
         at: m.receivedAt,
         count: 1,
+        showAge: true,
       }),
     );
     return;
@@ -715,6 +789,7 @@ export function sortNotifications(list: readonly NotificationDraft[]): Notificat
     (a, b) =>
       groupOrder[a.group] - groupOrder[b.group] ||
       SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] ||
+      (TYPE_PRIORITY[a.type] ?? DEFAULT_PRIORITY) - (TYPE_PRIORITY[b.type] ?? DEFAULT_PRIORITY) ||
       b.at.localeCompare(a.at) ||
       a.key.localeCompare(b.key),
   );
@@ -726,6 +801,8 @@ export function generateNotifications(ctx: RuleContext): NotificationDraft[] {
   switch (ctx.actor.role) {
     case 'technical_lead':
       careRules(ctx, out);
+      // Pedido do atendimento para atribuir psicólogo a um cadastro novo (CX-041, arquivo `assignment-requests`).
+      out.push(...assignmentRequestDrafts(ctx));
       messageRules(ctx, out);
       privacyAndRelationshipRules(ctx, out);
       managementRules(ctx, out);

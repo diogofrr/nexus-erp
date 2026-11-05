@@ -201,7 +201,7 @@ export class SearchService {
     push('screens', this.screenResults(role, query));
     push('caregivers', this.caregiverResults(role, query));
     if (role === 'partner' || role === 'technical_lead' || role === 'support') {
-      push('providers', this.providerResults(query));
+      push('providers', this.providerResults(role, query));
     }
     if (role === 'partner' || role === 'support') {
       push('partners', this.partnerResults(query));
@@ -302,9 +302,19 @@ export class SearchService {
   }
 
   private screenResults(role: Role, query: string): SearchResult[] {
-    return screensFor(role)
-      .filter((s) =>
-        matchesQuery(`${s.label} ${s.parent ?? ''} ${(s.keywords ?? []).join(' ')}`, query),
+    const matched = screensFor(role).filter((s) =>
+      matchesQuery(`${s.label} ${s.parent ?? ''} ${(s.keywords ?? []).join(' ')}`, query),
+    );
+    // CX-024: se uma subtela do módulo já responde à busca ("Parâmetros da ARBE"), o módulo inteiro
+    // ("Configurações") não entra de novo, a não ser que o próprio nome dele case com o que foi digitado.
+    const modulesWithSpecificScreen = new Set(matched.filter((s) => s.parent && s.moduleKey).map((s) => s.moduleKey));
+    return matched
+      .filter(
+        (s) =>
+          s.parent !== undefined ||
+          s.moduleKey === undefined ||
+          !modulesWithSpecificScreen.has(s.moduleKey) ||
+          matchesQuery(s.label, query),
       )
       .map((s) => this.screenResult(s));
   }
@@ -394,9 +404,14 @@ export class SearchService {
       });
   }
 
-  private providerResults(query: string): SearchResult[] {
+  /** QA-011: o responsável técnico só abre a ficha de psicólogos da rede, então só eles entram na busca dele. */
+  private providerResults(role: Role, query: string): SearchResult[] {
     return this.db.providers
-      .query((p) => matchesQuery(`${p.name} ${p.specialtyLabel}`, query))
+      .query(
+        (p) =>
+          (role !== 'technical_lead' || p.category === 'psychology') &&
+          matchesQuery(`${p.name} ${p.specialtyLabel}`, query),
+      )
       .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
       .map((p) => ({
         id: `provider:${p.id}`,

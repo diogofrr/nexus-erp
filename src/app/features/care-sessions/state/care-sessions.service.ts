@@ -28,10 +28,14 @@ import {
   YearMonth,
 } from '@core/models';
 import {
+  RedistributionParty,
+  RedistributionPartyProjection,
   buildOccupancyView,
+  canReceiveRedistribution,
   canSeePrioritySlots,
   hasOverloadAlert,
   lastClosedMonths,
+  projectRedistribution,
   sessionPriceCents,
   validateReferral,
 } from '@core/rules';
@@ -87,6 +91,29 @@ export interface RedistributionResult {
   caregivers: number;
   sessionsMoved: number;
   sessionsKept: number;
+  /** Quantos casos cada receptor recebeu (CX-010). */
+  byReceiver: { toId: ID; caregivers: number }[];
+}
+
+/** Caso que pode ser escolhido na redistribuição: só o código (a tela nunca mostra nome). */
+export interface TransferableCase {
+  id: ID;
+  code: string;
+  /** Sessões futuras que acompanham o caso. */
+  sessions: number;
+  /** Alerta vermelho aberto ou ocorrência aberta: só a responsável técnica vê e transfere (CX-010). */
+  activeRisk: boolean;
+}
+
+/** Os casos que vão para um receptor. */
+export interface RedistributionAssignment {
+  toId: ID;
+  caregiverIds: readonly ID[];
+}
+
+export interface RedistributeOptions {
+  /** A gestão informa que combinou com a responsável técnica (obrigatório para a gestão). */
+  rtApproved?: boolean;
 }
 
 /** Horas da agenda (uma vaga por hora, 08h às 18h, RN-ATD-14). */
@@ -373,6 +400,72 @@ export class CareSessionsService {
       late ? 'cancelamento com menos de 24 horas: falta' : 'sessão cancelada',
     );
     return { ok: true, value: updated };
+  }
+
+  /**
+   * Remarcar (CX-026, CX-027): escolhe a vaga nova e só então libera a antiga, sem passar por "cancelar". A sessão
+   * antiga fica "remarcada" e guarda quem pediu. Se o cuidador pede a menos de 24 horas, vale a regra do
+   * cancelamento (RN-ATD-16) e a antiga conta como falta; se foi o psicólogo, nunca é falta.
+   */
+  reschedule(sessionId: ID, input: ScheduleInput, by: 'user' | 'psychologist'): OpResult<CareSession> {
+    const session = this.db.careSessions.get(sessionId);
+    if (!session || !this.canChange(session)) {
+      return fail('session', 'Seu perfil não remarca esta sessão.');
+    }
+    if (by === 'psychologist' && this.auth.role() === 'support') {
+      return fail('requestedBy', 'Só o psicólogo remarca por conta própria. Registre que o cuidador pediu.');
+    }
+    if (session.status !== 'scheduled' && session.status !== 'confirmed') {
+      return fail('session', 'Só uma sessão agendada ou confirmada pode ser remarcada.');
+    }
+    if (this.hasStarted(session)) {
+      return fail('session', 'Esta sessão já começou. Marque como falta ou realizada.');
+    }
+    if (input.slotId === session.slotId) {
+      return fail('slot', 'Escolha um horário diferente do atual.');
+    }
+    const created = this.schedule(input);
+    if (!created.ok) {
+      return created;
+    }
+    const limit = this.db.settings.get().sessionCancellationHours;
+    const late = by === 'user' && this.hoursUntil(session) < limit;
+    const status: CareSession['status'] = late
+      ? 'no_show'
+      : by === 'user'
+        ? 'cancelled_by_user'
+        : 'cancelled_by_psychologist';
+    this.db.careSessions.update(sessionId, {
+      status,
+      cancelledAt: this.clock.now(),
+      rescheduledToId: created.value.id,
+      rescheduleRequestedBy: by,
+    });
+    if (!late) {
+      this.db.availabilitySlots.update(session.slotId, { status: 'open' });
+    }
+    this.audit.write(
+      'update',
+      'care_session',
+      sessionId,
+      session.caregiverId,
+      late ? 'sessão remarcada a menos de 24 horas: falta' : `sessão remarcada a pedido ${by === 'user' ? 'do cuidador' : 'do psicólogo'}`,
+    );
+    return created;
+  }
+
+  /** O que acontece com a sessão atual ao remarcar, mostrado ANTES de salvar (A-23). */
+  rescheduleEffect(session: CareSession, by: 'user' | 'psychologist' | null): string {
+    const limit = this.db.settings.get().sessionCancellationHours;
+    const hours = this.hoursUntil(session);
+    if (by === null) {
+      return 'A sessão atual só é liberada depois que você salvar o novo horário.';
+    }
+    if (by === 'user' && hours < limit) {
+      const left = Math.max(0, Math.floor(hours));
+      return `Faltam ${left} ${left === 1 ? 'hora' : 'horas'} para a sessão atual. Remarcar agora a pedido do cuidador registra falta nela, conforme a regra de ${limit} horas. A vaga atual continua ocupada.`;
+    }
+    return 'A sessão atual fica como remarcada e a vaga dela volta a ficar aberta quando você salvar o novo horário.';
   }
 
   /** Mensagem do efeito do cancelamento, mostrada ANTES de confirmar (A-23). */
@@ -713,40 +806,192 @@ export class CareSessionsService {
     if (reason.trim().length < 5) {
       return fail('reason', 'Escreva o motivo da transferência.');
     }
-    const caregivers = this.db.caregivers.updateWhere((c) => c.assignedPsychologistId === fromId, {
-      assignedPsychologistId: toId,
+    const result = this.moveCases(from, to, null);
+    this.audit.record({
+      action: 'update',
+      entity: 'psychologist_redistribution',
+      entityId: fromId,
+      justification: reason.trim(),
+      detail: `transferência para ${toId}: ${result.caregivers} cuidadores e ${result.sessionsMoved} sessões futuras`,
     });
+    return { ok: true, value: { ...result, byReceiver: [{ toId, caregivers: result.caregivers }] } };
+  }
+
+  /**
+   * Casos que o usuário pode escolher na redistribuição, só pelo código. A gestão não vê nem transfere caso com
+   * alerta vermelho aberto ou ocorrência aberta (decisão técnica da responsável técnica, CX-010).
+   */
+  transferableCases(fromId: ID): TransferableCase[] {
+    const role = this.auth.role();
+    const risky = this.activeRiskCaregivers();
+    const sessionsOf = new Map<ID, number>();
+    this.futureSessionsOf(fromId).forEach((s) =>
+      sessionsOf.set(s.caregiverId, (sessionsOf.get(s.caregiverId) ?? 0) + 1),
+    );
+    return this.db.caregivers
+      .query((c) => c.assignedPsychologistId === fromId && c.status !== 'closed')
+      .map((c) => ({
+        id: c.id,
+        code: c.code,
+        sessions: sessionsOf.get(c.id) ?? 0,
+        activeRisk: risky.has(c.id),
+      }))
+      .filter((c) => role === 'technical_lead' || !c.activeRisk)
+      .sort((a, b) => a.code.localeCompare(b.code, 'pt-BR', { numeric: true }));
+  }
+
+  private activeRiskCaregivers(): Set<ID> {
+    const ids = new Set<ID>();
+    this.db.zaritAlerts
+      .query((a) => a.level === 'red' && a.status !== 'closed')
+      .forEach((a) => ids.add(a.caregiverId));
+    this.db.occurrences.query((o) => o.status !== 'closed').forEach((o) => ids.add(o.caregiverId));
+    return ids;
+  }
+
+  /** Horas do último mês fechado e casos de um psicólogo, para a prévia da ocupação (CX-010). */
+  redistributionParty(psychologistId: ID): RedistributionParty {
+    const psychologist = this.db.psychologists.get(psychologistId);
+    const closed = psychologist ? this.occupancyFor(psychologist).months[1] : undefined;
+    return {
+      id: psychologistId,
+      caregivers: this.db.caregivers.count(
+        (c) => c.assignedPsychologistId === psychologistId && c.status !== 'closed',
+      ),
+      availableHours: closed?.availableHours ?? 0,
+      doneHours: closed?.doneHours ?? 0,
+    };
+  }
+
+  /** Ocupação de hoje e estimada depois da transferência, de quem cede e de cada receptor. */
+  projectRedistribution(
+    fromId: ID,
+    moves: readonly { toId: ID; cases: number }[],
+  ): RedistributionPartyProjection[] {
+    return projectRedistribution(
+      this.redistributionParty(fromId),
+      moves.map((m) => ({ party: this.redistributionParty(m.toId), cases: m.cases })),
+    );
+  }
+
+  /**
+   * Transfere os casos escolhidos para um ou mais psicólogos (CX-010). Só recebe quem está abaixo de 80% hoje
+   * (RN-EQP-05). A gestão precisa informar o aval da responsável técnica e não move caso com acompanhamento ativo.
+   * As sessões futuras, as aplicações agendadas, os pedidos de revisão e as ocorrências vão junto com o caso.
+   */
+  redistributeCases(
+    fromId: ID,
+    assignments: readonly RedistributionAssignment[],
+    reason: string,
+    options: RedistributeOptions = {},
+  ): OpResult<RedistributionResult> {
+    const role = this.auth.role();
+    if (role !== 'technical_lead' && role !== 'partner') {
+      return fail('redistribute', 'Só o responsável técnico ou a gestão redistribuem a agenda.');
+    }
+    const from = this.db.psychologists.get(fromId);
+    if (!from) {
+      return fail('redistribute', 'Escolha o psicólogo de quem os casos saem.');
+    }
+    const picked = assignments.filter((a) => a.caregiverIds.length > 0);
+    if (picked.length === 0) {
+      return fail('cases', 'Escolha ao menos um caso e quem o recebe.');
+    }
+    const allowed = new Map(this.transferableCases(fromId).map((c) => [c.id, c] as const));
+    const seen = new Set<ID>();
+    for (const assignment of picked) {
+      const to = this.db.psychologists.get(assignment.toId);
+      if (!to || to.id === from.id) {
+        return fail('target', 'Escolha o psicólogo que recebe os casos.');
+      }
+      if (to.crpStatus !== 'active') {
+        return fail('target', 'O psicólogo que recebe precisa ter CRP ativo.');
+      }
+      const percent = this.occupancyFor(to).months[1]?.occupancyPercent ?? null;
+      if (!canReceiveRedistribution(percent)) {
+        return fail('target', `${to.displayName} está com a agenda no limite ou acima dele e não recebe mais casos.`);
+      }
+      for (const id of assignment.caregiverIds) {
+        if (!allowed.has(id) || seen.has(id)) {
+          return fail('cases', 'Um dos casos escolhidos não pode ser transferido por você.');
+        }
+        seen.add(id);
+      }
+    }
+    if (role === 'partner' && options.rtApproved !== true) {
+      return fail('approval', 'Combine com a responsável técnica e marque a confirmação do aval.');
+    }
+    if (reason.trim().length < 5) {
+      return fail('reason', 'Escreva o motivo da transferência.');
+    }
+    const total = { caregivers: 0, sessionsMoved: 0, sessionsKept: 0 };
+    const byReceiver: RedistributionResult['byReceiver'] = [];
+    for (const assignment of picked) {
+      const to = this.db.psychologists.get(assignment.toId) as PsychologistProfile;
+      const moved = this.moveCases(from, to, new Set(assignment.caregiverIds));
+      total.caregivers += moved.caregivers;
+      total.sessionsMoved += moved.sessionsMoved;
+      total.sessionsKept += moved.sessionsKept;
+      byReceiver.push({ toId: to.id, caregivers: moved.caregivers });
+      this.audit.record({
+        action: 'update',
+        entity: 'psychologist_redistribution',
+        entityId: fromId,
+        justification: reason.trim(),
+        detail: `transferência para ${to.id}: ${moved.caregivers} cuidadores e ${moved.sessionsMoved} sessões futuras${role === 'partner' ? ' (aval da responsável técnica informado pela gestão)' : ''}`,
+      });
+    }
+    return { ok: true, value: { ...total, byReceiver } };
+  }
+
+  /** Move casos (ou todos, com `only = null`) e o que depende deles de um psicólogo para outro. */
+  private moveCases(
+    from: PsychologistProfile,
+    to: PsychologistProfile,
+    only: ReadonlySet<ID> | null,
+  ): Omit<RedistributionResult, 'byReceiver'> {
+    const fromId = from.id;
+    const toId = to.id;
+    const selected = (caregiverId: ID): boolean => only === null || only.has(caregiverId);
+    const caregivers = this.db.caregivers.updateWhere(
+      (c) => c.assignedPsychologistId === fromId && selected(c.id),
+      { assignedPsychologistId: toId },
+    );
     let moved = 0;
     let kept = 0;
-    this.futureSessionsOf(fromId).forEach((session) => {
-      const slot = this.db.availabilitySlots.get(session.slotId);
-      if (!slot) {
-        kept += 1;
-        return;
-      }
-      const onTarget = this.slotAt(toId, slot.date, slot.start);
-      if (!onTarget) {
-        this.db.availabilitySlots.update(slot.id, { psychologistId: toId });
-      } else if (this.isSlotFree(onTarget)) {
-        this.db.availabilitySlots.update(onTarget.id, { status: 'booked' });
-        this.db.availabilitySlots.remove(slot.id);
-        this.db.careSessions.update(session.id, { slotId: onTarget.id });
-      } else {
-        kept += 1;
-        return;
-      }
-      this.db.careSessions.update(session.id, { psychologistId: toId });
-      moved += 1;
-    });
+    this.futureSessionsOf(fromId)
+      .filter((session) => selected(session.caregiverId))
+      .forEach((session) => {
+        const slot = this.db.availabilitySlots.get(session.slotId);
+        if (!slot) {
+          kept += 1;
+          return;
+        }
+        const onTarget = this.slotAt(toId, slot.date, slot.start);
+        if (!onTarget) {
+          this.db.availabilitySlots.update(slot.id, { psychologistId: toId });
+        } else if (this.isSlotFree(onTarget)) {
+          this.db.availabilitySlots.update(onTarget.id, { status: 'booked' });
+          this.db.availabilitySlots.remove(slot.id);
+          this.db.careSessions.update(session.id, { slotId: onTarget.id });
+        } else {
+          kept += 1;
+          return;
+        }
+        this.db.careSessions.update(session.id, { psychologistId: toId });
+        moved += 1;
+      });
     // O novo psicólogo recebe o caso por inteiro: aplicações agendadas, pedidos de revisão e ocorrências.
     this.db.zaritAssessments.updateWhere(
-      (a) => a.psychologistId === fromId && a.status === 'scheduled',
+      (a) => a.psychologistId === fromId && a.status === 'scheduled' && selected(a.caregiverId),
       { psychologistId: toId },
     );
-    this.db.reviewRequests.updateWhere((r) => r.psychologistId === fromId && !r.answeredAt, {
-      psychologistId: toId,
-    });
-    const caseIds = new Set(this.db.caregivers.query((c) => c.assignedPsychologistId === toId).map((c) => c.id));
+    this.db.reviewRequests.updateWhere(
+      (r) => r.psychologistId === fromId && !r.answeredAt && selected(r.caregiverId),
+      { psychologistId: toId },
+    );
+    const caseIds =
+      only ?? new Set(this.db.caregivers.query((c) => c.assignedPsychologistId === toId).map((c) => c.id));
     this.db.occurrences
       .query((o) => o.status !== 'closed' && caseIds.has(o.caregiverId))
       .forEach((o) => {
@@ -756,14 +1001,7 @@ export class CareSessionsService {
         }
         this.db.occurrences.update(o.id, { restrictedToUserIds: users });
       });
-    this.audit.record({
-      action: 'update',
-      entity: 'psychologist_redistribution',
-      entityId: fromId,
-      justification: reason.trim(),
-      detail: `transferência para ${toId}: ${caregivers} cuidadores e ${moved} sessões futuras`,
-    });
-    return { ok: true, value: { caregivers, sessionsMoved: moved, sessionsKept: kept } };
+    return { caregivers, sessionsMoved: moved, sessionsKept: kept };
   }
 
   // ===== Salas (SCR-M05-08) =====

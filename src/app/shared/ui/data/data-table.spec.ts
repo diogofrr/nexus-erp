@@ -140,7 +140,7 @@ describe('DataTableComponent', () => {
     typeInto(pick<HTMLInputElement>(root, '.table-toolbar input[type="search"]'), 'marcia');
     fixture.detectChanges();
     expect(names()).toEqual(['Márcia']);
-    expect(count()).toBe('Mostrando 1 a 1 de 1 cuidadores (filtrado de 30)');
+    expect(count()).toBe('Mostrando 1 a 1 de 1 cuidador (filtrado de 30)');
   });
 
   it('busca sem resultado: "Nada encontrado" com a frase da marca e "Limpar filtros", nunca tabela em branco', () => {

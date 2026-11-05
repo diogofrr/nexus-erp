@@ -115,6 +115,27 @@ describe('NxMaskDirective', () => {
     expect(input('score').value).toBe('8,5');
   });
 
+  it('o sinal de menos não some em silêncio: fica no campo e o validador recusa com uma frase (QA-016)', () => {
+    const { host, input } = render();
+    typeInto(input('hours'), '-1');
+    expect(input('hours').value).toBe('-1');
+    expect(host.hours.value).toBe(-1);
+    expect(host.hours.errors).toEqual({ range: { min: 0, max: 24, message: 'As horas por dia devem ser de 0 a 24.' } });
+    typeInto(input('score'), '-5');
+    expect(input('score').value).toBe('-5');
+    expect(host.score.errors).toEqual({ range: { min: 0, max: undefined, message: 'Use um número a partir de 0, sem o sinal de menos.' } });
+    typeInto(input('price'), '-10');
+    expect(input('price').value).toBe('-R$ 0,10');
+    expect(host.price.value).toBe(-10);
+    expect(host.price.errors).toEqual({ range: { min: 0, max: undefined, message: 'O valor não pode ser negativo.' } });
+    // Sem o sinal, volta a valer.
+    typeInto(input('price'), '1000');
+    expect(host.price.value).toBe(1000);
+    expect(host.price.valid).toBe(true);
+    typeInto(input('price'), '-');
+    expect(host.price.errors).toEqual({ format: { message: 'Informe um valor em reais.' } });
+  });
+
   it('data (pt-BR): o modelo guarda ISO, mostra dd/mm/aaaa e acusa data que não existe', () => {
     const { host, input } = render();
     typeInto(input('birth'), '04112026');

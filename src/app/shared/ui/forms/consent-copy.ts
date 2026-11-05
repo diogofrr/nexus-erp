@@ -27,7 +27,7 @@ export const CONSENT_COPY: Readonly<Record<ConsentKey, ConsentCopy>> = {
     who: 'O psicólogo que acompanha você e o responsável técnico. A gestão só vê números somados, sem o seu nome.',
     ifNo: 'O plano Livre e a agenda continuam. A escala e o atendimento clínico não acontecem.',
     change:
-      'Você pode retirar o consentimento quando quiser. O registro psicológico já feito é guardado por 5 anos, conforme a norma do conselho (a confirmar).',
+      'Você pode retirar o consentimento quando quiser. O registro psicológico já feito é guardado por 5 anos, conforme a norma do conselho.',
   },
   people_analytics: {
     question: 'Podemos incluir você nos números somados da Nexus?',

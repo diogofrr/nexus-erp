@@ -1,6 +1,6 @@
 # Biblioteca de componentes (`src/app/shared/ui`)
 
-Contrato para quem constrói um módulo. Os componentes são **standalone**, `OnPush`, com **signals** (`input()`, `output()`, `model()`), controle de fluxo novo, acessíveis (WCAG 2.2 AA), responsivos e fiéis ao design system (`docs/03-design-system.md`). Exemplo vivo de TODOS, com estados e dados de exemplo: rota `/app/_kit` (`src/app/features/kit`).
+Contrato para quem constrói um módulo. Os componentes são **standalone**, `OnPush`, com **signals** (`input()`, `output()`, `model()`), controle de fluxo novo, acessíveis (WCAG 2.2 AA), responsivos e fiéis ao design system (`docs/03-design-system.md`). Exemplo vivo de TODOS, com estados e dados de exemplo: rota `/app/_kit` (`src/app/features/kit`), que só existe em modo de desenvolvimento (`ng serve` e testes) e usa nomes genéricos ("Pessoa Exemplo 01"), nunca os do seed.
 
 ```ts
 import { DataTableComponent, FormFieldComponent, NxInputDirective, PageHeaderComponent } from '@shared/ui';

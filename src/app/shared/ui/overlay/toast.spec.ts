@@ -82,14 +82,15 @@ describe('ToastRegionComponent', () => {
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
   });
 
-  it('mostra o toast numa região aria-live, com role status (ou alert no erro)', async () => {
+  it('cada toast leva o próprio papel, status ou alert no erro, e o contêiner não é uma região viva (anuncia uma vez)', async () => {
     const fixture = TestBed.createComponent(ToastRegionComponent);
     const toasts = TestBed.inject(ToastService);
     toasts.success('Dados de demonstração restaurados.');
     toasts.error('Não foi possível salvar.');
     await fixture.whenStable();
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('.toast-region')?.getAttribute('aria-live')).toBe('polite');
+    expect(root.querySelector('.toast-region')?.hasAttribute('aria-live')).toBe(false);
+    expect(root.querySelectorAll('.toast-region [aria-live]')).toHaveLength(0);
     const items = root.querySelectorAll('.toast');
     expect(items).toHaveLength(2);
     expect(items[0]?.getAttribute('role')).toBe('status');

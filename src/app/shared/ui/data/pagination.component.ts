@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, booleanAttribute, computed, input, model } from '@angular/core';
 import { IconComponent } from '../display/icon.component';
+import { nounFor } from '../util/noun';
 import { clampPage, pageCount, pageItems } from './table-utils';
 
 /**
@@ -76,7 +77,7 @@ export class PaginationComponent {
     }
     const from = (this.current() - 1) * this.pageSize() + 1;
     const to = Math.min(total, this.current() * this.pageSize());
-    return `Mostrando ${from} a ${to} de ${total}${this.noun() ? ` ${this.noun()}` : ''}`;
+    return `Mostrando ${from} a ${to} de ${total}${this.noun() ? ` ${nounFor(total, this.noun())}` : ''}`;
   });
 
   protected go(page: number): void {

@@ -192,6 +192,16 @@ describe('M03 Cuidadores', () => {
       // Nada vem marcado nos seis consentimentos.
       expect(all('section[data-key]').length).toBe(6);
       expect(all('section[data-key] input[type="radio"]:checked').length).toBe(0);
+      // CX-038: sem a escolha explícita (concorda, não concorda ou decidir depois) não segue.
+      await click(next() ?? null);
+      expect(text(q('.page-header__desc'))).toContain('Etapa 3 de 5');
+      expect(all('.error-summary a')).toHaveLength(6);
+      expect(text(q('.error-summary'))).toContain('concorda, não concorda ou decidir depois');
+      // "Decidir depois" é a terceira opção de cada pergunta e conta como escolha.
+      for (const section of all('section[data-key]')) {
+        await click(section.querySelectorAll('input[type="radio"]')[2]);
+      }
+      expect(all('section[data-key] input[type="radio"]:checked')).toHaveLength(6);
       await click(next() ?? null);
       await click(next() ?? null);
       expect(text(q('.page-header__desc'))).toContain('Etapa 5 de 5');
@@ -366,6 +376,10 @@ describe('M03 Cuidadores', () => {
       expect(text(drawer)).toContain('Será eliminado');
       expect(text(drawer)).toContain('Ficará bloqueado por registro documental');
       expect(text(drawer)).toContain('Res. CFP 1/2009');
+      // CX-033: o atendimento não descobre se há Zarit, alerta ou ocorrência (nem tipos, nem quantidades) e não lê "(a confirmar)".
+      expect(text(drawer)).not.toMatch(/Escala de Zarit|Alertas de Zarit|Alertas da ARBE|Ocorrências POP|Anotações de sessão/);
+      expect(text(drawer)).not.toContain('(a confirmar)');
+      expect(text(drawer)).toContain('Registros clínicos, se houver, ficam retidos por 5 anos');
       expect(app.db.caregivers.require('cg_0018').status).toBe('active');
       const service = TestBed.inject(CaregiverService);
       const before = app.db.dataSubjectRequests.size();
@@ -402,9 +416,25 @@ describe('M03 Cuidadores', () => {
       expect(text(q('h1'))).toBe('Pessoa idosa e cuidados');
       expect(text(q('.page'))).toContain('Disponível depois do consentimento de saúde');
       expect(q('[data-role="conditions"]')).toBeNull();
-      await go('/app/cuidadores/cg_0005/idoso');
+      await open('u3', '/app/cuidadores/cg_0005/idoso');
       expect(text(q('.page'))).toContain('Condições de saúde');
+      expect(q('[data-role="conditions"]')).not.toBeNull();
       expect(app.db.accessLog.list().some((l) => l.action === 'view' && l.entity === 'elder_conditions' && l.subjectCaregiverId === 'cg_0005')).toBe(true);
+    });
+
+    it('o atendimento não vê condições de saúde nem medicamentos, só o que o cadastro precisa, e nada é gravado como leitura clínica (CX-034)', async () => {
+      await open('u7', '/app/cuidadores/cg_0005/idoso');
+      const page = text(q('.page'));
+      expect(page).toContain('Fechado para o atendimento');
+      expect(page).toContain('Compromissos de cuidado');
+      expect(page).not.toContain('Medicamento');
+      expect(q('[data-role="conditions"]')).toBeNull();
+      const elder = app.db.elders.find((e) => e.caregiverId === 'cg_0005');
+      if (elder?.conditionsSummary) {
+        expect(app.root.innerHTML).not.toContain(elder.conditionsSummary);
+      }
+      app.db.medications.query((m) => m.elderId === elder?.id).forEach((m) => expect(app.root.innerHTML).not.toContain(m.name));
+      expect(app.db.accessLog.list().some((l) => l.action === 'view' && l.entity === 'elder_conditions' && l.subjectCaregiverId === 'cg_0005')).toBe(false);
     });
 
     it('a gestão não abre a tela da pessoa idosa (matriz)', async () => {

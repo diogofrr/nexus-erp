@@ -73,6 +73,39 @@ export class NotFoundPageComponent {
 }
 
 /**
+ * Página não encontrada DENTRO do shell da equipe (CX-015): com a sessão aberta, o menu lateral, a busca e o menu
+ * do usuário continuam à mão e a pessoa segue dali. O roteador só usa esta versão com sessão; sem sessão vale a
+ * moldura simples acima.
+ */
+@Component({
+  selector: 'app-not-found-in-shell-page',
+  imports: [IconComponent, RouterLink],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div class="page">
+      <div class="empty">
+        <span class="empty__icon"><svg appIcon="circle-help" size="lg"></svg></span>
+        <h1 class="empty__title">Página não encontrada</h1>
+        <p class="empty__text">
+          O endereço pode ter mudado ou não existir. Use o menu ou a busca, ou volte ao início.
+        </p>
+        <div class="empty__actions">
+          <a class="btn btn--primary" [routerLink]="home()" data-role="home">Ir para o painel</a>
+        </div>
+      </div>
+    </div>
+  `,
+})
+export class NotFoundInShellPageComponent {
+  private readonly auth = inject(AuthService);
+
+  protected readonly home = computed(() => {
+    const role = this.auth.role();
+    return role ? homePathFor(role) : '/login';
+  });
+}
+
+/**
  * Sessão expirada (SCR-M01-04, AC-M01-07): o serviço de inatividade encerrou a sessão aos 30 minutos. A
  * pessoa vê o que houve e entra de novo; com o mesmo perfil, volta à tela onde estava (A-03).
  */

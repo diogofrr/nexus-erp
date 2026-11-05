@@ -1,4 +1,6 @@
-import { Routes } from '@angular/router';
+import { inject, isDevMode } from '@angular/core';
+import { CanMatchFn, Route, Routes } from '@angular/router';
+import { AuthService } from './core/auth/auth.service';
 import { authGuard, guestGuard, moduleGuard, roleGuard } from './core/auth/guards';
 
 /**
@@ -13,7 +15,10 @@ import { authGuard, guestGuard, moduleGuard, roleGuard } from './core/auth/guard
  * Guards (core/auth/guards.ts): `authGuard` exige sessão; `moduleGuard(chave)` aplica a matriz de
  * permissões do módulo (mapa de módulos, escopo seção 2). Rota sem permissão leva a `/403` e grava `denied`.
  */
-export const routes: Routes = [
+/** Só combina com a sessão completa aberta (usado pelo 404 dentro do shell). */
+const signedIn: CanMatchFn = () => inject(AuthService).isAuthenticated();
+
+const baseRoutes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'app/painel' },
 
   // M01 Acesso
@@ -50,12 +55,6 @@ export const routes: Routes = [
         data: { title: 'Meus dados no navegador' },
         loadComponent: () =>
           import('./layout/pages/browser-data.page').then((m) => m.BrowserDataPageComponent),
-      },
-      // Catálogo de componentes (só para quem constrói telas).
-      {
-        path: '_kit',
-        canActivate: [roleGuard('partner', 'technical_lead', 'psychologist', 'support')],
-        loadChildren: () => import('./features/kit/kit.routes').then((m) => m.ROUTES),
       },
       {
         path: 'painel',
@@ -150,9 +149,44 @@ export const routes: Routes = [
     ],
   },
 
-  // M01 Não encontrado (SCR-M01-06)
+  // M01 Não encontrado (SCR-M01-06). Com sessão aberta, a página aparece dentro do shell (CX-015).
+  {
+    path: '**',
+    canMatch: [signedIn],
+    loadComponent: () =>
+      import('./layout/shell/team-shell.component').then((m) => m.TeamShellComponent),
+    children: [
+      {
+        path: '',
+        loadChildren: () =>
+          import('./features/auth/auth.routes').then((m) => m.NOT_FOUND_IN_SHELL_ROUTES),
+      },
+    ],
+  },
   {
     path: '**',
     loadChildren: () => import('./features/auth/auth.routes').then((m) => m.NOT_FOUND_ROUTES),
   },
 ];
+
+/**
+ * Catálogo de componentes (só para quem constrói telas). QA-001: nunca existe em produção, para ninguém;
+ * só entra em modo de desenvolvimento (`ng serve` e testes), com dados fictícios genéricos.
+ */
+const KIT_ROUTE: Route = {
+  path: '_kit',
+  canActivate: [roleGuard('partner', 'technical_lead', 'psychologist', 'support')],
+  loadChildren: () => import('./features/kit/kit.routes').then((m) => m.ROUTES),
+};
+
+/** Monta o roteador. Em produção (`devMode` falso) a rota `/app/_kit` não existe e cai no 404. */
+export function createRoutes(devMode: boolean): Routes {
+  if (!devMode) {
+    return baseRoutes;
+  }
+  return baseRoutes.map((route) =>
+    route.path === 'app' ? { ...route, children: [KIT_ROUTE, ...(route.children ?? [])] } : route,
+  );
+}
+
+export const routes: Routes = createRoutes(isDevMode());

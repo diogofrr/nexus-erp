@@ -174,7 +174,29 @@ describe('dados de demonstração (SCR-M15-01, AC-M15-01 a 03)', () => {
     expect(app.db.caregivers.get('cg_0001')?.fullName).toBe('Alterada Para Teste');
   });
 
-  it('a cópia exporta todas as entidades e importar o mesmo arquivo restaura o estado (AC-M15-02)', async () => {
+  it('a cópia da sócia é a da gestão: códigos no lugar de nomes, sem Zarit, notas, mensagens nem saúde (QA-007)', async () => {
+    app = await bootApp({ userId: 'u1', url: '/app/configuracoes/dados' });
+    const names = app.db.caregivers.list().map((c) => c.fullName);
+    const elders = app.db.elders.list().map((e) => e.fullName);
+    const notes = app.db.sessionNotes.list().map((n) => n.content);
+    expect(notes.length).toBeGreaterThan(0);
+    const copy = TestBed.inject(DemoDataService).buildCopy();
+    const parsed = JSON.parse(copy.text) as { scope: string; collections: Record<string, { fullName?: string; code?: string; cpf?: string; conditionsSummary?: string }[]> };
+    expect(parsed.scope).toBe('management');
+    [...names.slice(0, 40), ...elders.slice(0, 40)].forEach((name) => expect(copy.text).not.toContain(name));
+    notes.slice(0, 10).forEach((content) => expect(copy.text).not.toContain(content));
+    expect(parsed.collections['caregivers']).toHaveLength(340);
+    expect(parsed.collections['caregivers']?.[0]).toMatchObject({ fullName: 'CUI-0001', cpf: '000.000.000-00' });
+    ['zaritAssessments', 'zaritAlerts', 'arbeAlerts', 'sessionNotes', 'messages', 'medications', 'occurrences', 'wellbeingChecks'].forEach((name) =>
+      expect(parsed.collections[name], name).toEqual([]),
+    );
+    expect(parsed.collections['elders']?.every((e) => e.conditionsSummary === undefined)).toBe(true);
+    // A tela avisa o que a cópia leva.
+    expect(q('[data-role="copy-scope"]')?.textContent).toContain('pelo código');
+    expect(q('[data-role="copy-scope"]')?.textContent).toContain('escala de Zarit');
+  });
+
+  it('a cópia leva as demais coleções e importar o mesmo arquivo devolve os cadastros pelo código (AC-M15-02)', async () => {
     app = await bootApp({ userId: 'u1', url: '/app/configuracoes/dados' });
     const demo = TestBed.inject(DemoDataService);
     const copy = demo.buildCopy();
@@ -193,9 +215,13 @@ describe('dados de demonstração (SCR-M15-01, AC-M15-01 a 03)', () => {
         '340 cuidadores, 20 prestadores, 60 sessões de atendimento',
       );
     }
+    if (preview.ok) {
+      expect(preview.management).toBe(true);
+    }
     expect(demo.importCopy(copy.text).ok).toBe(true);
-    expect(app.db.caregivers.get('cg_0001')?.fullName).toBe('Ana Paula Ferraz');
+    expect(app.db.caregivers.get('cg_0001')?.fullName).toBe('CUI-0001');
     expect(app.db.caregivers.size()).toBe(340);
+    expect(app.db.zaritAssessments.size()).toBe(0);
   });
 
   it('arquivo inválido é recusado sem alterar nada (AC-M15-03): o texto diz "Nada foi alterado"', async () => {
@@ -249,7 +275,7 @@ describe('dados de demonstração (SCR-M15-01, AC-M15-01 a 03)', () => {
     click(dialog().querySelector('[data-role="confirm"]'));
     await new Promise((resolve) => setTimeout(resolve, 120));
     await settle(app.fixture);
-    expect(app.db.caregivers.get('cg_0001')?.fullName).toBe('Ana Paula Ferraz');
+    expect(app.db.caregivers.get('cg_0001')?.fullName).toBe('CUI-0001');
     expect(q('.toast')?.textContent).toContain('Cópia importada');
   });
 
@@ -446,7 +472,17 @@ describe('parâmetros da ARBE (SCR-M15-04)', () => {
     app = await bootApp({ userId: 'u2', url: '/app/configuracoes/arbe' });
     expect(inputs().map((i) => i.value)).toEqual(['8', '3', '30', '41', '61']);
     typeInto(inputs()[0] ?? null, '9');
+    await settle(app.fixture);
+    // CX-021: a prévia diz quantos cuidadores mudam de nível e o salvar pede confirmação com o efeito.
+    expect(q('[data-role="arbe-preview-changes"]')?.textContent).toMatch(/mud(a|am) de nível|passa|deixa/);
     click(q('[data-role="save"]'));
+    await settle(app.fixture);
+    expect(app.db.settings.get().arbe.hoursThreshold).toBe(8);
+    const confirm = app.root.querySelector('app-dialog-host dialog') as HTMLDialogElement;
+    expect(confirm.querySelector('h2')?.textContent).toBe('Salvar os novos limites da ARBE?');
+    click(confirm.querySelector('[data-role="confirm"]'));
+    await settle(app.fixture);
+    await new Promise((resolve) => setTimeout(resolve, 30));
     await settle(app.fixture);
     expect(app.db.settings.get().arbe.hoursThreshold).toBe(9);
     click(q('.toast .toast__action'));
@@ -504,6 +540,14 @@ describe('parâmetros da ARBE (SCR-M15-04)', () => {
     expect(app.db.settings.get().arbe.hoursThreshold).toBe(10);
     click(q('[data-role="save"]'));
     await settle(app.fixture);
+    // Com cuidadores que mudam de nível, salvar pede a confirmação com o efeito (CX-021).
+    const confirm = app.root.querySelector('app-dialog-host dialog') as HTMLDialogElement | null;
+    if (confirm?.hasAttribute('open')) {
+      click(confirm.querySelector('[data-role="confirm"]'));
+      await settle(app.fixture);
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      await settle(app.fixture);
+    }
     expect(app.db.settings.get().arbe).toEqual({
       hoursThreshold: 8,
       supportRequestsThreshold: 3,

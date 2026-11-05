@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { AuditLogService } from '@core/audit';
@@ -48,6 +49,7 @@ const APPOINTMENT_KINDS: Record<string, string> = {
     DrawerComponent,
     EmptyStateComponent,
     FormFieldComponent,
+    NgTemplateOutlet,
     NxInputDirective,
     NxMaskDirective,
     RadioGroupComponent,
@@ -79,6 +81,11 @@ const APPOINTMENT_KINDS: Record<string, string> = {
           <app-card title="Condições de saúde, medicamentos e compromissos">
             <app-empty-state compact kind="forbidden" title="Disponível depois do consentimento de saúde" text="Para não coletar dado de saúde antes de o consentimento existir, estes campos ficam fechados até lá. O atendimento registra o consentimento na aba Consentimentos." />
           </app-card>
+        } @else if (clinicalClosed()) {
+          <app-card title="Condições de saúde e medicamentos">
+            <app-empty-state compact kind="forbidden" title="Fechado para o atendimento" text="Condições de saúde e medicamentos ficam com quem acompanha o caso, o psicólogo e o responsável técnico. O atendimento vê só o que o cadastro precisa." />
+          </app-card>
+          <ng-container [ngTemplateOutlet]="appointmentsCard" />
         } @else {
           <app-card title="Condições de saúde" subtitle="Dado sensível, cifrado em repouso (simulado)">
             @if (elder()?.conditionsSummary) {
@@ -109,23 +116,27 @@ const APPOINTMENT_KINDS: Record<string, string> = {
               </div>
             }
           </app-card>
-          <app-card title="Compromissos de cuidado">
-            @if (appointments().length === 0) {
-              <p class="t-muted">Nenhum compromisso agendado.</p>
-            } @else {
-              <ul class="stack stack--3 list-reset">
-                @for (a of appointments(); track a.id) {
-                  <li>
-                    <strong>{{ a.title }}</strong>
-                    <span class="t-caption"> · {{ kindLabel(a.kind) }} · {{ formatAt(a.at) }}{{ a.reminder ? ' · com lembrete' : '' }}</span>
-                  </li>
-                }
-              </ul>
-            }
-          </app-card>
+          <ng-container [ngTemplateOutlet]="appointmentsCard" />
         }
       }
     </div>
+
+    <ng-template #appointmentsCard>
+      <app-card title="Compromissos de cuidado">
+        @if (appointments().length === 0) {
+          <p class="t-muted">Nenhum compromisso agendado.</p>
+        } @else {
+          <ul class="stack stack--3 list-reset">
+            @for (a of appointments(); track a.id) {
+              <li>
+                <strong>{{ a.title }}</strong>
+                <span class="t-caption"> · {{ kindLabel(a.kind) }} · {{ formatAt(a.at) }}{{ a.reminder ? ' · com lembrete' : '' }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </app-card>
+    </ng-template>
 
     <app-drawer [(open)]="editOpen" heading="Editar dados da pessoa idosa" [subtitle]="'Cuidador ' + caregiver().code">
       <form id="nx-elder-form" class="stack stack--3" [formGroup]="form" (ngSubmit)="save()" novalidate>
@@ -166,7 +177,7 @@ export class ElderCareComponent {
     hint: DEPENDENCY_HINTS[value],
   }));
   protected readonly form = new FormGroup({
-    fullName: new FormControl('', { nonNullable: true, validators: [NxValidators.required('o nome completo da pessoa idosa')] }),
+    fullName: new FormControl('', { nonNullable: true, validators: [NxValidators.required('o nome completo da pessoa idosa'), NxValidators.textLength(3, 120, 'O nome')] }),
     birthDate: new FormControl<string | null>(null, [NxValidators.required('a data de nascimento da pessoa idosa')]),
     dependency: new FormControl<Dependency | null>(null, [NxValidators.required('o grau de dependência')]),
   });
@@ -180,6 +191,11 @@ export class ElderCareComponent {
     this.db.consents.all();
     return this.consent.isActive(this.caregiver().id, 'health_data');
   });
+  /**
+   * CX-034 (matriz 1.2 e bloqueios 1.3): o atendimento não lê condições de saúde nem medicamentos; vê só o que o
+   * cadastro precisa (nome, nascimento, dependência e compromissos).
+   */
+  protected readonly clinicalClosed = computed(() => this.auth.role() === 'support');
   /** O responsável técnico precisa da justificativa antes de ver dado de saúde (supervisão). */
   protected readonly gated = computed(
     () => this.auth.role() === 'technical_lead' && this.healthGranted() && !this.supervision.isOpen(this.caregiver().id),
@@ -200,6 +216,12 @@ export class ElderCareComponent {
     if (!e) {
       return [];
     }
+    if (this.caregiver().erasedAt) {
+      return [
+        { label: 'Nome', value: e.fullName },
+        { label: 'Cuidador principal', value: this.caregiver().code },
+      ];
+    }
     return [
       { label: 'Nome', value: e.fullName },
       { label: 'Nascimento', value: `${formatDate(e.birthDate)} (${ageInYears(e.birthDate, this.clock.today())} anos)` },
@@ -213,7 +235,7 @@ export class ElderCareComponent {
     // A primeira abertura do RT é gravada pelo portão (`supervise`) e por `onGranted` (`view`).
     effect(() => {
       const elder = this.elder();
-      if (!elder || !this.healthGranted()) {
+      if (!elder || !this.healthGranted() || this.clinicalClosed()) {
         return;
       }
       untracked(() => {

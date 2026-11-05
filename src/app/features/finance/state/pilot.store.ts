@@ -46,9 +46,20 @@ export class PilotStore {
         .filter((c) => c.key === 'pilot_tcle' && c.status === 'granted')
         .map((c) => c.caregiverId),
     );
+    // QA-017: o psicólogo vê o piloto só nos seus casos (matriz M10, "A (seus casos)"); os demais perfis, a coorte toda.
+    const actor = this.auth.actor();
+    const ownOnly = actor?.role === 'psychologist';
     return this.db.pilotEnrollments
       .all()
-      .filter((e) => !e.exitedAt && tcle.has(e.caregiverId) && caregivers.has(e.caregiverId))
+      .filter(
+        (e) =>
+          !e.exitedAt &&
+          tcle.has(e.caregiverId) &&
+          caregivers.has(e.caregiverId) &&
+          (!ownOnly ||
+            (actor?.psychologistId !== undefined &&
+              caregivers.get(e.caregiverId)?.assignedPsychologistId === actor.psychologistId)),
+      )
       .map((e) => ({
         enrollment: e,
         code: (caregivers.get(e.caregiverId) as { code: string }).code,

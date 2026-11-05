@@ -4,6 +4,7 @@ import { AuthService } from '@core/auth';
 import { Clock, ageInYears } from '@core/clock';
 import { SubscriptionService, scheduledChangeOf } from '@core/commerce/subscription.service';
 import { Database } from '@core/data';
+import { AssignmentRequestService } from '@core/notifications/assignment-requests';
 import { formatDate } from '@core/format';
 import type { Caregiver } from '@core/models';
 import { ConsentService, DataSubjectRequestService } from '@core/privacy';
@@ -37,6 +38,8 @@ interface Attention {
   text: string;
   /** Aba para onde o botão leva. */
   goto?: string;
+  /** Ação do próprio botão (em vez de trocar de aba). */
+  run?: 'request-assignment';
   action?: string;
 }
 
@@ -61,7 +64,7 @@ interface Attention {
   template: `
     <div class="layout-main-aside">
       <div class="stack stack--6">
-        <app-card [title]="identified() ? 'Dados do cadastro' : 'Visão da gestão'" [subtitle]="identified() ? 'Dados fictícios, só neste navegador' : 'Código, plano e situação. Sem nome nem contato.'">
+        <app-card [title]="erased() ? 'Cadastro encerrado' : identified() ? 'Dados do cadastro' : 'Visão da gestão'" [subtitle]="erased() ? 'Os dados de identificação foram eliminados. Ficam só o código e o que a lei manda reter.' : identified() ? 'Dados fictícios, só neste navegador' : 'Código, plano e situação. Sem nome nem contato.'">
           <app-description-list [items]="items()" />
           <ng-template #cpf>
             <app-masked-field kind="cpf" label="CPF" [value]="caregiver().cpf" entity="caregiver" [entityId]="caregiver().id" field="cpf" [subjectId]="caregiver().id" [code]="caregiver().code" />
@@ -99,7 +102,7 @@ interface Attention {
           </ng-template>
         </app-card>
 
-        @if (identified()) {
+        @if (identified() && !erased()) {
           <app-card title="Piloto" subtitle="Elegibilidade e participação (RN-PIL-04)">
             <div class="stack stack--3" data-role="pilot">
               <p role="status">
@@ -144,6 +147,8 @@ interface Attention {
                   <span>{{ item.text }}</span>
                   @if (item.goto) {
                     <button type="button" class="btn btn--sm" (click)="goto.emit(item.goto)">{{ item.action }}</button>
+                  } @else if (item.run) {
+                    <button type="button" class="btn btn--sm" data-role="request-assignment" (click)="requestAssignment()">{{ item.action }}</button>
                   }
                 </li>
               }
@@ -172,6 +177,7 @@ export class SummaryTabComponent {
   private readonly dsr = inject(DataSubjectRequestService);
   private readonly dialogs = inject(DialogService);
   private readonly toasts = inject(ToastService);
+  private readonly assignments = inject(AssignmentRequestService);
 
   readonly caregiver = input.required<Caregiver>();
   /** Pede ao pai para trocar de aba. */
@@ -187,6 +193,8 @@ export class SummaryTabComponent {
 
   protected readonly role = this.auth.role;
   protected readonly identified = computed(() => canSeeCaregiverIdentity(this.role()));
+  /** Titular eliminado (M12): só sobram código, plano e situação; o resto foi apagado (QA-006). */
+  protected readonly erased = computed(() => !!this.caregiver().erasedAt);
   protected readonly canEdit = computed(() => this.auth.can('caregiver_registry', 'update'));
   protected readonly canAssign = computed(() => this.role() === 'technical_lead');
   protected readonly canSchedule = computed(() => this.role() === 'support' || this.role() === 'psychologist');
@@ -236,6 +244,15 @@ export class SummaryTabComponent {
         { label: 'Situação', template: this.statusTpl() },
         { label: 'Piloto', value: c.isPilot ? 'Participa' : 'Não participa' },
         { label: 'Adesão', value: formatDate(c.enrolledAt) },
+      ];
+    }
+    if (this.erased()) {
+      return [
+        { label: 'Código', value: c.code },
+        { label: 'Situação', template: this.statusTpl() },
+        { label: 'Plano', template: this.planTpl() },
+        { label: 'Encerrado em', value: formatDate(c.closedAt) },
+        { label: 'Dados eliminados em', value: formatDate(c.erasedAt) },
       ];
     }
     return [
@@ -297,8 +314,29 @@ export class SummaryTabComponent {
     if (this.canAssign() && !c.assignedPsychologistId && c.status !== 'closed') {
       out.push({ icon: 'triangle-alert', tone: 'attention', text: 'Falta atribuir o psicólogo responsável.' });
     }
+    if (this.role() === 'support' && !c.assignedPsychologistId && c.status !== 'closed') {
+      // CX-041: o atendimento não atribui, mas pede pelo sistema (o aviso chega ao responsável técnico).
+      out.push(
+        this.assignments.isRequested(c.id)
+          ? { icon: 'hourglass', tone: 'info', text: 'O responsável técnico já foi avisado para atribuir o psicólogo.' }
+          : { icon: 'triangle-alert', tone: 'attention', text: 'Falta o psicólogo responsável. O responsável técnico atribui.', run: 'request-assignment', action: 'Pedir atribuição de psicólogo' },
+      );
+    }
     return out;
   });
+
+  protected requestAssignment(): void {
+    const result = this.assignments.request(this.caregiver().id);
+    if (!result.ok) {
+      this.toasts.attention(result.reason);
+      return;
+    }
+    this.toasts.success(
+      result.alreadyAsked
+        ? 'O responsável técnico já tinha sido avisado.'
+        : 'Pedido enviado. O responsável técnico foi avisado e atribui o psicólogo.',
+    );
+  }
 
   protected onAssign(event: Event): void {
     const id = (event.target as HTMLSelectElement).value || null;

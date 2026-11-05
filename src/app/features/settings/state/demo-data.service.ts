@@ -3,6 +3,7 @@ import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { Clock } from '../../../core/clock/clock.service';
 import { Database, ImportResult } from '../../../core/data/database';
 import { ExportEnvelope, parseImport } from '../../../core/data/import-export';
+import { toManagementCopy } from '../../../core/data/management-copy';
 import { dateOf } from '../../../core/clock/date-utils';
 import { formatDate, formatNumber } from '../../../core/format/format';
 
@@ -13,12 +14,19 @@ export interface DemoCount {
 }
 
 export type ImportPreview =
-  | { ok: true; text: string; exportedAt: string; counts: DemoCount[]; clockDate: string | null }
+  | {
+      ok: true;
+      text: string;
+      exportedAt: string;
+      counts: DemoCount[];
+      clockDate: string | null;
+      /** Cópia da visão da gestão: traz códigos no lugar de nomes e não traz dado clínico. */
+      management: boolean;
+    }
   | { ok: false; reasons: string[] };
 
 /** Texto de recusa de arquivo errado (F15, AC-M15-03): nada é alterado. */
-export const IMPORT_REFUSED_TEXT =
-  'Esse arquivo não é uma cópia do Nexus ERP (versão esperada 1). Nada foi alterado.';
+export const IMPORT_REFUSED_TEXT = 'Este arquivo não é uma cópia do Nexus ERP. Nada foi alterado.';
 
 /**
  * Operações de "Dados de demonstração" (M15, SCR-M15-01, F15): contagens, reset, cópia e importação. As telas
@@ -68,12 +76,16 @@ export class DemoDataService {
     );
   }
 
-  /** O arquivo da cópia (JSON de TODAS as entidades, AC-M15-02) e o nome sugerido. */
+  /**
+   * O arquivo da cópia e o nome sugerido (AC-M15-02). É a cópia da visão da gestão (QA-007): a tela é da sócia,
+   * que só vê códigos e agregados, então o arquivo troca nomes por código e deixa de fora escala, notas,
+   * mensagens e dados de saúde. A cópia completa só existe no núcleo (`Database.exportJson`), sem tela.
+   */
   buildCopy(): { fileName: string; text: string } {
-    this.audit.exported('demo_data', undefined, 'cópia dos dados de demonstração');
+    this.audit.exported('demo_data', undefined, 'cópia dos dados de demonstração (visão da gestão)');
     return {
       fileName: `nexus-erp-copia-${this.clock.today()}.json`,
-      text: this.db.exportJson(true),
+      text: JSON.stringify(toManagementCopy(this.db.buildExport()), null, 2),
     };
   }
 
@@ -90,6 +102,7 @@ export class DemoDataService {
       text,
       exportedAt: formatDate(dateOf(envelope.exportedAt)),
       clockDate: envelope.clock.demoToday ? formatDate(envelope.clock.demoToday) : null,
+      management: envelope.scope === 'management',
       counts: [
         { label: 'cuidadores', value: c.caregivers.length },
         { label: 'prestadores', value: c.providers.length },

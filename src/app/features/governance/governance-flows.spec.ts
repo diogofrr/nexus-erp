@@ -83,9 +83,10 @@ describe('M13 Governança: ocorrências (SCR-M13-07 e 08, AC-M13-06, 07 e 08)', 
     expect(closed.root.querySelector('[data-role="step-form"]')).toBeNull();
     expect(text(pick(closed.root, '[data-role="closing"]'))).toContain('Encerrada');
     const progress = await open('u2', '/app/governanca/ocorrencias/occ_0002');
-    expect(text(pick(progress.root, '[data-role="status"]'))).toContain('2 de 7 passos feitos');
+    // CX-017: só o acolhimento está feito; o contato da equipe (passo 2) fica pendente até alguém registrá-lo.
+    expect(text(pick(progress.root, '[data-role="status"]'))).toContain('1 de 7 passos feitos');
     expect(text(pick(progress.root, '[data-role="missing"]'))).toContain('Para encerrar, falta');
-    expect(text(pick(progress.root, '[data-role="closing"]'))).toContain('os passos 3, 4, 5, 6, 7');
+    expect(text(pick(progress.root, '[data-role="closing"]'))).toContain('os passos 2, 3, 4, 5, 6, 7');
     expect(pick<HTMLButtonElement>(progress.root, '[data-role="close-occurrence"]').disabled).toBe(true);
     // Cada passo feito tem hora e responsável.
     expect(main(progress)).toContain('por Dr. Rafael Moreira');
@@ -115,15 +116,15 @@ describe('M13 Governança: ocorrências (SCR-M13-07 e 08, AC-M13-06, 07 e 08)', 
     expect(rafael.root.querySelector('[data-role="step-form"]')).not.toBeNull();
     expect(rafael.root.querySelector('[data-role="close-occurrence"]')).toBeNull();
     expect(text(pick(rafael.root, '[data-role="close-owner"]'))).toContain('Só o responsável técnico encerra');
-    typeInto(pick<HTMLTextAreaElement>(rafael.root, '#occ-note'), 'Avaliação de risco feita por telefone.');
+    typeInto(pick<HTMLTextAreaElement>(rafael.root, '#occ-note'), 'Contato feito por telefone.');
     pick<HTMLFormElement>(rafael.root, '[data-role="step-form"]').dispatchEvent(new Event('submit'));
     await settle(rafael.fixture);
-    const step = rafael.db.occurrences.get('occ_0002')?.steps.find((s) => s.n === 3);
+    const step = rafael.db.occurrences.get('occ_0002')?.steps.find((s) => s.n === 2);
     expect(step?.byUserId).toBe('u3');
     expect(step?.doneAt).toMatch(/^2026-11-04T12:00/);
-    expect(step?.note).toBe('Avaliação de risco feita por telefone.');
+    expect(step?.note).toBe('Contato feito por telefone.');
     expect(rafael.db.accessLog.list().at(-1)).toMatchObject({ action: 'update', entity: 'occurrence', entityId: 'occ_0002' });
-    expect(text(pick(rafael.root, '[data-role="status"]'))).toContain('3 de 7 passos feitos');
+    expect(text(pick(rafael.root, '[data-role="status"]'))).toContain('2 de 7 passos feitos');
     // Outro psicólogo não conduz a ocorrência de Rafael.
     const beatriz = await open('u4', '/app/governanca/ocorrencias/occ_0002');
     expect(beatriz.root.querySelector('[data-role="step-form"]')).toBeNull();
@@ -136,7 +137,7 @@ describe('M13 Governança: ocorrências (SCR-M13-07 e 08, AC-M13-06, 07 e 08)', 
     expect(app.db.accessLog.list().some((e) => e.action === 'view' && e.entity === 'occurrence' && e.entityId === 'occ_0002')).toBe(true);
     const service = TestBed.inject(GovernanceService);
     expect(service.closeOccurrence('occ_0002').ok).toBe(false);
-    for (let n = 3; n <= 7; n += 1) {
+    for (let n = 2; n <= 7; n += 1) {
       expect(service.registerStep('occ_0002', n, '').ok).toBe(true);
     }
     expect(service.registerStep('occ_0002', 7, '').ok).toBe(false);

@@ -71,8 +71,9 @@ export class RiskCaseService {
   }
 
   /**
-   * Marca um passo como feito, com hora e responsável. Passo já feito não é sobrescrito (só ganha a nota,
-   * se vier uma). Ocorrência encerrada não é reaberta. Devolve a ocorrência atualizada.
+   * Marca um passo como feito, com hora e responsável. Passo já feito NÃO é alterado: nem a hora, nem o autor,
+   * nem o texto (CX-017: o que outra pessoa registrou não recebe a nota de quem veio depois). Ocorrência
+   * encerrada não é reaberta. Devolve a ocorrência atualizada.
    */
   stepDone(
     occurrenceId: ID,
@@ -89,7 +90,7 @@ export class RiskCaseService {
         return step;
       }
       if (step.doneAt) {
-        return done.note ? { ...step, note: done.note } : step;
+        return step;
       }
       return { ...step, doneAt: at, byUserId: done.byUserId, ...(done.note ? { note: done.note } : {}) };
     });

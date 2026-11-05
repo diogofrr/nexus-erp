@@ -102,9 +102,11 @@ function nextPaint(): Promise<void> {
 
         <section class="card card--pad stack stack--3" aria-labelledby="nx-data-copy">
           <h2 class="card__title" id="nx-data-copy">Cópia dos dados</h2>
-          <p class="t-muted t-ui">
-            A cópia é um arquivo JSON com todas as informações. Importar a mesma cópia devolve o
-            estado exato.
+          <p class="t-muted t-ui" data-role="copy-scope">
+            A cópia é um arquivo JSON com o que a gestão pode ver: <strong>os cadastros aparecem pelo código
+            (CUI-0000), sem nome, CPF nem contato</strong>, e ela não leva escala de Zarit, notas de sessão,
+            mensagens nem dados de saúde. Ao importar uma cópia, esses dados deixam de existir neste
+            navegador.
           </p>
           <div class="cluster">
             <button type="button" class="btn" data-role="export" (click)="exportCopy()">
@@ -136,6 +138,10 @@ function nextPaint(): Promise<void> {
                       O relógio simulado vai para {{ p.clockDate }}.
                     }
                     Os dados atuais serão substituídos.
+                    @if (p.management) {
+                      Esta é uma cópia da visão da gestão: tem códigos no lugar de nomes e não tem escala de Zarit,
+                      notas, mensagens nem dados de saúde.
+                    }
                   </p>
                   <div class="banner__actions">
                     <button
@@ -238,7 +244,14 @@ export class DataPageComponent {
     const result = await this.dialogs.confirm({
       title: 'Importar a cópia?',
       message: `A cópia de ${preview.exportedAt} tem ${this.demo.summary(preview.counts)}.`,
-      effects: { erase: ['os dados atuais deste navegador, trocados pelos da cópia'] },
+      effects: {
+        erase: [
+          'os dados atuais deste navegador, trocados pelos da cópia',
+          ...(preview.management
+            ? ['nomes, escala de Zarit, notas, mensagens e dados de saúde, que a cópia da gestão não leva']
+            : []),
+        ],
+      },
       irreversibleNote:
         'Não dá para desfazer. Baixe uma cópia dos dados atuais antes, se quiser guardá-los.',
       confirmLabel: 'Importar cópia',

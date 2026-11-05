@@ -36,6 +36,26 @@ export const SESSION_STATUS_VIEW: Readonly<Record<SessionStatus, StatusView>> = 
   no_show: { label: 'Falta', variant: 'danger', icon: 'circle-alert' },
 };
 
+/**
+ * Visão do estado de uma sessão. Uma sessão remarcada diz quem pediu para remarcar, em vez de "Cancelada pelo
+ * cuidador" (CX-027); a falta por remarcação a menos de 24 horas continua sendo falta.
+ */
+export function sessionStatusView(
+  session: Pick<CareSession, 'status' | 'rescheduledToId' | 'rescheduleRequestedBy'>,
+): StatusView {
+  if (session.rescheduledToId && session.status !== 'no_show') {
+    return {
+      label: session.rescheduleRequestedBy === 'psychologist' ? 'Remarcada pelo psicólogo' : 'Remarcada a pedido do cuidador',
+      variant: 'neutral',
+      icon: 'calendar-days',
+    };
+  }
+  if (session.rescheduledToId) {
+    return { label: 'Falta (remarcada a menos de 24 horas)', variant: 'danger', icon: 'circle-alert' };
+  }
+  return SESSION_STATUS_VIEW[session.status];
+}
+
 /** As regras de sala vivem no núcleo (também servem aos grupos): aqui só se reexportam. */
 export { ROOM_ATTRIBUTES, isRoomBookable, roomBlockReason, roomScore } from '@core/rules/rooms';
 

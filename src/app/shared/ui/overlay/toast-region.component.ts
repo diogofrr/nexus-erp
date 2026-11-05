@@ -11,7 +11,9 @@ const TONE_ICON: Record<ToastTone, IconName> = {
 };
 
 /**
- * Região de toasts (canto inferior direito; no celular, centralizada). Fica numa região `aria-live`. Pausa a contagem com o mouse em cima ou com o foco dentro.
+ * Região de toasts (canto inferior direito; no celular, centralizada). Cada aviso leva o próprio papel
+ * (`status`, ou `alert` no erro) e o contêiner NÃO é uma região viva: viva dentro de viva fazia o leitor de tela
+ * anunciar o mesmo aviso duas vezes (V33, CX-043). Pausa a contagem com o mouse em cima ou com o foco dentro.
  * `Ctrl+Z` (ou `Cmd+Z`) desfaz o toast mais recente que tem "Desfazer", fora de campos de texto.
  * Monte UMA vez, na raiz do aplicativo.
  */
@@ -21,7 +23,7 @@ const TONE_ICON: Record<ToastTone, IconName> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown)': 'onKeydown($event)' },
   template: `
-    <div class="toast-region" aria-live="polite" aria-atomic="false">
+    <div class="toast-region">
       @for (toast of toasts.toasts(); track toast.id) {
         <div
           class="toast"

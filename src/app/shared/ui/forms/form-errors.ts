@@ -169,6 +169,23 @@ export const NxValidators = {
         : null;
     },
 
+  /**
+   * Tamanho do texto digitado (QA-016): nome de uma letra ou de 600 caracteres não passa.
+   * `textLength(3, 120, 'O nome')`. Ignora o vazio (use `required`) e conta sem os espaços das pontas.
+   */
+  textLength:
+    (min: number, max: number, subject: string): ValidatorFn =>
+    (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value as unknown;
+      if (typeof value !== 'string' || value.trim() === '') {
+        return null;
+      }
+      const size = value.trim().length;
+      return size < min || size > max
+        ? { length: { min, max, message: `${subject} deve ter de ${min} a ${max} caracteres.` } }
+        : null;
+    },
+
   /** Marca o campo como duplicado quando `isTaken` devolve verdadeiro. */
   unique:
     (isTaken: (value: unknown) => boolean): ValidatorFn =>

@@ -266,7 +266,10 @@ export class AreaChartComponent {
       area: areaShape,
       categories: (area.length >= bars.length ? area : bars)
         .map((p, index) => ({ index, label: p.label, x: px(cx(index)) }))
-        .filter((c) => c.index % every === 0 || c.index === count - 1),
+        .filter(
+          // O último rótulo sempre aparece; o penúltimo some quando ficaria colado nele (ex.: "M23" e "M24").
+          (c) => c.index === count - 1 || (c.index % every === 0 && count - 1 - c.index >= every),
+        ),
     };
   });
 

@@ -306,6 +306,68 @@ export class ZaritService {
     return { ok: true, value: { alert: updated, late } };
   }
 
+  /** Chave do aviso "ligue agora" no sino do psicólogo (a regra do sino lê esta mesma chave, CX-019). */
+  static contactRequestKey(alertId: ID): string {
+    return `contact_requested:${alertId}`;
+  }
+
+  /** Pedido de contato já enviado ao psicólogo deste alerta, com a hora (ou `null`). */
+  contactRequestOf(alertId: ID): { at: string; psychologistName: string } | null {
+    const alert = this.db.zaritAlerts.get(alertId);
+    const psychologist = this.psychologistOfAlert(alert);
+    if (!alert || !psychologist) {
+      return null;
+    }
+    const found = this.db.notifications.find(
+      (n) => n.userId === psychologist.userId && n.kind === ZaritService.contactRequestKey(alertId),
+    );
+    return found ? { at: found.at, psychologistName: psychologist.displayName } : null;
+  }
+
+  private psychologistOfAlert(alert: ZaritAlert | undefined) {
+    const caregiver = alert ? this.db.caregivers.get(alert.caregiverId) : undefined;
+    return caregiver?.assignedPsychologistId ? this.db.psychologists.get(caregiver.assignedPsychologistId) : undefined;
+  }
+
+  /**
+   * A responsável técnica pede ao psicólogo do caso que ligue agora (CX-019): gera um aviso de ação hoje no sino
+   * dele, sem dado clínico no texto. Só vale para vermelho aberto, sem contato. Pedir de novo renova o aviso.
+   */
+  requestContact(alertId: ID): OpResult<{ psychologistName: string; at: string }> {
+    const alert = this.db.zaritAlerts.get(alertId);
+    if (!alert || alert.level !== 'red') {
+      return fail('alert', 'Alerta não encontrado.');
+    }
+    if (!this.access.isSupervisor()) {
+      return fail('alert', 'Só a responsável técnica pede o contato ao psicólogo do caso.');
+    }
+    if (alert.status === 'closed' || alert.contact) {
+      return fail('alert', 'O contato deste alerta já foi registrado.');
+    }
+    const psychologist = this.psychologistOfAlert(alert);
+    if (!psychologist) {
+      return fail('alert', 'Este caso ainda não tem psicólogo responsável.');
+    }
+    const now = this.clock.now();
+    const key = ZaritService.contactRequestKey(alertId);
+    const existing = this.db.notifications.find((n) => n.userId === psychologist.userId && n.kind === key);
+    if (existing) {
+      this.db.notifications.update(existing.id, { status: 'unread', at: now });
+    } else {
+      this.db.notifications.create({
+        role: 'psychologist',
+        userId: psychologist.userId,
+        kind: key,
+        title: 'Contato pedido pela responsável técnica',
+        status: 'unread',
+        link: `/app/acompanhamento/alertas/${alertId}`,
+        at: now,
+      });
+    }
+    this.audit.write('update', 'zarit_alert', alertId, alert.caregiverId, 'pedido de contato enviado ao psicólogo');
+    return { ok: true, value: { psychologistName: psychologist.displayName, at: now } };
+  }
+
   /** Avaliação de risco (nível e nota obrigatórios). Vem depois do contato. Alimenta o passo 3 da ocorrência. */
   registerRisk(alertId: ID, input: RiskInput): OpResult<ZaritAlert> {
     const guarded = this.alertGuard(alertId);

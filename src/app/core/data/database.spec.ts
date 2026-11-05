@@ -109,9 +109,9 @@ describe('Database: exportar e importar JSON (AC-M15-02, 03)', () => {
     expect(result).toEqual({ ok: true, errors: [] });
     expect(db.caregivers.get('cg_0002')?.fullName).toBe('Maria Aparecida Lemos');
     expect(db.messages.size()).toBe(28);
-    expect(db.exportJson()).toBe(
-      json.replace(/"exportedAt":"[^"]+"/, `"exportedAt":"${db.buildExport().exportedAt}"`),
-    );
+    // `exportedAt` é o relógio real e muda de um segundo para o outro: o resto do arquivo tem de ser idêntico.
+    const withoutStamp = (text: string): string => text.replace(/"exportedAt":"[^"]+"/, '"exportedAt":""');
+    expect(withoutStamp(db.exportJson())).toBe(withoutStamp(json));
   });
 
   it('o arquivo traz todas as entidades, a versão e a data simulada', () => {
@@ -139,7 +139,7 @@ describe('Database: exportar e importar JSON (AC-M15-02, 03)', () => {
     const envelope = { ...db.buildExport(), schemaVersion: '99' };
     const result = db.importJson(JSON.stringify(envelope));
     expect(result.ok).toBe(false);
-    expect(result.errors.join(' ')).toContain('Versão de esquema incompatível');
+    expect(result.errors.join(' ')).toContain('outra versão do sistema');
     expect(db.caregivers.size()).toBe(340);
   });
 

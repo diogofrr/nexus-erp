@@ -78,7 +78,7 @@ describe('M12 LGPD', () => {
       await go('/app/lgpd/consentimentos?visao=revogados');
       const rows = all('tbody tr').map((r) => text(r));
       expect(rows.some((r) => r.includes('CUI-0016') && r.includes('Revogado'))).toBe(true);
-      expect(text(q('.table-footer'))).toContain('titulares');
+      expect(text(q('.table-footer'))).toContain('1 titular');
     });
 
     it('recusar "imagem" não muda os demais e cada evento entra no histórico append-only (AC-M12-01, 07)', async () => {
@@ -212,13 +212,27 @@ describe('M12 LGPD', () => {
       await click(button('Concluir solicitação'));
       expect(text(q('main'))).toContain('Escreva a nota de resolução.');
       await type(q('#nx-dsr-note'), 'Pedido de revisão encaminhado ao psicólogo do caso.');
+      const handlerBefore = app.db.dataSubjectRequests.get('dsr_0005')?.handledByUserId;
+      // CX-003: concluir pede confirmação com o efeito e só então encerra.
       await click(button('Concluir solicitação'));
+      expect(text(confirmDialog())).toContain('Concluir a solicitação DSR-0005?');
+      expect(app.db.dataSubjectRequests.get('dsr_0005')?.status).toBe('in_progress');
+      await dialogConfirm();
       expect(app.db.dataSubjectRequests.get('dsr_0005')?.status).toBe('completed');
+      // CX-002: quem conclui não troca o responsável.
+      expect(app.db.dataSubjectRequests.get('dsr_0005')?.handledByUserId).toBe(handlerBefore);
       expect(app.db.dataSubjectRequests.get('dsr_0005')?.resolutionNote).toContain('encaminhado');
       const reply = q<HTMLTextAreaElement>('textarea[aria-label="Texto da resposta ao titular"]');
       expect(reply?.value).toContain('DSR-0005');
       expect(reply?.value).toContain('foi concluída');
       expect(button('Copiar texto')).not.toBeNull();
+      // CX-003: "Desfazer" no aviso volta o pedido a "em andamento", sem a nota de conclusão.
+      const undo = all<HTMLButtonElement>('.toast__action').find((b) => text(b) === 'Desfazer');
+      expect(undo).toBeTruthy();
+      await click(undo);
+      expect(app.db.dataSubjectRequests.get('dsr_0005')?.status).toBe('in_progress');
+      expect(app.db.dataSubjectRequests.get('dsr_0005')?.resolutionNote).toBeUndefined();
+      expect(app.db.dataSubjectRequests.get('dsr_0005')?.completedAt).toBeUndefined();
     });
 
     it('rejeitar com motivo muda a situação e mostra o motivo no cabeçalho', async () => {
@@ -241,6 +255,9 @@ describe('M12 LGPD', () => {
       expect(text(dialog)).toContain('Será eliminado');
       expect(text(dialog)).toContain('Ficará bloqueado');
       expect(text(dialog)).toContain('Res. CFP 1/2009 (a confirmar)');
+      // CX-033: a sócia não vê tipos nem quantidades de registro clínico.
+      expect(text(dialog)).not.toMatch(/Alertas de Zarit|Aplicações da Escala|Alertas da ARBE|Anotações de sessão|Ocorrências POP/);
+      expect(text(dialog)).toContain('Registros clínicos, se houver, ficam retidos por 5 anos');
       expect(text(dialog)).toContain('Digite CUI-0018 para continuar');
       expect(dialog?.querySelector<HTMLButtonElement>('[data-role="confirm"]')?.disabled).toBe(true);
       await dialogConfirm('CUI-0018');
@@ -262,6 +279,8 @@ describe('M12 LGPD', () => {
       await go(`/app/lgpd/solicitacoes/${request.id}`);
       await click(button('Anonimizar dados'));
       expect(text(confirmDialog())).toContain('Isso não pode ser desfeito.');
+      // QA-009: a frase concorda ("de Fulana", não "de O titular").
+      expect(text(confirmDialog())).not.toContain('O titular viram');
       await dialogConfirm('CUI-0100');
       const cg = app.db.caregivers.require('cg_0100');
       expect(cg.fullName).toBe('CUI-0100');
@@ -275,7 +294,15 @@ describe('M12 LGPD', () => {
     it('correção: valida e-mail fictício, grava o valor anterior em histórico e atualiza o cadastro', async () => {
       await open('u7', '/app/lgpd/solicitacoes/dsr_0003');
       const cg = app.db.caregivers.require('cg_0020');
+      // CX-037: sem pista do campo no pedido, nada vem marcado e a correção exige escolher o dado.
+      expect(q<HTMLSelectElement>('#nx-fix-field')?.selectedOptions[0]?.textContent?.trim()).toBe('Escolha o dado a corrigir');
       await type(q('#nx-fix-value'), 'novo@gmail.com');
+      await click(button('Registrar correção'));
+      expect(text(q('main'))).toContain('Escolha o dado a corrigir.');
+      expect(app.db.caregivers.require('cg_0020').email).toBe(cg.email);
+      const field = q<HTMLSelectElement>('#nx-fix-field') as HTMLSelectElement;
+      const emailOption = Array.from(field.options).find((o) => text(o) === 'E-mail');
+      await type(field, emailOption?.value ?? '');
       await click(button('Registrar correção'));
       expect(text(q('main'))).toContain('Use um e-mail que termine em @exemplo.com.br.');
       expect(app.db.caregivers.require('cg_0020').email).toBe(cg.email);
@@ -287,6 +314,69 @@ describe('M12 LGPD', () => {
       expect(done?.corrections?.[0]?.previous).toBe(cg.email);
       expect(text(q('main'))).toContain('Correções feitas');
       expect(app.db.accessLog.list().some((l) => l.action === 'update' && l.entity === 'caregiver' && l.entityId === 'cg_0020')).toBe(true);
+    });
+
+    it('anonimização da sócia: "do titular viram o código" (QA-009), sem o rótulo "O titular" no meio da frase', async () => {
+      await open('u1', '/app/painel');
+      const request = TestBed.inject(DataSubjectRequestService).open({ caregiverId: 'cg_0101', type: 'anonymization_or_blocking' });
+      await go(`/app/lgpd/solicitacoes/${request.id}`);
+      await click(button('Anonimizar dados'));
+      expect(text(confirmDialog())).toContain('Nome, CPF, e-mail e telefone do titular viram o código CUI-0101.');
+    });
+
+    it('a sócia não conclui uma correção que não vê: "Aguardando o atendimento", sem concluir, e o responsável não troca (CX-002)', async () => {
+      await open('u1', '/app/lgpd/solicitacoes/dsr_0003');
+      const handler = app.db.dataSubjectRequests.get('dsr_0003')?.handledByUserId;
+      expect(text(q('[data-role="waiting-support"]'))).toContain('Aguardando o atendimento');
+      expect(button('Concluir solicitação')).toBeNull();
+      // Depois que o atendimento corrige, a sócia só encerra, e o responsável continua o mesmo.
+      app.db.dataSubjectRequests.update('dsr_0003', {
+        corrections: [{ at: app.clock.now(), field: 'Cidade', previous: 'Uberlândia', next: 'Uberaba', byUserId: handler ?? 'u8' }],
+      });
+      await go('/app/painel');
+      await go('/app/lgpd/solicitacoes/dsr_0003');
+      expect(q('[data-role="waiting-support"]')).toBeNull();
+      expect(text(q('[data-role="support-done"]'))).toContain('Falta só você concluir');
+      await type(q('#nx-dsr-note'), 'Correção conferida pelo atendimento.');
+      await click(button('Concluir solicitação'));
+      await dialogConfirm();
+      expect(app.db.dataSubjectRequests.get('dsr_0003')?.status).toBe('completed');
+      expect(app.db.dataSubjectRequests.get('dsr_0003')?.handledByUserId).toBe(handler);
+      expect(app.db.dataSubjectRequests.get('dsr_0003')?.completedByUserId).toBe('u1');
+    });
+
+    it('o pedido cita o dado: o campo a corrigir já vem marcado quando é um só (CX-037)', async () => {
+      const { inferCorrectionField } = await import('./pages/request-detail.page');
+      expect(inferCorrectionField('Preciso corrigir meu sobrenome no cadastro')).toBe('fullName');
+      expect(inferCorrectionField('O e-mail está errado')).toBe('email');
+      expect(inferCorrectionField('O telefone mudou')).toBe('phone');
+      expect(inferCorrectionField('O WhatsApp é outro')).toBe('whatsapp');
+      expect(inferCorrectionField('Mudei de cidade')).toBe('city');
+      expect(inferCorrectionField('O nome e o e-mail estão errados')).toBeNull();
+      expect(inferCorrectionField(undefined)).toBeNull();
+      TestBed.resetTestingModule();
+      app = await bootApp({ userId: 'u7', url: '/app/painel' });
+      app.db.dataSubjectRequests.update('dsr_0003', { description: 'Preciso corrigir meu sobrenome no cadastro' });
+      await go('/app/lgpd/solicitacoes/dsr_0003');
+      expect(q<HTMLSelectElement>('#nx-fix-field')?.selectedOptions[0]?.textContent?.trim()).toBe('Nome completo');
+      expect(text(q('main'))).toContain('O pedido cita: nome completo.');
+    });
+
+    it('um pedido igual já aberto para o mesmo titular avisa, e o atendimento escolhe abrir o existente ou registrar mesmo assim (CX-036)', async () => {
+      await open('u7', '/app/lgpd/solicitacoes?acao=nova&cuidador=cg_0020');
+      const drawer = drawerOf('Nova solicitação');
+      expect(drawer).not.toBeNull();
+      const type1 = drawer?.querySelector<HTMLSelectElement>('#nx-dsr-type') as HTMLSelectElement;
+      await type(type1, Array.from(type1.options).find((o) => text(o) === 'Correção')?.value ?? '');
+      expect(text(drawer?.querySelector('[data-role="duplicate"]'))).toContain('DSR-0003');
+      await type(drawer?.querySelector('#nx-dsr-description'), 'Corrigir o sobrenome');
+      const before = app.db.dataSubjectRequests.size();
+      await click(button('Registrar solicitação', drawer ?? undefined));
+      expect(app.db.dataSubjectRequests.size()).toBe(before);
+      expect(text(drawer?.querySelector('.error-summary'))).toContain('Já existe a DSR-0003');
+      await click(drawer?.querySelector('[data-role="duplicate-force"]'));
+      await click(button('Registrar solicitação', drawer ?? undefined));
+      expect(app.db.dataSubjectRequests.size()).toBe(before + 1);
     });
 
     it('portabilidade gera o arquivo, conclui e a gestão não lê o conteúdo clínico (pacote selado, A-17)', async () => {

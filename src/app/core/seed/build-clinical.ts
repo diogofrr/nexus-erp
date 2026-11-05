@@ -434,7 +434,9 @@ export function buildClinical(s: SeedState): void {
       openedAt: ctx.dt(0, '00:20'),
       status: 'in_progress',
       restrictedToUserIds: [USER.technicalLead, USER.rafael],
-      steps: steps(POP05_STEPS, 2, ctx.today, USER.rafael, '00:20').map((st, k) =>
+      // CX-017: só o passo 1 (acolhimento) está feito. O passo 2 (contato da equipe) fica pendente até o contato
+      // ser registrado no alerta, com a hora e o autor reais; a nota guarda as tentativas sem retorno.
+      steps: steps(POP05_STEPS, 1, ctx.today, USER.rafael, '00:20').map((st, k) =>
         k === 1
           ? {
               ...st,

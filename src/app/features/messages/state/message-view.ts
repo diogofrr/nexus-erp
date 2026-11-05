@@ -248,3 +248,106 @@ export function templateProblems(title: string, body: string): string[] {
   }
   return problems;
 }
+
+// ===== Modelos de resposta que servem à mensagem (CX-039) =====
+
+/** Primeiro nome ("Patrícia Vilela" vira "Patrícia"), ou `null` sem nome. */
+export function firstNameOf(fullName: string | null | undefined): string | null {
+  const first = fullName?.trim().split(/\s+/)[0];
+  return first ? first : null;
+}
+
+/**
+ * Prepara o modelo para esta pessoa: usa o primeiro nome na saudação e, quando a mensagem já passou do prazo,
+ * pede desculpas pela demora e não promete mais "o prazo combinado". `{nome}` no modelo vira o primeiro nome.
+ */
+export function personalizeReply(body: string, name: string | null, overdue: boolean): string {
+  let text = body.trim();
+  if (text.includes('{nome}')) {
+    text = name ? text.replaceAll('{nome}', name) : text.replace(/,?\s*\{nome\}/g, '');
+  } else if (name) {
+    text = /^Olá!/.test(text) ? text.replace(/^Olá!/, `Olá, ${name}!`) : `Olá, ${name}. ${text}`;
+  }
+  if (overdue) {
+    text = text.replace(/vamos responder dentro do prazo combinado/i, 'já estamos cuidando dela');
+    const sorry = 'Pedimos desculpas pela demora em responder.';
+    if (!text.includes(sorry)) {
+      const greeting = /^Olá[^.!]*[.!]\s*/.exec(text)?.[0] ?? '';
+      text = `${greeting}${sorry} ${text.slice(greeting.length)}`;
+    }
+  }
+  return text;
+}
+
+const TEMPLATE_KEYWORDS: readonly { title: RegExp; words: RegExp }[] = [
+  { title: /apoio/i, words: /apoio|cansad|sobrecarreg|n[ãa]o aguent|sozinh|desesper|chor/i },
+  { title: /planos?/i, words: /plano|mensalidade|pre[çc]o|valor|cobran[çc]a|assinatura|cart[ãa]o/i },
+  { title: /reclama/i, words: /reclam|insatisf|problema|queixa|p[ée]ssim/i },
+  { title: /rede credenciada|op[çc][õo]es/i, words: /fisio|enferm|cuidador|rede|credenciad|prestador|farm[áa]cia|advog/i },
+  { title: /encerramento/i, words: /obrigad|resolvido|tudo certo/i },
+];
+
+/** Pontuação de quanto o modelo serve à mensagem (assunto e texto). Maior primeiro; sem pista, 0. */
+export function templateRelevance(
+  template: { title: string },
+  message: Pick<Message, 'subject' | 'body' | 'isSupportRequest'>,
+): number {
+  const text = `${message.subject ?? ''} ${message.body}`;
+  let score = 0;
+  for (const rule of TEMPLATE_KEYWORDS) {
+    if (rule.title.test(template.title) && rule.words.test(text)) {
+      score += 2;
+    }
+  }
+  if (message.isSupportRequest && /apoio/i.test(template.title)) {
+    score += 2;
+  }
+  if (/recebimento/i.test(template.title)) {
+    score += 0.5;
+  }
+  return score;
+}
+
+// ===== Solicitação do titular a partir da mensagem (CX-035) =====
+
+export type SubjectRequestKind =
+  | 'access'
+  | 'correction'
+  | 'anonymization_or_blocking'
+  | 'portability'
+  | 'erasure'
+  | 'consent_revocation'
+  | 'sharing_info'
+  | 'decision_review';
+
+export const SUBJECT_REQUEST_LABELS: Readonly<Record<SubjectRequestKind, string>> = {
+  access: 'Acesso aos dados',
+  correction: 'Correção de dados',
+  anonymization_or_blocking: 'Anonimização ou bloqueio',
+  portability: 'Portabilidade (levar os dados)',
+  erasure: 'Eliminação dos dados',
+  consent_revocation: 'Revogação de consentimento',
+  sharing_info: 'Com quem os dados foram compartilhados',
+  decision_review: 'Revisão de decisão',
+};
+
+/** Sugere o tipo pelo assunto e pelo texto. Sem pista clara, devolve `null` e a pessoa escolhe (CX-037). */
+export function suggestSubjectRequest(message: Pick<Message, 'subject' | 'body'>): SubjectRequestKind | null {
+  const text = `${message.subject ?? ''} ${message.body}`.toLowerCase();
+  if (/corrig|errad|sobrenome|atualiz.*(nome|cpf|e-mail|telefone)/.test(text)) {
+    return 'correction';
+  }
+  if (/exclu|apag|elimin/.test(text)) {
+    return 'erasure';
+  }
+  if (/portabilidade|levar (meus )?dados/.test(text)) {
+    return 'portability';
+  }
+  if (/revog|retirar (o )?consentimento/.test(text)) {
+    return 'consent_revocation';
+  }
+  if (/c[óo]pia dos meus dados|quais dados|ver meus dados/.test(text)) {
+    return 'access';
+  }
+  return null;
+}

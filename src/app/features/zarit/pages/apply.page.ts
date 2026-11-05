@@ -62,6 +62,9 @@ const WIZARD_ITEMS: WizardItem[] = ZARIT_DEMO_ITEMS.map((question, i) => ({
         @if (stage() === 'intro') {
           <section class="card card--pad stack stack--3" aria-labelledby="intro-title" data-role="intro">
             <h2 id="intro-title" class="card__title">{{ kindText() }}</h2>
+            @if (previousText(); as previous) {
+              <p class="t-ui" data-role="previous-application">{{ previous }}</p>
+            }
             <p>{{ introText }}</p>
             <p class="t-caption">
               Enunciados de demonstração (paráfrases). Troque pelo texto oficial licenciado antes de uso real.
@@ -152,6 +155,16 @@ export class ZaritApplyPageComponent {
     const c = this.caregiver();
     const sequence = c ? (this.svc.pendingOf(c.id)?.sequence ?? this.svc.completedOf(c.id).length) : 0;
     return sequence === 0 ? 'Aplicação de adesão' : `Aplicação trimestral nº ${sequence}`;
+  });
+  /** A aplicação anterior, no mesmo vocabulário do histórico: "Adesão" ou "Trimestral nº N" (CX-031). */
+  protected readonly previousText = computed(() => {
+    const c = this.caregiver();
+    const last = c ? this.svc.completedOf(c.id).at(-1) : undefined;
+    if (!last) {
+      return null;
+    }
+    const kind = last.sequence === 0 ? 'a adesão' : `a aplicação trimestral nº ${last.sequence}`;
+    return `A anterior foi ${kind}, em ${last.appliedAt ? formatDate(last.appliedAt) : 'data não registrada'}. A escala se repete a cada 3 meses.`;
   });
   protected readonly blockedText = computed(() => {
     if (this.lost()) {

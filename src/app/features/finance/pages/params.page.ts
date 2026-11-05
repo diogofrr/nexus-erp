@@ -264,7 +264,13 @@ export function parseMonths(text: string): number[] {
                     [controlId]="id('cumulativeFreeUsersByMonth.' + $index)"
                     [error]="errorOf('cumulativeFreeUsersByMonth.' + $index)"
                   >
-                    <input appInput class="input--num" appMask="number" [formControlName]="$index" />
+                    <input
+                      appInput
+                      class="input--num"
+                      appMask="number"
+                      [formControlName]="$index"
+                      [attr.aria-label]="'Usuários gratuitos acumulados, mês ' + ($index + 1)"
+                    />
                   </app-form-field>
                 }
               </div>

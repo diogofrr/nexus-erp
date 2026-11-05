@@ -326,11 +326,13 @@ describe('seed: os 29 cenários de cuidadores', () => {
     expect(dsrDeadlineState(find(18), addDays(TODAY, 8))).toBe('overdue');
   });
 
-  it('ocorrências: O-1 encerrada com 7 passos, O-2 com 2 passos feitos, O-3 POP-07 sem notificação comunicada', () => {
+  it('ocorrências: O-1 encerrada com 7 passos, O-2 só com o acolhimento feito (o contato fica pendente), O-3 POP-07 sem notificação comunicada', () => {
     const occ = byId(c.occurrences);
     expect(occ.get(OCCURRENCE.o1)!.status).toBe('closed');
     expect(occ.get(OCCURRENCE.o1)!.steps.filter((s) => s.doneAt)).toHaveLength(7);
-    expect(occ.get(OCCURRENCE.o2)!.steps.filter((s) => s.doneAt)).toHaveLength(2);
+    expect(occ.get(OCCURRENCE.o2)!.steps.filter((s) => s.doneAt).map((s) => s.n)).toEqual([1]);
+    expect(occ.get(OCCURRENCE.o2)!.steps[1]?.doneAt).toBeUndefined();
+    expect(occ.get(OCCURRENCE.o2)!.steps[1]?.note).toContain('contato efetivo pendente');
     expect(occ.get(OCCURRENCE.o2)!.steps).toHaveLength(7);
     expect(occ.get(OCCURRENCE.o3)!.kind).toBe('pop07_violence_suspicion');
     expect(occ.get(OCCURRENCE.o3)!.authoritiesNotified.every((a) => a.at === undefined)).toBe(true);

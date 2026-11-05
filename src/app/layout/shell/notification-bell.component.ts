@@ -144,7 +144,9 @@ import { IconComponent } from '../../shared/ui/display/icon.component';
         </span>
         <button type="button" class="list-row__main" (click)="openItem(item)">
           <span class="list-row__title">{{ item.title }}</span>
-          <span class="list-row__meta">{{ item.context }} · {{ item.at | relativeTime }}</span>
+          <span class="list-row__meta"
+            >{{ item.context }}@if (item.showAge) { · aviso criado {{ item.at | relativeTime }}}</span
+          >
         </button>
         @if (!item.seen) {
           <button

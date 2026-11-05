@@ -109,7 +109,8 @@ export class DataSubjectRequestService {
     const userId = this.session.user()?.id;
     const updated = this.db.dataSubjectRequests.update(id, {
       status: 'in_progress',
-      ...(userId ? { handledByUserId: userId } : {}),
+      // Quem já está com o pedido continua com ele (CX-002).
+      ...(userId && !request.handledByUserId ? { handledByUserId: userId } : {}),
     });
     this.audit.write('update', 'data_subject_request', id, request.caregiverId, 'em andamento');
     return updated;
@@ -123,14 +124,41 @@ export class DataSubjectRequestService {
   ): DataSubjectRequest {
     const request = this.requireOpenable(id);
     const userId = this.session.user()?.id;
+    // CX-002: quem conclui não troca o responsável. Sem responsável, quem conclui assume; com responsável
+    // diferente, o pedido guarda os dois (`handledByUserId` e `completedByUserId`).
     const updated = this.db.dataSubjectRequests.update(id, {
       status: 'completed',
       completedAt: this.clock.today(),
-      ...(userId ? { handledByUserId: userId } : {}),
+      ...(userId && !request.handledByUserId ? { handledByUserId: userId } : {}),
+      ...(userId && request.handledByUserId && request.handledByUserId !== userId
+        ? { completedByUserId: userId }
+        : {}),
       ...(resolutionNote ? { resolutionNote } : {}),
       ...(extra.retentionBlockNote ? { retentionBlockNote: extra.retentionBlockNote } : {}),
     });
     this.audit.write('update', 'data_subject_request', id, request.caregiverId, 'concluída');
+    return updated;
+  }
+
+  /**
+   * Desfaz uma conclusão feita há pouco (CX-003): volta a "em andamento", sem nota nem data de conclusão.
+   * Só vale para pedidos concluídos que não executaram uma ação irreversível (eliminação, anonimização).
+   */
+  reopen(id: ID): DataSubjectRequest {
+    const request = this.db.dataSubjectRequests.require(id);
+    if (request.status !== 'completed') {
+      throw new DataSubjectRequestError('Só dá para desfazer uma solicitação concluída.');
+    }
+    if (request.type === 'erasure' || request.type === 'anonymization_or_blocking') {
+      throw new DataSubjectRequestError('Eliminação e anonimização não podem ser desfeitas.');
+    }
+    const updated = this.db.dataSubjectRequests.update(id, {
+      status: 'in_progress',
+      completedAt: undefined,
+      resolutionNote: undefined,
+      completedByUserId: undefined,
+    });
+    this.audit.write('update', 'data_subject_request', id, request.caregiverId, 'conclusão desfeita');
     return updated;
   }
 

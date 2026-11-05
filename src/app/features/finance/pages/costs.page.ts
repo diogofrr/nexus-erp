@@ -53,7 +53,7 @@ import { FinanceStore } from '../state/finance.store';
       </app-kpi-strip>
 
       <div class="grid grid--2">
-        <app-card title="Gastos mensais" subtitle="Quadro 5 do plano de negócios">
+        <app-card title="Gastos mensais" subtitle="Os gastos fixos do plano de negócios">
           <div class="table-wrap">
             <table class="table" data-density="comfortable" data-role="costs-table">
               <caption class="sr-only">

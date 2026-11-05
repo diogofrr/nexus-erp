@@ -165,6 +165,15 @@ const GRAVE_OPTIONS: readonly RadioOption<string>[] = (
             }
           </div>
 
+          @if (summaryView()?.refusal?.exitRisk && (p.status === 'active' || p.status === 'monitoring')) {
+            <app-banner variant="attention" heading="O que é o risco de saída" data-role="exit-risk-note">
+              O prestador recusa ou cancela solicitações acima do limite da rede nos últimos 30 dias (ou ficou bem
+              menos disponível) e pode deixar de atender pela rede. Nenhuma ação é automática. Quem decide é a
+              gestão: conversar com o prestador para entender o motivo, acompanhar nas próximas auditorias ou,
+              se for preciso, suspender da busca.
+            </app-banner>
+          }
+
           <app-banner variant="info">
             A Nexus organiza a rede e não presta o serviço. O usuário escolhe, contrata e paga direto ao
             profissional, conforme as condições combinadas.

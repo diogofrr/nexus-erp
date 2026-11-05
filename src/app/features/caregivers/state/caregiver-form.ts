@@ -9,7 +9,7 @@ export type Literacy = 'low' | 'medium' | 'high';
 /** Campos do cuidador (F02, etapa 1), com as validações do escopo: maioridade, e-mail e telefone fictícios, horas de 0 a 24. */
 export function caregiverFieldsGroup(today: () => string) {
   return new FormGroup({
-    fullName: new FormControl('', { nonNullable: true, validators: [NxValidators.required('o nome completo do cuidador')] }),
+    fullName: new FormControl('', { nonNullable: true, validators: [NxValidators.required('o nome completo do cuidador'), NxValidators.textLength(3, 120, 'O nome')] }),
     birthDate: new FormControl<string | null>(null, [NxValidators.required('a data de nascimento'), NxValidators.adult(today)]),
     email: new FormControl('', { nonNullable: true, validators: [NxValidators.required('o e-mail'), NxValidators.fictitiousEmail] }),
     phone: new FormControl('', { nonNullable: true, validators: [NxValidators.required('o telefone'), NxValidators.fictitiousPhone] }),

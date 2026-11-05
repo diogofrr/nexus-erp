@@ -50,7 +50,7 @@ const EXPECTED: Record<Resource, [AccessLevel, AccessLevel, AccessLevel, AccessL
   partners_corporate: ['T', '-', '-', 'L'],
   finance: ['T', '-', '-', '-'],
   indicators: ['T', 'A', 'A', 'L'],
-  pilot: ['T', 'A', '-', '-'],
+  pilot: ['T', 'A', 'A', '-'],
   message_inbox: ['T', 'L', 'P', 'T'],
   complaints: ['T', 'L', '-', 'T'],
   lgpd_consents_requests: ['T', 'E', '-', 'E'],
@@ -193,6 +193,7 @@ describe('Rotas e módulos (AC-M01-06, AC-M01-08)', () => {
       'zarit',
       'groups',
       'indicators',
+      'pilot',
       'messages',
       'governance',
     ]);

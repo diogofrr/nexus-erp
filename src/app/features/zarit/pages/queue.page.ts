@@ -157,7 +157,14 @@ const FILTER_LABELS: Record<string, string> = {
             }
           </ng-template>
           <ng-template appCell="actions" let-row let-selecting="selecting">
-            <button type="button" class="btn btn--sm" [disabled]="selecting" (click)="open(row)" data-role="row-action">
+            <button
+              type="button"
+              class="btn btn--sm"
+              [disabled]="selecting"
+              [attr.aria-label]="actionAria(row)"
+              (click)="open(row)"
+              data-role="row-action"
+            >
               {{ actionLabel(row) }}
             </button>
           </ng-template>
@@ -351,6 +358,15 @@ export class QueuePageComponent {
       return 'Ver alerta';
     }
     return this.canApply() ? 'Aplicar' : 'Ver histórico';
+  }
+
+  /** O botão diz a quem se refere (CX-031): "Aplicar a escala em Carla", para o leitor de tela não ouvir 35 "Aplicar". */
+  protected actionAria(row: QueueTableRow): string {
+    const label = this.actionLabel(row);
+    if (label === 'Aplicar') {
+      return `Aplicar a escala em ${row.name}`;
+    }
+    return `${label} de ${row.name}`;
   }
 
   protected open(row: QueueTableRow): void {

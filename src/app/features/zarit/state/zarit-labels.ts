@@ -1,4 +1,5 @@
 import { ArbeAlert, Channel, ReviewRequest, RiskLevel, ZaritAlert } from '@core/models';
+import { formatSpan } from '@core/format';
 import { RedAlertClosureField } from '@core/rules';
 import type { BadgeVariant, IconName } from '@shared/ui';
 
@@ -67,16 +68,7 @@ export const RESULT_SUPPORT_NOTE =
 
 /** Tempo restante ou vencido em texto: "Faltam 6 h 19 min", "Vencido há 18 h". */
 export function countdownText(minutesLeft: number): string {
-  const abs = Math.abs(Math.round(minutesLeft));
-  const days = Math.floor(abs / (60 * 24));
-  const hours = Math.floor((abs % (60 * 24)) / 60);
-  const minutes = abs % 60;
-  const text =
-    days > 0
-      ? `${days} ${days === 1 ? 'dia' : 'dias'}${hours > 0 ? ` ${hours} h` : ''}`
-      : hours > 0
-        ? `${hours} h${minutes > 0 ? ` ${minutes} min` : ''}`
-        : `${minutes} min`;
+  const text = formatSpan(minutesLeft);
   return minutesLeft >= 0 ? `Faltam ${text}` : `Vencido há ${text}`;
 }
 

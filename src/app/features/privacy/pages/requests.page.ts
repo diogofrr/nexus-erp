@@ -30,7 +30,7 @@ import {
   createListState,
   normalizeText,
 } from '@shared/ui';
-import { DrawerComponent, ToastService } from '@shared/ui/overlay';
+import { BannerComponent, DrawerComponent, ToastService } from '@shared/ui/overlay';
 import { LgpdNavComponent } from '../components/lgpd-nav.component';
 import { DEADLINE_BADGES, DSR_STATUS_BADGES, DSR_STATUS_LABELS } from '../state/privacy-labels';
 
@@ -75,6 +75,7 @@ const CHANNELS: { value: Channel | 'in_person'; label: string }[] = [
   imports: [
     ActiveFiltersComponent,
     BadgeComponent,
+    BannerComponent,
     CellDirective,
     DataTableComponent,
     DrawerComponent,
@@ -171,6 +172,22 @@ const CHANNELS: { value: Channel | 'in_person'; label: string }[] = [
             @for (t of typeOptions; track t.value) { <option [ngValue]="t.value">{{ t.label }}</option> }
           </select>
         </app-form-field>
+        @if (duplicate(); as d) {
+          <app-banner variant="attention" heading="Já existe um pedido igual aberto" liveRole="status">
+            <span data-role="duplicate">
+              A solicitação {{ d.protocol }} ({{ typeLabel(d.type) }}) deste titular está aberta, com prazo até {{ date(d.dueAt) }}.
+              Abra essa ou registre mesmo assim.
+            </span>
+            <div class="cluster mt-2">
+              <button type="button" class="btn btn--sm" data-role="duplicate-open" (click)="openDuplicate(d.id)">Abrir {{ d.protocol }}</button>
+              @if (allowDuplicate()) {
+                <span class="t-caption" data-role="duplicate-allowed">Certo. Vou registrar outra mesmo assim.</span>
+              } @else {
+                <button type="button" class="btn btn--sm btn--ghost" data-role="duplicate-force" (click)="allowDuplicate.set(true)">Registrar mesmo assim</button>
+              }
+            </div>
+          </app-banner>
+        }
         <app-form-field label="Canal por onde chegou" controlId="nx-dsr-channel" [forceErrors]="submitted()">
           <select appInput formControlName="channel">
             @for (c of channels; track c.value) { <option [ngValue]="c.value">{{ c.label }}</option> }
@@ -213,6 +230,8 @@ export class RequestsPage {
   protected readonly holderError = signal<string | null>(null);
   protected readonly holderSearch = signal('');
   protected readonly holderId = signal<ID | null>(null);
+  protected readonly allowDuplicate = signal(false);
+  private readonly typeValue = signal<DsrType | null>(null);
   protected readonly form = new FormGroup({
     type: new FormControl<DsrType | null>(null, [NxValidators.required('o tipo de pedido')]),
     channel: new FormControl<Channel | 'in_person'>('in_person', { nonNullable: true }),
@@ -261,7 +280,10 @@ export class RequestsPage {
         (!d || (d === 'vencendo' && r.deadlineState === 'due_soon') || (d === 'vencidas' && r.deadlineState === 'overdue')),
     );
   });
-  protected readonly countText = computed(() => `${this.filtered().length} solicitações`);
+  protected readonly countText = computed(() => {
+    const n = this.filtered().length;
+    return `${n} ${n === 1 ? 'solicitação' : 'solicitações'}`;
+  });
   protected readonly viewOptions = computed<FilterOption[]>(() =>
     VIEWS.map((v) => ({ value: v.value, label: v.label, count: this.rows().filter((r) => v.match(r.status)).length })),
   );
@@ -314,7 +336,26 @@ export class RequestsPage {
       .map((m) => ({ id: m.id, label: m.text, code: m.code, pseudonymized: m.pseudonymized }));
   });
 
+  /** CX-036: pedido do mesmo tipo, para o mesmo titular, que ainda está aberto ou em andamento. */
+  protected readonly duplicate = computed(() => {
+    const holder = this.holderId();
+    const type = this.typeValue();
+    this.db.dataSubjectRequests.all();
+    if (!holder || !type) {
+      return null;
+    }
+    return (
+      this.db.dataSubjectRequests.find(
+        (r) => r.caregiverId === holder && r.type === type && (r.status === 'open' || r.status === 'in_progress'),
+      ) ?? null
+    );
+  });
+
   constructor() {
+    this.form.controls.type.valueChanges.subscribe((t) => {
+      this.typeValue.set(t);
+      this.allowDuplicate.set(false);
+    });
     // `?acao=nova` (paleta e atalhos) e `?cuidador=` (ficha do cuidador) abrem a gaveta já com o titular.
     effect(() => {
       const q = this.query();
@@ -339,6 +380,19 @@ export class RequestsPage {
     return DEADLINE_BADGES[row.deadlineState];
   }
 
+  protected typeLabel(type: DsrType): string {
+    return DSR_TYPE_LABELS[type];
+  }
+
+  protected date(value: string): string {
+    return formatDate(value);
+  }
+
+  protected openDuplicate(id: ID): void {
+    this.drawerOpen.set(false);
+    void this.router.navigate(['/app/lgpd/solicitacoes', id]);
+  }
+
   protected open(row: RequestRow): void {
     void this.router.navigate(['/app/lgpd/solicitacoes', row.id]);
   }
@@ -349,12 +403,15 @@ export class RequestsPage {
     this.holderError.set(null);
     this.holderSearch.set('');
     this.holderId.set(holderId ?? null);
+    this.allowDuplicate.set(false);
     this.form.reset({ type: null, channel: 'in_person', date: this.clock.today(), description: '' });
+    this.typeValue.set(null);
     this.drawerOpen.set(true);
   }
 
   protected pickHolder(id: ID): void {
     this.holderId.set(id);
+    this.allowDuplicate.set(false);
     this.holderError.set(null);
   }
 
@@ -379,6 +436,13 @@ export class RequestsPage {
         items.push({ controlId: id, message: `Informe ${what}.` });
       }
     });
+    const duplicate = this.duplicate();
+    if (duplicate && !this.allowDuplicate()) {
+      items.push({
+        controlId: 'nx-dsr-type',
+        message: `Já existe a ${duplicate.protocol} aberta para este titular e este tipo. Abra essa ou escolha "Registrar mesmo assim".`,
+      });
+    }
     const date = this.form.controls.date.value;
     if (date && date > this.clock.today()) {
       items.push({ controlId: 'nx-dsr-date', message: 'A data do pedido não pode ser no futuro.' });

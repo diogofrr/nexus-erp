@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, booleanAttribute, computed, inject, input, signal } from '@angular/core';
 import { Clock } from '@core/clock';
-import { formatDate, formatDuration } from '@core/format';
+import { formatDate, formatSpan } from '@core/format';
 import { ISODateTime } from '@core/models';
 import { redAlertMinutesLeft } from '@core/rules';
 import { BadgeComponent, IconComponent } from '@shared/ui';
@@ -44,7 +44,7 @@ export class AlertCountdownComponent {
     return redAlertMinutesLeft({ deadlineAt: this.deadlineAt() }, this.clock.now()) ?? 0;
   });
   protected readonly state = computed(() => (this.minutes() >= 0 ? 'on_time' : 'overdue'));
-  protected readonly duration = computed(() => formatDuration(Math.abs(this.minutes())));
+  protected readonly duration = computed(() => formatSpan(this.minutes()));
   protected readonly short = computed(() =>
     this.minutes() >= 0 ? `Faltam ${this.duration()}` : `Vencido há ${this.duration()}`,
   );

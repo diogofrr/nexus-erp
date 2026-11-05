@@ -18,6 +18,11 @@ export interface Message extends Audited {
   isSupportRequest: boolean;
   /** Mensagem de risco: abre POP-05. */
   riskFlag?: boolean;
+  /**
+   * O atendimento não teve certeza e avisou a responsável técnica sem abrir o POP-05 (CX-040). Ela decide se
+   * inicia o protocolo.
+   */
+  riskDoubt?: boolean;
 }
 
 export interface ComplaintEvent {

@@ -3,7 +3,7 @@ import { AuditLogService } from '../audit/audit-log.service';
 import { Clock } from '../clock/clock.service';
 import { addDays, dateOf } from '../clock/date-utils';
 import { Database } from '../data/database';
-import { ID, ISODate, RetentionBlock } from '../models';
+import { ID, ISODate, RetentionBlock, Role } from '../models';
 import {
   ACCESS_LOG_RETENTION_YEARS,
   CADASTRE_RETENTION_DAYS,
@@ -16,18 +16,53 @@ import {
 import { addYears } from '../clock/date-utils';
 import { caregiverCode } from './pseudonym';
 
+/** Data neutra no lugar do nascimento eliminado (o modelo exige uma data; a tela não a mostra). */
+export const ERASED_DATE: ISODate = '1900-01-01';
+
 /** Texto padrão do bloqueio por retenção (AC-M12-04). */
 export const RETENTION_BLOCK_NOTE = `Retido por registro documental por ${DOCUMENTARY_RETENTION_YEARS} anos; motivo: ${DOCUMENTARY_RETENTION_BASIS}.`;
 
 export interface ErasurePlan {
   caregiverId: ID;
-  /** O que será apagado (rótulo e quantidade). */
-  willErase: { label: string; count: number }[];
+  /** O que será apagado (rótulo e quantidade). `key` é estável; só os itens cadastrais passam à visão restrita. */
+  willErase: { key: string; label: string; count: number }[];
   /** O que fica BLOQUEADO por registro documental (rótulo e quantidade). */
-  willBlock: { label: string; count: number }[];
+  willBlock: { key: string; label: string; count: number }[];
   /** Fim do bloqueio. Vazio se nada fica retido. */
   blockedUntil: ISODate | null;
   note: string | null;
+}
+
+/** Frase única da visão restrita: não diz quais registros clínicos existem nem quantos (CX-033, bloqueios 1.3). */
+export const RESTRICTED_BLOCK_LABEL =
+  'Registros clínicos, se houver, ficam retidos por 5 anos por obrigação legal. Quem acompanha o caso vê quais são.';
+
+/** Quem não pode ver registro clínico individual (matriz 1.2): a sócia e o atendimento. */
+export function seesClinicalErasureDetail(role: Role | null): boolean {
+  return role === 'technical_lead' || role === 'psychologist';
+}
+
+/**
+ * Plano de eliminação como o perfil pode ver (CX-033): a sócia e o atendimento não descobrem pela lista se o
+ * cadastro tem Zarit, alerta ou ocorrência. Mantêm-se só os itens cadastrais; o resto vira uma frase única e o
+ * bloqueio documental aparece sempre do mesmo jeito, haja ou não registro.
+ */
+export function erasurePlanFor(plan: ErasurePlan, role: Role | null): ErasurePlan {
+  if (seesClinicalErasureDetail(role)) {
+    return plan;
+  }
+  const cadastral = new Set(['identity', 'elder', 'messages', 'appointments']);
+  return {
+    ...plan,
+    willErase: [
+      ...plan.willErase.filter((i) => cadastral.has(i.key)),
+      { key: 'other', label: 'Demais dados de uso e de acompanhamento ligados a este cadastro', count: 1 },
+    ],
+    willBlock: [{ key: 'clinical', label: RESTRICTED_BLOCK_LABEL, count: 1 }],
+    blockedUntil: null,
+    // A política de retenção é geral: a nota aparece sempre, haja ou não registro clínico.
+    note: RETENTION_BLOCK_NOTE,
+  };
 }
 
 export interface ErasureResult {
@@ -83,6 +118,9 @@ export class RetentionService {
       zarit: this.db.zaritAssessments.count(
         (z) => z.caregiverId === caregiverId && z.status === 'completed',
       ),
+      pendingScale: this.db.zaritAssessments.count(
+        (z) => z.caregiverId === caregiverId && z.status !== 'completed',
+      ),
       zaritAlerts: this.db.zaritAlerts.count((a) => a.caregiverId === caregiverId),
       arbe: this.db.arbeAlerts.count((a) => a.caregiverId === caregiverId),
       notes: this.db.sessionNotes.count((n) => sessions.includes(n.sessionId)),
@@ -90,22 +128,31 @@ export class RetentionService {
     };
     const willErase = [
       {
-        label: 'Dados de contato e identificação do cuidador (nome, CPF, e-mail, telefone)',
+        key: 'identity',
+        label:
+          'Dados de contato e identificação do cuidador (nome, CPF, e-mail, telefone, nascimento, sexo, cidade e horas de cuidado)',
         count: 1,
       },
-      ...(elder ? [{ label: 'Identificação e condições de saúde da pessoa idosa', count: 1 }] : []),
-      { label: 'Mensagens', count: count.messages },
-      { label: 'Medicamentos', count: count.medications },
-      { label: 'Compromissos de cuidado', count: count.appointments },
-      { label: 'Registros de bem-estar', count: count.wellbeing },
-      { label: 'Resumo de uso do aplicativo', count: count.usage },
+      ...(elder
+        ? [{ key: 'elder', label: 'Identificação e condições de saúde da pessoa idosa', count: 1 }]
+        : []),
+      { key: 'messages', label: 'Mensagens', count: count.messages },
+      { key: 'medications', label: 'Medicamentos', count: count.medications },
+      { key: 'appointments', label: 'Compromissos de cuidado', count: count.appointments },
+      {
+        key: 'pendingScale',
+        label: 'Aplicações da escala ainda não feitas (agendadas)',
+        count: count.pendingScale,
+      },
+      { key: 'wellbeing', label: 'Registros de bem-estar', count: count.wellbeing },
+      { key: 'usage', label: 'Resumo de uso do aplicativo', count: count.usage },
     ].filter((i) => i.count > 0);
     const willBlock = [
-      { label: 'Aplicações da Escala de Zarit', count: count.zarit },
-      { label: 'Alertas de Zarit', count: count.zaritAlerts },
-      { label: 'Alertas da ARBE', count: count.arbe },
-      { label: 'Anotações de sessão', count: count.notes },
-      { label: 'Ocorrências POP-05 e POP-07', count: count.occurrences },
+      { key: 'zarit', label: 'Aplicações da Escala de Zarit', count: count.zarit },
+      { key: 'zaritAlerts', label: 'Alertas de Zarit', count: count.zaritAlerts },
+      { key: 'arbe', label: 'Alertas da ARBE', count: count.arbe },
+      { key: 'notes', label: 'Anotações de sessão', count: count.notes },
+      { key: 'occurrences', label: 'Ocorrências POP-05 e POP-07', count: count.occurrences },
     ].filter((i) => i.count > 0);
     const blockedUntil = willBlock.length > 0 ? retentionBlockUntil(this.clock.today()) : null;
     return {
@@ -131,12 +178,18 @@ export class RetentionService {
 
     erased += this.db.messages.removeWhere((m) => m.caregiverId === caregiverId);
     erased += this.db.wellbeingChecks.removeWhere((w) => w.caregiverId === caregiverId);
+    // QA-006: a aplicação futura da escala não é registro documental (nada foi aplicado). Sem ela, o titular
+    // eliminado não volta à fila do psicólogo nem ganha "próxima aplicação".
+    erased += this.db.zaritAssessments.removeWhere(
+      (z) => z.caregiverId === caregiverId && z.status !== 'completed',
+    );
     erased += this.db.appUsage.removeWhere((u) => u.caregiverId === caregiverId);
     if (elder) {
       erased += this.db.medications.removeWhere((m) => m.elderId === elder.id);
       erased += this.db.careAppointments.removeWhere((a) => a.elderId === elder.id);
       this.db.elders.update(elder.id, {
         fullName: `Eliminado (${caregiver.code})`,
+        birthDate: ERASED_DATE,
         conditionsSummary: undefined,
       });
       erased += 1;
@@ -149,6 +202,11 @@ export class RetentionService {
       whatsapp: undefined,
       sociodemographics: undefined,
       weeklyOrganizationHours: undefined,
+      // Dados cadastrais que a lista "será eliminado" cobre (QA-006): sem eles não há elegibilidade ao piloto.
+      birthDate: ERASED_DATE,
+      city: '',
+      dailyCareHours: 0,
+      isPilot: false,
       status: 'closed',
       closedAt: today,
       erasedAt: nowIso,

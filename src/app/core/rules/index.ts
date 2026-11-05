@@ -13,3 +13,5 @@ export * from './sla';
 export * from './kpi';
 export * from './lgpd';
 export * from './governance';
+export * from './redistribution';
+export * from './arbe-preview';

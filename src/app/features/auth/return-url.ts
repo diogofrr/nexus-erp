@@ -1,8 +1,8 @@
 import { MODULES, canAccessModule, homePathFor } from '../../core/auth/module-map';
 import { Role } from '../../core/models/access';
 
-/** Telas de rodapé abertas a toda a equipe (privacidade, meus dados, catálogo de componentes). */
-const TEAM_COMMON = ['/app/canal-do-titular', '/app/meus-dados', '/app/_kit'];
+/** Telas de rodapé abertas a toda a equipe (privacidade e meus dados). O catálogo `_kit` só existe em desenvolvimento. */
+const TEAM_COMMON = ['/app/canal-do-titular', '/app/meus-dados'];
 
 /**
  * Para onde ir depois de entrar (U-02, A-03): ao link de origem, se a pessoa o abria antes de ser levada à

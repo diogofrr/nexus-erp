@@ -71,6 +71,9 @@ export interface CareSession extends Audited {
   priceCents: Cents;
   discountPercent: number;
   cancelledAt?: ISODateTime;
+  /** Remarcação (CX-026): a sessão antiga aponta para a nova e guarda quem pediu para remarcar. */
+  rescheduledToId?: ID;
+  rescheduleRequestedBy?: 'user' | 'psychologist';
 }
 
 export interface SessionNoteAddendum {

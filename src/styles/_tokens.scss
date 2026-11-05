@@ -167,6 +167,7 @@ $red: (
   --text-placeholder: #6b7683; // 4,6:1 sobre branco
   --text-disabled: var(--nx-slate-400);
   --text-on-brand: #ffffff;
+  --text-on-plan: #ffffff; // nome do plano sobre a cor da Figura 1 (3:1, texto grande)
   --text-heading: var(--nx-blue-800); // títulos: azul institucional (9,1:1)
   --text-link: var(--nx-blue-600); // 5,4:1
   --text-link-hover: var(--nx-blue-800);
@@ -373,6 +374,7 @@ $red: (
   --text-placeholder: #8797a8;
   --text-disabled: #5c6e82;
   --text-on-brand: #0b2238;
+  --text-on-plan: #0b2238; // QA-019: no escuro as cores dos planos ficam claras; texto azul-noite dá mais de 5:1
   --text-heading: #cfe3f5;
   --text-link: #7fb6e6;
   --text-link-hover: #a9cdee;

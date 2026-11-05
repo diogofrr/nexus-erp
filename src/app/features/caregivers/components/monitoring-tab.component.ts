@@ -3,11 +3,12 @@ import { RouterLink } from '@angular/router';
 import { AuditLogService } from '@core/audit';
 import { SupervisionWindowService } from '@core/audit/supervision-window.service';
 import { AuthService } from '@core/auth';
+import { Clock } from '@core/clock';
 import { Database } from '@core/data';
 import { formatDate } from '@core/format';
-import type { Caregiver, ZaritAssessment } from '@core/models';
+import type { Caregiver, ZaritAlert, ZaritAssessment } from '@core/models';
 import { ConsentService } from '@core/privacy';
-import { ZARIT_NOT_DIAGNOSIS_NOTE, zaritBandLabel, zaritEvolution } from '@core/rules';
+import { ZARIT_NOT_DIAGNOSIS_NOTE, redAlertState, zaritBandLabel, zaritEvolution } from '@core/rules';
 import { BadgeComponent, CardComponent, EmptyStateComponent, ZaritBandBadgeComponent } from '@shared/ui';
 import { SupervisionGateComponent } from '@shared/ui/access/supervision-gate.component';
 
@@ -76,7 +77,7 @@ import { SupervisionGateComponent } from '@shared/ui/access/supervision-gate.com
                     <app-badge [variant]="alert.level === 'red' ? 'danger' : 'attention'" [icon]="alert.level === 'red' ? 'octagon-alert' : 'triangle-alert'">
                       {{ alert.level === 'red' ? 'Alerta vermelho' : 'Alerta amarelo' }}
                     </app-badge>
-                    <span>{{ alert.status === 'closed' ? 'Encerrado' : 'Em acompanhamento' }}</span>
+                    <span [class.text-danger]="alertState(alert) === 'overdue'">{{ alertStateLabel(alert) }}</span>
                     <a class="btn-link" [routerLink]="['/app/acompanhamento/alertas', alert.id]">Abrir alerta</a>
                   </li>
                 }
@@ -122,6 +123,7 @@ export class MonitoringTabComponent {
   private readonly audit = inject(AuditLogService);
   private readonly consent = inject(ConsentService);
   private readonly supervision = inject(SupervisionWindowService);
+  private readonly clock = inject(Clock);
 
   readonly caregiver = input.required<Caregiver>();
   protected readonly note = ZARIT_NOT_DIAGNOSIS_NOTE;
@@ -195,6 +197,26 @@ export class MonitoringTabComponent {
         }
       });
     });
+  }
+
+  /** Estado exibido do alerta, o mesmo da fila e da tela do alerta: o vermelho sem contato depois do prazo é "vencido" (QA-005). */
+  protected alertState(alert: ZaritAlert): ReturnType<typeof redAlertState> {
+    return redAlertState(alert, this.clock.now());
+  }
+
+  protected alertStateLabel(alert: ZaritAlert): string {
+    switch (this.alertState(alert)) {
+      case 'closed':
+        return 'Encerrado';
+      case 'overdue':
+        return 'Prazo de contato vencido';
+      case 'contacted':
+        return 'Contato registrado';
+      case 'risk_assessed':
+        return 'Risco avaliado';
+      default:
+        return 'Em acompanhamento';
+    }
   }
 
   /** O portão acabou de liberar: o `supervise` já foi gravado por ele, falta a leitura. */

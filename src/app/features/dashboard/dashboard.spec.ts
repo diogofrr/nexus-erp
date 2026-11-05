@@ -30,7 +30,10 @@ describe('M02 Painel: sócia (AC-M02-01, 03 e 08)', () => {
     expect(kpi(app, 'Ponto de equilíbrio')).toContain('17 de 27 assinantes');
     expect(kpi(app, 'Resultado do mês')).toContain('-R$ 843,51');
     expect(kpi(app, 'Resultado do mês')).toContain('abaixo do equilíbrio');
-    expect(text(pick(app.root, '[data-role="summary"]'))).toBe('17 assinantes. Faltam 10 para o ponto de equilíbrio.');
+    // CX-008: o cartão resume ("Faltam 10"); o bloco abaixo só explica a conta, sem repetir a frase.
+    expect(text(pick(app.root, '[data-role="how"]'))).toContain('R$ 2.355,00 de gastos por mês ÷ R$ 89,80 de receita líquida por assinante = 26,2');
+    expect(text(pick(app.root, '[data-role="how"]'))).toContain('27 assinantes');
+    expect(app.root.querySelector('[data-role="summary"]')).toBeNull();
     expect(text(pick(app.root, '[data-role="break-even"]'))).toContain('17 de 27 assinantes');
   });
 
@@ -99,11 +102,11 @@ describe('M02 Painel: sócia (AC-M02-01, 03 e 08)', () => {
     app.db.subscriptions.update(sub.id, { planId: 'essencial' });
     await settle(app.fixture);
     expect(kpi(app, 'Assinantes')).toContain('18');
-    expect(text(pick(app.root, '[data-role="summary"]'))).toContain('Faltam 9');
+    expect(kpi(app, 'Ponto de equilíbrio')).toContain('Faltam 9');
     app.db.financialParams.patch({ monthlyCostsCents: { coworking: 0, appMaintenance: 0, accounting: 0, travel: 0 } });
     await settle(app.fixture);
     expect(kpi(app, 'Resultado do mês')).not.toContain('abaixo do equilíbrio');
-    expect(text(pick(app.root, '[data-role="summary"]'))).toContain('Acima do ponto de equilíbrio');
+    expect(kpi(app, 'Ponto de equilíbrio')).toContain('Atingido');
   });
 });
 

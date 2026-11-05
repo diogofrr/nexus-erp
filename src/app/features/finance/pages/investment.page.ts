@@ -51,7 +51,7 @@ import { FinanceStore, SCENARIO_ORDER } from '../state/finance.store';
       </app-kpi-strip>
 
       <div class="grid grid--2">
-        <app-card title="Investimento inicial" subtitle="Quadro 3 do plano de negócios">
+        <app-card title="Investimento inicial" subtitle="O investimento do plano de negócios">
           <div class="stack stack--3">
             <div class="table-wrap">
               <table class="table" data-density="comfortable" data-role="investment-table">

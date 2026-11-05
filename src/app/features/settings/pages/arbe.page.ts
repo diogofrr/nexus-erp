@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import {
   AbstractControl,
   FormControl,
@@ -11,7 +11,9 @@ import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { Database } from '../../../core/data/database';
 import { ArbeSettings } from '../../../core/models/zarit';
 import { DEFAULT_ARBE_SETTINGS } from '../../../core/rules/arbe';
+import { ArbePreviewComponent } from '../../../shared/ui/display/arbe-preview.component';
 import { IconComponent } from '../../../shared/ui/display/icon.component';
+import { DialogService } from '../../../shared/ui/overlay/dialog.service';
 import { ToastService } from '../../../shared/ui/overlay/toast.service';
 import { NumberFieldComponent, integerValidator } from '../components/number-field.component';
 
@@ -94,7 +96,7 @@ export const ARBE_CRITICAL_TEXT =
  */
 @Component({
   selector: 'app-settings-arbe-page',
-  imports: [ReactiveFormsModule, NumberFieldComponent, IconComponent],
+  imports: [ReactiveFormsModule, NumberFieldComponent, IconComponent, ArbePreviewComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page page--narrow">
@@ -162,6 +164,8 @@ export const ARBE_CRITICAL_TEXT =
           </div>
         </section>
       </form>
+
+      <app-arbe-preview [settings]="draft()" />
     </div>
   `,
 })
@@ -170,12 +174,21 @@ export class ArbePageComponent {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly toasts = inject(ToastService);
   private readonly audit = inject(AuditLogService);
+  private readonly dialogs = inject(DialogService);
+  private readonly preview = viewChild(ArbePreviewComponent);
 
   protected readonly fields = FIELDS;
   protected readonly criticalTexts = { criticalBelowThreshold: ARBE_CRITICAL_TEXT };
   private readonly tick = signal(0);
 
   protected readonly form = this.buildForm();
+  /** Faz a prévia acompanhar o que se digita, antes de salvar (CX-021). */
+  private readonly watchForm = this.form.valueChanges.subscribe(() => this.tick.update((n) => n + 1));
+  /** Limites do formulário quando válidos; `null` enquanto houver erro. */
+  protected readonly draft = computed<ArbeSettings | null>(() => {
+    this.tick();
+    return this.form.valid ? this.form.getRawValue() : null;
+  });
   protected readonly errors = computed(() => {
     this.tick();
     return this.errorList();
@@ -185,7 +198,7 @@ export class ArbePageComponent {
     return this.form.get(key) as FormControl<number>;
   }
 
-  protected save(): void {
+  protected async save(): Promise<void> {
     this.form.markAllAsTouched();
     this.tick.update((n) => n + 1);
     if (this.form.invalid) {
@@ -194,6 +207,20 @@ export class ArbePageComponent {
     if (this.form.pristine) {
       this.toasts.success('Nada mudou.');
       return;
+    }
+    // Quando algum cuidador muda de nível, a pessoa confirma sabendo o efeito (CX-021).
+    const preview = this.preview();
+    if (preview && preview.changedCount() > 0) {
+      const { confirmed } = await this.dialogs.confirm({
+        title: 'Salvar os novos limites da ARBE?',
+        message: preview.changeText(),
+        effects: { keep: ['os alertas já tratados e o histórico'] },
+        confirmLabel: 'Salvar os limites',
+        cancelLabel: 'Voltar',
+      });
+      if (!confirmed) {
+        return;
+      }
     }
     const previous = this.db.settings.get().arbe;
     const next: ArbeSettings = this.form.getRawValue();

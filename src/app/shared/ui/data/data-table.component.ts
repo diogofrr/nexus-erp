@@ -18,6 +18,7 @@ import { EmptyStateComponent } from '../display/empty-state.component';
 import { SegmentOption, SegmentedComponent } from '../display/segmented.component';
 import { SearchFieldComponent } from '../forms/search-field.component';
 import { MOBILE_QUERY, mediaQuery } from '../util/media';
+import { nounFor } from '../util/noun';
 import { PaginationComponent } from './pagination.component';
 import { SortHeaderComponent } from './sort-header.component';
 import {
@@ -386,7 +387,7 @@ export class DataTableComponent<T> {
   protected readonly countText = computed(() => {
     const total = this.total();
     const all = this.rows().length;
-    const noun = this.noun();
+    const noun = nounFor(total, this.noun());
     if (this.paging() === 'scroll' || this.mobile()) {
       const shown = this.mobile() && this.paging() === 'pages' ? this.visibleRows().length : total;
       return shown === total ? `${total} ${noun}${total !== all ? ` (de ${all})` : ''}` : `Mostrando ${shown} de ${total} ${noun}`;

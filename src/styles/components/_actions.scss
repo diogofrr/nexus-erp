@@ -123,6 +123,9 @@
 
 .btn--icon {
   width: var(--control-h);
+  // QA-014: em barra apertada (celular) o botão só de ícone não encolhe abaixo do alvo de toque.
+  min-width: var(--control-h);
+  flex-shrink: 0;
   padding: 0;
   &.btn--sm { width: var(--control-h-sm); }
 }

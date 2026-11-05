@@ -11,7 +11,7 @@ import { Database } from '@core/data';
 import { downloadTextFile } from '@core/export/file-download';
 import { formatDate } from '@core/format';
 import type { Caregiver, ConsentKey } from '@core/models';
-import { ConsentError, ConsentService, DataSubjectRequestError, DataSubjectRequestService, RetentionService, maskEmail, maskPhone } from '@core/privacy';
+import { ConsentError, ConsentService, DataSubjectRequestError, DataSubjectRequestService, RetentionService, erasurePlanFor, maskEmail, maskPhone } from '@core/privacy';
 import { canSeeCaregiverIdentity, caregiverLabel } from '@core/privacy/caregiver-label';
 import { SubjectExportService } from '@core/privacy/subject-export.service';
 import { CONSENT_LABELS, DSR_TYPE_LABELS, validateFictitiousEmail, validateFictitiousPhone } from '@core/rules';
@@ -20,7 +20,33 @@ import { BannerComponent, DialogService, PageContextService, ToastService } from
 import { LgpdNavComponent } from '../components/lgpd-nav.component';
 import { DEADLINE_BADGES, DSR_STATUS_BADGES, DSR_STATUS_LABELS, DSR_TYPE_DESCRIPTIONS } from '../state/privacy-labels';
 
-type CorrectionField = 'fullName' | 'email' | 'phone' | 'whatsapp' | 'city';
+export type CorrectionField = 'fullName' | 'email' | 'phone' | 'whatsapp' | 'city';
+
+/**
+ * Qual dado o pedido de correção cita (CX-037): só devolve um campo quando o texto aponta UM dado, para o
+ * atendimento não corrigir o campo errado. Sem pista clara, devolve `null` e a pessoa escolhe.
+ */
+export function inferCorrectionField(description: string | undefined): CorrectionField | null {
+  const text = (description ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  const hits: CorrectionField[] = [];
+  if (/\b(nome|sobrenome)\b/.test(text)) {
+    hits.push('fullName');
+  }
+  if (/e-?mail/.test(text)) {
+    hits.push('email');
+  }
+  if (/whats/.test(text)) {
+    hits.push('whatsapp');
+  }
+  if (/\b(telefone|celular|fone)\b/.test(text)) {
+    hits.push('phone');
+  }
+  if (/\b(cidade|municipio)\b/.test(text)) {
+    hits.push('city');
+  }
+  return hits.length === 1 ? (hits[0] ?? null) : null;
+}
+
 const CORRECTION_LABELS: Record<CorrectionField, string> = {
   fullName: 'Nome completo',
   email: 'E-mail',
@@ -155,8 +181,9 @@ const CORRECTION_LABELS: Record<CorrectionField, string> = {
                     @case ('correction') {
                       <section class="stack stack--3" aria-label="Correção">
                         @if (identified()) {
-                          <app-form-field label="Dado a corrigir" controlId="nx-fix-field">
+                          <app-form-field label="Dado a corrigir" [hint]="fixHint()" controlId="nx-fix-field" [error]="fixFieldError()">
                             <select appInput [formControl]="fixField">
+                              <option [ngValue]="null">Escolha o dado a corrigir</option>
                               @for (f of correctionFields; track f.value) { <option [ngValue]="f.value">{{ f.label }}</option> }
                             </select>
                           </app-form-field>
@@ -165,8 +192,13 @@ const CORRECTION_LABELS: Record<CorrectionField, string> = {
                           </app-form-field>
                           <p class="t-caption">Aplicações da escala já assinadas só recebem adendo, na tela de acompanhamento.</p>
                           <div><button type="button" class="btn btn--primary" (click)="correct()">Registrar correção</button></div>
+                        } @else if (waitingForSupport()) {
+                          <p class="t-ui" data-role="waiting-support">
+                            <strong>Aguardando o atendimento.</strong>
+                            {{ handler() ? handler() + ' está com este pedido e faz' : 'O atendimento faz' }} a correção, porque só quem vê o dado confere o valor novo. O histórico guarda o valor anterior. Quando a correção estiver registrada, você conclui o pedido por aqui.
+                          </p>
                         } @else {
-                          <p class="t-ui">A gestão não vê dados identificados. O atendimento faz a correção e o histórico guarda o valor anterior.</p>
+                          <p class="t-ui" data-role="support-done">O atendimento registrou a correção, com o valor anterior no histórico. Falta só você concluir o pedido.</p>
                         }
                       </section>
                     }
@@ -280,14 +312,23 @@ export class RequestDetailPage {
   protected readonly showView = signal(false);
   protected readonly note = new FormControl('', { nonNullable: true });
   protected readonly rejectReason = new FormControl('', { nonNullable: true });
-  protected readonly fixField = new FormControl<CorrectionField>('email', { nonNullable: true });
+  protected readonly fixField = new FormControl<CorrectionField | null>(null);
   protected readonly fixValue = new FormControl('', { nonNullable: true });
   protected readonly revokeKey = new FormControl<ConsentKey | null>(null);
   protected readonly noteError = signal<string | null>(null);
   protected readonly rejectError = signal<string | null>(null);
   protected readonly fixError = signal<string | null>(null);
+  protected readonly fixFieldError = signal<string | null>(null);
   protected readonly revokeError = signal<string | null>(null);
-  private readonly fixFieldValue = signal<CorrectionField>('email');
+  private readonly fixFieldValue = signal<CorrectionField | null>(null);
+  /** O campo que o pedido cita, quando é um só (CX-037). */
+  private readonly suggestedField = computed(() => inferCorrectionField(this.request()?.description));
+  protected readonly fixHint = computed(() => {
+    const field = this.suggestedField();
+    return field && this.fixFieldValue() === field
+      ? `O pedido cita: ${CORRECTION_LABELS[field].toLowerCase()}. Confira antes de corrigir.`
+      : 'Escolha o dado que o titular pediu para corrigir.';
+  });
 
   protected readonly request = computed(() => {
     this.db.dataSubjectRequests.all();
@@ -310,7 +351,16 @@ export class RequestDetailPage {
   });
   protected readonly showConclude = computed(() => {
     const t = this.request()?.type;
-    return t !== 'erasure' && t !== 'anonymization_or_blocking' && t !== 'consent_revocation' && t !== 'portability';
+    if (t === 'erasure' || t === 'anonymization_or_blocking' || t === 'consent_revocation' || t === 'portability') {
+      return false;
+    }
+    // CX-002: quem não vê o dado só encerra a correção depois que o atendimento a registrou.
+    return !this.waitingForSupport();
+  });
+  /** Correção que só o atendimento pode fazer e ainda não foi feita (a gestão não vê o dado). */
+  protected readonly waitingForSupport = computed(() => {
+    const r = this.request();
+    return r?.type === 'correction' && !this.identified() && (r.corrections?.length ?? 0) === 0;
   });
   protected readonly typeLabel = computed(() => DSR_TYPE_LABELS[this.request()?.type ?? 'access']);
   protected readonly typeHint = computed(() => DSR_TYPE_DESCRIPTIONS[this.request()?.type ?? 'access']);
@@ -368,8 +418,8 @@ export class RequestDetailPage {
   });
   protected readonly currentValue = computed(() => {
     const cg = this.caregiver();
-    this.fixFieldValue();
-    return cg ? ((cg[this.fixField.value] as string | undefined) ?? 'não informado') : '';
+    const field = this.fixFieldValue();
+    return cg && field ? ((cg[field] as string | undefined) ?? 'não informado') : '';
   });
   protected readonly summary = computed(() => {
     const cg = this.caregiver();
@@ -402,7 +452,19 @@ export class RequestDetailPage {
   });
 
   constructor() {
-    this.fixField.valueChanges.subscribe((v) => this.fixFieldValue.set(v));
+    this.fixField.valueChanges.subscribe((v) => {
+      this.fixFieldValue.set(v);
+      this.fixFieldError.set(null);
+    });
+    // CX-037: o campo a corrigir já vem do pedido (quando ele cita um só); sem pista, a pessoa escolhe.
+    effect(() => {
+      const suggested = this.suggestedField();
+      untracked(() => {
+        if (suggested && this.fixField.value === null) {
+          this.fixField.setValue(suggested);
+        }
+      });
+    });
     effect(() => {
       const r = this.request();
       if (!r) {
@@ -481,6 +543,11 @@ export class RequestDetailPage {
     const field = this.fixField.value;
     const value = this.fixValue.value.trim();
     this.fixError.set(null);
+    this.fixFieldError.set(null);
+    if (!field) {
+      this.fixFieldError.set('Escolha o dado a corrigir.');
+      return;
+    }
     const invalid =
       value === ''
         ? 'Informe o valor novo.'
@@ -517,11 +584,11 @@ export class RequestDetailPage {
     if (!r || !cg) {
       return;
     }
-    const who = this.label().pseudonymized ? 'O titular' : this.label().text;
+    const whose = this.label().pseudonymized ? 'do titular' : `de ${this.label().text}`;
     await this.dialogs.confirm({
       level: 3,
       title: `Anonimizar os dados de ${cg.code}?`,
-      message: `Nome, CPF, e-mail e telefone de ${who} viram o código ${cg.code}. As contagens continuam nos indicadores.`,
+      message: `Nome, CPF, e-mail e telefone ${whose} viram o código ${cg.code}. As contagens continuam nos indicadores.`,
       effects: {
         erase: ['nome, CPF, e-mail e telefone do cuidador', 'nome e condições de saúde da pessoa idosa'],
         keep: [`o código ${cg.code}`, 'as contagens nos indicadores', 'o log de acessos'],
@@ -543,14 +610,15 @@ export class RequestDetailPage {
     if (!r || !cg) {
       return;
     }
-    const plan = this.retention.plan(cg.id);
+    // CX-033: a sócia e o atendimento veem o plano sem tipos nem quantidades de registro clínico.
+    const plan = erasurePlanFor(this.retention.plan(cg.id), this.auth.role());
     await this.dialogs.confirm({
       level: 3,
       title: `Eliminar os dados de ${cg.code}?`,
       message: `Os dados bloqueados ficam sem uso e sem acesso comum até o fim do prazo.${plan.note ? ` ${plan.note}` : ''}`,
       effects: {
         erase: plan.willErase.map((i) => `${i.label}${i.count > 1 ? ` (${i.count})` : ''}`),
-        block: plan.willBlock.map((i) => `${i.label} (${i.count})`),
+        block: plan.willBlock.map((i) => (i.key === 'clinical' ? i.label : `${i.label} (${i.count})`)),
         keep: ['o histórico de consentimentos', 'o log de acessos'],
       },
       irreversibleNote: 'Isso não pode ser desfeito.',
@@ -607,16 +675,46 @@ export class RequestDetailPage {
     this.toasts.success('Pedido de revisão aberto ao psicólogo do caso.');
   }
 
-  protected complete(): void {
+  /** Concluir (CX-003): diálogo com o efeito, nota obrigatória e "Desfazer" logo depois. */
+  protected async complete(): Promise<void> {
+    const r = this.request();
     const text = this.note.value.trim();
     this.noteError.set(null);
+    if (!r) {
+      return;
+    }
     if (text.length < 3) {
       this.noteError.set('Escreva a nota de resolução.');
       return;
     }
+    const handler = this.handler();
+    const { confirmed } = await this.dialogs.confirm({
+      title: `Concluir a solicitação ${r.protocol}?`,
+      message: 'O pedido passa a "Concluída", a data de conclusão é gravada e o texto de resposta ao titular fica pronto para copiar.',
+      effects: {
+        keep: [
+          'a nota de resolução e o histórico do pedido',
+          handler ? `${handler} como quem trata o pedido` : 'quem trata o pedido, sem troca',
+        ],
+      },
+      confirmLabel: 'Concluir solicitação',
+      busyLabel: 'Concluindo...',
+      run: () => {
+        this.service.complete(r.id, text);
+      },
+    });
+    if (confirmed) {
+      this.toasts.show({
+        message: 'Solicitação concluída.',
+        action: { label: 'Desfazer', run: () => this.undoComplete(r.id) },
+      });
+    }
+  }
+
+  private undoComplete(id: string): void {
     try {
-      this.service.complete(this.id(), text);
-      this.toasts.success('Solicitação concluída.');
+      this.service.reopen(id);
+      this.toasts.success('Conclusão desfeita. O pedido voltou a "Em andamento".');
     } catch (error) {
       this.fail(error);
     }

@@ -138,10 +138,17 @@ describe('M11 caixa de mensagens: atendimento', () => {
     expect(q('[data-role="position"]')?.textContent).toMatch(/\d+ de \d+/);
     const chips = all('[data-role="template"]');
     expect(chips).toHaveLength(6);
-    click(chips[0]);
+    // CX-039: o modelo chega com o nome da pessoa e, na mensagem atrasada, com o pedido de desculpas (sem prometer prazo).
+    click(chips.find((c) => c.textContent?.includes('Confirmação de recebimento')) ?? null);
     await settle(app.fixture);
     const box = q<HTMLTextAreaElement>('[data-role="reply-body"]');
     expect(box?.value).toContain('Recebemos a sua mensagem');
+    expect(box?.value).toContain('Pedimos desculpas pela demora');
+    expect(box?.value).not.toContain('dentro do prazo combinado');
+    const cg = app.db.caregivers.get(target?.caregiverId ?? '');
+    if (cg) {
+      expect(box?.value.startsWith(`Olá, ${cg.fullName.split(' ')[0]}`)).toBe(true);
+    }
     click(q('[data-role="send-reply"]'));
     await settle(app.fixture);
     const after = app.db.messages.require(target?.id as string);

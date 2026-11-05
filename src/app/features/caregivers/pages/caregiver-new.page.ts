@@ -137,7 +137,7 @@ export const leaveNewCaregiverGuard: CanDeactivateFn<CaregiverNewPage> = (page) 
           @case (2) {
             <div class="stack stack--6">
               @for (key of consentKeys; track key) {
-                <section class="card card--sunken card--pad stack stack--3" [attr.data-key]="key" [attr.aria-label]="labels[key]">
+                <section class="card card--sunken card--pad stack stack--3" [attr.id]="'nx-consent-' + key" [attr.data-key]="key" [attr.aria-label]="labels[key]">
                   <h3>{{ copy[key].question }}</h3>
                   <dl class="dl">
                     <dt>O que vamos fazer</dt><dd>{{ copy[key].what }}</dd>
@@ -152,6 +152,9 @@ export const leaveNewCaregiverGuard: CanDeactivateFn<CaregiverNewPage> = (page) 
                   }
                   <button type="button" class="btn-link" (click)="termKey.set(key)">Ler o termo completo (v{{ termVersion(key) }}, {{ termDate(key) }})</button>
                   <app-radio-group [legend]="labels[key]" [options]="choiceOptions" [value]="choices()[key] ?? null" (valueChange)="setChoice(key, $event)" />
+                  @if (submitted() && !choices()[key]) {
+                    <span class="field__error" data-role="choice-error"><span class="sr-only">Erro: </span>{{ choiceMissing(key) }}</span>
+                  }
                 </section>
               }
               <div class="form-grid">
@@ -302,7 +305,7 @@ export class CaregiverNewPage {
     ],
   });
   protected readonly elder = new FormGroup({
-    fullName: new FormControl('', { nonNullable: true, validators: [NxValidators.required('o nome completo da pessoa idosa')] }),
+    fullName: new FormControl('', { nonNullable: true, validators: [NxValidators.required('o nome completo da pessoa idosa'), NxValidators.textLength(3, 120, 'O nome')] }),
     birthDate: new FormControl<string | null>(null, [NxValidators.required('a data de nascimento da pessoa idosa')]),
     dependency: new FormControl<Dependency | null>(null, [NxValidators.required('o grau de dependência')]),
   });
@@ -460,10 +463,20 @@ export class CaregiverNewPage {
         { id: 'nx-el-dependency', label: 'Grau de dependência', control: this.elder.controls.dependency },
       ]);
     }
+    if (step === 2) {
+      // CX-038: cada consentimento pede uma escolha explícita (concorda, não concorda ou decidir depois).
+      return this.consentKeys
+        .filter((key) => !this.choices()[key])
+        .map((key) => ({ controlId: `nx-consent-${key}`, message: this.choiceMissing(key) }));
+    }
     return [];
   }
 
   // ===== Consentimentos e plano =====
+
+  protected choiceMissing(key: ConsentKey): string {
+    return `Escolha uma opção em "${this.labels[key]}": concorda, não concorda ou decidir depois.`;
+  }
 
   protected setChoice(key: ConsentKey, choice: Choice | null): void {
     if (choice === null) {

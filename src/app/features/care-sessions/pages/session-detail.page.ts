@@ -22,7 +22,7 @@ import {
 import { DialogService, DrawerComponent, PageContextService, ToastService } from '@shared/ui/overlay';
 import { ScheduleDrawerComponent } from '../components/schedule-drawer.component';
 import { dayAndTime } from '../state/care-helpers';
-import { KIND_LABELS, MODALITY_LABELS, SESSION_STATUS_VIEW } from '../state/care-labels';
+import { KIND_LABELS, MODALITY_LABELS, sessionStatusView } from '../state/care-labels';
 import { CareSessionsService, FieldError } from '../state/care-sessions.service';
 
 const RISK_DESTINATIONS: readonly string[] =
@@ -107,6 +107,9 @@ const RISK_DESTINATIONS: readonly string[] =
               <button type="button" class="btn" (click)="markNoShow()" data-role="mark-noshow">Registrar falta</button>
             }
             @if ((s.status === 'scheduled' || s.status === 'confirmed') && canChange() && !started()) {
+              <button type="button" class="btn" (click)="reschedule()" data-role="reschedule">
+                <svg appIcon="calendar-days" size="sm"></svg>Remarcar sessão
+              </button>
               <button type="button" class="btn btn--danger-quiet" (click)="openCancel()" data-role="cancel">Cancelar sessão</button>
             }
           </div>
@@ -167,11 +170,10 @@ const RISK_DESTINATIONS: readonly string[] =
           <app-radio-group [options]="cancelByOptions()" [value]="cancelBy()" (valueChange)="cancelBy.set($event ?? 'user')" />
         </app-form-field>
         <p class="banner banner--attention" role="status" data-role="cancel-effect">{{ cancelEffect() }}</p>
-        <p class="t-caption">Reagendar escolhe uma nova vaga e libera a atual, com a mesma regra de cancelamento.</p>
+        <p class="t-caption">Quer mudar o horário em vez de cancelar? Feche esta janela e use "Remarcar sessão".</p>
       </div>
       <ng-container drawerFooter>
         <button type="button" class="btn" (click)="cancelOpen.set(false)">Voltar</button>
-        <button type="button" class="btn" (click)="reschedule()" data-role="reschedule">Reagendar</button>
         <button type="button" class="btn btn--danger" (click)="submitCancel()" data-role="cancel-submit">Cancelar a sessão</button>
       </ng-container>
     </app-drawer>
@@ -201,7 +203,7 @@ export class SessionDetailPageComponent {
     return this.db.careSessions.get(this.params().get('id') ?? '');
   });
   protected readonly caregiver = computed(() => this.db.caregivers.get(this.session()?.caregiverId ?? ''));
-  protected readonly status = computed(() => SESSION_STATUS_VIEW[this.session()?.status ?? 'scheduled']);
+  protected readonly status = computed(() => sessionStatusView(this.session() ?? { status: 'scheduled' }));
   protected readonly kind = computed(() => KIND_LABELS[this.session()?.kind ?? 'psychotherapy']);
   protected readonly caregiverName = computed(() => this.caregiver()?.fullName ?? 'Cuidador');
   protected readonly caregiverCode = computed(() => this.caregiver()?.code ?? '');
@@ -275,6 +277,12 @@ export class SessionDetailPageComponent {
     }
     if (s.status === 'no_show') {
       return 'Falta registrada. Esta sessão conta como horas não realizadas.';
+    }
+    if (s.rescheduledToId) {
+      const next = this.db.careSessions.get(s.rescheduledToId);
+      return next
+        ? `Sessão remarcada para ${dayAndTime(next.startAt.slice(0, 10), next.startAt.slice(11, 16))}.`
+        : 'Sessão remarcada.';
     }
     if (s.status === 'cancelled_by_user' || s.status === 'cancelled_by_psychologist') {
       return 'Sessão cancelada. A vaga voltou a ficar aberta.';
@@ -457,7 +465,6 @@ export class SessionDetailPageComponent {
   }
 
   protected reschedule(): void {
-    this.cancelOpen.set(false);
     this.rescheduleOpen.set(true);
   }
 }

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { formatMoney, formatNumber, formatPercent, formatYearMonth } from '@core/format';
 import { Aggregate } from '@core/privacy';
 import { CONVERSION_REFERENCES } from '@core/rules/finance';
@@ -57,6 +57,7 @@ const CHANNEL_LABEL: Record<string, string> = {
 @Component({
   selector: 'app-finance-indicators-page',
   imports: [
+    RouterLink,
     BarChartComponent,
     ChartFrameComponent,
     CardComponent,
@@ -153,6 +154,18 @@ const CHANNEL_LABEL: Record<string, string> = {
                     context="alertas vermelhos, últimos 30 dias"
                   />
                 </app-kpi-strip>
+                @if (!store.zaritAlerts().red.sufficient || !store.zaritAlerts().yellow.sufficient) {
+                  <p class="t-caption" data-role="hidden-count-note">
+                    Número escondido: com menos de 5 casos, esta tela mostra só "menos de 5", por privacidade (a regra do
+                    mínimo de 5 vale para todos os perfis aqui).
+                    @if (store.role() === 'technical_lead' || store.role() === 'psychologist') {
+                      O número exato dos casos que você acompanha está no seu painel e na
+                      <a routerLink="/app/acompanhamento/fila">fila de acompanhamento</a>.
+                    } @else {
+                      Quem acompanha os casos vê o número exato na fila de alertas.
+                    }
+                  </p>
+                }
                 <app-kpi-strip>
                   <app-kpi
                     label="ARBE de atenção abertos"

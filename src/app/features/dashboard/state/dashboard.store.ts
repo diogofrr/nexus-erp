@@ -11,13 +11,20 @@ import {
   ZaritAlert,
 } from '@core/models';
 import { Aggregate, aggregateCount } from '@core/privacy';
+import { ConsentService } from '@core/privacy/consent.service';
 import { ARP_BAND_LABELS, availabilityDropSignal, isAuditDue, refusalStats } from '@core/rules/arp';
 import {
   hasOverloadAlert,
   lastClosedMonths,
   occupancyPercent,
 } from '@core/rules/eqp';
-import { conversionRatePercent, projectScenario, realizedFinance } from '@core/rules/finance';
+import {
+  averageNetFromParams,
+  breakEvenExact,
+  conversionRatePercent,
+  projectScenario,
+  realizedFinance,
+} from '@core/rules/finance';
 import { popDisplayState } from '@core/rules/governance-access';
 import { isPriorityRisk, riskCriticality } from '@core/rules/governance';
 import {
@@ -28,13 +35,14 @@ import {
   providersByBand,
 } from '@core/rules/kpi';
 import { isEscalatedToTechnicalLead, redAlertState } from '@core/rules/pop05';
+import { QueueReason, QueueRow, buildQueue } from '@core/rules/zarit-queue';
 import {
   isComplaintOverdue,
   isMessageOverdue,
   messageOverdueBusinessMinutes,
   slaByChannel,
 } from '@core/rules/sla';
-import { zaritAssessmentState, zaritDaysToDue } from '@core/rules/zarit';
+import { zaritDaysToDue } from '@core/rules/zarit';
 
 export interface OccupancyLine {
   psychologistId: ID;
@@ -81,6 +89,23 @@ export interface MessageRow {
   overdueMinutes: number;
 }
 
+/** Quantos itens de decisão aparecem antes do "Ver todos". */
+export const MAX_DECISIONS_SHOWN = 3;
+
+const QUEUE_KIND: Record<QueueReason, OwnQueueRow['kind']> = {
+  red_overdue: 'red',
+  red_today: 'red',
+  arbe_critical: 'red',
+  yellow: 'yellow',
+  arbe_attention: 'yellow',
+  zarit_overdue: 'overdue',
+  zarit_due: 'due',
+};
+
+function queueKind(row: QueueRow): OwnQueueRow['kind'] {
+  return QUEUE_KIND[row.reason];
+}
+
 const CHANNEL_LABEL: Record<Message['channel'], string> = {
   app: 'Aplicativo',
   whatsapp: 'WhatsApp',
@@ -98,6 +123,7 @@ export class DashboardStore {
   private readonly db = inject(Database);
   private readonly auth = inject(AuthService);
   private readonly clock = inject(Clock);
+  private readonly consent = inject(ConsentService);
 
   readonly role = this.auth.role;
   private readonly min = computed(() => this.db.settings.value().minGroupSizeForAggregates);
@@ -122,6 +148,11 @@ export class DashboardStore {
   readonly realized = computed(() =>
     realizedFinance(this.db.financialParams.value(), this.subscribers().byPlan),
   );
+
+  /** A conta do ponto de equilíbrio (gastos ÷ líquida média), para mostrar como se chega ao número. */
+  readonly breakEvenExact = computed(() => breakEvenExact(this.db.financialParams.value()));
+  /** Receita líquida média por assinante do plano (a base da conta do equilíbrio). */
+  readonly planAverageNetCents = computed(() => averageNetFromParams(this.db.financialParams.value()));
 
   /** Projeção do cenário-base (estimativa do plano) para comparar com o realizado. */
   readonly baseProjection = computed(() => projectScenario(this.db.financialParams.value(), 'base'));
@@ -401,67 +432,70 @@ export class DashboardStore {
     return this.alerts().filter((a) => a.level === 'yellow' && a.status !== 'closed' && !a.supportNetworkReviewDone && own.has(a.caregiverId)).length;
   });
 
-  /** Minha fila: alertas abertos e aplicações da escala vencendo ou vencidas, só dos meus casos. */
+  /**
+   * Minha fila: a mesma conta e a mesma ordem da fila completa (`buildQueue`, CX-028): vermelho vencido, vermelho do
+   * dia, ARBE crítico, amarelo, ARBE de atenção, escala vencida e a vencer; em cada grupo, o mais grave e o mais
+   * atrasado primeiro. Um cuidador aparece uma vez só e o clique abre o caso (alerta, escala ou ARBE).
+   */
   readonly ownQueue = computed<OwnQueueRow[]>(() => {
     const now = this.clock.now();
     const today = this.clock.today();
     const own = new Map(this.ownCaregivers().map((c) => [c.id, c] as const));
-    const rows: OwnQueueRow[] = [];
-    this.alerts()
-      .filter((a) => a.status !== 'closed' && own.has(a.caregiverId))
-      .forEach((a) => {
-        const c = own.get(a.caregiverId) as Caregiver;
-        if (a.level === 'red') {
-          const overdue = redAlertState(a, now) === 'overdue';
-          rows.push({
-            key: a.id,
-            name: c.fullName,
-            caregiverId: c.id,
-            kind: 'red',
-            text: overdue ? 'Alerta vermelho: contato vencido' : a.contact ? 'Alerta vermelho: falta encerrar' : 'Alerta vermelho: contato até 23:59',
-            link: '/app/acompanhamento',
-            queryParams: { filtro: overdue ? 'contato-vencido' : 'contato-hoje' },
-          });
-        } else {
-          rows.push({
-            key: a.id,
-            name: c.fullName,
-            caregiverId: c.id,
-            kind: 'yellow',
-            text: a.supportNetworkReviewDone ? 'Alerta amarelo em acompanhamento' : 'Alerta amarelo: revisar a rede de apoio',
-            link: '/app/acompanhamento',
-            queryParams: { filtro: 'tarefas' },
-          });
-        }
-      });
-    this.db.zaritAssessments
-      .all()
-      .filter((z) => z.status === 'scheduled' && own.has(z.caregiverId))
-      .forEach((z) => {
-        const state = zaritAssessmentState(z.dueDate, today, false);
-        if (state !== 'due' && state !== 'overdue') {
-          return;
-        }
-        const days = zaritDaysToDue(z.dueDate, today);
-        const c = own.get(z.caregiverId) as Caregiver;
-        rows.push({
-          key: z.id,
-          name: c.fullName,
-          caregiverId: c.id,
-          kind: state === 'overdue' ? 'overdue' : 'due',
-          text:
-            state === 'overdue'
-              ? `Escala vencida há ${Math.abs(days)} ${Math.abs(days) === 1 ? 'dia' : 'dias'}`
-              : days === 0
-                ? 'Escala vence hoje'
-                : `Escala vence em ${days} ${days === 1 ? 'dia' : 'dias'}`,
-          link: '/app/acompanhamento',
-          queryParams: { filtro: 'aplicacao-vencendo' },
-        });
-      });
-    const rank = { red: 0, overdue: 1, yellow: 2, due: 3 } as const;
-    return rows.sort((a, b) => rank[a.kind] - rank[b.kind] || a.name.localeCompare(b.name, 'pt-BR'));
+    return buildQueue({
+      caregivers: [...own.values()],
+      alerts: this.alerts(),
+      arbe: this.db.arbeAlerts.all(),
+      assessments: this.db.zaritAssessments.all(),
+      consentActive: (id) => this.consent.isActive(id, 'health_data'),
+      now,
+      today,
+    }).map((row) => {
+      const c = own.get(row.caregiverId) as Caregiver;
+      const target = this.queueTarget(row);
+      return {
+        key: row.caregiverId,
+        name: c.fullName,
+        caregiverId: c.id,
+        kind: queueKind(row),
+        text: this.queueText(row, today),
+        link: target.link,
+        ...(target.queryParams ? { queryParams: target.queryParams } : {}),
+      };
+    });
   });
+
+  private queueTarget(row: QueueRow): { link: string; queryParams?: Record<string, string> } {
+    if (row.alert) {
+      return { link: `/app/acompanhamento/alertas/${row.alert.id}` };
+    }
+    if (row.arbe) {
+      return { link: '/app/acompanhamento/arbe' };
+    }
+    return { link: `/app/acompanhamento/zarit/${row.caregiverId}/nova` };
+  }
+
+  private queueText(row: QueueRow, today: string): string {
+    switch (row.reason) {
+      case 'red_overdue':
+        return 'Alerta vermelho: contato vencido';
+      case 'red_today':
+        return row.alert?.contact ? 'Alerta vermelho: falta encerrar' : 'Alerta vermelho: contato até 23:59';
+      case 'arbe_critical':
+        return 'Alerta de esgotamento (ARBE): crítico';
+      case 'yellow':
+        return row.supportTaskPending ? 'Alerta amarelo: revisar a rede de apoio' : 'Alerta amarelo em acompanhamento';
+      case 'arbe_attention':
+        return 'Alerta de esgotamento (ARBE): atenção';
+      default: {
+        const days = row.dueDate ? zaritDaysToDue(row.dueDate, today) : 0;
+        const late = Math.abs(days);
+        if (row.reason === 'zarit_overdue') {
+          return `Escala vencida há ${late} ${late === 1 ? 'dia' : 'dias'}`;
+        }
+        return days === 0 ? 'Escala vence hoje' : `Escala vence em ${days} ${days === 1 ? 'dia' : 'dias'}`;
+      }
+    }
+  }
 
   /** Ocupação parcial do mês corrente do psicólogo (horas feitas e disponibilizadas até agora). */
   readonly ownCurrentMonth = computed(() => {
@@ -478,7 +512,8 @@ export class DashboardStore {
 
   // ===== "Precisa da sua decisão" (gestão) =====
 
-  readonly decisions = computed<DecisionItem[]>(() => {
+  /** Todos os itens que pedem decisão da gestão, sem corte (CX-004: o total é sempre dito na tela). */
+  readonly allDecisions = computed<DecisionItem[]>(() => {
     const items: DecisionItem[] = [];
     const dsr = this.dsr();
     if (dsr.overdue > 0 || dsr.dueSoon > 0) {
@@ -519,7 +554,7 @@ export class DashboardStore {
       const n = this.exitRiskCount();
       items.push({
         key: 'exit-risk',
-        text: `${n} ${n === 1 ? 'prestador com risco de saída' : 'prestadores com risco de saída'}`,
+        text: `${n} ${n === 1 ? 'prestador com risco de saída (pode deixar a rede)' : 'prestadores com risco de saída (podem deixar a rede)'}`,
         link: '/app/rede/prestadores',
         queryParams: { filtro: 'risco-de-saida' },
         icon: 'stethoscope',
@@ -545,6 +580,9 @@ export class DashboardStore {
         icon: 'book-open',
       });
     }
-    return items.slice(0, 3);
+    return items;
   });
+
+  /** Os primeiros itens, mostrados de início; o resto aparece em "Ver todos". */
+  readonly decisions = computed<DecisionItem[]>(() => this.allDecisions().slice(0, MAX_DECISIONS_SHOWN));
 }

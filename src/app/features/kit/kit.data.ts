@@ -2,7 +2,7 @@ import { addDays, weekday } from '@core/clock';
 import type { ISODate, PlanId } from '@core/models';
 import type { AgendaSlot } from '@shared/ui';
 
-/** Dados de exemplo da página do kit. 100% fictícios; nenhum nome vem do documento-fonte. */
+/** Dados de exemplo da página do kit. 100% fictícios e genéricos (QA-001): nenhum nome, código ou dado vem do seed nem do documento-fonte. */
 export interface KitPerson {
   id: string;
   name: string;
@@ -15,15 +15,7 @@ export interface KitPerson {
   dueDate: string;
 }
 
-const NAMES = [
-  'Ana Paula Ferraz', 'Maria Aparecida Lemos', 'João Batista Carneiro', 'Marlene Cardoso', 'Sueli Prado',
-  'Débora Gontijo', 'Vera Lúcia Teixeira', 'Rita de Cássia Moura', 'Neusa Aparecida Borges', 'Lúcia Helena Freitas',
-  'Eliane Costa Rezende', 'Terezinha Alves', 'Cláudia Mendes', 'Ivone Barros', 'Fátima Ribeiro',
-  'Sônia Maria Dutra', 'Aparecida Neves', 'Raimunda Siqueira', 'Luciana Ornelas', 'Patrícia Vilela',
-  'Gisele Marques', 'Rogério Peixoto', 'Simone Arantes', 'Lourdes Campos', 'Osvaldo Pimentel',
-  'Marcos Vinícius Leal', 'Elza Guimarães', 'Vanessa Torres', 'Adriana Fonseca', 'Heloísa Duarte',
-  'Cecília Braga', 'Dalva Nogueira', 'Irene Machado', 'Joana Teles',
-];
+const NAMES = Array.from({ length: 34 }, (_, i) => `Pessoa Exemplo ${String(i + 1).padStart(2, '0')}`);
 const PLANS: readonly PlanId[] = ['livre', 'essencial', 'cuida', 'sustenta'];
 
 export const KIT_PEOPLE: readonly KitPerson[] = NAMES.map((name, i) => ({

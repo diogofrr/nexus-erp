@@ -239,7 +239,7 @@ export class ConsentManagerComponent {
       effects: {
         keep: [
           'o histórico de consentimentos, que não se edita nem se apaga',
-          ...(key === 'health_data' ? ['o registro psicológico já feito, por 5 anos (a confirmar)'] : []),
+          ...(key === 'health_data' ? ['o registro psicológico já feito, por 5 anos'] : []),
         ],
       },
       confirmLabel: 'Revogar consentimento',

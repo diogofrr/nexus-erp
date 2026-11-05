@@ -153,7 +153,7 @@ interface FieldRef {
             <app-masked-field kind="phone" label="Telefone" value="(34) 90000-0123" entity="caregiver" entityId="cg_0042" field="phone" subjectId="cg_0042" />
           </ng-template>
           <ng-template #email>
-            <app-masked-field kind="email" label="E-mail" value="ana.ferraz@exemplo.com.br" entity="caregiver" entityId="cg_0042" field="email" subjectId="cg_0042" />
+            <app-masked-field kind="email" label="E-mail" value="pessoa.exemplo@exemplo.com.br" entity="caregiver" entityId="cg_0042" field="email" subjectId="cg_0042" />
           </ng-template>
           <ng-template #nothing>
             <app-masked-field kind="phone" label="WhatsApp" [value]="null" entity="caregiver" entityId="cg_0042" field="whatsapp" />
@@ -237,7 +237,7 @@ export class KitFormsSection {
   private readonly emailTemplate = viewChild.required<TemplateRef<unknown>>('email');
   private readonly emptyTemplate = viewChild.required<TemplateRef<unknown>>('nothing');
   protected readonly maskedItems = computed(() => [
-    { label: 'Nome', value: 'Ana Paula Ferraz' },
+    { label: 'Nome', value: 'Pessoa Exemplo' },
     { label: 'CPF', template: this.cpfTemplate() },
     { label: 'Telefone', template: this.phoneTemplate() },
     { label: 'E-mail', template: this.emailTemplate() },
@@ -258,10 +258,10 @@ export class KitFormsSection {
 
   protected fill(): void {
     this.form.patchValue({
-      name: 'Ana Paula Ferraz',
+      name: 'Pessoa Exemplo',
       cpf: '000.123.456-00',
       phone: '(34) 90000-0123',
-      email: 'ana.ferraz@exemplo.com.br',
+      email: 'pessoa.exemplo@exemplo.com.br',
       birth: '1980-03-09',
       hours: 8,
       price: 12000,

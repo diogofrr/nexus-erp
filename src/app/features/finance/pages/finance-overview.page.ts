@@ -142,8 +142,10 @@ import { FinanceStore } from '../state/finance.store';
               cima: <strong>{{ real().breakEven }} assinantes</strong>.
             </p>
             <p class="t-caption">
-              Os gastos mensais são os do Quadro 5. A receita líquida média por assinante é a bruta
-              média ({{ money(grossAverage()) }}) menos as taxas de pagamento ({{ feesText() }}).
+              Os gastos mensais são os do plano de negócios (coworking, aplicativo, contabilidade e
+              deslocamentos), que você confere na tela de
+              <a routerLink="/app/financeiro/custos">Custos</a>. A receita líquida média por assinante é a
+              bruta média ({{ money(grossAverage()) }}) menos as taxas de pagamento ({{ feesText() }}).
               Cada assinante acima do equilíbrio gera lucro.
             </p>
           </details>
