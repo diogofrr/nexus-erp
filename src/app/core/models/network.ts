@@ -7,7 +7,6 @@ export type ProviderCategory =
   | 'nursing'
   | 'pharmacy'
   | 'clinic'
-  | 'dentistry'
   | 'psychology'
   | 'nutrition'
   | 'legal'
@@ -21,7 +20,7 @@ export type ProviderCategory =
 export type ProviderStatus =
   'candidate' | 'active' | 'monitoring' | 'suspended' | 'deaccredited' | 'rejected';
 
-export type CouncilBody = 'CRO' | 'CREFITO' | 'COREN' | 'CRN' | 'CRP' | 'OAB' | 'NONE';
+export type CouncilBody = 'CREFITO' | 'COREN' | 'CRN' | 'CRP' | 'OAB' | 'NONE';
 
 export interface ProviderCouncil {
   body: CouncilBody;

@@ -167,18 +167,17 @@ export function generateFictitiousPhone(n: number): string {
 
 // ===== Conselhos de classe =====
 
-export type CouncilKind = 'CRP' | 'CRO' | 'CREFITO' | 'COREN' | 'CRN' | 'OAB';
+export type CouncilKind = 'CRP' | 'CREFITO' | 'COREN' | 'CRN' | 'OAB';
 
 const COUNCIL_PATTERNS: Record<CouncilKind, { regex: RegExp; example: string }> = {
   CRP: { regex: /^CRP-\d{2}\/\d{5}$/, example: 'CRP-04/00102' },
-  CRO: { regex: /^CRO-[A-Z]{2} \d{5}$/, example: 'CRO-MG 00000' },
   CREFITO: { regex: /^CREFITO-\d{1,2}\/\d{5}(-[FTO])?$/, example: 'CREFITO-4/00000-F' },
   COREN: { regex: /^COREN-[A-Z]{2} \d{6}$/, example: 'COREN-MG 000000' },
   CRN: { regex: /^CRN-\d{1,2}\/\d{5}$/, example: 'CRN-9/00000' },
   OAB: { regex: /^OAB\/[A-Z]{2} \d{5}$/, example: 'OAB/MG 00000' },
 };
 
-/** Valida o formato do registro no conselho (`CRP-04/00102`, `CRO-MG 00000`...). Não consulta nenhum conselho. */
+/** Valida o formato do registro no conselho (`CRP-04/00102`, `CREFITO-4/00000-F`...). Não consulta nenhum conselho. */
 export function validateCouncilRegistration(
   kind: CouncilKind,
   registration: string,
@@ -191,8 +190,6 @@ export function validateCouncilRegistration(
 
 export const validateCrp = (registration: string): ValidationResult =>
   validateCouncilRegistration('CRP', registration);
-export const validateCro = (registration: string): ValidationResult =>
-  validateCouncilRegistration('CRO', registration);
 
 /** Registro ativo e dentro da validade (RN-REDE-03, RN-REDE-22). */
 export function validateCouncilValidity(

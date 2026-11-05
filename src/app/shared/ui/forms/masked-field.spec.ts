@@ -164,11 +164,7 @@ describe('MaskedFieldComponent', () => {
     expect(root.innerHTML).not.toContain('***.***.***-**');
   });
 
-  it('o profissional credenciado e o psicólogo de outro caso veem só o mascarado, sem botão', () => {
-    const provider = setup('u10');
-    expect(text(provider.root)).toContain('***.***.***-**');
-    expect(provider.root.querySelector('.masked__toggle')).toBeNull();
-    TestBed.resetTestingModule();
+  it('o psicólogo de outro caso vê só o mascarado, sem botão', () => {
     const other = setup('u3', false);
     expect(other.root.querySelector('.masked__toggle')).toBeNull();
     expect(text(other.root)).toContain('***.***.***-**');

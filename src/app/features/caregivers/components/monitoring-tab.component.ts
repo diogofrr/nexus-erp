@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuditLogService } from '@core/audit';
+import { SupervisionWindowService } from '@core/audit/supervision-window.service';
 import { AuthService } from '@core/auth';
 import { Database } from '@core/data';
 import { formatDate } from '@core/format';
@@ -8,8 +9,7 @@ import type { Caregiver, ZaritAssessment } from '@core/models';
 import { ConsentService } from '@core/privacy';
 import { ZARIT_NOT_DIAGNOSIS_NOTE, zaritBandLabel, zaritEvolution } from '@core/rules';
 import { BadgeComponent, CardComponent, EmptyStateComponent, ZaritBandBadgeComponent } from '@shared/ui';
-import { SupervisionService } from '../state/supervision.service';
-import { SupervisionGateComponent } from './supervision-gate.component';
+import { SupervisionGateComponent } from '@shared/ui/access/supervision-gate.component';
 
 /**
  * Aba Acompanhamento (SCR-M03-03): só o psicólogo do caso e o responsável técnico (o atendimento e a
@@ -32,7 +32,13 @@ import { SupervisionGateComponent } from './supervision-gate.component';
         />
       </app-card>
     } @else if (gated()) {
-      <app-supervision-gate [caregiverId]="caregiver().id" />
+      <app-supervision-gate
+        entity="zarit_assessment"
+        [entityId]="caregiver().id"
+        [caregiverId]="caregiver().id"
+        what="o acompanhamento deste cuidador"
+        (granted)="onGranted()"
+      />
     } @else {
       <div class="stack stack--6 sensitive" data-role="monitoring">
         @if (supervisionNote(); as note) {
@@ -115,7 +121,7 @@ export class MonitoringTabComponent {
   private readonly db = inject(Database);
   private readonly audit = inject(AuditLogService);
   private readonly consent = inject(ConsentService);
-  private readonly supervision = inject(SupervisionService);
+  private readonly supervision = inject(SupervisionWindowService);
 
   readonly caregiver = input.required<Caregiver>();
   protected readonly note = ZARIT_NOT_DIAGNOSIS_NOTE;
@@ -125,7 +131,7 @@ export class MonitoringTabComponent {
     return this.consent.isActive(this.caregiver().id, 'health_data');
   });
   protected readonly gated = computed(
-    () => this.auth.role() === 'technical_lead' && !this.supervision.isGranted(this.caregiver().id),
+    () => this.auth.role() === 'technical_lead' && !this.supervision.isOpen(this.caregiver().id),
   );
   protected readonly supervisionNote = computed(() =>
     this.auth.role() === 'technical_lead' ? this.supervision.info(this.caregiver().id) : null,
@@ -174,21 +180,27 @@ export class MonitoringTabComponent {
   });
 
   constructor() {
-    // Cada abertura do conteúdo grava o log: `view` para o psicólogo do caso, `supervise` para o RT.
+    // Cada abertura do conteúdo grava o log: `view` para o psicólogo do caso; `supervise` e `view` para o RT.
+    // A primeira abertura do RT é gravada pelo portão (`supervise`) e por `onGranted` (`view`).
     effect(() => {
-      const shown = this.healthGranted() && !this.gated();
       const id = this.caregiver().id;
-      if (!shown) {
+      if (!this.healthGranted()) {
         return;
       }
       untracked(() => {
-        if (this.auth.role() === 'technical_lead') {
-          this.supervision.record(id, 'zarit_assessment');
-        } else {
+        if (this.auth.role() !== 'technical_lead') {
           this.audit.view('zarit_assessment', id, id);
+        } else if (this.supervision.access('zarit_assessment', id, id) === 'open') {
+          this.audit.view('zarit_assessment', id, id, 'leitura em supervisão');
         }
       });
     });
+  }
+
+  /** O portão acabou de liberar: o `supervise` já foi gravado por ele, falta a leitura. */
+  protected onGranted(): void {
+    const id = this.caregiver().id;
+    this.audit.view('zarit_assessment', id, id, 'leitura em supervisão');
   }
 
   protected date(value: string | undefined): string {

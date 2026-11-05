@@ -7,7 +7,6 @@ import {
   computed,
   effect,
   inject,
-  input,
   untracked,
   viewChild,
 } from '@angular/core';
@@ -16,7 +15,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { PROTOTYPE_NOTICE } from '../../core/privacy/browser-data.service';
 import { SCHEMA_VERSION } from '../../core/storage/migrations';
 import { APP_VERSION } from '../../shared/ui/overlay/app-info';
-import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../shared/ui/display/icon.component';
 import { closeModalDialog, showModalDialog } from '../../shared/ui/overlay/modal';
 import { ShortcutHelp, shortcutsFor } from '../shortcuts/shortcut.service';
 import { LayoutDialogsService } from '../state/layout-dialogs.service';
@@ -55,7 +54,7 @@ const GLOSSARY: readonly { term: string; meaning: string }[] = [
  */
 @Component({
   selector: 'app-layout-dialogs',
-  imports: [GlyphComponent, RouterLink],
+  imports: [IconComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <dialog
@@ -66,7 +65,7 @@ const GLOSSARY: readonly { term: string; meaning: string }[] = [
       (click)="onBackdrop($event, 'shortcuts')"
     >
       <div class="dialog__header">
-        <span class="dialog__icon"><svg appGlyph="circle-help" glyphSize="lg"></svg></span>
+        <span class="dialog__icon"><svg appIcon="circle-help" size="lg"></svg></span>
         <h2 class="dialog__title" id="nx-shortcuts-title">Atalhos e ajuda</h2>
       </div>
       <div class="dialog__body">
@@ -100,7 +99,7 @@ const GLOSSARY: readonly { term: string; meaning: string }[] = [
           </dl>
         </section>
         <p class="t-ui">
-          <a [routerLink]="prefix() + '/canal-do-titular'" (click)="closeAll()"
+          <a routerLink="/app/canal-do-titular" (click)="closeAll()"
             >Privacidade e canal do titular</a
           >
         </p>
@@ -125,13 +124,13 @@ const GLOSSARY: readonly { term: string; meaning: string }[] = [
       (click)="onBackdrop($event, 'about')"
     >
       <div class="dialog__header">
-        <span class="dialog__icon"><svg appGlyph="info" glyphSize="lg"></svg></span>
+        <span class="dialog__icon"><svg appIcon="info" size="lg"></svg></span>
         <h2 class="dialog__title" id="nx-about-title">Sobre o protótipo</h2>
       </div>
       <div class="dialog__body">
         <dl class="dl">
           <dt>Nome</dt>
-          <dd>Nexus ERP, back-office da Nexus e portal do profissional credenciado</dd>
+          <dd>Nexus ERP, back-office da Nexus</dd>
           <dt>Versão</dt>
           <dd class="t-num">{{ version }} (dados no formato {{ schema }})</dd>
         </dl>
@@ -156,14 +155,10 @@ export class LayoutDialogsComponent {
   private readonly shortcutsRef = viewChild.required<ElementRef<HTMLDialogElement>>('shortcuts');
   private readonly aboutRef = viewChild.required<ElementRef<HTMLDialogElement>>('about');
 
-  /** `/app` ou `/portal`, para o link do canal do titular. */
-  readonly area = input<'team' | 'portal'>('team');
-
   protected readonly glossary = GLOSSARY;
   protected readonly notice = PROTOTYPE_NOTICE;
   protected readonly version = APP_VERSION;
   protected readonly schema = SCHEMA_VERSION;
-  protected readonly prefix = computed(() => (this.area() === 'portal' ? '/portal' : '/app'));
 
   protected readonly shortcutGroups = computed(() => {
     const role = this.auth.role();

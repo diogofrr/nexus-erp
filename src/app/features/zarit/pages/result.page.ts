@@ -49,7 +49,6 @@ import { RESULT_SUPPORT_NOTE } from '../state/zarit-labels';
           entity="zarit_assessment"
           [entityId]="assessment()?.id ?? ''"
           [caregiverId]="assessment()?.caregiverId ?? ''"
-          [ownerName]="ownerName()"
           (granted)="unlocked.set(true)"
         />
       } @else {
@@ -167,7 +166,6 @@ export class ZaritResultPageComponent {
     return !!c && this.access.mustJustify(c) && !this.unlocked();
   });
   protected readonly canOffer = computed(() => this.access.canApply(this.assessment()?.caregiverId ?? ''));
-  protected readonly ownerName = computed(() => this.access.ownerName(this.caregiver()));
   protected readonly subtitle = computed(() => {
     const a = this.assessment();
     const c = this.caregiver();

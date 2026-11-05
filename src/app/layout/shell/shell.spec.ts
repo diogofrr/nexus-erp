@@ -272,11 +272,12 @@ describe('shell da equipe', () => {
     expect(field.hasAttribute('data-revealed')).toBe(false);
   });
 
-  it('a primeira página do ERP não usa nenhum link do portal e o credenciado não vê o shell da equipe', async () => {
-    app = await bootApp({ userId: 'u9' });
-    expect(q('.sidebar')).toBeNull();
-    expect(q('.portal-shell')).not.toBeNull();
-    expect(q('.bottom-nav')).not.toBeNull();
+  it('a primeira página do ERP não usa nenhum link do portal (removido) e todo perfil vê o shell da equipe', async () => {
+    app = await bootApp({ userId: 'u7' });
+    expect(q('.sidebar')).not.toBeNull();
+    expect(q('.portal-shell')).toBeNull();
+    expect(q('.bottom-nav')).toBeNull();
+    expect(app.root.querySelector('a[href^="/portal"]')).toBeNull();
     void signIn;
   });
 });
@@ -352,71 +353,5 @@ describe('sino de notificações', () => {
     expect(q('app-notification-bell button')?.getAttribute('aria-label')).toBe(
       'Notificações: nenhuma não vista',
     );
-  });
-});
-
-describe('shell do portal do profissional', () => {
-  let app: BootedApp;
-  const q = <T extends Element = HTMLElement>(selector: string): T | null =>
-    app.root.querySelector<T>(selector);
-  const all = <T extends Element = HTMLElement>(selector: string): T[] =>
-    Array.from(app.root.querySelectorAll<T>(selector));
-
-  it('barra inferior com 5 destinos, aviso de protótipo no rodapé e foco no conteúdo', async () => {
-    app = await bootApp({ userId: 'u9', url: '/portal' });
-    const items = all('.bottom-nav .bottom-nav__item');
-    expect(items.map((i) => i.textContent?.trim())).toEqual([
-      'Início',
-      'Solicitações',
-      'Disponibilidade',
-      'Mensagens',
-      'Mais',
-    ]);
-    expect(all('.bottom-nav a[aria-current="page"]')).toHaveLength(1);
-    expect(q('.app-footer')?.textContent).toContain(PROTOTYPE_NOTICE);
-    expect(q('.portal-header .avatar') ?? q('app-user-menu .avatar--gold')).not.toBeNull();
-    expect(q('.portal-main h1')).not.toBeNull();
-  });
-
-  it('"Mais" abre a folha com os destinos do portal e o Sair; prestador suspenso vê Avaliação interna', async () => {
-    app = await bootApp({ userId: 'u9', url: '/portal' });
-    click(q('.bottom-nav button.bottom-nav__item'));
-    await settle(app.fixture);
-    const sheet = q('dialog.dialog--sheet') as HTMLDialogElement;
-    expect(sheet.hasAttribute('open')).toBe(true);
-    const rows = Array.from(sheet.querySelectorAll('.list-row')).map((r) => r.textContent?.trim());
-    expect(rows).toEqual([
-      'Minha avaliação',
-      'Documentos',
-      'Integração',
-      'Meu perfil',
-      'Privacidade',
-      'Sair',
-    ]);
-    sheet.dispatchEvent(new Event('cancel', { cancelable: true }));
-    await settle(app.fixture);
-    expect(sheet.hasAttribute('open')).toBe(false);
-
-    TestBed.resetTestingModule();
-    app = await bootApp({ userId: 'u11', url: '/portal' });
-    click(q('.bottom-nav button.bottom-nav__item'));
-    await settle(app.fixture);
-    expect(q('dialog.dialog--sheet')?.textContent).toContain('Avaliação interna');
-  });
-
-  it('o credenciado não abre o ERP: /app/financeiro vai ao 403 e grava denied', async () => {
-    app = await bootApp({ userId: 'u9', url: '/portal' });
-    const before = app.db.accessLog.size();
-    await app.router.navigateByUrl('/app/financeiro');
-    await settle(app.fixture);
-    expect(app.router.url).toBe('/403');
-    expect(
-      app.db.accessLog
-        .list()
-        .slice(before)
-        .some((e) => e.action === 'denied'),
-    ).toBe(true);
-    expect(q('h1')?.textContent).toContain('Você não tem acesso a esta página');
-    expect(q('.sidebar')).toBeNull();
   });
 });

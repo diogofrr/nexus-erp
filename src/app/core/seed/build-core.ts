@@ -1,10 +1,10 @@
-/** Usuários de demonstração (5.1), psicólogos, salas (5.3) e catálogo de planos. */
+/** Usuários de demonstração da equipe (5.1), psicólogos, salas (5.3) e catálogo de planos. */
 import { defaultAppSettings, defaultPilotConfig } from '../data/defaults';
 import { AppUser, Plan, PsychologistProfile, Room } from '../models';
 import { DEFAULT_PLANS } from '../rules/plans';
 import { restoreFinancialParams } from '../rules/finance';
 import { ROLES_REQUIRING_TWO_FACTOR } from '../auth/permissions';
-import { PSYCHOLOGIST, ROOM, USER, providerId } from './refs';
+import { PSYCHOLOGIST, ROOM, USER } from './refs';
 import { SeedState } from './state';
 
 export function buildCore(s: SeedState): void {
@@ -91,38 +91,6 @@ export function buildCore(s: SeedState): void {
     'wesley.lacerda@exemplo.com.br',
     'support',
     'Atendimento: caixa de mensagens e registros em nome do usuário.',
-  );
-  user(
-    USER.dentist,
-    'Dr. Eduardo Falcão',
-    'eduardo.falcao@exemplo.com.br',
-    'provider',
-    'Cirurgião-dentista credenciado (CRO fictício): solicitações, nota e documentos no portal.',
-    { providerId: providerId(11) },
-  );
-  user(
-    USER.physio,
-    'Dra. Renata Sampaio',
-    'renata.sampaio@exemplo.com.br',
-    'provider',
-    'Fisioterapeuta credenciada na zona de excelência.',
-    { providerId: providerId(1) },
-  );
-  user(
-    USER.clinic,
-    'Clínica Saúde Integral',
-    'contato.saudeintegral@exemplo.com.br',
-    'provider',
-    'Prestador suspenso: vê o aviso neutro e envia justificativas.',
-    { providerId: providerId(10) },
-  );
-  user(
-    USER.rosimeire,
-    'Cuidadora Rosimeire Tavares',
-    'rosimeire.tavares@exemplo.com.br',
-    'provider',
-    'Prestadora nova, sem a cláusula de proteção de dados assinada.',
-    { providerId: providerId(20) },
   );
 
   // Psicólogos (4)

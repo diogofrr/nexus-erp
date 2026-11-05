@@ -75,14 +75,6 @@ const CHANNEL_LABEL = {
   email: 'E-mail',
 } as const;
 
-const DOCUMENT_LABEL = {
-  council_registry: 'Registro no conselho',
-  training_proof: 'Comprovação de formação',
-  contract: 'Contrato de credenciamento',
-  data_protection_term: 'Termo de proteção de dados',
-  identity: 'Documento de identificação',
-} as const;
-
 function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }
@@ -714,113 +706,6 @@ function managementRules(ctx: RuleContext, out: NotificationDraft[]): void {
   }
 }
 
-// ===== Profissional credenciado (portal) =======================================================
-
-function providerRules(ctx: RuleContext, out: NotificationDraft[]): void {
-  const { db, today, actor } = ctx;
-  const providerId = actor.providerId;
-  const provider = providerId ? db.providers.get(providerId) : undefined;
-  if (!providerId || !provider) {
-    return;
-  }
-
-  db.serviceRequests
-    .query((r) => r.providerId === providerId && r.status === 'requested')
-    .forEach((request) =>
-      out.push({
-        key: `new_request:${request.id}`,
-        type: 'new_request',
-        group: 'action_today',
-        severity: 'info',
-        icon: 'clipboard-list',
-        title: 'Nova solicitação',
-        context: `${request.modality === 'home' ? 'Atendimento domiciliar' : 'Atendimento no consultório'}, recebida em ${formatDate(request.requestedAt)}`,
-        link: '/portal/solicitacoes',
-        queryParams: { aba: 'novas' },
-        at: request.requestedAt,
-        count: 1,
-      }),
-    );
-
-  db.providerDocuments
-    .query(
-      (d) =>
-        d.providerId === providerId &&
-        d.validUntil !== undefined &&
-        daysBetween(today, d.validUntil) <= 30,
-    )
-    .forEach((doc) => {
-      const days = daysBetween(today, doc.validUntil as ISODate);
-      out.push({
-        key: `document_expiring:${doc.id}`,
-        type: 'document_expiring',
-        group: days <= 7 ? 'action_today' : 'to_follow',
-        severity: 'attention',
-        icon: 'file-check',
-        title: days < 0 ? 'Documento vencido' : `Documento ${dueIn(days)}`,
-        context: DOCUMENT_LABEL[doc.kind],
-        link: '/portal/documentos',
-        at: `${doc.validUntil}T00:00:00-03:00`,
-        count: 1,
-      });
-    });
-
-  if (!provider.dataProtectionClauseSignedAt) {
-    out.push({
-      key: `clause_pending:${providerId}`,
-      type: 'clause_pending',
-      group: 'action_today',
-      severity: 'attention',
-      icon: 'file-lock',
-      title: 'Cláusula de proteção de dados pendente',
-      context: 'Assine para ver os dados do usuário nas solicitações aceitas',
-      link: '/portal/documentos',
-      at: provider.createdAt,
-      count: 1,
-    });
-  }
-
-  if (
-    !provider.integrationDoneAt &&
-    (provider.status === 'active' || provider.status === 'monitoring')
-  ) {
-    out.push({
-      key: `integration_pending:${providerId}`,
-      type: 'integration_pending',
-      group: 'to_follow',
-      severity: 'info',
-      icon: 'user-check',
-      title: 'Integração a concluir',
-      context: 'Leia os procedimentos e confirme a ciência',
-      link: '/portal/integracao',
-      at: provider.createdAt,
-      count: 1,
-    });
-  }
-
-  db.internalReviews
-    .query((r) => r.providerId === providerId && r.decision === undefined)
-    .forEach((review) => {
-      const waiting = review.justification !== undefined;
-      out.push({
-        key: `${waiting ? 'internal_review_waiting' : 'internal_review'}:${review.id}`,
-        type: waiting ? 'internal_review_waiting' : 'internal_review',
-        group: waiting ? 'to_follow' : 'action_today',
-        severity: waiting ? 'info' : 'attention',
-        icon: 'file-text',
-        title: waiting
-          ? 'Avaliação interna em análise'
-          : 'Enviar a justificativa da avaliação interna',
-        context: waiting
-          ? 'A justificativa foi enviada e aguarda a decisão da Nexus'
-          : `Aberta em ${formatDate(review.openedAt)}`,
-        link: '/portal/avaliacao-interna',
-        at: `${review.openedAt}T00:00:00-03:00`,
-        count: 1,
-      });
-    });
-}
-
 // ===== Ponto de entrada ========================================================================
 
 /** Ordem do sino: "Precisa de ação hoje" primeiro; dentro do grupo, perigo, atenção, informação e mais recente. */
@@ -857,9 +742,6 @@ export function generateNotifications(ctx: RuleContext): NotificationDraft[] {
     case 'partner':
       privacyAndRelationshipRules(ctx, out);
       managementRules(ctx, out);
-      break;
-    case 'provider':
-      providerRules(ctx, out);
       break;
   }
   return sortNotifications(out);

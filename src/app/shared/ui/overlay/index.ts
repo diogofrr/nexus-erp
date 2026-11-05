@@ -3,7 +3,6 @@ export * from './consent-banner.component';
 export * from './dialog-host.component';
 export * from './dialog.service';
 export * from './drawer.component';
-export * from './glyph.component';
 export * from './modal';
 export * from './session-dialog.component';
 export * from './toast-region.component';

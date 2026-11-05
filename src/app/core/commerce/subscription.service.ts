@@ -5,6 +5,7 @@ import { Clock } from '../clock/clock.service';
 import { addMonths, compareDates, dateOf } from '../clock/date-utils';
 import { Database } from '../data/database';
 import { formatDate } from '../format/format';
+import { GroupMembershipService } from '../groups/group-membership.service';
 import {
   Activity,
   BenefitCard,
@@ -146,6 +147,7 @@ export class SubscriptionService {
   private readonly clock = inject(Clock);
   private readonly audit = inject(AuditLogService);
   private readonly session = inject(SessionStore);
+  private readonly membership = inject(GroupMembershipService);
 
   // ===== Leitura =====
 
@@ -402,8 +404,9 @@ export class SubscriptionService {
 
   /**
    * Aplica o que já venceu pelo relógio (inclusive o simulado): descida e cancelamento no fim do ciclo
-   * (cartão inativado, turmas liberadas) e avanço do ciclo das assinaturas pagas. Devolve quantas
-   * mudanças valeram. Chame ao abrir telas de assinatura e de cadastro.
+   * (cartão inativado, turmas liberadas pelo M07) e avanço do ciclo das assinaturas pagas. Devolve quantas
+   * mudanças valeram. Telas de assinatura e de cadastro chamam ao abrir; o aplicativo também chama ao iniciar
+   * e quando a data (real ou simulada) muda (`PlanChangeScheduler`).
    */
   applyDueChanges(): number {
     const today = this.clock.today();
@@ -431,7 +434,8 @@ export class SubscriptionService {
             { status: 'inactive', inactivatedAt: at },
           );
         }
-        this.releaseGroupSeats(sub.caregiverId, at, to);
+        // O plano caiu: o M07 tira o cuidador das turmas futuras a que o novo plano não dá acesso (AC-M07-09).
+        this.membership.reconcilePlanLoss(sub.caregiverId);
         this.audit.write(
           'update',
           'subscription',
@@ -540,34 +544,6 @@ export class SubscriptionService {
   private firstMeetingDate(activity: Activity): ISODate | null {
     const first = [...activity.meetings].sort((a, b) => a.startAt.localeCompare(b.startAt))[0];
     return first ? dateOf(first.startAt) : null;
-  }
-
-  private releaseGroupSeats(caregiverId: ID, effectiveAt: ISODate, to: PlanId): void {
-    this.groupsLostAfter(caregiverId, effectiveAt, to).forEach((lost) => {
-      this.db.activityEnrollments.updateWhere(
-        (e) =>
-          e.caregiverId === caregiverId &&
-          e.activityId === lost.activityId &&
-          (e.status === 'enrolled' || e.status === 'waitlist'),
-        { status: 'cancelled', waitlistPosition: undefined },
-      );
-      const activity = this.db.activities.get(lost.activityId);
-      const taken = this.db.activityEnrollments.count(
-        (e) => e.activityId === lost.activityId && e.status === 'enrolled',
-      );
-      const waiting = this.db.activityEnrollments
-        .query((e) => e.activityId === lost.activityId && e.status === 'waitlist')
-        .sort((a, b) => (a.waitlistPosition ?? 0) - (b.waitlistPosition ?? 0));
-      if (activity && waiting[0] && taken < activity.capacity) {
-        this.db.activityEnrollments.update(waiting[0].id, {
-          status: 'enrolled',
-          waitlistPosition: undefined,
-        });
-        waiting
-          .slice(1)
-          .forEach((w, k) => this.db.activityEnrollments.update(w.id, { waitlistPosition: k + 1 }));
-      }
-    });
   }
 
   private rollForward(date: ISODate, today: ISODate): ISODate {

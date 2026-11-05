@@ -32,16 +32,11 @@ describe('páginas do rodapé (LP-23 e SCR-M12-10)', () => {
     expect(q('.prose')?.textContent).toContain('Base legal');
     // O link do rodapé e do menu do usuário leva até aqui.
     expect(q('.app-footer a[href="/app/canal-do-titular"]')).not.toBeNull();
-
-    TestBed.resetTestingModule();
-    app = await bootApp({ userId: 'u9', url: '/portal/canal-do-titular' });
-    expect(q('.portal-shell h1')?.textContent).toBe('Privacidade e canal do titular');
-    expect(q('.app-footer a[href="/portal/canal-do-titular"]')).not.toBeNull();
   });
 
-  it('o credenciado não abre as páginas do rodapé da equipe', async () => {
-    app = await bootApp({ userId: 'u9', url: '/app/meus-dados' });
-    expect(app.router.url).toBe('/403');
+  it('não existe versão das páginas do rodapé para o antigo portal: /portal/canal-do-titular é 404', async () => {
+    app = await bootApp({ userId: 'u7', url: '/portal/canal-do-titular' });
+    expect(q('h1')?.textContent).toContain('Página não encontrada');
   });
 
   it('"Meus dados no navegador" mostra o que está guardado e o tamanho; "Apagar tudo" pede APAGAR e volta à entrada', async () => {

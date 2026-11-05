@@ -1,7 +1,6 @@
 /**
  * RBAC do Nexus ERP: a matriz de permissões do escopo (seções 1.2 e 1.3) como DADOS, mais as funções
- * `can`, `accessLevel`, `isOwnRecord` e as regras do `provider` (próprio, mínimo, só com solicitação aceita
- * e cláusula de proteção de dados assinada).
+ * `can`, `accessLevel` e `isOwnRecord`.
  *
  * Legenda: `-` sem acesso; `L` leitura; `E` leitura e edição; `T` total; `A` agregado ou pseudonimizado;
  * `P` registros próprios ou atribuídos; `C` conteúdo clínico restrito ao caso; `S` supervisão (leitura de
@@ -9,8 +8,6 @@
  */
 import { AccessLevel, PermissionAction, Resource, Role } from '../models/access';
 import { Caregiver } from '../models/caregivers';
-import { Complaint } from '../models/messages';
-import { Provider, ProviderEvaluation, ServiceRequest } from '../models/network';
 import { ID } from '../models/primitives';
 
 export const ROLES: readonly Role[] = [
@@ -18,7 +15,6 @@ export const ROLES: readonly Role[] = [
   'technical_lead',
   'psychologist',
   'support',
-  'provider',
 ];
 
 export const ROLE_LABELS: Readonly<Record<Role, string>> = {
@@ -26,16 +22,10 @@ export const ROLE_LABELS: Readonly<Record<Role, string>> = {
   technical_lead: 'Responsável técnico',
   psychologist: 'Psicólogo(a) da Nexus',
   support: 'Atendimento/Relacionamento',
-  provider: 'Profissional credenciado',
 };
 
-/** Perfis que exigem verificação em dois fatores simulada (RN-LGPD-15): a equipe. */
-export const ROLES_REQUIRING_TWO_FACTOR: readonly Role[] = [
-  'partner',
-  'technical_lead',
-  'psychologist',
-  'support',
-];
+/** Perfis que exigem verificação em dois fatores simulada (RN-LGPD-15): todos, pois todos são da equipe. */
+export const ROLES_REQUIRING_TWO_FACTOR: readonly Role[] = ROLES;
 
 export const LEVEL_LABELS: Readonly<Record<AccessLevel, string>> = {
   '-': 'Sem acesso',
@@ -67,22 +57,23 @@ type Row = Readonly<Record<Role, AccessCell>>;
 
 const NONE: AccessCell = { level: '-' };
 
-/** Linha da matriz, na ordem partner, technical_lead, psychologist, support, provider. */
+/** Linha da matriz, na ordem partner, technical_lead, psychologist, support. */
 function row(
   partner: AccessCell,
   technicalLead: AccessCell,
   psychologist: AccessCell,
   support: AccessCell,
-  provider: AccessCell,
 ): Row {
-  return { partner, technical_lead: technicalLead, psychologist, support, provider };
+  return { partner, technical_lead: technicalLead, psychologist, support };
 }
 
-/** A matriz do escopo (seção 1.2), uma linha por recurso. */
+/**
+ * A matriz do escopo (seção 1.2), uma linha por recurso. O perfil de login do prestador credenciado
+ * (portal, M14) foi removido por decisão do dono: os prestadores são cadastros geridos pela equipe.
+ */
 export const PERMISSION_MATRIX: Readonly<Record<Resource, Row>> = {
   // M01
   access_profile: row(
-    { level: 'L', note: 'próprio' },
     { level: 'L', note: 'próprio' },
     { level: 'L', note: 'próprio' },
     { level: 'L', note: 'próprio' },
@@ -94,7 +85,6 @@ export const PERMISSION_MATRIX: Readonly<Record<Resource, Row>> = {
     { level: 'T', note: 'o seu' },
     { level: 'T', note: 'o seu' },
     { level: 'T', note: 'o seu' },
-    { level: 'T', note: 'o seu, no portal', embeddedOnly: true },
   ),
   // M03
   caregiver_registry: row(
@@ -102,16 +92,14 @@ export const PERMISSION_MATRIX: Readonly<Record<Resource, Row>> = {
     { level: 'S' },
     { level: 'P', note: 'seus cuidadores' },
     { level: 'E' },
-    NONE,
   ),
-  elder_care: row(NONE, { level: 'S' }, { level: 'P' }, { level: 'L' }, NONE),
+  elder_care: row(NONE, { level: 'S' }, { level: 'P' }, { level: 'L' }),
   // M04
   plans_subscriptions: row(
     { level: 'T' },
     { level: 'L' },
     { level: 'L', note: 'plano do próprio cuidador', embeddedOnly: true },
     { level: 'E' },
-    NONE,
   ),
   // M05
   care_schedule: row(
@@ -119,28 +107,20 @@ export const PERMISSION_MATRIX: Readonly<Record<Resource, Row>> = {
     { level: 'L' },
     { level: 'P', canEdit: true },
     { level: 'E', note: 'agendar em nome do usuário' },
-    NONE,
   ),
-  session_notes: row(NONE, { level: 'S' }, { level: 'C', note: 'autor' }, NONE, NONE),
-  occupancy: row({ level: 'L' }, { level: 'L' }, { level: 'P' }, NONE, NONE),
-  rooms: row({ level: 'E' }, { level: 'L' }, { level: 'L' }, { level: 'L' }, NONE),
+  session_notes: row(NONE, { level: 'S' }, { level: 'C', note: 'autor' }, NONE),
+  occupancy: row({ level: 'L' }, { level: 'L' }, { level: 'P' }, NONE),
+  rooms: row({ level: 'E' }, { level: 'L' }, { level: 'L' }, { level: 'L' }),
   // M06
-  zarit_individual: row(NONE, { level: 'S' }, { level: 'C' }, NONE, NONE),
-  zarit_aggregate: row(
-    { level: 'A' },
-    { level: 'A' },
-    { level: 'A', note: 'seus casos' },
-    NONE,
-    NONE,
-  ),
-  arbe_settings: row({ level: 'L' }, { level: 'T' }, { level: 'L' }, NONE, NONE),
+  zarit_individual: row(NONE, { level: 'S' }, { level: 'C' }, NONE),
+  zarit_aggregate: row({ level: 'A' }, { level: 'A' }, { level: 'A', note: 'seus casos' }, NONE),
+  arbe_settings: row({ level: 'L' }, { level: 'T' }, { level: 'L' }, NONE),
   // M07
   groups: row(
     { level: 'T' },
     { level: 'E', note: 'valida enquadramento', subAreas: ['framing_validation'] },
     { level: 'E', note: 'seus grupos' },
     { level: 'E', note: 'inscrições', subAreas: ['enrollments'] },
-    NONE,
   ),
   // M08
   network: row(
@@ -156,72 +136,44 @@ export const PERMISSION_MATRIX: Readonly<Record<Resource, Row>> = {
       note: 'e E só para registrar solicitações e avaliações em nome do usuário',
       extraWrite: ['service_requests', 'evaluations'],
     },
-    { level: 'P', note: 'próprio, via M14', embeddedOnly: true },
   ),
   // M09
-  partners_corporate: row({ level: 'T' }, NONE, NONE, { level: 'L' }, NONE),
+  partners_corporate: row({ level: 'T' }, NONE, NONE, { level: 'L' }),
   // M10 (a linha única do escopo foi desdobrada em finance, indicators e pilot para permitir guard por tela)
-  finance: row({ level: 'T' }, NONE, NONE, NONE, NONE),
+  finance: row({ level: 'T' }, NONE, NONE, NONE),
   indicators: row(
     { level: 'T' },
     { level: 'A', note: 'indicadores clínicos agregados' },
     { level: 'A', note: 'seus casos' },
     { level: 'L', note: 'operacionais: SLA, reclamações', subAreas: ['operational'] },
-    NONE,
   ),
-  pilot: row(
-    { level: 'T' },
-    { level: 'A', note: 'indicadores clínicos agregados' },
-    NONE,
-    NONE,
-    NONE,
-  ),
+  pilot: row({ level: 'T' }, { level: 'A', note: 'indicadores clínicos agregados' }, NONE, NONE),
   // M11
   message_inbox: row(
     { level: 'T' },
     { level: 'L', note: 'casos de risco' },
     { level: 'P', note: 'mensagens dos seus cuidadores' },
     { level: 'T' },
-    { level: 'P', note: 'mensagens com a Nexus', canEdit: true, embeddedOnly: true },
   ),
-  complaints: row(
-    { level: 'T' },
-    { level: 'L', note: 'graves e POP-07' },
-    NONE,
-    { level: 'T' },
-    { level: 'P', note: 'as que o citam, sem identificar o cuidador', embeddedOnly: true },
-  ),
+  complaints: row({ level: 'T' }, { level: 'L', note: 'graves e POP-07' }, NONE, { level: 'T' }),
   // M12
-  lgpd_consents_requests: row(
-    { level: 'T' },
-    { level: 'E' },
-    NONE,
-    { level: 'E', note: 'registrar em nome do titular' },
-    NONE,
-  ),
-  lgpd_audit_log: row({ level: 'L' }, { level: 'T' }, NONE, NONE, NONE),
+  lgpd_consents_requests: row({ level: 'T' }, { level: 'E' }, NONE, {
+    level: 'E',
+    note: 'registrar em nome do titular',
+  }),
+  lgpd_audit_log: row({ level: 'L' }, { level: 'T' }, NONE, NONE),
   // M13
-  governance: row(
-    { level: 'T' },
-    { level: 'T' },
-    { level: 'L' },
-    { level: 'L' },
-    { level: 'L', note: 'POPs da integração', embeddedOnly: true },
-  ),
+  governance: row({ level: 'T' }, { level: 'T' }, { level: 'L' }, { level: 'L' }),
   occurrences: row(
     { level: 'A', note: 'contagens' },
     { level: 'T' },
     { level: 'C', note: 'seus casos' },
     NONE,
-    NONE,
   ),
-  // M14
-  provider_portal: row(NONE, NONE, NONE, NONE, { level: 'T', note: 'próprio' }),
   // M15
   settings: row(
     { level: 'T' },
     { level: 'E', note: 'apenas ARBE e conteúdos', subAreas: ['arbe', 'guidance_content'] },
-    NONE,
     NONE,
     NONE,
   ),
@@ -343,7 +295,6 @@ export interface Actor {
   userId: ID;
   role: Role;
   psychologistId?: ID;
-  providerId?: ID;
 }
 
 /** Campos de um registro que indicam a quem ele pertence. */
@@ -354,15 +305,11 @@ export interface OwnershipSubject {
   assignedPsychologistId?: ID;
   /** Autor (anotação de sessão). */
   authorPsychologistId?: ID;
-  /** Prestador dono do registro. */
-  providerId?: ID;
-  /** Reclamação: alvo. */
-  target?: { providerId?: ID };
   /** Ocorrência: RT e psicólogo do caso. */
   restrictedToUserIds?: readonly ID[];
 }
 
-/** O registro é do usuário (atribuído, autor, prestador dono ou restrito a ele)? */
+/** O registro é do usuário (atribuído, autor ou restrito a ele)? */
 export function isOwnRecord(actor: Actor, record: OwnershipSubject): boolean {
   if (actor.role === 'psychologist' && actor.psychologistId) {
     const mine = actor.psychologistId;
@@ -371,11 +318,6 @@ export function isOwnRecord(actor: Actor, record: OwnershipSubject): boolean {
       record.assignedPsychologistId === mine ||
       record.authorPsychologistId === mine
     ) {
-      return true;
-    }
-  }
-  if (actor.role === 'provider' && actor.providerId) {
-    if (record.providerId === actor.providerId || record.target?.providerId === actor.providerId) {
       return true;
     }
   }
@@ -425,11 +367,6 @@ export const BLOCKED_DATA: Readonly<Record<Role, readonly string[]>> = {
     'Anotações de sessão',
     'Ocorrências POP-05 e POP-07 (nem a existência de alerta)',
   ],
-  provider: [
-    'Qualquer dado clínico, escore ou faixa de outros prestadores',
-    'Identificação do cuidador que o avaliou',
-    'Dados de outros prestadores e finanças',
-  ],
 };
 
 export type ZaritVisibility = 'none' | 'status_only' | 'aggregate' | 'own_case' | 'supervision';
@@ -453,120 +390,4 @@ export function zaritVisibility(role: Role): ZaritVisibility {
 /** Valores financeiros (receita, custos, saldo): só `partner`. */
 export function canSeeFinancialValues(role: Role): boolean {
   return accessLevel(role, 'finance') !== '-';
-}
-
-// ===== Perfil `provider`: próprio, mínimo, aceita e cláusula =====
-
-/** O prestador só enxerga o PRÓPRIO registro. */
-export function isOwnProviderRecord(
-  actor: Pick<Actor, 'role' | 'providerId'>,
-  providerId: ID | undefined,
-): boolean {
-  return (
-    actor.role === 'provider' && actor.providerId !== undefined && actor.providerId === providerId
-  );
-}
-
-export type ProviderRequestVisibility =
-  /** Só especialidade e data (solicitação ainda `requested`, ou já encerrada). */
-  | 'minimal_only'
-  /** Solicitação aceita, mas falta assinar a cláusula de proteção de dados. */
-  | 'clause_required'
-  /** Aceita e com cláusula assinada: nome, contato, necessidade e endereço se domiciliar. */
-  | 'caregiver_data';
-
-/**
- * O que o prestador vê do usuário (RN-LGPD-13, M14): dados só enquanto a solicitação está `accepted`
- * E a cláusula está assinada. Sem cláusula: "assine a cláusula para ver os dados".
- */
-export function providerRequestVisibility(
-  provider: Pick<Provider, 'dataProtectionClauseSignedAt'>,
-  request: Pick<ServiceRequest, 'status'>,
-): ProviderRequestVisibility {
-  if (request.status !== 'accepted') {
-    return 'minimal_only';
-  }
-  return provider.dataProtectionClauseSignedAt ? 'caregiver_data' : 'clause_required';
-}
-
-/** Dados mínimos do usuário que o credenciado pode receber (LP-10): nunca Zarit, faixa, anotações. */
-export interface ProviderCaregiverView {
-  name: string;
-  contact: { phone: string; email: string };
-  need: string;
-  /** Só quando o atendimento é domiciliar. */
-  address?: string;
-}
-
-export function providerCaregiverView(
-  visibility: ProviderRequestVisibility,
-  caregiver: Pick<Caregiver, 'fullName' | 'phone' | 'email'>,
-  request: Pick<ServiceRequest, 'need' | 'modality'>,
-  homeAddress?: string,
-): ProviderCaregiverView | null {
-  if (visibility !== 'caregiver_data') {
-    return null;
-  }
-  const view: ProviderCaregiverView = {
-    name: caregiver.fullName,
-    contact: { phone: caregiver.phone, email: caregiver.email },
-    need: request.need,
-  };
-  if (request.modality === 'home' && homeAddress) {
-    view.address = homeAddress;
-  }
-  return view;
-}
-
-/** O prestador pode ver a reclamação? Só as que o citam (RN-ARP-18, AC-M11-09). */
-export function providerSeesComplaint(
-  actor: Pick<Actor, 'role' | 'providerId'>,
-  complaint: Pick<Complaint, 'target'>,
-): boolean {
-  return (
-    actor.role === 'provider' &&
-    actor.providerId !== undefined &&
-    complaint.target.providerId === actor.providerId
-  );
-}
-
-/** Reclamação sem identificar o cuidador (nem o canal por onde veio). */
-export interface ProviderComplaintView {
-  protocol: string;
-  openedAt: string;
-  description: string;
-  status: Complaint['status'];
-}
-
-export function redactComplaintForProvider(
-  complaint: Pick<Complaint, 'protocol' | 'openedAt' | 'description' | 'status'>,
-): ProviderComplaintView {
-  return {
-    protocol: complaint.protocol,
-    openedAt: complaint.openedAt,
-    description: complaint.description,
-    status: complaint.status,
-  };
-}
-
-/** Avaliação sem identificar o cuidador (RN-ARP-18). */
-export interface ProviderEvaluationView {
-  id: ID;
-  score: number;
-  comment?: string;
-  createdAt: string;
-}
-
-export function redactEvaluationForProvider(
-  evaluation: Pick<ProviderEvaluation, 'id' | 'score' | 'comment' | 'createdAt'>,
-): ProviderEvaluationView {
-  const view: ProviderEvaluationView = {
-    id: evaluation.id,
-    score: evaluation.score,
-    createdAt: evaluation.createdAt,
-  };
-  if (evaluation.comment !== undefined) {
-    view.comment = evaluation.comment;
-  }
-  return view;
 }

@@ -2,14 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MODULES, canAccessModule, menuFor } from '../../core/auth/module-map';
 import { ROLES } from '../../core/auth/permissions';
 import { Role } from '../../core/models/access';
-import {
-  PORTAL_BOTTOM_NAV,
-  activeGroupOf,
-  buildNavigation,
-  flattenNavigation,
-  pinnedLinks,
-  portalMoreLinks,
-} from './nav.model';
+import { activeGroupOf, buildNavigation, flattenNavigation, pinnedLinks } from './nav.model';
 
 const TEAM: Role[] = ['partner', 'technical_lead', 'psychologist', 'support'];
 
@@ -25,10 +18,6 @@ describe('menu lateral por perfil (buildNavigation)', () => {
         expect(link.path.startsWith('/portal')).toBe(false);
       });
     });
-  });
-
-  it('o credenciado não usa o menu lateral do ERP', () => {
-    expect(buildNavigation('provider')).toEqual([]);
   });
 
   it('a sócia vê 17 itens, o RT 14 e o atendimento 13, nos grupos da ordem do guia', () => {
@@ -104,24 +93,5 @@ describe('menu lateral por perfil (buildNavigation)', () => {
     expect(activeGroupOf('/app/cuidadores/cg_0001?aba=resumo', entries)).toBe('people');
     expect(activeGroupOf('/app/financeiro/projecao', entries)).toBe('management');
     expect(activeGroupOf('/app/painel', entries)).toBeNull();
-  });
-});
-
-describe('navegação do portal', () => {
-  it('a barra inferior tem 4 destinos e o Mais traz o resto (Avaliação interna só com o prestador suspenso)', () => {
-    expect(PORTAL_BOTTOM_NAV.map((l) => l.label)).toEqual([
-      'Início',
-      'Solicitações',
-      'Disponibilidade',
-      'Mensagens',
-    ]);
-    expect(portalMoreLinks(false).map((l) => l.label)).toEqual([
-      'Minha avaliação',
-      'Documentos',
-      'Integração',
-      'Meu perfil',
-      'Privacidade',
-    ]);
-    expect(portalMoreLinks(true).map((l) => l.label)).toContain('Avaliação interna');
   });
 });

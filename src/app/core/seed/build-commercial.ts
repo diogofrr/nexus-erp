@@ -273,6 +273,21 @@ export function buildCommercial(s: SeedState): void {
     use((otherCards[k % otherCards.length] as BenefitCard).id, rng.int(1, 80));
   }
 
+  // ===== Cartão inativo (1): quem foi pago e voltou ao Livre =====
+  // Criado DEPOIS dos usos para não entrar no sorteio deles e sem consumir o gerador (a sequência do resto do
+  // seed não muda). O cuidador de volume C120 teve o Essencial por 5 meses e cancelou há 40 dias.
+  c.benefitCards.push(
+    ctx.entity<BenefitCard>(ctx.nextId('crd'), ctx.at(ctx.d(-190)), {
+      caregiverId: caregiverId(120),
+      number: formatCardNumber(1000 + (cardSeq + 1) * 7),
+      status: 'inactive',
+      issuedAt: ctx.d(-190),
+      inactivatedAt: ctx.d(-40),
+    }),
+  );
+  change(120, 'livre', 'essencial', 'upgrade', ctx.d(-190), USER.camila);
+  change(120, 'essencial', 'livre', 'cancel', ctx.d(-40), USER.camila);
+
   // ===== Canal corporativo (3 empresas) =====
   const account = (
     id: string,

@@ -140,7 +140,7 @@ interface FieldRef {
         <h2 id="kit-masked-title">Dado sensível</h2>
         <p>
           O que aparece depende do perfil que está logado: o atendimento vê "Mostrar" (pede motivo, mostra por 30 s e
-          grava no log), a gestão vê só o código, o credenciado vê só o mascarado.
+          grava no log), a gestão vê só o código e o psicólogo de outro caso vê só o mascarado.
         </p>
       </div>
       <div class="layout-main-aside">

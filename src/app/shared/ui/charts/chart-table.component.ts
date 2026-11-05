@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { GlyphComponent } from '../overlay/glyph.component';
+import { IconComponent } from '../display/icon.component';
 
 /**
  * Alternativa em tabela de todo gráfico (acessibilidade): um `<details>` "Ver como tabela" com a mesma
@@ -10,11 +10,11 @@ import { GlyphComponent } from '../overlay/glyph.component';
  */
 @Component({
   selector: 'app-chart-table',
-  imports: [GlyphComponent],
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <details class="chart-alt">
-      <summary><svg appGlyph="table" glyphSize="sm"></svg>{{ summary() }}</summary>
+      <summary><svg appIcon="table" size="sm"></svg>{{ summary() }}</summary>
       <div class="table-wrap">
         <table class="table" data-density="compact">
           <caption class="sr-only">

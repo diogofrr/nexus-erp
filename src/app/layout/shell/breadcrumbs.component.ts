@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../shared/ui/display/icon.component';
 import { PageChromeService } from '../state/page-chrome.service';
 
 /**
@@ -13,7 +13,7 @@ import { PageChromeService } from '../state/page-chrome.service';
  */
 @Component({
   selector: 'app-breadcrumbs',
-  imports: [RouterLink, GlyphComponent],
+  imports: [RouterLink, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'topbar__crumbs' },
   template: `
@@ -37,7 +37,7 @@ import { PageChromeService } from '../state/page-chrome.service';
           [routerLink]="p.link"
           [attr.aria-label]="'Voltar para ' + p.label"
         >
-          <svg appGlyph="chevron-left" glyphSize="sm"></svg><span>{{ p.label }}</span>
+          <svg appIcon="chevron-left" size="sm"></svg><span>{{ p.label }}</span>
         </a>
       }
     } @else if (trail().length === 1) {

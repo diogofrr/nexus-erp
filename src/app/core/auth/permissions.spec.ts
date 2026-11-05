@@ -14,6 +14,7 @@ import {
   PERMISSION_MATRIX,
   ROLES,
   ROLES_REQUIRING_TWO_FACTOR,
+  ROLE_LABELS,
   accessCell,
   accessLevel,
   can,
@@ -24,52 +25,42 @@ import {
   canUseSubArea,
   canWriteSubArea,
   isAggregateOnly,
-  isOwnProviderRecord,
   isOwnRecord,
   ownershipOfCaregiver,
-  providerCaregiverView,
-  providerRequestVisibility,
-  providerSeesComplaint,
-  redactComplaintForProvider,
-  redactEvaluationForProvider,
   requiresJustification,
   zaritVisibility,
 } from './permissions';
 
-/** A matriz do escopo (seção 1.2), retranscrita aqui como oráculo: partner, RT, psicólogo, atendimento, credenciado. */
-const EXPECTED: Record<
-  Resource,
-  [AccessLevel, AccessLevel, AccessLevel, AccessLevel, AccessLevel]
-> = {
-  access_profile: ['L', 'L', 'L', 'L', 'L'],
-  dashboard: ['T', 'T', 'T', 'T', 'T'],
-  caregiver_registry: ['A', 'S', 'P', 'E', '-'],
-  elder_care: ['-', 'S', 'P', 'L', '-'],
-  plans_subscriptions: ['T', 'L', 'L', 'E', '-'],
-  care_schedule: ['A', 'L', 'P', 'E', '-'],
-  session_notes: ['-', 'S', 'C', '-', '-'],
-  occupancy: ['L', 'L', 'P', '-', '-'],
-  rooms: ['E', 'L', 'L', 'L', '-'],
-  zarit_individual: ['-', 'S', 'C', '-', '-'],
-  zarit_aggregate: ['A', 'A', 'A', '-', '-'],
-  arbe_settings: ['L', 'T', 'L', '-', '-'],
-  groups: ['T', 'E', 'E', 'E', '-'],
-  network: ['T', 'L', '-', 'L', 'P'],
-  partners_corporate: ['T', '-', '-', 'L', '-'],
-  finance: ['T', '-', '-', '-', '-'],
-  indicators: ['T', 'A', 'A', 'L', '-'],
-  pilot: ['T', 'A', '-', '-', '-'],
-  message_inbox: ['T', 'L', 'P', 'T', 'P'],
-  complaints: ['T', 'L', '-', 'T', 'P'],
-  lgpd_consents_requests: ['T', 'E', '-', 'E', '-'],
-  lgpd_audit_log: ['L', 'T', '-', '-', '-'],
-  governance: ['T', 'T', 'L', 'L', 'L'],
-  occurrences: ['A', 'T', 'C', '-', '-'],
-  provider_portal: ['-', '-', '-', '-', 'T'],
-  settings: ['T', 'E', '-', '-', '-'],
+/** A matriz do escopo (seção 1.2), retranscrita aqui como oráculo: partner, RT, psicólogo, atendimento (o perfil do credenciado foi removido). */
+const EXPECTED: Record<Resource, [AccessLevel, AccessLevel, AccessLevel, AccessLevel]> = {
+  access_profile: ['L', 'L', 'L', 'L'],
+  dashboard: ['T', 'T', 'T', 'T'],
+  caregiver_registry: ['A', 'S', 'P', 'E'],
+  elder_care: ['-', 'S', 'P', 'L'],
+  plans_subscriptions: ['T', 'L', 'L', 'E'],
+  care_schedule: ['A', 'L', 'P', 'E'],
+  session_notes: ['-', 'S', 'C', '-'],
+  occupancy: ['L', 'L', 'P', '-'],
+  rooms: ['E', 'L', 'L', 'L'],
+  zarit_individual: ['-', 'S', 'C', '-'],
+  zarit_aggregate: ['A', 'A', 'A', '-'],
+  arbe_settings: ['L', 'T', 'L', '-'],
+  groups: ['T', 'E', 'E', 'E'],
+  network: ['T', 'L', '-', 'L'],
+  partners_corporate: ['T', '-', '-', 'L'],
+  finance: ['T', '-', '-', '-'],
+  indicators: ['T', 'A', 'A', 'L'],
+  pilot: ['T', 'A', '-', '-'],
+  message_inbox: ['T', 'L', 'P', 'T'],
+  complaints: ['T', 'L', '-', 'T'],
+  lgpd_consents_requests: ['T', 'E', '-', 'E'],
+  lgpd_audit_log: ['L', 'T', '-', '-'],
+  governance: ['T', 'T', 'L', 'L'],
+  occurrences: ['A', 'T', 'C', '-'],
+  settings: ['T', 'E', '-', '-'],
 };
 
-const ORDER: Role[] = ['partner', 'technical_lead', 'psychologist', 'support', 'provider'];
+const ORDER: Role[] = ['partner', 'technical_lead', 'psychologist', 'support'];
 
 describe('Matriz de permissões (escopo, seção 1.2)', () => {
   it('cada célula da matriz é igual à do escopo', () => {
@@ -81,18 +72,14 @@ describe('Matriz de permissões (escopo, seção 1.2)', () => {
     expect(Object.keys(PERMISSION_MATRIX)).toHaveLength(Object.keys(EXPECTED).length);
   });
 
-  it('são cinco perfis e a equipe exige dois fatores (RN-LGPD-15)', () => {
+  it('são quatro perfis, todos da equipe, e todos exigem dois fatores (RN-LGPD-15)', () => {
     expect(ROLES).toEqual(ORDER);
-    expect(ROLES_REQUIRING_TWO_FACTOR).toEqual([
-      'partner',
-      'technical_lead',
-      'psychologist',
-      'support',
-    ]);
+    expect(ROLES_REQUIRING_TWO_FACTOR).toEqual(ORDER);
+    expect(Object.keys(ROLE_LABELS)).toEqual(ORDER);
   });
 
   it('a linha do escopo "M10 Financeiro e indicadores" foi desdobrada sem dar valores ao RT, ao psicólogo e ao atendimento (seção 1.3)', () => {
-    (['technical_lead', 'psychologist', 'support', 'provider'] as Role[]).forEach((r) =>
+    (['technical_lead', 'psychologist', 'support'] as Role[]).forEach((r) =>
       expect(canSeeFinancialValues(r)).toBe(false),
     );
     expect(canSeeFinancialValues('partner')).toBe(true);
@@ -158,7 +145,7 @@ describe('can(role, resource, action): níveis', () => {
         'supervise',
       ] as const
     ).forEach((action) => {
-      expect(can('provider', 'finance', action)).toBe(false);
+      expect(can('support', 'finance', action)).toBe(false);
       expect(can('support', 'zarit_individual', action)).toBe(false);
     });
   });
@@ -185,15 +172,12 @@ describe('Rotas e módulos (AC-M01-06, AC-M01-08)', () => {
     expect(canAccessModule('psychologist', moduleByKey('subscriptions'))).toBe(false);
   });
 
-  it('o credenciado só entra no portal, nunca em /app (AC-M14-01)', () => {
-    expect(menuFor('provider')).toEqual([]);
-    expect(homePathFor('provider')).toBe('/portal');
-    expect(canOpenRoute('provider', 'provider_portal')).toBe(true);
-    MODULES.filter((m) => m.key !== 'provider-portal').forEach((m) =>
-      expect(canAccessModule('provider', m), m.key).toBe(false),
-    );
-    expect(canAccessModule('provider', moduleByKey('provider-portal'))).toBe(true);
-    expect(canOpenAnyRoute('provider', ['dashboard', 'finance'])).toBe(false);
+  it('não existe portal nem módulo M14: todo perfil entra em /app/painel (decisão do dono)', () => {
+    ROLES.forEach((role) => expect(homePathFor(role)).toBe('/app/painel'));
+    expect(MODULES.some((m) => m.moduleId === 'M14')).toBe(false);
+    expect(MODULES.every((m) => m.path.startsWith('/app/'))).toBe(true);
+    expect(canOpenAnyRoute('support', ['dashboard', 'finance'])).toBe(true);
+    expect(canOpenAnyRoute('support', ['finance', 'lgpd_audit_log'])).toBe(false);
   });
 
   it('o menu lateral de cada perfil mostra só o permitido', () => {
@@ -229,13 +213,12 @@ describe('Rotas e módulos (AC-M01-06, AC-M01-08)', () => {
     ]);
     expect(keys('support')).not.toContain('zarit');
     expect(keys('support')).not.toContain('settings');
-    expect(keys('partner')).not.toContain('provider-portal');
     expect(homePathFor('partner')).toBe('/app/painel');
   });
 
   it('cada módulo do mapa aponta para uma pasta de funcionalidade e para recursos da matriz', () => {
-    expect(MODULES).toHaveLength(18);
-    expect(new Set(MODULES.map((m) => m.key)).size).toBe(18);
+    expect(MODULES).toHaveLength(17);
+    expect(new Set(MODULES.map((m) => m.key)).size).toBe(17);
     MODULES.forEach((m) => {
       m.resources.forEach((r) => expect(Object.keys(PERMISSION_MATRIX)).toContain(r));
       expect(m.path.endsWith(m.segment)).toBe(true);
@@ -245,7 +228,6 @@ describe('Rotas e módulos (AC-M01-06, AC-M01-08)', () => {
 
 describe('Propriedade de registros (P e C)', () => {
   const psy: Actor = { userId: 'u3', role: 'psychologist', psychologistId: 'psy_0001' };
-  const provider: Actor = { userId: 'u9', role: 'provider', providerId: 'prv_11' };
   const lead: Actor = { userId: 'u2', role: 'technical_lead' };
 
   it('psicólogo: seus cuidadores, suas sessões e suas anotações', () => {
@@ -285,117 +267,6 @@ describe('Propriedade de registros (P e C)', () => {
     ).toBe(true);
   });
 
-  it('credenciado: só o próprio registro', () => {
-    expect(isOwnProviderRecord(provider, 'prv_11')).toBe(true);
-    expect(isOwnProviderRecord(provider, 'prv_01')).toBe(false);
-    expect(isOwnProviderRecord(provider, undefined)).toBe(false);
-    expect(isOwnProviderRecord(psy, 'prv_11')).toBe(false);
-    expect(isOwnRecord(provider, { providerId: 'prv_11' })).toBe(true);
-    expect(isOwnRecord(provider, { target: { providerId: 'prv_11' } })).toBe(true);
-    expect(isOwnRecord(provider, { providerId: 'prv_01' })).toBe(false);
-  });
-});
-
-describe('Perfil provider: mínimo, só com solicitação aceita e cláusula assinada (RN-LGPD-13; AC-M14-03, 04)', () => {
-  const signed = { dataProtectionClauseSignedAt: '2026-10-01' };
-  const unsigned = {};
-
-  it('visibilidade por solicitação e cláusula', () => {
-    expect(providerRequestVisibility(signed, { status: 'requested' })).toBe('minimal_only');
-    expect(providerRequestVisibility(signed, { status: 'accepted' })).toBe('caregiver_data');
-    expect(providerRequestVisibility(unsigned, { status: 'accepted' })).toBe('clause_required');
-    (
-      [
-        'completed',
-        'refused_by_provider',
-        'cancelled_by_user',
-        'cancelled_by_provider',
-        'evaluated',
-      ] as const
-    ).forEach((status) =>
-      expect(providerRequestVisibility(signed, { status })).toBe('minimal_only'),
-    );
-  });
-
-  it('só devolve nome, contato, necessidade e (se domiciliar) endereço: nunca dado clínico', () => {
-    const caregiver = {
-      fullName: 'Ana Paula Ferraz',
-      phone: '(34) 90000-0001',
-      email: 'ana@exemplo.com.br',
-    };
-    expect(
-      providerCaregiverView('minimal_only', caregiver, {
-        need: 'Prótese',
-        modality: 'at_provider',
-      }),
-    ).toBeNull();
-    expect(
-      providerCaregiverView('clause_required', caregiver, {
-        need: 'Prótese',
-        modality: 'at_provider',
-      }),
-    ).toBeNull();
-    const view = providerCaregiverView(
-      'caregiver_data',
-      caregiver,
-      { need: 'Prótese', modality: 'at_provider' },
-      'Rua Exemplo, 10',
-    );
-    expect(view).toEqual({
-      name: 'Ana Paula Ferraz',
-      contact: { phone: '(34) 90000-0001', email: 'ana@exemplo.com.br' },
-      need: 'Prótese',
-    });
-    const home = providerCaregiverView(
-      'caregiver_data',
-      caregiver,
-      { need: 'Fisioterapia', modality: 'home' },
-      'Rua Exemplo, 10',
-    );
-    expect(home?.address).toBe('Rua Exemplo, 10');
-    expect(Object.keys(home ?? {}).sort()).toEqual(['address', 'contact', 'name', 'need']);
-  });
-
-  it('reclamações só as que o citam, sem identificar o cuidador; avaliações sem identificação', () => {
-    const provider = { role: 'provider' as const, providerId: 'prv_14' };
-    expect(
-      providerSeesComplaint(provider, { target: { type: 'provider', providerId: 'prv_14' } }),
-    ).toBe(true);
-    expect(
-      providerSeesComplaint(provider, { target: { type: 'provider', providerId: 'prv_04' } }),
-    ).toBe(false);
-    expect(providerSeesComplaint(provider, { target: { type: 'platform' } })).toBe(false);
-    expect(
-      providerSeesComplaint(
-        { role: 'support' },
-        { target: { type: 'provider', providerId: 'prv_14' } },
-      ),
-    ).toBe(false);
-    const complaint = redactComplaintForProvider({
-      protocol: 'REC-0001',
-      openedAt: 'x',
-      description: 'texto',
-      status: 'open',
-      ...{ caregiverId: 'cg_0027', channel: 'phone' },
-    });
-    expect(Object.keys(complaint).sort()).toEqual([
-      'description',
-      'openedAt',
-      'protocol',
-      'status',
-    ]);
-    const evaluation = redactEvaluationForProvider({
-      id: 'evl_1',
-      score: 4.5,
-      comment: 'Bom',
-      createdAt: 'x',
-      ...{ caregiverId: 'cg_0001' },
-    });
-    expect(evaluation).toEqual({ id: 'evl_1', score: 4.5, comment: 'Bom', createdAt: 'x' });
-    expect(redactEvaluationForProvider({ id: 'e', score: 3, createdAt: 'x' })).not.toHaveProperty(
-      'comment',
-    );
-  });
 });
 
 describe('Regras de bloqueio (seção 1.3)', () => {
@@ -410,11 +281,10 @@ describe('Regras de bloqueio (seção 1.3)', () => {
     expect(zaritVisibility('partner')).toBe('aggregate');
     expect(zaritVisibility('technical_lead')).toBe('supervision');
     expect(zaritVisibility('psychologist')).toBe('own_case');
-    expect(zaritVisibility('provider')).toBe('none');
   });
 
   it('accessCell expõe o qualificador do escopo', () => {
     expect(accessCell('psychologist', 'caregiver_registry').note).toBe('seus cuidadores');
-    expect(accessCell('provider', 'message_inbox')).toMatchObject({ level: 'P', canEdit: true });
+    expect(accessCell('psychologist', 'care_schedule')).toMatchObject({ level: 'P', canEdit: true });
   });
 });

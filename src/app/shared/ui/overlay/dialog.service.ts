@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { IconName } from '../display/icon.component';
 
 /** Tom do diálogo: define o ícone e o estilo do botão de confirmar. */
 export type DialogTone = 'danger' | 'attention' | 'info';
@@ -30,7 +31,7 @@ export interface ConfirmConfig {
   level?: 2 | 3;
   tone?: DialogTone;
   /** Nome de um ícone do sprite; por padrão vem do tom. */
-  icon?: string;
+  icon?: IconName;
   effects?: DialogEffects;
   /** Frase em destaque quando não há volta: "Não dá para desfazer." */
   irreversibleNote?: string;

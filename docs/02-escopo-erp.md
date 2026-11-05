@@ -5,15 +5,15 @@ Documento do PM, derivado **somente** das regras do `01-regras-de-negocio.md` (c
 ## 0. Visão e convenções
 
 ### 0.1 O que é o ERP
-Back-office da empresa Nexus (cuidado ao cuidador familiar de pessoas idosas, Uberlândia) mais o **Portal do Profissional Credenciado**. O aplicativo do cuidador **não** faz parte deste escopo (seção 8); o ERP guarda e administra os dados que ele geraria. Protótipo de front-end Angular: sem servidor, dados em `localStorage` (prefixo `nexus-erp:`), sessão em `sessionStorage`, tudo por serviços de repositório tipados.
+Back-office da empresa Nexus (cuidado ao cuidador familiar de pessoas idosas, Uberlândia) usado só pela equipe. A rede credenciada é cadastro gerido pela equipe, sem login próprio de prestador (decisão do dono: o portal do prestador, o módulo M14 e o perfil de acesso de prestador foram removidos). O aplicativo do cuidador **não** faz parte deste escopo (seção 8); o ERP guarda e administra os dados que ele geraria. Protótipo de front-end Angular: sem servidor, dados em `localStorage` (prefixo `nexus-erp:`), sessão em `sessionStorage`, tudo por serviços de repositório tipados.
 
 ### 0.2 Convenções deste documento
 | Item | Convenção |
 |---|---|
-| Módulos | `M01` a `M15` |
+| Módulos | `M01` a `M15` (o `M14` foi removido por decisão do dono e o ID não é reaproveitado) |
 | Telas | `SCR-Mxx-nn`, com rota sugerida (Angular, lazy por feature) |
 | Critérios de aceite | `AC-Mxx-nn` (módulo) e `AC-GL-nn` (transversais). Cada um é uma frase verificável, no formato "dado, quando, então" compacto |
-| Perfis | `partner` (Sócio/Gestão), `technical_lead` (Responsável técnico), `psychologist` (Psicólogo(a) da Nexus), `support` (Atendimento/Relacionamento), `provider` (Profissional credenciado) |
+| Perfis | `partner` (Sócio/Gestão), `technical_lead` (Responsável técnico), `psychologist` (Psicólogo(a) da Nexus), `support` (Atendimento/Relacionamento). São 4 papéis de login |
 | Identificadores de código | Inglês; textos de tela em pt-BR (`00-contexto.md`) |
 | Datas e valores | `04/11/2026`; `R$ 49,90`; dinheiro guardado em centavos inteiros |
 | "Hoje" (D0) | Vem do serviço `Clock`: data do sistema ou, se definida em M15, a data simulada. Toda regra de prazo usa o `Clock`, nunca `Date.now()` direto |
@@ -43,37 +43,38 @@ Back-office da empresa Nexus (cuidado ao cuidador familiar de pessoas idosas, Ub
 | `technical_lead` Responsável técnico | Psicólogo inscrito no CRP-04 (RN-ATD-06, RN-ORG-02) | Supervisão técnica de todos os casos, POP-05, POP-07, POP-09, parâmetros da ARBE, validação ética |
 | `psychologist` Psicólogo(a) da Nexus | Equipe que atende (RN-ATD-01) | Agenda, sessões, anotações sigilosas, Zarit e alertas **dos seus** cuidadores |
 | `support` Atendimento/Relacionamento | Gestão do relacionamento com usuários (RN-ORG-02) | Cadastros, assinaturas, caixa de mensagens, reclamações, solicitações do titular. **Sem dado clínico** |
-| `provider` Profissional credenciado | Prestador da rede, exemplo principal: cirurgião-dentista com CRO (RN-REDE-15) | Portal: seu perfil, solicitações, sua nota, seus documentos. Vê só o mínimo necessário do usuário (RN-LGPD-08) |
+
+**Decisão do dono.** Não existe perfil de acesso de prestador nem portal: os prestadores da rede são **cadastros** (entidade `Provider`, credenciamento, ARP, auditoria, solicitações) gerenciados pela equipe (`partner`, `technical_lead` para psicólogos da rede, `support`), sem login próprio (RN-REDE-15). Toda ação que o prestador faria é registrada pela equipe em nome dele.
 
 ### 1.2 Matriz de permissões por módulo
 Legenda: `-` sem acesso. `L` leitura. `E` leitura e edição (criar, editar; sem excluir). `T` total (inclui arquivar, excluir ou decidir quando a regra permitir). `A` somente **agregado ou pseudonimizado** (códigos `CUI-0000`, contagens, médias; nunca nome, contato nem texto livre). `P` somente registros **próprios** ou **atribuídos**. `C` conteúdo **clínico** (restrito ao caso). `S` **supervisão**: leitura de todos os casos, com log obrigatório e justificativa; sem editar anotação de outro psicólogo.
 
-| Módulo / recurso | partner | technical_lead | psychologist | support | provider |
-|---|---|---|---|---|---|
-| M01 Acesso e perfis | L (próprio) | L (próprio) | L (próprio) | L (próprio) | L (próprio) |
-| M02 Painel | T (o seu) | T (o seu) | T (o seu) | T (o seu) | T (o seu, no portal) |
-| M03 Cuidadores e pessoas idosas, dados cadastrais | A | S | P (seus cuidadores) | E | - |
-| M03 Pessoa idosa, medicamentos e agenda de cuidados | - | S | P | L | - |
-| M04 Planos, assinaturas e Cartão Nexus | T | L | L (plano do próprio cuidador) | E | - |
-| M05 Agenda e sessões (sem conteúdo clínico) | A (horas) | L | P (E) | E (agendar em nome do usuário) | - |
-| M05 Anotações sigilosas de sessão | - | S | C (autor) | - | - |
-| M05 Ocupação e horas | L | L | P | - | - |
-| M05 Salas do coworking | E | L | L | L | - |
-| M06 Zarit e alertas, individual | - | S | C | - | - |
-| M06 Zarit e ARBE, agregado | A | A | A (seus casos) | - | - |
-| M06 Parâmetros da ARBE | L | T | L | - | - |
-| M07 Grupos e capacitações | T | E (valida enquadramento) | E (seus grupos) | E (inscrições) | - |
-| M08 Rede credenciada (credenciamento, ARP, auditoria, descredenciamento) | T | L (valida psicólogos da rede) | - | L (e E só para registrar solicitações e avaliações em nome do usuário, RN-CAN-05) | P (próprio, via M14) |
-| M09 Parceiros do Cartão e canal corporativo | T | - | - | L | - |
-| M10 Financeiro e indicadores | T | A (indicadores clínicos agregados) | A (seus casos) | L (operacionais: SLA, reclamações) | - |
-| M11 Caixa de mensagens | T | L (casos de risco) | P (mensagens dos seus cuidadores) | T | P (mensagens com a Nexus) |
-| M11 Reclamações | T | L (graves e POP-07) | - | T | P (as que o citam, sem identificar o cuidador) |
-| M12 LGPD: consentimentos e solicitações do titular | T | E | - | E (registrar em nome do titular) | - |
-| M12 LGPD: log de auditoria, incidentes, RIPD, política | L | T | - | - | - |
-| M13 Governança: POPs, riscos, encaminhamentos, formação | T | T | L | L | L (POPs da integração) |
-| M13 Ocorrências POP-05 e POP-07 | A (contagens) | T | C (seus casos) | - | - |
-| M14 Portal do profissional | - | - | - | - | T (próprio) |
-| M15 Configurações e dados de demonstração | T | E (apenas ARBE e conteúdos) | - | - | - |
+| Módulo / recurso | partner | technical_lead | psychologist | support |
+|---|---|---|---|---|
+| M01 Acesso e perfis | L (próprio) | L (próprio) | L (próprio) | L (próprio) |
+| M02 Painel | T (o seu) | T (o seu) | T (o seu) | T (o seu) |
+| M03 Cuidadores e pessoas idosas, dados cadastrais | A | S | P (seus cuidadores) | E |
+| M03 Pessoa idosa, medicamentos e agenda de cuidados | - | S | P | L |
+| M04 Planos, assinaturas e Cartão Nexus | T | L | L (plano do próprio cuidador) | E |
+| M05 Agenda e sessões (sem conteúdo clínico) | A (horas) | L | P (E) | E (agendar em nome do usuário) |
+| M05 Anotações sigilosas de sessão | - | S | C (autor) | - |
+| M05 Ocupação e horas | L | L | P | - |
+| M05 Salas do coworking | E | L | L | L |
+| M06 Zarit e alertas, individual | - | S | C | - |
+| M06 Zarit e ARBE, agregado | A | A | A (seus casos) | - |
+| M06 Parâmetros da ARBE | L | T | L | - |
+| M07 Grupos e capacitações | T | E (valida enquadramento) | E (seus grupos) | E (inscrições) |
+| M08 Rede credenciada (credenciamento, ARP, auditoria, descredenciamento) | T | L (valida psicólogos da rede) | - | L (e E só para registrar solicitações e avaliações em nome do usuário, RN-CAN-05) |
+| M09 Parceiros do Cartão e canal corporativo | T | - | - | L |
+| M10 Financeiro e indicadores | T | A (indicadores clínicos agregados) | A (seus casos) | L (operacionais: SLA, reclamações) |
+| M11 Caixa de mensagens | T | L (casos de risco) | P (mensagens dos seus cuidadores) | T |
+| M11 Reclamações | T | L (graves e POP-07) | - | T |
+| M12 LGPD: consentimentos e solicitações do titular | T | E | - | E (registrar em nome do titular) |
+| M12 LGPD: log de auditoria, incidentes, RIPD, política | L | T | - | - |
+| M13 Governança: POPs, riscos, encaminhamentos, formação | T | T | L | L |
+| M13 Ocorrências POP-05 e POP-07 | A (contagens) | T | C (seus casos) | - |
+| M14 (removido por decisão do dono) | - | - | - | - |
+| M15 Configurações e dados de demonstração | T | E (apenas ARBE e conteúdos) | - | - |
 
 ### 1.3 O que cada perfil NÃO pode ver (regras de bloqueio)
 | Perfil | Não pode ver, em hipótese alguma |
@@ -82,12 +83,13 @@ Legenda: `-` sem acesso. `L` leitura. `E` leitura e edição (criar, editar; sem
 | `technical_lead` | Valores financeiros detalhados (receita, custos, saldo); dados de prestadores além do necessário para validar psicólogos da rede |
 | `psychologist` | Cuidadores atribuídos a outro psicólogo (a não ser por redistribuição formal); finanças; credenciamento; log de auditoria |
 | `support` | Escore de Zarit, faixa, alertas ARBE, anotações, ocorrências POP-05 e POP-07 (nem "existe alerta"). Vê apenas se a aplicação da escala está "pendente" ou "em dia" (data de vencimento), sem resultado `[suposição]` |
-| `provider` | Qualquer dado clínico, escore, faixa ARP dos outros prestadores, identificação do cuidador que o avaliou, dados de outros prestadores, finanças. Do usuário atendido vê só: nome, contato, necessidade do serviço, endereço quando domiciliar, e somente enquanto a solicitação estiver `accepted`, e só se tiver a cláusula de proteção de dados assinada (RN-LGPD-13) |
 | Todos | Dados de outro perfil que a matriz marque com `-`. Link direto para recurso proibido mostra `SCR-M01-05` sem revelar se o recurso existe |
+
+**Mínimo ao prestador (fora do ERP).** Como o prestador não tem login, nada dele aparece no sistema. Quando a equipe repassa dados de um usuário a um prestador (por telefone, WhatsApp ou e-mail), repassa só o mínimo: nome, contato, necessidade do serviço e endereço quando domiciliar, somente enquanto a solicitação estiver `accepted` e só se o prestador tiver a cláusula de proteção de dados assinada (RN-LGPD-13). Nunca dado clínico, escore, faixa, identificação do cuidador que avaliou, dados de outros prestadores nem finanças.
 
 ### 1.4 Sessão e login simulado (M01)
 - Login é **seleção de perfil de demonstração**. Não há senha real.
-- Perfis `partner`, `technical_lead`, `psychologist` e `support` exigem **verificação em dois fatores simulada** (RN-LGPD-15): o sistema exibe na tela um código de 6 dígitos (`123456`) e pede para digitá-lo. `provider` não é equipe: entra sem segundo fator `[suposição]`.
+- Perfis `partner`, `technical_lead`, `psychologist` e `support` exigem **verificação em dois fatores simulada** (RN-LGPD-15): o sistema exibe na tela um código de 6 dígitos (`123456`) e pede para digitá-lo. Os quatro perfis são da equipe.
 - Sessão em `sessionStorage` (`nexus-erp:session`): fecha com a aba. Expira por inatividade em 30 minutos `[suposição]`, com aviso 2 minutos antes.
 - Trocar de perfil = encerrar sessão e escolher outro. Cada login e logout geram log.
 
@@ -110,7 +112,7 @@ Legenda: `-` sem acesso. `L` leitura. `E` leitura e edição (criar, editar; sem
 | M11 | Mensagens e reclamações | `/app/mensagens`, `/app/reclamacoes` | support, partner, RT(L) | CAN-*, POP-08 |
 | M12 | LGPD | `/app/lgpd` | partner, RT, support | LGPD-* |
 | M13 | Governança: POPs, riscos, encaminhamentos, formação | `/app/governanca` | partner, RT; leitura geral | POP-*, RISCO-*, ENC-*, CAP-* |
-| M14 | Portal do profissional credenciado | `/portal` | provider | REDE-*, ARP-18 |
+| M14 | Removido por decisão do dono | (sem rota) | nenhum | REDE-* e ARP-18 seguem valendo, cumpridas pela equipe em M08 |
 | M15 | Configurações e dados de demonstração | `/app/configuracoes` | partner, RT(E) | todas as suposições |
 
 Fusões e divisões em relação à lista inicial: "Parceiros e canal corporativo" ficou no M09; o piloto (PIL) e os indicadores de People Analytics ficaram no M10; CAP, POPs, riscos e encaminhamentos formam o M13 (a lista inicial não tinha esse módulo e as regras RISCO, POP, ENC e CAP precisam de casa).
@@ -128,7 +130,7 @@ Entidades citadas estão definidas na seção 4 (modelo de dados). "Regras" list
 **Telas.**
 | Tela | Rota | Conteúdo |
 |---|---|---|
-| SCR-M01-01 Entrada | `/login` | Aviso de protótipo; banner de uso de armazenamento local (LP-01); cartões dos 12 usuários de demonstração (nome fictício, perfil, descrição em uma frase); botão "Entrar como..." |
+| SCR-M01-01 Entrada | `/login` | Aviso de protótipo; banner de uso de armazenamento local (LP-01); cartões dos 8 usuários de demonstração (nome fictício, perfil, descrição em uma frase); botão "Entrar como..." |
 | SCR-M01-02 Segundo fator | `/login/2fa` | Código de 6 dígitos exibido na tela; campo de confirmação; "voltar" |
 | SCR-M01-03 Sair e trocar perfil | menu do usuário | Encerra sessão e volta à entrada |
 | SCR-M01-04 Sessão expirando | modal | Aviso 2 minutos antes dos 30 de inatividade; "continuar" ou "sair" |
@@ -141,12 +143,12 @@ Entidades citadas estão definidas na seção 4 (modelo de dados). "Regras" list
 **Validações.** Código: exatamente 6 dígitos numéricos e igual ao exibido; três erros seguidos voltam à tela de entrada; sessão só existe em `sessionStorage`; usuário inativo não entra.
 **Regras.** RN-LGPD-11, 12, 15, 25.
 **Critérios de aceite.**
-- [ ] AC-M01-01 A entrada lista exatamente os 12 usuários de demonstração do seed (seção 5.1) com perfil e descrição.
-- [ ] AC-M01-02 Entrar como `partner`, `technical_lead`, `psychologist` ou `support` exige o código; entrar como `provider` não exige.
+- [ ] AC-M01-01 A entrada lista exatamente os 8 usuários de demonstração do seed (seção 5.1) com perfil e descrição.
+- [ ] AC-M01-02 Entrar como `partner`, `technical_lead`, `psychologist` ou `support` exige o código.
 - [ ] AC-M01-03 Código errado mostra erro no campo e não entra; o terceiro erro seguido volta a SCR-M01-01.
 - [ ] AC-M01-04 Fechar a aba e reabrir exige novo login (sessão em `sessionStorage`).
 - [ ] AC-M01-05 Cada login, logout e acesso negado cria linha no log com perfil e horário.
-- [ ] AC-M01-06 Digitar na barra de endereço uma rota de outro perfil (por exemplo, `provider` abrindo `/app/financeiro`) mostra SCR-M01-05 e registra `denied`.
+- [ ] AC-M01-06 Digitar na barra de endereço uma rota de outro perfil (por exemplo, `psychologist` abrindo `/app/financeiro`) mostra SCR-M01-05 e registra `denied`.
 - [ ] AC-M01-07 Após 28 minutos sem interação aparece o aviso de expiração; aos 30 a sessão encerra.
 - [ ] AC-M01-08 O menu lateral mostra apenas os módulos permitidos ao perfil (matriz 1.2).
 
@@ -157,7 +159,7 @@ Entidades citadas estão definidas na seção 4 (modelo de dados). "Regras" list
 **Telas.**
 | Tela | Rota | Conteúdo |
 |---|---|---|
-| SCR-M02-01 Painel | `/app/painel` (`/portal` para provider) | Conteúdo por perfil, tabela abaixo |
+| SCR-M02-01 Painel | `/app/painel` | Conteúdo por perfil, tabela abaixo |
 | SCR-M02-02 Busca global | atalho `Ctrl+K` ou campo no topo | Busca em cuidadores, prestadores, parceiros, atividades; respeita RBAC e mostra só campos permitidos |
 | SCR-M02-03 Notificações | sino no topo | Lista de pendências geradas pelo sistema (vencimentos, alertas) do perfil, com "marcar como visto" |
 
@@ -168,7 +170,6 @@ Conteúdo por perfil:
 | `technical_lead` | Alertas vermelhos e amarelos abertos (todos os casos); vermelhos vencidos; ARBE abertos; ocorrências POP-05 e POP-07; conteúdos aguardando revisão (POP-09); POPs a revisar; ocupação da equipe; validações pendentes |
 | `psychologist` | Minha agenda de hoje; minha fila de acompanhamento (alertas, Zarit vencendo); sessões a registrar; minha ocupação do mês; tarefas "revisar rede de apoio" |
 | `support` | Fila de mensagens por SLA (atrasadas primeiro); reclamações abertas; solicitações de serviço sem retorno; solicitações do titular a registrar; cadastros novos; assinaturas com cancelamento agendado |
-| `provider` | Solicitações novas; minha nota ARP e faixa em linguagem neutra; taxa de recusa em 30 dias; documentos a vencer; próximos serviços; integração pendente |
 
 **Entidades.** Leitura de todas; `Notification`.
 **Estados.** Notificação: `unread`, `seen`, `resolved` (some quando a causa some).
@@ -181,8 +182,8 @@ Conteúdo por perfil:
 - [ ] AC-M02-03 O painel do `partner` mostra 17 assinantes, conversão 5,0% e "faltam 10 para o ponto de equilíbrio" (seção 5.14).
 - [ ] AC-M02-04 O painel do `psychologist` Rafael Moreira (seed) mostra alerta de sobrecarga de agenda; o de Beatriz Nogueira não.
 - [ ] AC-M02-05 O painel do `support` destaca mensagens `overdue` no topo com o tempo de atraso.
-- [ ] AC-M02-06 O painel do `provider` (dentista) mostra a sua nota e a faixa só como "em destaque" ou "em acompanhamento", sem números de outros prestadores.
-- [ ] AC-M02-07 A busca global por "Ana" para `support` devolve cuidadores; para `partner` devolve apenas códigos pseudonimizados; para `provider` não devolve cuidadores.
+- [ ] AC-M02-06 Removido por decisão do dono: não existe painel de prestador (o portal e o perfil `provider` saíram do escopo).
+- [ ] AC-M02-07 A busca global por "Ana" para `support` devolve cuidadores; para `partner` devolve apenas códigos pseudonimizados.
 - [ ] AC-M02-08 Cada item de painel leva à tela correta do módulo com o filtro aplicado.
 
 ### M03 Cuidadores e pessoas idosas
@@ -405,7 +406,7 @@ Conteúdo por perfil:
 ### M08 Rede credenciada
 
 **Objetivo.** Credenciar, avaliar (ARP) e descredenciar prestadores; acompanhar solicitações de serviço, taxa de recusa e disponibilidade; mostrar "como o usuário vê" a busca com mais de uma opção por especialidade.
-**Usuários.** `partner` (total), `technical_lead` (valida psicólogos da rede), `support` (leitura).
+**Usuários.** `partner` (total), `technical_lead` (valida psicólogos da rede), `support` (leitura). Os prestadores são cadastros e não têm login: tudo o que eles fariam é registrado pela equipe em nome deles.
 **Telas.**
 | Tela | Rota | Conteúdo |
 |---|---|---|
@@ -422,7 +423,7 @@ Conteúdo por perfil:
 
 **Entidades.** `Provider`, `Accreditation`, `ProviderDocument`, `ServiceRequest`, `ProviderEvaluation`, `ArpSnapshot`, `InternalReview`, `ProviderStatusEvent`, `ProviderAvailabilityWeek`.
 **Estados.** Credenciamento (RN-REDE-20): `requested` para `in_review` para `pending_documents` (volta a `in_review` ao regularizar), `approved` ou `rejected`; `approved` para `active`. Prestador: `active`, `monitoring`, `suspended`, `deaccredited`; `suspended` volta a `active` ou `monitoring` por reinstalação, ou segue a `deaccredited`. Solicitação (RN-REDE-26): `requested` para `accepted` ou `refused_by_provider` ou `cancelled_by_user`; `accepted` para `completed` ou `cancelled_by_provider` ou `cancelled_by_user`; `completed` para `evaluated`.
-**Ações.** Abrir processo; conferir cada critério; anexar documento (simulado) com validade; aprovar; reprovar com motivo; pedir documentos; ativar após integração; registrar solicitação; aceitar, recusar ou cancelar; registrar avaliação (por `support`, em nome do usuário que a deu por telefone ou WhatsApp); classificar reclamação grave; rodar auditoria; contatar prestador em monitoramento (registro); suspender; abrir e decidir avaliação interna; reinstalar; enviar e-mail de encerramento (registro com texto e data).
+**Ações.** Abrir processo; conferir cada critério; anexar documento (simulado) com validade; aprovar; reprovar com motivo; pedir documentos; ativar após integração; registrar solicitação; aceitar, recusar ou cancelar; registrar avaliação (por `support`, em nome do usuário que a deu por telefone ou WhatsApp); classificar reclamação grave; rodar auditoria; contatar prestador em monitoramento (registro); suspender; abrir e decidir avaliação interna; reinstalar; enviar e-mail de encerramento (registro com texto e data); registrar em nome do prestador, sem login dele, a resposta às solicitações (aceite, recusa com motivo, conclusão), os horários da semana, a integração e a ciência dos POPs, o aceite de não captar usuários por fora, a cláusula de proteção de dados e a justificativa da avaliação interna.
 **Validações.**
 - **Aprovação** só com os 5 critérios cumpridos (ou "não se aplica" no registro de conselho para categorias sem conselho) e **todos os documentos dentro da validade** (RN-REDE-21, 22).
 - Documento vencido: processo em `pending_documents`; prestador ativo com documento vencido recebe alerta e, em 30 dias sem regularizar, vai a `suspended` (motivo "documento vencido").
@@ -444,11 +445,11 @@ Conteúdo por perfil:
 - [ ] AC-M08-03 Prestador com 4 avaliações mostra "sem média (menos de 5 avaliações)"; com 5 avaliações de média 4,0 mostra faixa `alert`; com média 4,5 exatamente, `excellence`.
 - [ ] AC-M08-04 Média 3,9 ou menos, ou 3 reclamações graves com média 4,3, classifica `deaccreditation`, suspende e abre avaliação interna; 2 reclamações graves com média 4,3 não suspende.
 - [ ] AC-M08-05 Prestador suspenso some de SCR-M08-09; o ativo da mesma especialidade continua; especialidade com um só ativo mostra "única opção disponível"; especialidade sem ativo mostra "nenhuma opção disponível no momento" e sugere encaminhamento (M13).
-- [ ] AC-M08-06 Dentista Dr. Eduardo Falcão e Dra. Sônia Peixoto (Odontologia) aparecem juntos na busca, com o destaque do primeiro sem esconder a segunda.
+- [ ] AC-M08-06 Dr. Eduardo Falcão (excelência, com destaque) e Dra. Sônia Peixoto (monitoramento), ambos de Fisioterapia, aparecem juntos na busca por Fisioterapia, com o destaque do primeiro sem esconder a segunda nem os demais fisioterapeutas ativos.
 - [ ] AC-M08-07 Aline Cristina Pires (seed) mostra taxa de recusa 62,5% (5 de 8 em 30 dias) e selo "risco de saída"; Fisio em Casa Uberlândia mostra 28,6% (2 de 7) sem selo; Cuidar Bem Home Care mostra 30,0% (3 de 10) com selo.
 - [ ] AC-M08-08 "Rodar auditoria" grava um instantâneo por prestador com data, média, nº de avaliações, faixa e nº de reclamações graves; rodar de novo no mesmo dia pergunta se deseja substituir.
 - [ ] AC-M08-09 Decidir "confirmar descredenciamento" exige texto de e-mail e grava o e-mail no histórico; decidir "reinstalar" exige motivo e devolve o prestador à busca.
-- [ ] AC-M08-10 Avaliação interna do prestador suspenso (seed Clínica Saúde Integral) mostra a justificativa que ele enviou pelo portal.
+- [ ] AC-M08-10 Avaliação interna do prestador suspenso (seed Clínica Saúde Integral) mostra a justificativa que ele enviou à Nexus e que a gestão registrou; a gestão registra novas justificativas recebidas.
 - [ ] AC-M08-11 Dar nota fora de 1 a 5 ou deixar uma das duas notas em branco é rejeitado; avaliação duplicada do mesmo serviço é rejeitada.
 - [ ] AC-M08-12 Nenhuma tela de rede tem campo "comissão", "porcentagem" ou "repasse".
 - [ ] AC-M08-13 O prestador novo sem integração concluída não consegue ir a `active`.
@@ -537,7 +538,7 @@ Conteúdo por perfil:
 ### M11 Mensagens e reclamações
 
 **Objetivo.** Caixa unificada dos quatro canais com prazo (SLA) e tratamento de reclamações (POP-08), incluindo a classificação de "grave" que alimenta a ARP e o encaminhamento à POP-07.
-**Usuários.** `support` (total), `partner` (total), `technical_lead` (leitura de graves e POP-07), `psychologist` (mensagens dos seus cuidadores), `provider` (mensagens com a Nexus, via portal).
+**Usuários.** `support` (total), `partner` (total), `technical_lead` (leitura de graves e POP-07), `psychologist` (mensagens dos seus cuidadores).
 **Telas.**
 | Tela | Rota | Conteúdo |
 |---|---|---|
@@ -568,7 +569,7 @@ Conteúdo por perfil:
 - [ ] AC-M11-06 Marcar "suspeita de violência" cria ocorrência POP-07 visível ao `technical_lead` e não ao `support` nem `partner` (só contagem).
 - [ ] AC-M11-07 `support` registra em nome do usuário um pedido recebido por telefone, e o item entra na caixa com canal "telefone".
 - [ ] AC-M11-08 Reclamação aberta há 8 dias úteis aparece como vencida (prazo 5 dias úteis).
-- [ ] AC-M11-09 `provider` só vê as reclamações que o citam, sem identificar o cuidador.
+- [ ] AC-M11-09 Removido por decisão do dono: o prestador não tem login e não vê reclamações. A equipe só repassa a ele o que o cita, sem identificar o cuidador (RN-ARP-18).
 - [ ] AC-M11-10 Os modelos de resposta não contêm promessa de resultado, travessão ou jargão.
 
 ### M12 LGPD
@@ -664,47 +665,20 @@ Conteúdo por perfil:
 - [ ] AC-M13-11 Conteúdo em `in_review` não pode ser publicado por `partner`; só pelo `technical_lead`.
 - [ ] AC-M13-12 "Normas citadas" lista as seis normas, com "vigência confirmada em" vazio.
 
-### M14 Portal do profissional credenciado
+### M14 (removido por decisão do dono)
 
-**Objetivo.** Dar ao credenciado (exemplo principal: cirurgião-dentista com CRO) seu espaço: perfil, disponibilidade, solicitações, nota, documentos, integração e mensagens, vendo só o mínimo de dados de usuários.
-**Usuários.** `provider`.
-**Telas.**
-| Tela | Rota | Conteúdo |
-|---|---|---|
-| SCR-M14-01 Meu painel | `/portal` | Solicitações novas, nota, taxa de recusa 30 dias, documentos a vencer, integração |
-| SCR-M14-02 Meu perfil | `/portal/perfil` | Especialidade, conselho e número, cidade, domicílio sim/não, condições para usuários Nexus, atualizar |
-| SCR-M14-03 Disponibilidade | `/portal/disponibilidade` | Horários por semana (alimenta RN-REDE-29) |
-| SCR-M14-04 Solicitações | `/portal/solicitacoes` | Aceitar, recusar (com motivo), cancelar, concluir |
-| SCR-M14-05 Solicitação | `/portal/solicitacoes/:id` | Dados mínimos do usuário (nome, contato, necessidade, endereço se domiciliar), só se `accepted` e com cláusula assinada |
-| SCR-M14-06 Minha avaliação | `/portal/avaliacao` | Nota (média), nº de avaliações, faixa em linguagem neutra, comentários **sem identificação**, taxa de recusa |
-| SCR-M14-07 Documentos e contrato | `/portal/documentos` | Registro no conselho com validade, comprovação de formação, contrato, termo de proteção de dados, cláusula; enviar documento (simulado) |
-| SCR-M14-08 Integração e POPs | `/portal/integracao` | Conteúdo da integração, ciência dos POPs, vedação de captação paralela |
-| SCR-M14-09 Avaliação interna | `/portal/avaliacao-interna` | Aparece só se suspenso: enviar justificativas (RN-ARP-10) |
-| SCR-M14-10 Mensagens | `/portal/mensagens` | Canal com a Nexus |
-| SCR-M14-11 Privacidade | `/portal/privacidade` | O que o profissional pode ver e por quê (RN-LGPD-08) |
-
-**Entidades.** As de M08 (somente as do próprio prestador), `Message`.
-**Estados.** Os de M08; mais `InternalReview.justification`.
-**Ações.** Atualizar perfil e disponibilidade; aceitar, recusar, cancelar e concluir solicitação; enviar documento; assinar termo e cláusula; dar ciência dos POPs; enviar justificativa; mensagem.
-**Validações.**
-- Recusa e cancelamento pedem motivo e contam na taxa de recusa (RN-REDE-27).
-- Dados do usuário só visíveis com `accepted` e cláusula de proteção de dados **assinada** (RN-LGPD-13); sem cláusula, a solicitação mostra "assine a cláusula para ver os dados".
-- Comentários de avaliação aparecem sem identificar o cuidador (RN-ARP-18).
-- Não vê notas nem faixa de outros prestadores, nem dados clínicos, nem finanças.
-- Se suspenso, vê aviso neutro e o formulário de justificativas; sem ver a nota numérica exata de outros.
-- Não existe campo de valor de repasse ou comissão.
-**Regras.** RN-REDE-*, RN-ARP-18, 19, RN-LGPD-08, 13, RN-CAP-02.
-**Critérios de aceite.**
-- [ ] AC-M14-01 Entrar como o dentista (CRO) leva a `/portal`; tentar `/app/painel` mostra acesso negado.
-- [ ] AC-M14-02 O painel do dentista mostra a nota 4,7 e a faixa "em destaque", taxa de recusa e 2 solicitações novas.
-- [ ] AC-M14-03 Solicitação `requested` mostra só especialidade e data, sem dados pessoais; ao aceitar, mostra nome, contato e necessidade, e endereço se for domiciliar.
-- [ ] AC-M14-04 Prestador sem cláusula assinada (seed: o novo ativo) não vê dados do usuário mesmo com a solicitação aceita.
-- [ ] AC-M14-05 Recusar sem motivo é bloqueado; recusar com motivo atualiza a taxa de recusa no painel.
-- [ ] AC-M14-06 Os comentários não trazem nome nem código do cuidador.
-- [ ] AC-M14-07 O prestador suspenso (Clínica Saúde Integral) vê o aviso neutro e o formulário de justificativas; ao enviar, a justificativa aparece em SCR-M08-08.
-- [ ] AC-M14-08 Documento vencido mostra alerta vermelho no painel com a data e o prazo de 30 dias para regularizar.
-- [ ] AC-M14-09 Atualizar disponibilidade para menos de 50% da média das 4 semanas anteriores gera sinal em M08 (SCR-M08-10).
-- [ ] AC-M14-10 O portal não mostra Zarit, alerta, faixa de outros, nem qualquer valor financeiro.
+**Removido.** O portal, o perfil `provider` e as telas SCR-M14-01 a 11 não existem mais. O ID M14 fica reservado para não renumerar os módulos seguintes. As regras de negócio da rede credenciada (RN-REDE-*, RN-ARP-*, RN-LGPD-13) continuam valendo e são cumpridas pela equipe em M08: perfil, horários da semana, resposta às solicitações, documentos, integração, ciência dos POPs e justificativa da avaliação interna do prestador são registrados pela equipe em nome dele, sem login de prestador.
+**Critérios de aceite (todos removidos por decisão do dono; os IDs ficam para rastreio).**
+- AC-M14-01 Removido (entrada do prestador em `/portal`).
+- AC-M14-02 Removido (painel do prestador).
+- AC-M14-03 Removido. O mínimo de dados do usuário ao prestador segue em LP-10, aplicado pela equipe ao repassar.
+- AC-M14-04 Removido. A regra segue: sem cláusula de proteção de dados assinada, a equipe não repassa dados do usuário (RN-LGPD-13, LP-10).
+- AC-M14-05 Removido. A recusa com motivo é registrada pela equipe em SCR-M08-05 e conta na taxa de recusa (RN-REDE-27).
+- AC-M14-06 Removido. Comentários sem nome nem código do cuidador seguem em RN-ARP-18.
+- AC-M14-07 Removido. A justificativa do prestador suspenso é registrada pela gestão em SCR-M08-08 (AC-M08-10).
+- AC-M14-08 Removido. Documento vencido continua gerando alerta para a gestão (RN-REDE-22, AC-M08-02).
+- AC-M14-09 Removido. Os horários da semana são lançados pela equipe e a queda acima de 50% gera sinal em SCR-M08-10 (RN-REDE-29).
+- AC-M14-10 Removido (conteúdo do portal).
 
 ### M15 Configurações e dados de demonstração
 
@@ -717,7 +691,7 @@ Conteúdo por perfil:
 | SCR-M15-02 Relógio simulado | `/app/configuracoes/relogio` | Definir a data de "hoje" (D0) para testar prazos; botões "+1 dia", "+7 dias", "+1 mês"; voltar ao relógio real |
 | SCR-M15-03 Parâmetros | `/app/configuracoes/parametros` | Benefícios por plano, capacidade padrão de grupo, limiar da taxa de recusa, mínimo de avaliações (fixo em 5, somente leitura), prazos de solicitação do titular, SLA calendário |
 | SCR-M15-04 ARBE | `/app/configuracoes/arbe` | Mesmo conteúdo de SCR-M06-08 |
-| SCR-M15-05 Usuários de demonstração | `/app/configuracoes/usuarios` | Os 12 usuários (leitura) e quem está ativo |
+| SCR-M15-05 Usuários de demonstração | `/app/configuracoes/usuarios` | Os 8 usuários (leitura) e quem está ativo |
 | SCR-M15-06 Suposições | `/app/configuracoes/suposicoes` | Lista da seção 8 e do catálogo (Anexo D) com valor padrão e valor atual |
 | SCR-M15-07 Sobre | `/app/configuracoes/sobre` | Versão, aviso de protótipo, créditos, link das regras |
 
@@ -756,11 +730,11 @@ type Cents = number;
 interface Audited { id: ID; createdAt: ISODateTime; updatedAt: ISODateTime; }
 
 // ===== Acesso (M01) =====
-type Role = 'partner' | 'technical_lead' | 'psychologist' | 'support' | 'provider';
+type Role = 'partner' | 'technical_lead' | 'psychologist' | 'support';
 interface AppUser extends Audited {
   displayName: string; email: string;          // @exemplo.com.br
   role: Role; active: boolean; requiresTwoFactor: boolean;
-  psychologistId?: ID; providerId?: ID;
+  psychologistId?: ID;
   demoDescription: string;                     // frase exibida na entrada
 }
 interface Session { userId: ID; role: Role; startedAt: ISODateTime; lastActivityAt: ISODateTime; twoFactorVerified: boolean; }
@@ -922,10 +896,10 @@ interface ActivityEnrollment extends Audited {
   attendance: { meetingId: ID; present: boolean }[];
 }
 
-// ===== Rede credenciada (M08, M14) =====
-type ProviderCategory = 'physiotherapy' | 'professional_caregiver' | 'home_care' | 'nursing' | 'pharmacy' | 'clinic' | 'dentistry' | 'psychology' | 'nutrition' | 'legal' | 'specialized_service';
+// ===== Rede credenciada (M08) =====
+type ProviderCategory = 'physiotherapy' | 'professional_caregiver' | 'home_care' | 'nursing' | 'pharmacy' | 'clinic' | 'psychology' | 'nutrition' | 'legal' | 'specialized_service';
 type ProviderStatus = 'active' | 'monitoring' | 'suspended' | 'deaccredited';
-type CouncilBody = 'CRO' | 'CREFITO' | 'COREN' | 'CRN' | 'CRP' | 'OAB' | 'NONE';
+type CouncilBody = 'CREFITO' | 'COREN' | 'CRN' | 'CRP' | 'OAB' | 'NONE';
 interface Provider extends Audited {
   name: string; personType: 'person' | 'company'; category: ProviderCategory; specialtyLabel: string;
   council: { body: CouncilBody; number?: string; state?: string; status: 'active' | 'inactive' | 'not_applicable'; validUntil?: ISODate };
@@ -1102,7 +1076,7 @@ Relações principais: cada `Caregiver` tem exatamente uma `Elder` (RN-USR-10); 
 - **100% fictício**: CPF no formato `000.000.NNN-00` com dígitos verificadores **inválidos** e `cpfIsFictitious: true`; CNPJ idem; e-mails `@exemplo.com.br`; telefones `(34) 90000-0NNN`; endereços "Rua Exemplo, N"; registros de conselho com número fictício e rótulo "(fictício)". Nenhum nome, RA ou dado dos autores do documento é usado.
 - **Cobertura**: cada situação da seção 5.16 tem pelo menos um registro de seed. Os critérios de aceite dos módulos usam os nomes e números abaixo.
 
-### 5.1 Usuários de demonstração (12)
+### 5.1 Usuários de demonstração (8)
 | ID | Nome fictício | Perfil | Observação |
 |---|---|---|---|
 | u1 | Helena Prado Vasconcelos | `partner` | Sócia e gestão |
@@ -1113,10 +1087,8 @@ Relações principais: cada `Caregiver` tem exatamente uma `Elder` (RN-USR-10); 
 | u6 | Dr. Tiago Brandão | `psychologist` | CRP-04/00105 (fictício); começou há 1 mês |
 | u7 | Camila Duarte | `support` | Atendimento |
 | u8 | Wesley Lacerda | `support` | Atendimento |
-| u9 | Dr. Eduardo Falcão | `provider` | Cirurgião-dentista, CRO-MG 00000 (fictício). **Persona do CS/CX** |
-| u10 | Dra. Renata Sampaio | `provider` | Fisioterapeuta, CREFITO fictício |
-| u11 | Clínica Saúde Integral | `provider` | Prestador **suspenso** (avaliação interna) |
-| u12 | Cuidadora Rosimeire Tavares | `provider` | Prestadora nova, sem cláusula de dados assinada |
+
+Os ids `u9` a `u12` eram os usuários do perfil `provider` (Dr. Eduardo Falcão, Dra. Renata Sampaio, Clínica Saúde Integral e Cuidadora Rosimeire Tavares). Por decisão do dono o perfil deixou de existir: esses ids estão **removidos** e não são reaproveitados. Os quatro prestadores continuam como cadastros da rede (5.8), gerenciados pela equipe e sem login. Restam 8 usuários de demonstração, todos da equipe.
 
 ### 5.2 Psicólogos, agenda e ocupação
 Horário de agenda: segunda a sexta, vagas de 1 hora. Os meses fechados vêm de `PsychologistMonthSummary`; o mês corrente, das sessões detalhadas (5.2.2).
@@ -1205,7 +1177,7 @@ Nota ARP = soma das notas individuais ÷ (2 × nº de avaliações). Gerar as av
 
 | ID | Nome fictício | Categoria | Status | Aval. | Soma das notas | Média | Graves | Recusa 30d | Cenário |
 |---|---|---|---|---|---|---|---|---|---|
-| P01 | Dra. Renata Sampaio | Fisioterapia | `active` | 12 | 116 | 4,83 | 0 | 1/10 = 10,0% | Excelência; login do portal (u10) |
+| P01 | Dra. Renata Sampaio | Fisioterapia | `active` | 12 | 116 | 4,83 | 0 | 1/10 = 10,0% | Excelência |
 | P02 | Clínica Movimento Vital | Fisioterapia | `active` | 9 | 83 | 4,61 | 0 | 0/6 | Excelência |
 | P03 | Fisio em Casa Uberlândia | Fisioterapia | `monitoring` | 8 | 68 | 4,25 | 0 | 2/7 = 28,6% | **Alerta**; sócio contatou; **28,6% abaixo do limiar** |
 | P04 | Aline Cristina Pires | Cuidador(a) profissional | `monitoring` | 7 | 58 | 4,14 | 1 | **5/8 = 62,5%** | **Taxa de recusa alta**, queda de 60% na disponibilidade; selo "risco de saída" |
@@ -1214,9 +1186,9 @@ Nota ARP = soma das notas individuais ÷ (2 × nº de avaliações). Gerar as av
 | P07 | Enf. Priscila Gouveia | Enfermagem | `active` | 14 | 137 | 4,89 | 0 | 1/12 | Excelência; única opção de enfermagem |
 | P08 | Farmácia Vida Plena | Farmácia | `active` | 6 | 54 | **4,50** | 0 | 0/6 | **Limite**: exatamente 4,50 é excelência |
 | P09 | Drogaria Santa Clara | Farmácia | `monitoring` | 5 | 40 | **4,00** | 0 | 0/4 | **Limite**: exatamente 4,00 é alerta; 5 avaliações |
-| P10 | Clínica Saúde Integral | Clínica | `suspended` | 7 | 50 | **3,57** | 1 | 2/3 | **Candidata a descredenciamento** (média menor que 4,0); avaliação interna aberta, justificativa enviada pelo portal (u11); **nenhuma opção** de clínica na busca |
-| P11 | **Dr. Eduardo Falcão** | **Odontologia (CRO)** | `active` | 10 | 94 | 4,70 | 0 | 0/4 | **Dentista.** Excelência; **2 solicitações novas**; persona do CS/CX (u9) |
-| P12 | Dra. Sônia Peixoto | Odontologia (CRO) | `monitoring` | 6 | 52 | 4,33 | 0 | 0/3 | Alerta; segunda opção de odontologia |
+| P10 | Clínica Saúde Integral | Clínica | `suspended` | 7 | 50 | **3,57** | 1 | 2/3 | **Candidata a descredenciamento** (média menor que 4,0); avaliação interna aberta, justificativa recebida do prestador e registrada pela gestão; **nenhuma opção** de clínica na busca |
+| P11 | **Dr. Eduardo Falcão** | **Fisioterapia (CREFITO)** | `active` | 10 | 94 | 4,70 | 0 | 0/4 | Excelência; **2 solicitações novas** |
+| P12 | Dra. Sônia Peixoto | Fisioterapia (CREFITO) | `monitoring` | 6 | 52 | 4,33 | 0 | 0/3 | Alerta; mais uma opção de fisioterapia |
 | P13 | Dra. Valéria Costa | Psicologia (rede, CRP) | `active` | 3 | 27 | sem média | 0 | 0/3 | **Menos de 5 avaliações**; única opção de psicologia; validada pelo RT |
 | P14 | Nutri Camila Rezende | Nutrição | `suspended` | 8 | 69 | 4,31 | **3** | 1/4 | **Mais de 2 reclamações graves** (quebra de sigilo + 2 faltas) com média 4,31; avaliação interna aberta sem justificativa; **nenhuma opção** de nutrição |
 | P15 | Dr. Heitor Magalhães | Advocacia (OAB) | `active` | 5 | 46 | 4,60 | 0 | 0/2 | **Exatamente 5 avaliações**; única opção de advocacia |
@@ -1224,16 +1196,16 @@ Nota ARP = soma das notas individuais ÷ (2 × nº de avaliações). Gerar as av
 | P17 | Equipamentos Cuidar+ | Serviço especializado | credenciamento `in_review` | 0 | n/d | n/d | n/d | n/d | Documentos ok, integração pendente |
 | P18 | Cuidadores Express | Cuidador(a) profissional | credenciamento `rejected` | 0 | n/d | n/d | n/d | n/d | Reprovado: sem contrato e sem comprovação de formação |
 | P19 | Dr. Otávio Lima | Fisioterapia | `deaccredited` (D-60) | 6 | 36 | 3,00 | 3 | n/d | **Descredenciado** com e-mail de encerramento registrado (histórico) |
-| P20 | Cuidadora Rosimeire Tavares | Cuidador(a) profissional | `active` | 2 | 17 | sem média | 0 | 0/2 | **Ativa sem cláusula de dados assinada**; integração concluída; login u12 |
+| P20 | Cuidadora Rosimeire Tavares | Cuidador(a) profissional | `active` | 2 | 17 | sem média | 0 | 0/2 | **Ativa sem cláusula de dados assinada**; integração concluída |
 
-Opções por especialidade na busca (ativos e em monitoramento): Fisioterapia 3 (P01, P02, P03); Cuidador(a) 3 (P04, P05, P20); Farmácia 2; Odontologia 2; **única opção**: Home care, Enfermagem, Psicologia, Advocacia; **nenhuma**: Clínica, Nutrição, Serviço especializado.
+Opções por especialidade na busca (ativos e em monitoramento): Fisioterapia 5 (P01, P02, P03, P11, P12); Cuidador(a) 3 (P04, P05, P20); Farmácia 2; **única opção**: Home care, Enfermagem, Psicologia, Advocacia; **nenhuma**: Clínica, Nutrição, Serviço especializado.
 
 Auditoria quinzenal: duas auditorias anteriores (D-28 e D-14) com `ArpSnapshot` para todos os prestadores avaliáveis; a seguinte vence em D+1. Disponibilidade semanal dos últimos 4 períodos: média de 10 horários por semana; P04 caiu para 4 na última semana.
 
 ### 5.9 Solicitações de serviço e avaliações
 - Histórico: uma solicitação `evaluated` por avaliação da tabela 5.8 (124 no total), datadas D-200 a D-31, de cuidadores variados (inclusive Livre, que tem "acesso inicial à rede").
 - Últimos 30 dias: as contagens "Recusa 30d" da tabela 5.8 (89 solicitações no total), com estados `requested`, `accepted`, `completed`, `refused_by_provider`, `cancelled_by_provider`, `cancelled_by_user`.
-- P11 (dentista): 2 em `requested` (novas) para C03 e C27 (sem dados pessoais visíveis até aceitar); 1 `accepted`; 1 `completed` sem avaliação ainda.
+- P11 (fisioterapeuta): 2 em `requested` (novas) para C03 e C27 (sem dados pessoais visíveis até aceitar); 1 `accepted`; 1 `completed` sem avaliação ainda.
 - Comentários livres das avaliações com linguagem neutra; os que caracterizam reclamação grave estão marcados (P14: 2 faltas sem justificativa; P19: 3; P10: 1 falta).
 
 ### 5.10 Grupos e capacitações (8)
@@ -1253,7 +1225,7 @@ Parceiros (9): **ativos** (5): Farmácia Bem-Estar 10%, Drogaria Cuidar 12%, Ót
 Empresas (3): **Exemplo Logística Ltda.** `active`, 5 vagas, 3 ativas (C21, C22, C23), plano Cuida, preço por vaga fictício; **Indústria Modelo S.A.** `negotiation`; **Comércio Varejista Alfa** `prospect`.
 
 ### 5.12 Mensagens e reclamações
-- **28 mensagens**: aplicativo 10, WhatsApp 8, telefone 4, e-mail 6. **5 atrasadas** (`overdue`): WhatsApp de C01 há 6 horas úteis sem resposta; aplicativo de C02 há 3 dias sem resposta; aplicativo de C20; e-mail de P17; WhatsApp de C28. 3 mensagens marcadas "pedido de apoio" de C29 nos últimos 30 dias. 1 mensagem com `riskFlag` ligada ao POP-05.
+- **28 mensagens**: aplicativo 9, WhatsApp 8, telefone 4, e-mail 7 (o prestador não tem aplicativo: o que ele manda chega por e-mail, telefone ou WhatsApp). **5 atrasadas** (`overdue`): WhatsApp de C01 há 6 horas úteis sem resposta; aplicativo de C02 há 3 dias sem resposta; aplicativo de C20; e-mail de P17; WhatsApp de C28. 3 mensagens marcadas "pedido de apoio" de C29 nos últimos 30 dias. 1 mensagem com `riskFlag` ligada ao POP-05.
 - **Reclamações (5)**: REC-0001 contra P14, grave (quebra de sigilo), `in_progress`, aberta por C27; REC-0002 contra P04, grave (falta sem justificativa), `open`; REC-0003 sobre a plataforma, `closed` com resposta; REC-0004 com `suspectedElderAbuse` ligada à ocorrência POP-07 de C28, restrita ao RT; REC-0005 aberta há 8 dias úteis (prazo de 5 vencido).
 - 6 modelos de resposta no tom da marca.
 
@@ -1262,7 +1234,7 @@ Empresas (3): **Exemplo Logística Ltda.** `active`, 5 vagas, 3 ativas (C21, C22
 - Consentimentos: C01 a C29 conforme 5.4; volume conforme 5.6; piloto: 15 com TCLE concedido. `ConsentEvent` com histórico (inclui a concessão e a revogação de C16).
 - **5 solicitações do titular**: C18 exclusão (D-10, vence D+5); C19 portabilidade `completed`; C20 correção (vence em 2 dias); C16 revogação `completed`; C02 revisão de decisão `in_progress`.
 - **Log de auditoria**: 80 entradas nos últimos 30 dias: `login` 14, `view` 40, `supervise` 12, `reveal` 5, `export` 3, `denied` 6.
-- **1 incidente** simulado: e-mail com agenda enviado ao destinatário errado (D-45), `closed`, comunicações registradas.
+- **2 incidentes** simulados: (1) e-mail com agenda enviado ao destinatário errado (D-45), `closed`, comunicações registradas; (2) planilha com a lista de inscritos de um grupo compartilhada por engano com outra turma (D-3), `open`, em contenção e sem comunicações ainda.
 - Retenção: tabela com registro documental 5 anos (a confirmar), cadastro 30 dias, log 5 anos.
 
 ### 5.14 Governança
@@ -1285,7 +1257,7 @@ Empresas (3): **Exemplo Logística Ltda.** `active`, 5 vagas, 3 ativas (C21, C22
 | Psicólogos / salas | 4 / 3 |
 | Cuidadores (cenário + volume) | 340 (29 + 311) |
 | Pessoas idosas | 340 |
-| Assinaturas ativas / cartões ativos | 340 / 17 |
+| Assinaturas ativas / cartões ativos | 340 / 17 (mais 1 cartão inativo, de C120, que teve o Essencial e voltou ao Livre) |
 | Aplicações de Zarit concluídas (cenário + volume) | 158 (38 de cenário + 120 de volume), mais as próximas aplicações agendadas |
 | Alertas de Zarit nomeados (tabela 5.5) | 9 |
 | Prestadores / credenciamentos | 20 / 20 |
@@ -1299,7 +1271,7 @@ Empresas (3): **Exemplo Logística Ltda.** `active`, 5 vagas, 3 ativas (C21, C22
 | POPs / riscos / encaminhamentos / ocorrências | 10 / 12 / 10 / 3 |
 
 ### 5.16 Situações que o seed **obrigatoriamente** cobre
-Todos os 4 planos; Zarit em cada faixa e nos limites 0, 20, 21, 40, 41, 60, 61 e 88; **alerta vermelho no mesmo dia** (C01) e vermelho vencido (C02); amarelo aberto e contatado; evolução negativa, positiva e "n/d"; ARBE `critical` e `attention`; prestador com **taxa de recusa alta** (P04) e no limiar (P06) e abaixo (P03); prestador com **nota baixa candidato a descredenciamento** (P10) e por **reclamações graves** (P14); nota exatamente 4,5 e 4,0; **menos de 5 avaliações** (P13, P20) e exatamente 5 (P15); psicólogo com **agenda acima de 80% por dois meses** (Rafael), caso de 80,0% (Letícia), não seguidos (Beatriz) e mês sem agenda (Tiago); **credenciamento pendente com documento vencido** (P16); em análise (P17); reprovado (P18); descredenciado (P19); **consentimento revogado** (C16) e parciais (C17); **solicitação de exclusão em aberto** (C18), de correção a vencer (C20), de portabilidade concluída (C19); **empresa do canal corporativo** com vagas (Exemplo Logística) e prospectos; **grupo lotado com lista de espera** (G1), grupo cancelado e rascunho; **reclamação em aberto** (REC-0001, 0002), vencida (REC-0005) e suspeita de violência (REC-0004); mensagens atrasadas; parceiro em validação, suspenso e encerrado; POP vencido e com revisão acionada; ocorrência POP-05 aberta e encerrada, POP-07 aberta; especialidade com **uma única opção** e com **nenhuma**; dentista (CRO) credenciado e persona do CS/CX; cuidador de fora de Uberlândia não elegível ao piloto; assinatura com cancelamento agendado (C26); estados vazios testáveis (por exemplo, Marcos Vinícius sem mensagens, Rosimeire sem solicitações aceitas).
+Todos os 4 planos; Zarit em cada faixa e nos limites 0, 20, 21, 40, 41, 60, 61 e 88; **alerta vermelho no mesmo dia** (C01) e vermelho vencido (C02); amarelo aberto e contatado; evolução negativa, positiva e "n/d"; ARBE `critical` e `attention`; prestador com **taxa de recusa alta** (P04) e no limiar (P06) e abaixo (P03); prestador com **nota baixa candidato a descredenciamento** (P10) e por **reclamações graves** (P14); nota exatamente 4,5 e 4,0; **menos de 5 avaliações** (P13, P20) e exatamente 5 (P15); psicólogo com **agenda acima de 80% por dois meses** (Rafael), caso de 80,0% (Letícia), não seguidos (Beatriz) e mês sem agenda (Tiago); **credenciamento pendente com documento vencido** (P16); em análise (P17); reprovado (P18); descredenciado (P19); **consentimento revogado** (C16) e parciais (C17); **solicitação de exclusão em aberto** (C18), de correção a vencer (C20), de portabilidade concluída (C19); **empresa do canal corporativo** com vagas (Exemplo Logística) e prospectos; **grupo lotado com lista de espera** (G1), grupo cancelado e rascunho; **reclamação em aberto** (REC-0001, 0002), vencida (REC-0005) e suspeita de violência (REC-0004); mensagens atrasadas; parceiro em validação, suspenso e encerrado; POP vencido e com revisão acionada; ocorrência POP-05 aberta e encerrada, POP-07 aberta; especialidade com **uma única opção** e com **nenhuma**; prestador de excelência com solicitações novas (P11); cuidador de fora de Uberlândia não elegível ao piloto; assinatura com cancelamento agendado (C26); estados vazios testáveis (por exemplo, Marcos Vinícius sem mensagens, Rosimeire sem solicitações aceitas).
 
 ---
 
@@ -1347,7 +1319,7 @@ Seis consentimentos, cada um com **texto próprio, versão, data**, aceite indep
 - [ ] **LP-07** **Mascaramento padrão** em listas e fichas: CPF `***.***.***-**`; telefone `(34) 9****-0123`; e-mail `a***@exemplo.com.br`. "Mostrar" exige perfil autorizado e **justificativa**, e gera `reveal` no log (RN-LGPD-26).
 - [ ] **LP-08** **Pseudonimização na visão da gestão**: `partner` vê `CUI-0042`, plano, status e agregados; nunca nome, contato, CPF, texto livre. Não existe botão de reidentificar para `partner`.
 - [ ] **LP-09** **Mínimo de 5** por recorte em agregados de saúde; abaixo disso aparece "menos de 5" (RN-KPI-02).
-- [ ] **LP-10** **Minimização ao credenciado**: o portal mostra só nome, contato, necessidade e endereço (se domiciliar), e só com solicitação aceita e cláusula assinada (RN-LGPD-13). Nunca Zarit, faixa, anotações, histórico de outros serviços.
+- [ ] **LP-10** **Minimização ao credenciado**: como o prestador não tem login, a equipe só repassa a ele nome, contato, necessidade e endereço (se domiciliar), e só com solicitação aceita e cláusula assinada (RN-LGPD-13). Nunca Zarit, faixa, anotações, histórico de outros serviços.
 - [ ] **LP-11** **Empresa do canal corporativo** só vê agregados de adesão com mínimo de 5 (RN-CORP-08).
 - [ ] **LP-12** Exportações CSV/JSON da gestão excluem campos sensíveis e identificadores; a exportação do titular (portabilidade) inclui apenas seus dados.
 - [ ] **LP-13** Impressão e captura: telas com dado sensível mostram marca d'água "Confidencial" na impressão `[suposição]` e geram log `print`.
@@ -1449,7 +1421,7 @@ Painéis por perfil: ver M02. Gráficos obrigatórios (todos com alternativa em 
 - Aplicativo do cuidador (agenda, lembretes, conteúdo). O ERP guarda e administra os dados resultantes, não simula o app.
 - Servidor, banco de dados, autenticação real, e-mail, SMS, WhatsApp, telefone e videochamada reais. Tudo é simulado e persistido no navegador.
 - Pagamentos, cobrança, emissão fiscal, folha, contabilidade (apenas parâmetros e projeção do plano).
-- Verificação automática de registros em conselhos (CRO, CREFITO e outros) e assinatura digital de contratos. O ERP registra a conferência manual e o arquivo simulado.
+- Verificação automática de registros em conselhos (CREFITO, COREN e outros) e assinatura digital de contratos. O ERP registra a conferência manual e o arquivo simulado.
 - Prontuário eletrônico completo: só anotação de sessão e registro documental mínimo.
 - Multi-empresa, multi-idioma (somente pt-BR), notificações push, integração com Google Forms/Sheets.
 - Atendimento à pessoa idosa como usuário (ela não é cliente, RN-USR-01).
@@ -1461,7 +1433,7 @@ Painéis por perfil: ver M02. Gráficos obrigatórios (todos com alternativa em 
 | ID | Suposição | Valor |
 |---|---|---|
 | E-01 | Login é seleção de perfil; código do 2FA simulado | `123456`, exibido na tela |
-| E-02 | `provider` entra sem 2FA | RN-LGPD-15 fala em "equipe" |
+| E-02 | Removida por decisão do dono (o perfil `provider` não existe mais) | Os 4 perfis de login exigem 2FA |
 | E-03 | Expiração da sessão por inatividade | 30 minutos, aviso aos 28 |
 | E-04 | CPF: rejeita CPF válido, aceita só inválido e fictício | LP-02 |
 | E-05 | `support` vê da Zarit apenas "pendente" ou "em dia" com data | Sem resultado |
@@ -1488,7 +1460,7 @@ Cada fatia deixa algo **demonstrável de ponta a ponta** (tela, regra, dado, tes
 | P0.1 Fundação | Shell responsivo, tema da marca, RBAC e rotas, `Clock`, repositórios, motor de seed, log, aviso de protótipo, estados vazios | M01 completo; M15 (resetar, exportar, relógio); M02 esqueleto | AC-GL-01 a 12, AC-M01-01 a 08, AC-M15-01 a 04 |
 | P0.2 Cuidadores, planos e consentimento | Cadastro, pessoa idosa, plano gratuito, assinatura e cartão, consentimentos granulares, mascaramento e pseudonimização | M03, M04, M12 (consentimentos, log) | AC-M03-01 a 14, AC-M04-01 a 11, AC-M12-01 a 02, 06 e 07 |
 | P0.3 Zarit e alertas | Aplicação de 22 itens, faixas, alertas amarelo e vermelho, mesmo dia, evolução, ARBE, fila | M06 completo, M05 (fila, agenda básica) | AC-M06-01 a 17 |
-| P0.4 Rede e ARP | Credenciamento com checklist, prestadores, solicitações, avaliações, auditoria quinzenal, suspensão e avaliação interna, busca com mais de uma opção, portal do dentista | M08, M14 | AC-M08-01 a 15, AC-M14-01 a 10 |
+| P0.4 Rede e ARP | Credenciamento com checklist, prestadores, solicitações, avaliações, auditoria quinzenal, suspensão e avaliação interna, busca com mais de uma opção | M08 | AC-M08-01 a 15 (AC-M14-01 a 10 removidos por decisão do dono) |
 | P0.5 Financeiro | Realizado, ponto de equilíbrio, projeção em 3 cenários, parâmetros | M10 (SCR-M10-01 a 05) | AC-M10-01 a 10 |
 | P0.6 Painéis | Painel de cada perfil com os blocos acima | M02 completo | AC-M02-01 a 08 |
 

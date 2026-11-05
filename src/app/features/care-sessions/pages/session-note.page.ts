@@ -178,10 +178,9 @@ export class SessionNotePageComponent {
     const s = this.session();
     return s ? dayAndTime(s.startAt.slice(0, 10), s.startAt.slice(11, 16)) : '';
   });
-  protected readonly ownerName = computed(() => {
-    const psy = this.db.psychologists.get(this.session()?.psychologistId ?? '');
-    return psy ? `${psy.displayName.startsWith('Dra.') ? 'a' : 'o'} ${psy.displayName}` : 'outro psicólogo da equipe';
-  });
+  protected readonly ownerName = computed(
+    () => this.db.psychologists.get(this.session()?.psychologistId ?? '')?.displayName ?? null,
+  );
   protected readonly signedAt = computed(() => formatDateTime(this.note()?.signedAt));
   protected readonly addenda = computed<TimelineItem[]>(() =>
     [...(this.note()?.addenda ?? [])]

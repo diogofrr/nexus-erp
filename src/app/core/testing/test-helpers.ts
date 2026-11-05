@@ -100,8 +100,37 @@ export interface CoreTestEnv {
 
 export const TEST_TODAY: ISODate = '2026-11-04';
 
+/** Arquivos que o código tentou baixar (`downloadTextFile`) nos testes deste arquivo, na ordem. */
+export const TEST_DOWNLOADS: { fileName: string; href: string }[] = [];
+let downloadGuardInstalled = false;
+
+/**
+ * O jsdom não implementa navegação: o clique no `<a download>` que `downloadTextFile` cria (CSV, JSON) viraria
+ * o aviso "Not implemented: navigation to another Document" a cada exportação testada. O clique é
+ * interceptado só para esse tipo de link e registrado em `TEST_DOWNLOADS`; qualquer erro real continua
+ * aparecendo.
+ */
+function interceptDownloadClicks(): void {
+  if (downloadGuardInstalled || typeof document === 'undefined') {
+    return;
+  }
+  downloadGuardInstalled = true;
+  document.addEventListener(
+    'click',
+    (event) => {
+      const target = event.target;
+      if (target instanceof HTMLAnchorElement && target.hasAttribute('download')) {
+        event.preventDefault();
+        TEST_DOWNLOADS.push({ fileName: target.download, href: target.href });
+      }
+    },
+    true,
+  );
+}
+
 /** Configura o `TestBed` com armazenamento falso, relógio simulado e (opcionalmente) o seed. */
 export function configureCoreTest(options: CoreTestOptions = {}): CoreTestEnv {
+  interceptDownloadClicks();
   const local = options.local ?? new FakeStorage();
   const session = options.session ?? new FakeStorage();
   const bus = new CrossTabBus();

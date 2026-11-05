@@ -107,7 +107,7 @@ describe('ARP: faixas (RN-ARP-06 a 08; AC-M08-03, 04)', () => {
     expect(summarizeProvider([], 0)).toMatchObject({ band: 'no_average', trigger: null });
   });
 
-  it('nome da faixa em linguagem neutra para o portal (RN-ARP-18)', () => {
+  it('nome da faixa em linguagem neutra para o que a equipe comunica ao prestador (RN-ARP-18)', () => {
     expect(neutralBandLabel('excellence')).toBe('Em destaque');
     expect(neutralBandLabel('alert')).toBe('Em acompanhamento');
     expect(neutralBandLabel('deaccreditation')).toBe('Em acompanhamento');
@@ -237,7 +237,7 @@ describe('Rede: busca com mais de uma opção (RN-REDE-10, 18, 19)', () => {
     name: string,
     status: Provider['status'],
     highlight = false,
-    category: Provider['category'] = 'dentistry',
+    category: Provider['category'] = 'physiotherapy',
   ): P => ({ name, status, highlight, category });
 
   it('mostra ativos e em monitoramento; suspensos e descredenciados não aparecem', () => {
@@ -255,7 +255,7 @@ describe('Rede: busca com mais de uma opção (RN-REDE-10, 18, 19)', () => {
         p('Dr. Eduardo', 'active', true),
         p('Dr. Oculto', 'suspended'),
       ],
-      'dentistry',
+      'physiotherapy',
     );
     expect(result.options.map((o) => o.name)).toEqual(['Dr. Eduardo', 'Dra. Sônia']);
     expect(result.availability).toBe('multiple');
@@ -263,11 +263,11 @@ describe('Rede: busca com mais de uma opção (RN-REDE-10, 18, 19)', () => {
   });
 
   it('única opção e nenhuma opção têm aviso próprio', () => {
-    expect(searchProviders([p('Único', 'active')], 'dentistry')).toMatchObject({
+    expect(searchProviders([p('Único', 'active')], 'physiotherapy')).toMatchObject({
       availability: 'single_option',
       notice: 'Única opção disponível no momento.',
     });
-    const none = searchProviders([p('Suspenso', 'suspended')], 'dentistry');
+    const none = searchProviders([p('Suspenso', 'suspended')], 'physiotherapy');
     expect(none.availability).toBe('none');
     expect(none.notice).toContain('Nenhuma opção disponível no momento');
   });

@@ -90,7 +90,8 @@ describe('atalhos de teclado (5.16)', () => {
 
     expect(shortcutsFor('psychologist').some((s) => s.text === 'Ir a Acompanhamento')).toBe(true);
     expect(shortcutsFor('support').some((s) => s.text === 'Ir a Acompanhamento')).toBe(false);
-    expect(shortcutsFor('provider').map((s) => s.keys.join('+'))).toContain('G+P');
+    // Sem perfil do credenciado: todos os atalhos de "Ir para" levam ao back-office.
+    expect(shortcutsFor('support').map((s) => s.keys.join('+'))).toContain('G+P');
   });
 
   it('G e depois uma letra leva à tela, só se o perfil a vê', async () => {
@@ -109,13 +110,21 @@ describe('atalhos de teclado (5.16)', () => {
     await settle(app.fixture);
     expect(app.router.url).toBe('/app/painel');
 
-    // O psicólogo vai a Acompanhamento.
+    // O psicólogo vai a Acompanhamento: a raiz do módulo mostra a fila no próprio endereço.
     TestBed.resetTestingModule();
     app = await bootApp({ userId: 'u3' });
     key(document.body, 'g');
     key(document.body, 'a');
     await settle(app.fixture);
     expect(app.router.url).toBe('/app/acompanhamento');
+
+    // A sócia só vê o agregado: a raiz do módulo a leva ao painel agregado.
+    TestBed.resetTestingModule();
+    app = await bootApp({ userId: 'u1' });
+    key(document.body, 'g');
+    key(document.body, 'a');
+    await settle(app.fixture);
+    expect(app.router.url).toBe('/app/acompanhamento/agregado');
   });
 
   it('os atalhos de página (J, K, N, F, 0 a 4...) viram eventos para as telas assinarem', async () => {

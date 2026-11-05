@@ -16,7 +16,7 @@ export function elderId(n: number): string {
 
 export const caregiverCodeOf = caregiverCode;
 
-/** Usuários de demonstração (5.1). */
+/** Usuários de demonstração (5.1): só a equipe. Os ids u9 a u12 (perfil de prestador) foram removidos. */
 export const USER = {
   partner: 'u1',
   technicalLead: 'u2',
@@ -26,10 +26,6 @@ export const USER = {
   tiago: 'u6',
   camila: 'u7',
   wesley: 'u8',
-  dentist: 'u9',
-  physio: 'u10',
-  clinic: 'u11',
-  rosimeire: 'u12',
 } as const;
 
 export type PsychologistKey = 'rafael' | 'beatriz' | 'leticia' | 'tiago';

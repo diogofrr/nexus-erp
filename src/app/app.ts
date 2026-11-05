@@ -11,9 +11,9 @@ import { SessionDialogComponent } from './shared/ui/overlay/session-dialog.compo
 import { ToastRegionComponent } from './shared/ui/overlay/toast-region.component';
 
 /**
- * Raiz do aplicativo. O `<router-outlet>` mostra o shell certo de cada área (equipe em `/app/**`, portal em
- * `/portal/**`, nenhum na entrada). Aqui ficam as sobreposições que valem para toda tela: região de toasts,
- * diálogo de confirmação, aviso de sessão expirando e banner da primeira visita.
+ * Raiz do aplicativo. O `<router-outlet>` mostra o shell certo de cada área (equipe em `/app/**`, nenhum na
+ * entrada). Aqui ficam as sobreposições que valem para toda tela: região de toasts, diálogo de confirmação,
+ * aviso de sessão expirando e banner da primeira visita.
  *
  * Também liga o título da aba e o foco no `h1` a cada navegação (`PageChromeService`) e leva à tela de sessão
  * expirada quando a inatividade encerra a sessão (AC-M01-07).

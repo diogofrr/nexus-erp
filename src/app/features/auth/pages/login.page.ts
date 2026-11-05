@@ -6,7 +6,7 @@ import { AppUser } from '../../../core/models/access';
 import { PROTOTYPE_NOTICE } from '../../../core/privacy/browser-data.service';
 import { StorageService } from '../../../core/storage/storage.service';
 import { BannerComponent } from '../../../shared/ui/overlay/banner.component';
-import { GlyphComponent } from '../../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../../shared/ui/display/icon.component';
 import { initialsOf, roleLabel } from '../../../shared/ui/overlay/user-display';
 import { destinationAfterLogin } from '../return-url';
 
@@ -20,15 +20,22 @@ export const TWO_FACTOR_FAILED_TEXT =
 export const SESSION_EXPIRED_TEXT =
   'Sua sessão terminou por inatividade. Entre de novo para continuar.';
 
+/** Grupos da entrada: a equipe agrupada pela função (Gestão, Psicologia, Atendimento). */
+interface ProfileGroup {
+  id: string;
+  title: string;
+  users: readonly AppUser[];
+}
+
 /**
- * Entrada (SCR-M01-01, F01): a pessoa escolhe um dos 12 usuários de demonstração, agrupados em Equipe Nexus
- * (8) e Rede credenciada (4). Não há senha: a equipe confirma o código de 6 dígitos na tela seguinte; o
- * credenciado entra direto no portal. Mostra o aviso de protótipo (AC-GL-05) e, quando é o caso, a faixa do
- * motivo de a pessoa estar de volta aqui (3 códigos errados, inatividade, armazenamento bloqueado).
+ * Entrada (SCR-M01-01, F01): a pessoa escolhe um dos 8 usuários de demonstração da equipe, agrupados por
+ * função (Gestão, Psicologia, Atendimento). Não há senha: todos confirmam o código de 6 dígitos na tela
+ * seguinte. Mostra o aviso de protótipo (AC-GL-05) e, quando é o caso, a faixa do motivo de a pessoa estar de
+ * volta aqui (3 códigos errados, inatividade, armazenamento bloqueado).
  */
 @Component({
   selector: 'app-login-page',
-  imports: [BannerComponent, GlyphComponent, NgTemplateOutlet],
+  imports: [BannerComponent, IconComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="login">
@@ -67,29 +74,19 @@ export const SESSION_EXPIRED_TEXT =
           <p class="page-header__desc">Não há senha. A equipe confirma um código de 6 dígitos.</p>
         </div>
 
-        <section class="profile-group" aria-labelledby="nx-login-team">
-          <h2 id="nx-login-team">Equipe Nexus ({{ team().length }})</h2>
-          <div class="list-card">
-            @for (user of team(); track user.id) {
-              <ng-container
-                [ngTemplateOutlet]="card"
-                [ngTemplateOutletContext]="{ $implicit: user }"
-              />
-            }
-          </div>
-        </section>
-
-        <section class="profile-group" aria-labelledby="nx-login-network">
-          <h2 id="nx-login-network">Rede credenciada ({{ providers().length }})</h2>
-          <div class="list-card">
-            @for (user of providers(); track user.id) {
-              <ng-container
-                [ngTemplateOutlet]="card"
-                [ngTemplateOutletContext]="{ $implicit: user }"
-              />
-            }
-          </div>
-        </section>
+        @for (group of groups(); track group.id) {
+          <section class="profile-group" [attr.aria-labelledby]="'nx-login-' + group.id">
+            <h2 [id]="'nx-login-' + group.id">{{ group.title }} ({{ group.users.length }})</h2>
+            <div class="list-card">
+              @for (user of group.users; track user.id) {
+                <ng-container
+                  [ngTemplateOutlet]="card"
+                  [ngTemplateOutletContext]="{ $implicit: user }"
+                />
+              }
+            </div>
+          </section>
+        }
       </main>
     </div>
 
@@ -103,9 +100,7 @@ export const SESSION_EXPIRED_TEXT =
         "
         (click)="choose(user)"
       >
-        <span class="avatar" [class.avatar--gold]="user.role === 'provider'">{{
-          initials(user)
-        }}</span>
+        <span class="avatar">{{ initials(user) }}</span>
         <span>
           <span class="list-row__title">{{ user.displayName }}</span>
           <span class="list-row__meta">{{ role(user) }}</span>
@@ -114,9 +109,9 @@ export const SESSION_EXPIRED_TEXT =
         @if (!user.active) {
           <span class="badge badge--outline">Acesso desativado</span>
         } @else if (user.requiresTwoFactor) {
-          <span class="badge"><svg appGlyph="key-round" glyphSize="sm"></svg>Código</span>
+          <span class="badge"><svg appIcon="key-round" size="sm"></svg>Código</span>
         } @else {
-          <svg appGlyph="chevron-right"></svg>
+          <svg appIcon="chevron-right"></svg>
         }
       </button>
     </ng-template>
@@ -130,12 +125,16 @@ export class LoginPageComponent {
   protected readonly notice = PROTOTYPE_NOTICE;
   protected readonly blockedText = STORAGE_BLOCKED_TEXT;
 
-  protected readonly team = computed(() =>
-    this.auth.demoUsers().filter((u) => u.role !== 'provider'),
-  );
-  protected readonly providers = computed(() =>
-    this.auth.demoUsers().filter((u) => u.role === 'provider'),
-  );
+  protected readonly groups = computed<ProfileGroup[]>(() => {
+    const users = this.auth.demoUsers();
+    const of = (...roles: AppUser['role'][]): AppUser[] =>
+      users.filter((u) => roles.includes(u.role));
+    return [
+      { id: 'management', title: 'Gestão', users: of('partner', 'technical_lead') },
+      { id: 'psychology', title: 'Psicologia', users: of('psychologist') },
+      { id: 'support', title: 'Atendimento', users: of('support') },
+    ].filter((g) => g.users.length > 0);
+  });
 
   /** Por que a pessoa voltou à entrada (F01): três códigos errados ou inatividade. */
   protected readonly reason = computed(() => {
@@ -161,7 +160,7 @@ export class LoginPageComponent {
     return roleLabel(user.role);
   }
 
-  /** Escolhe o perfil: a equipe vai ao segundo fator; o credenciado entra direto no portal (F01). */
+  /** Escolhe o perfil: a equipe vai ao segundo fator (F01). */
   protected choose(user: AppUser): void {
     if (!user.active) {
       return;

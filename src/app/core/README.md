@@ -62,7 +62,7 @@ accessLevel(role, 'caregiver_registry');                    // '-', 'L', 'E', 'T
 menuFor(role);                                              // itens do menu lateral (AC-M01-08)
 ```
 
-Níveis: `A` só agregado ou pseudonimizado, `P` registros próprios, `C` clínico do caso, `S` supervisão (exige justificativa e log). Rotas: `moduleGuard('finance')`, `permissionGuard('lgpd_audit_log')`, `roleGuard('provider')`. A rota negada vai a `/403` e grava `denied`. Para o `provider` use `providerRequestVisibility` e `providerCaregiverView` (dados só com solicitação aceita e cláusula assinada).
+Níveis: `A` só agregado ou pseudonimizado, `P` registros próprios, `C` clínico do caso, `S` supervisão (exige justificativa e log). Rotas: `moduleGuard('finance')`, `permissionGuard('lgpd_audit_log')`, `roleGuard('partner', 'technical_lead')`. A rota negada vai a `/403` e grava `denied`. Todos os perfis são da equipe (o portal do prestador foi removido): o prestador é um cadastro da rede e só recebe dados do cuidador com solicitação aceita e cláusula assinada (`providerMaySeeCaregiverData`, RN-LGPD-13).
 
 ## 4. Log de auditoria
 

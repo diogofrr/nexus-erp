@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { AuditLogService } from '@core/audit';
+import { SupervisionWindowService } from '@core/audit/supervision-window.service';
 import { AuthService } from '@core/auth';
 import { Clock, ageInYears } from '@core/clock';
 import { Database } from '@core/data';
@@ -20,11 +21,10 @@ import {
   RadioGroupComponent,
   RadioOption,
 } from '@shared/ui';
+import { SupervisionGateComponent } from '@shared/ui/access/supervision-gate.component';
 import { DrawerComponent, ToastService } from '@shared/ui/overlay';
 import { DEPENDENCY_HINTS, DEPENDENCY_LABELS } from '../state/caregiver-labels';
 import { CaregiverService } from '../state/caregiver.service';
-import { SupervisionService } from '../state/supervision.service';
-import { SupervisionGateComponent } from './supervision-gate.component';
 
 const APPOINTMENT_KINDS: Record<string, string> = {
   medical: 'Consulta médica',
@@ -68,7 +68,13 @@ const APPOINTMENT_KINDS: Record<string, string> = {
         </app-card>
 
         @if (gated()) {
-          <app-supervision-gate [caregiverId]="caregiver().id" what="os dados de saúde da pessoa idosa" />
+          <app-supervision-gate
+            entity="elder_conditions"
+            [entityId]="caregiver().id"
+            [caregiverId]="caregiver().id"
+            what="os dados de saúde da pessoa idosa"
+            (granted)="onGranted()"
+          />
         } @else if (!healthGranted()) {
           <app-card title="Condições de saúde, medicamentos e compromissos">
             <app-empty-state compact kind="forbidden" title="Disponível depois do consentimento de saúde" text="Para não coletar dado de saúde antes de o consentimento existir, estes campos ficam fechados até lá. O atendimento registra o consentimento na aba Consentimentos." />
@@ -147,7 +153,7 @@ export class ElderCareComponent {
   private readonly audit = inject(AuditLogService);
   private readonly consent = inject(ConsentService);
   private readonly service = inject(CaregiverService);
-  private readonly supervision = inject(SupervisionService);
+  private readonly supervision = inject(SupervisionWindowService);
   private readonly toasts = inject(ToastService);
 
   readonly caregiver = input.required<Caregiver>();
@@ -176,7 +182,7 @@ export class ElderCareComponent {
   });
   /** O responsável técnico precisa da justificativa antes de ver dado de saúde (supervisão). */
   protected readonly gated = computed(
-    () => this.auth.role() === 'technical_lead' && this.healthGranted() && !this.supervision.isGranted(this.caregiver().id),
+    () => this.auth.role() === 'technical_lead' && this.healthGranted() && !this.supervision.isOpen(this.caregiver().id),
   );
   protected readonly medications = computed(() => {
     const elder = this.elder();
@@ -203,21 +209,30 @@ export class ElderCareComponent {
   });
 
   constructor() {
-    // Cada leitura de dado de saúde da pessoa idosa fica no log (LP-14); no portão, a supervisão também.
+    // Cada leitura de dado de saúde da pessoa idosa fica no log (LP-14); com o RT, a supervisão também.
+    // A primeira abertura do RT é gravada pelo portão (`supervise`) e por `onGranted` (`view`).
     effect(() => {
       const elder = this.elder();
-      const shown = !!elder && this.healthGranted() && !this.gated();
-      if (!shown) {
+      if (!elder || !this.healthGranted()) {
         return;
       }
       untracked(() => {
-        if (this.auth.role() === 'technical_lead') {
-          this.supervision.record(this.caregiver().id, 'elder_conditions');
-        } else {
-          this.audit.view('elder_conditions', elder.id, this.caregiver().id);
+        const id = this.caregiver().id;
+        if (this.auth.role() !== 'technical_lead') {
+          this.audit.view('elder_conditions', elder.id, id);
+        } else if (this.supervision.access('elder_conditions', id, id) === 'open') {
+          this.audit.view('elder_conditions', elder.id, id, 'leitura em supervisão');
         }
       });
     });
+  }
+
+  /** O portão acabou de liberar: o `supervise` já foi gravado por ele, falta a leitura. */
+  protected onGranted(): void {
+    const elder = this.elder();
+    if (elder) {
+      this.audit.view('elder_conditions', elder.id, this.caregiver().id, 'leitura em supervisão');
+    }
   }
 
   protected kindLabel(kind: string): string {

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Database } from '../../core/data/database';
 import { DSR_DEADLINE_DAYS, DSR_TYPE_LABELS } from '../../core/rules/lgpd';
-import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../shared/ui/display/icon.component';
 
 /**
  * Privacidade e canal do titular (LP-23, A-43): a página que o rodapé e o menu do usuário abrem, em dois
@@ -10,7 +10,7 @@ import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
  */
 @Component({
   selector: 'app-privacy-channel-page',
-  imports: [GlyphComponent],
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page page--narrow">
@@ -50,7 +50,7 @@ import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
           <ul class="stack stack--2 list-reset">
             @for (right of rights; track right) {
               <li class="cluster cluster--nowrap">
-                <svg appGlyph="circle-check" glyphSize="sm"></svg><span>{{ right }}</span>
+                <svg appIcon="circle-check" size="sm"></svg><span>{{ right }}</span>
               </li>
             }
           </ul>

@@ -578,13 +578,14 @@ describe('conteúdos, usuários, suposições e sobre', () => {
     });
   });
 
-  it('usuários de demonstração: os 12, com perfil, acesso e quem está conectado', async () => {
+  it('usuários de demonstração: os 8 da equipe, com perfil, acesso e quem está conectado', async () => {
     app = await bootApp({ userId: 'u1', url: '/app/configuracoes/usuarios' });
     const rows = all('tbody tr');
-    expect(rows).toHaveLength(12);
+    expect(rows).toHaveLength(8);
     expect(rows.filter((r) => r.textContent?.includes('Conectado'))).toHaveLength(1);
-    expect(rows[8]?.textContent).toContain('Profissional credenciado');
-    expect(rows[8]?.textContent).toContain('Não exige');
+    expect(rows[7]?.textContent).toContain('Atendimento/Relacionamento');
+    expect(rows[7]?.textContent).toContain('Exige código');
+    expect(rows.some((r) => r.textContent?.includes('Profissional credenciado'))).toBe(false);
   });
 
   it('suposições: cada uma com valor padrão e atual; o que mudou aparece como "Alterada" (AC-M15-09)', async () => {

@@ -23,8 +23,7 @@ export type ModuleKey =
   | 'complaints'
   | 'privacy'
   | 'governance'
-  | 'settings'
-  | 'provider-portal';
+  | 'settings';
 
 /** Pasta em `src/app/features/<slug>`. */
 export type FeatureSlug =
@@ -41,17 +40,16 @@ export type FeatureSlug =
   | 'messages'
   | 'privacy'
   | 'governance'
-  | 'provider-portal'
   | 'settings';
 
 export interface ModuleDef {
   key: ModuleKey;
-  /** `M01` a `M15`. */
+  /** `M01` a `M15` (M14 foi removido por decisão do dono e não é reaproveitado). */
   moduleId: string;
   slug: FeatureSlug;
   /** Título do item de menu, em pt-BR. */
   title: string;
-  /** Caminho absoluto da rota base (`/app/cuidadores`, `/portal`). */
+  /** Caminho absoluto da rota base (`/app/cuidadores`). */
   path: string;
   /** Segmento relativo usado no roteador (`cuidadores`). */
   segment: string;
@@ -251,17 +249,6 @@ export const MODULES: readonly ModuleDef[] = [
     rules: ['Suposições (Anexo D)'],
     inMenu: true,
   },
-  {
-    key: 'provider-portal',
-    moduleId: 'M14',
-    slug: 'provider-portal',
-    title: 'Portal do profissional',
-    path: '/portal',
-    segment: 'portal',
-    resources: ['provider_portal'],
-    rules: ['REDE-*', 'ARP-18'],
-    inMenu: false,
-  },
 ];
 
 export function moduleByKey(key: ModuleKey): ModuleDef {
@@ -278,7 +265,7 @@ export function menuFor(role: Role): ModuleDef[] {
   return MODULES.filter((m) => m.inMenu && canAccessModule(role, m));
 }
 
-/** Tela inicial de cada perfil: `/portal` para o credenciado, `/app/painel` para a equipe. */
-export function homePathFor(role: Role): string {
-  return role === 'provider' ? '/portal' : '/app/painel';
+/** Tela inicial de cada perfil (todos são da equipe): `/app/painel`. */
+export function homePathFor(_role: Role): string {
+  return '/app/painel';
 }

@@ -15,7 +15,7 @@ Vale para os 4 devs que constroem os módulos ao mesmo tempo. Quem escreve este 
 - `src/app/core/**`, `src/app/shared/ui/**`, `src/app/layout/**`, `src/styles/**`, `app.routes.ts` e `package.json` são **compartilhados e congelados**: só adicione arquivos NOVOS. Código novo reutilizável por mais de um módulo vai para `src/app/core/<area>/` (regras, serviços) ou `src/app/shared/ui/` (componente), em arquivo novo com nome claro e teste. Se achar um defeito num arquivo existente deles, corrija com edição mínima e cirúrgica (nunca reescreva o arquivo) e registre no relatório. Nunca rode `pnpm add`; se precisar de dependência, registre e contorne.
 - **Um módulo nunca importa de outro módulo.** Para ligar telas use `routerLink` com o caminho. Para mostrar um resumo vindo de outro módulo, leia os repositórios do `Database` e use as regras de `core/rules`.
 - As rotas ficam só no `<slug>.routes.ts` (com `data: { title }` e um `h1` por página, sem desenhar menu nem migalhas). Os guards já estão no roteador central.
-- Prefixo de seletor `app-`. Importe componentes de `@shared/ui`, `@shared/ui/overlay`, `@shared/ui/charts`; ícones com `appIcon` (não use `appGlyph`).
+- Prefixo de seletor `app-`. Importe componentes de `@shared/ui`, `@shared/ui/overlay`, `@shared/ui/charts`; ícones com `appIcon` (há um só componente de ícone).
 
 ## 3. Definição de pronto de cada módulo
 Todas as telas `SCR-Mxx-nn` do módulo existem e funcionam de ponta a ponta com os dados do seed, e **cada critério `AC-Mxx-nn` está implementado**. Além disso:

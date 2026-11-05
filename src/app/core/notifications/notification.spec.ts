@@ -8,7 +8,7 @@ import { NotificationItem, NotificationService } from './notification.service';
 const FORBIDDEN =
   /zarit|escore|pontua|faixa|severa|moderada|suic|diagn|risco de|cr[ií]tico|vermelh|amarel|sobrecarga/i;
 
-const ALL_USERS = ['u1', 'u2', 'u3', 'u4', 'u5', 'u6', 'u7', 'u8', 'u9', 'u10', 'u11', 'u12'];
+const ALL_USERS = ['u1', 'u2', 'u3', 'u4', 'u5', 'u6', 'u7', 'u8'];
 
 function loginAs(userId: string): void {
   const auth = TestBed.inject(AuthService);
@@ -122,20 +122,21 @@ describe('NotificationService', () => {
     expect(beatriz.some((i) => i.type === 'agenda_overload')).toBe(false);
   });
 
-  it('o credenciado vê nova solicitação, documento e cláusula, sem nome de cuidador', () => {
-    const dentist = asUser('u9');
-    expect(dentist.filter((i) => i.type === 'new_request')).toHaveLength(2);
-    const names = env.db.caregivers.list().map((c) => c.fullName);
-    dentist.forEach((i) =>
-      names.forEach((n) => expect(`${i.title} ${i.context}`).not.toContain(n)),
-    );
-
-    const rosimeire = asUser('u12');
-    expect(rosimeire.some((i) => i.type === 'clause_pending')).toBe(true);
-    expect(rosimeire.filter((i) => i.type === 'new_request')).toHaveLength(2);
-
-    const clinic = asUser('u11');
-    expect(clinic.some((i) => i.type === 'internal_review_waiting')).toBe(true);
+  it('não há notificações do antigo portal do credenciado (nenhum perfil as recebe nem leva a /portal)', () => {
+    const portalTypes = [
+      'new_request',
+      'clause_pending',
+      'integration_pending',
+      'internal_review',
+      'internal_review_waiting',
+      'document_expiring',
+    ];
+    ALL_USERS.forEach((userId) => {
+      asUser(userId).forEach((i) => {
+        expect(portalTypes, `${userId} ${i.type}`).not.toContain(i.type);
+        expect(i.link.startsWith('/portal'), `${userId} ${i.link}`).toBe(false);
+      });
+    });
   });
 
   it('marcar como vista grava no banco, baixa o contador e sobrevive a um novo serviço', () => {

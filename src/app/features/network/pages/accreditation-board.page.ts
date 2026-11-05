@@ -38,6 +38,7 @@ const COLUMN_ORDER: readonly AccreditationStatus[] = [
 ];
 
 const FILTERS: readonly FilterOption[] = [
+  { value: 'em-andamento', label: 'Em andamento' },
   { value: 'documento-vencido', label: 'Documento vencido' },
   { value: 'integracao-pendente', label: 'Integração pendente' },
 ];
@@ -75,7 +76,7 @@ const FILTERS: readonly FilterOption[] = [
 
       <div class="stack stack--6">
         <app-filter-chips
-          label="Atenção"
+          label="Visão"
           [options]="filterOptions"
           [value]="list.filters()['filtro'] ?? null"
           allLabel="Todos os processos"
@@ -161,6 +162,10 @@ export class AccreditationBoardPage {
         return card;
       })
       .filter((c) => {
+        if (filter === 'em-andamento') {
+          // Os que ainda esperam decisão (mesma conta do painel da gestão).
+          return c.status === 'requested' || c.status === 'in_review' || c.status === 'pending_documents';
+        }
         if (filter === 'documento-vencido') {
           return c.expired;
         }

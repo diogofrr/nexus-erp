@@ -66,6 +66,8 @@ const ATTENTION_OPTIONS: readonly FilterOption[] = [
   { value: 'atencao', label: 'Precisa de atenção' },
   { value: 'risco-de-saida', label: 'Risco de saída' },
   { value: 'documento-vencendo', label: 'Documento vencendo ou vencido' },
+  { value: 'excelencia', label: 'Em excelência' },
+  { value: 'alerta', label: 'Em alerta' },
 ];
 
 /** Prestadores que pedem atenção vêm primeiro (UX 5.1): suspenso, monitoramento, recusa alta, depois o nome. */
@@ -152,7 +154,7 @@ function attentionRank(row: Pick<ProviderRow, 'status' | 'exitRisk'>): number {
                     (valueChange)="list.setFilter('estado', $event)"
                   />
                   <app-filter-chips
-                    label="Atenção"
+                    label="Visão"
                     [options]="attentionOptions"
                     [value]="list.filters()['filtro'] ?? null"
                     allLabel="Qualquer situação"
@@ -262,6 +264,11 @@ export class ProvidersPage {
       }
       if (filtro === 'documento-vencendo') {
         return row.expiring;
+      }
+      if (filtro === 'excelencia' || filtro === 'alerta') {
+        // Só quem aparece na busca (ativo ou em monitoramento), como a contagem do painel da gestão.
+        const band: ArpBand = filtro === 'excelencia' ? 'excellence' : 'alert';
+        return row.band === band && (row.status === 'active' || row.status === 'monitoring');
       }
       if (filtro === 'atencao') {
         return row.rank <= 2 || row.expiring;

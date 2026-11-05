@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { ZARIT_BANDS, ZaritBandInfo } from '../../../core/rules/zarit';
-import { GlyphComponent } from '../overlay/glyph.component';
+import { IconComponent } from '../display/icon.component';
 import { gaugePosition } from './chart-math';
 
 /** Ícone de cada faixa: formas diferentes (círculo, círculo, triângulo, octógono), nunca só cor. */
@@ -20,7 +20,7 @@ const BAND_ICONS = ['circle-check', 'info', 'triangle-alert', 'octagon-alert'] a
  */
 @Component({
   selector: 'app-gauge-band',
-  imports: [GlyphComponent],
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="thermo" [style.--pos]="position() + '%'" role="img" [attr.aria-label]="summary()">
@@ -43,7 +43,7 @@ const BAND_ICONS = ['circle-check', 'info', 'triangle-alert', 'octagon-alert'] a
             [attr.class]="'thermo__label thermo__label--' + (i + 1)"
             [attr.aria-current]="isCurrent(band) ? 'true' : null"
           >
-            <svg [appGlyph]="icons[i] ?? 'info'"></svg>
+            <svg [appIcon]="icons[i] ?? 'info'"></svg>
             <span
               ><b>{{ band.min }} a {{ band.max }}</b
               ><br />{{ band.label }}</span

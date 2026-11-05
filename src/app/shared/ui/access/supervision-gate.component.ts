@@ -1,5 +1,14 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { Database } from '@core/data';
 import {
   SUPERVISION_OTHER,
   SUPERVISION_OTHER_MIN_CHARS,
@@ -15,12 +24,16 @@ import { IconComponent } from '../display/icon.component';
  * Portão de supervisão (PD-12, F16-A): no lugar do conteúdo de um caso que não é do usuário, pede o motivo,
  * grava `supervise` no log e libera por 30 minutos para aquele caso. Tom neutro, sem acusação. O motivo
  * "Outro" exige ao menos 10 caracteres. O conteúdo NÃO é montado antes da liberação: quem usa o portão faz
- * `@if (liberado) { conteúdo } @else { <app-supervision-gate ... /> }`.
+ * `@if (liberado) { conteúdo } @else { <app-supervision-gate ... /> }`. É o único portão de supervisão do
+ * ERP (cadastro de cuidadores, Zarit e sessões usam este mesmo).
  *
  * ```html
  * <app-supervision-gate entity="zarit_alert" [entityId]="alert.id" [caregiverId]="alert.caregiverId"
- *   ownerName="a Dra. Beatriz Nogueira" (granted)="open.set(true)" />
+ *   what="o acompanhamento deste cuidador" (granted)="open.set(true)" />
  * ```
+ *
+ * Quem acompanha o caso vem do cadastro do cuidador (`ownerName` só é preciso quando é outra pessoa, como o
+ * autor de uma anotação).
  */
 @Component({
   selector: 'app-supervision-gate',
@@ -29,10 +42,7 @@ import { IconComponent } from '../display/icon.component';
   template: `
     <section class="card card--pad stack stack--3" aria-labelledby="gate-title" data-role="supervision-gate">
       <h2 id="gate-title" class="card__title"><svg appIcon="lock" size="sm"></svg> Acesso com registro</h2>
-      <p>
-        Este caso é acompanhado por {{ ownerName() }}. Seu acesso será registrado no log, com o motivo
-        que você informar.
-      </p>
+      <p data-role="gate-intro">{{ intro() }}</p>
       <app-form-field label="Motivo do acesso" group [forceErrors]="tried()">
         <app-radio-group [options]="reasons" [formControl]="reason" />
       </app-form-field>
@@ -60,14 +70,17 @@ import { IconComponent } from '../display/icon.component';
 })
 export class SupervisionGateComponent {
   private readonly supervision = inject(SupervisionWindowService);
+  private readonly db = inject(Database);
 
   /** Entidade registrada no log (`zarit_alert`, `session_note`). */
   readonly entity = input.required<string>();
   readonly entityId = input.required<string>();
   /** O titular do caso (id do cuidador). */
   readonly caregiverId = input.required<string>();
-  /** "a Dra. Beatriz Nogueira" (com artigo), para a frase do portão. */
-  readonly ownerName = input('outro psicólogo da equipe');
+  /** Nome de quem acompanha o caso ("Dra. Beatriz Nogueira"). Sem ele, vem do psicólogo do cuidador. */
+  readonly ownerName = input<string | null>(null);
+  /** O que será aberto, na frase "para ver {what}". */
+  readonly what = input('');
   readonly granted = output<void>();
 
   protected readonly other = SUPERVISION_OTHER;
@@ -78,6 +91,23 @@ export class SupervisionGateComponent {
   protected readonly reason = new FormControl<string | null>(null);
   protected readonly otherText = new FormControl('', { nonNullable: true });
   protected readonly tried = signal(false);
+
+  protected readonly owner = computed(() => {
+    const given = this.ownerName();
+    if (given) {
+      return given;
+    }
+    const psychologistId = this.db.caregivers.get(this.caregiverId())?.assignedPsychologistId;
+    return psychologistId ? (this.db.psychologists.get(psychologistId)?.displayName ?? null) : null;
+  });
+  protected readonly intro = computed(() => {
+    const owner = this.owner();
+    const who = owner
+      ? `Este caso é acompanhado ${owner.startsWith('Dra.') ? 'pela' : 'pelo'} ${owner}.`
+      : 'Este caso ainda não tem psicólogo responsável.';
+    const what = this.what();
+    return `${who} Seu acesso será registrado no log, com o motivo que você informar${what ? `, para ver ${what}` : ''}.`;
+  });
 
   protected valid(): boolean {
     return SupervisionWindowService.isValidReason(this.reason.value, this.otherText.value);

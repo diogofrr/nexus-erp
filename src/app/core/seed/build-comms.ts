@@ -1,5 +1,5 @@
 /**
- * Mensagens (28: app 10, WhatsApp 8, telefone 4, e-mail 6; 5 atrasadas), reclamações (5) e modelos de
+ * Mensagens (28: app 9, WhatsApp 8, telefone 4, e-mail 7; 5 atrasadas), reclamações (5) e modelos de
  * resposta (6) (5.12). Para o resultado não depender da hora do dia, toda mensagem que não é uma das 5
  * atrasadas está respondida ou ainda muito longe do prazo.
  */
@@ -37,7 +37,7 @@ export function buildComms(s: SeedState): void {
   const bd = (n: number): ISODate => ctx.prevBusinessDay(n);
 
   const specs: MsgSpec[] = [
-    // ===== Aplicativo (10) =====
+    // ===== Aplicativo (9) =====
     {
       channel: 'app',
       caregiver: 2,
@@ -110,12 +110,12 @@ export function buildComms(s: SeedState): void {
       body: 'Queria entender como funciona a troca de plano no próximo ciclo.',
     },
     {
-      channel: 'app',
+      channel: 'email',
       provider: 11,
       date: d(-7),
       time: '13:00',
       subject: 'Atualização de documentos',
-      body: 'Enviei o comprovante atualizado do registro profissional pelo portal.',
+      body: 'Segue em anexo o comprovante atualizado do registro profissional.',
     },
     // ===== WhatsApp (8) =====
     {
@@ -213,7 +213,7 @@ export function buildComms(s: SeedState): void {
       time: '16:30',
       body: 'Ligação do titular: agradeceu o contato e confirmou o encaminhamento.',
     },
-    // ===== E-mail (6) =====
+    // ===== E-mail (7) =====
     {
       channel: 'email',
       provider: 17,

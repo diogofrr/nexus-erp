@@ -11,7 +11,7 @@ import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { Database } from '../../../core/data/database';
 import { ArbeSettings } from '../../../core/models/zarit';
 import { DEFAULT_ARBE_SETTINGS } from '../../../core/rules/arbe';
-import { GlyphComponent } from '../../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../../shared/ui/display/icon.component';
 import { ToastService } from '../../../shared/ui/overlay/toast.service';
 import { NumberFieldComponent, integerValidator } from '../components/number-field.component';
 
@@ -94,7 +94,7 @@ export const ARBE_CRITICAL_TEXT =
  */
 @Component({
   selector: 'app-settings-arbe-page',
-  imports: [ReactiveFormsModule, NumberFieldComponent, GlyphComponent],
+  imports: [ReactiveFormsModule, NumberFieldComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page page--narrow">
@@ -109,7 +109,7 @@ export const ARBE_CRITICAL_TEXT =
           </div>
           <div class="page-header__actions">
             <button type="button" class="btn" data-role="restore" (click)="restoreDefaults()">
-              <svg appGlyph="undo-2"></svg>Restaurar padrões
+              <svg appIcon="undo-2"></svg>Restaurar padrões
             </button>
             <button type="submit" form="nx-arbe-form" class="btn btn--primary" data-role="save">
               Salvar parâmetros
@@ -128,7 +128,7 @@ export const ARBE_CRITICAL_TEXT =
         @if (errors().length > 0) {
           <div class="error-summary" role="alert" tabindex="-1">
             <h2>
-              <svg appGlyph="circle-alert"></svg>Há {{ errors().length }}
+              <svg appIcon="circle-alert"></svg>Há {{ errors().length }}
               {{ errors().length === 1 ? 'ponto' : 'pontos' }} para corrigir
             </h2>
             <ul>

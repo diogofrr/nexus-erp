@@ -83,35 +83,3 @@ export function activeGroupOf(url: string, entries: readonly NavEntry[]): NavGro
   }
   return null;
 }
-
-/** Itens do portal do profissional credenciado (UX 3.3): barra inferior com 5 destinos. */
-export interface PortalLink {
-  label: string;
-  icon: string;
-  path: string;
-  exact?: boolean;
-}
-
-export const PORTAL_BOTTOM_NAV: readonly PortalLink[] = [
-  { label: 'Início', icon: 'layout-dashboard', path: '/portal', exact: true },
-  { label: 'Solicitações', icon: 'clipboard-list', path: '/portal/solicitacoes' },
-  { label: 'Disponibilidade', icon: 'calendar-days', path: '/portal/disponibilidade' },
-  { label: 'Mensagens', icon: 'messages-square', path: '/portal/mensagens' },
-];
-
-/** O que o "Mais" abre (UX 3.10). "Avaliação interna" só aparece com o prestador suspenso. */
-export function portalMoreLinks(suspended: boolean): PortalLink[] {
-  const links: PortalLink[] = [
-    { label: 'Minha avaliação', icon: 'star', path: '/portal/avaliacao' },
-    { label: 'Documentos', icon: 'file-check', path: '/portal/documentos' },
-    { label: 'Integração', icon: 'user-check', path: '/portal/integracao' },
-    { label: 'Meu perfil', icon: 'user', path: '/portal/perfil' },
-    { label: 'Privacidade', icon: 'shield-check', path: '/portal/privacidade' },
-  ];
-  return suspended
-    ? [
-        ...links,
-        { label: 'Avaliação interna', icon: 'file-text', path: '/portal/avaliacao-interna' },
-      ]
-    : links;
-}

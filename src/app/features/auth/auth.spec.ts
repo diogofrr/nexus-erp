@@ -20,9 +20,9 @@ describe('destinationAfterLogin (U-02, A-03)', () => {
       '/app/financeiro?mes=2026-11',
     );
     expect(destinationAfterLogin('support', '/app/financeiro')).toBe('/app/painel');
-    expect(destinationAfterLogin('provider', '/app/painel')).toBe('/portal');
-    expect(destinationAfterLogin('provider', '/portal/documentos')).toBe('/portal/documentos');
+    // O antigo portal não existe mais: qualquer endereço /portal volta ao painel.
     expect(destinationAfterLogin('partner', '/portal/documentos')).toBe('/app/painel');
+    expect(destinationAfterLogin('support', '/portal')).toBe('/app/painel');
     expect(destinationAfterLogin('psychologist', '/app/cuidadores/cg_0001')).toBe(
       '/app/cuidadores/cg_0001',
     );
@@ -38,7 +38,6 @@ describe('destinationAfterLogin (U-02, A-03)', () => {
     expect(destinationAfterLogin('partner', '/403')).toBe('/app/painel');
     expect(destinationAfterLogin('partner', null)).toBe('/app/painel');
     expect(destinationAfterLogin('partner', 'https://exemplo.com/app/painel')).toBe('/app/painel');
-    expect(destinationAfterLogin('provider', null)).toBe('/portal');
   });
 });
 
@@ -49,36 +48,28 @@ describe('entrada: seleção de perfil (SCR-M01-01, AC-M01-01 e 02)', () => {
   const all = <T extends Element = HTMLElement>(selector: string): T[] =>
     Array.from(app.root.querySelectorAll<T>(selector));
 
-  it('lista os 12 usuários do seed em dois grupos, com perfil por extenso, frase de cenário e aviso de protótipo', async () => {
+  it('lista os 8 usuários da equipe em três grupos por função, com perfil por extenso, frase de cenário e aviso de protótipo', async () => {
     app = await bootApp({ url: '/login' });
     expect(q('h1')?.textContent).toBe('Entrar como');
     expect(q('.banner--prototype')?.textContent).toContain(PROTOTYPE_NOTICE);
     const headings = all('.profile-group h2').map((h) => h.textContent?.trim());
-    expect(headings).toEqual(['Equipe Nexus (8)', 'Rede credenciada (4)']);
+    expect(headings).toEqual(['Gestão (2)', 'Psicologia (4)', 'Atendimento (2)']);
     const cards = all('.profile-group .list-row');
-    expect(cards).toHaveLength(12);
-    expect(cards.map((c) => c.querySelector('.list-row__title')?.textContent)).toContain(
+    expect(cards).toHaveLength(8);
+    expect(cards.map((c) => c.querySelector('.list-row__title')?.textContent)).not.toContain(
       'Dr. Eduardo Falcão',
     );
     const rafael = cards.find((c) => c.textContent?.includes('Dr. Rafael Moreira'));
     expect(rafael?.getAttribute('aria-label')).toContain('Entrar como Dr. Rafael Moreira');
     expect(rafael?.textContent).toContain('Psicólogo(a) da Nexus');
     expect(rafael?.textContent).toContain('Agenda muito ocupada');
-    // A equipe mostra o selo "Código"; o credenciado, não.
-    expect(
-      all('.profile-group:first-of-type .badge').every((b) => b.textContent?.includes('Código')),
-    ).toBe(true);
-    expect(all('.profile-group:last-of-type .badge')).toHaveLength(0);
-  });
-
-  it('o credenciado entra sem segundo fator e vai ao portal (AC-M01-02)', async () => {
-    app = await bootApp({ url: '/login' });
-    click(all('.list-row').find((c) => c.textContent?.includes('Dr. Eduardo Falcão')));
-    await settle(app.fixture);
-    expect(app.auth.isAuthenticated()).toBe(true);
-    expect(app.router.url).toBe('/portal');
-    expect(q('.portal-shell')).not.toBeNull();
-    expect(app.db.accessLog.list().at(-1)).toMatchObject({ action: 'login', userId: 'u9' });
+    // Toda a equipe mostra o selo "Código".
+    const badges = all('.profile-group .badge');
+    expect(badges).toHaveLength(8);
+    expect(badges.every((b) => b.textContent?.includes('Código'))).toBe(true);
+    // Não há grupo da rede credenciada nem avatar dourado de prestador.
+    expect(all('.profile-group h2').some((h) => h.textContent?.includes('Rede'))).toBe(false);
+    expect(all('.avatar--gold')).toHaveLength(0);
   });
 
   it('a equipe vai ao segundo fator: código exibido, "Usar o código mostrado", confirmar e entrar no painel', async () => {

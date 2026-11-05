@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ScreenDef, screensFor } from '../../../core/search/screens';
-import { GlyphComponent } from '../../../shared/ui/overlay/glyph.component';
+import { IconComponent, IconName, toIconName } from '../../../shared/ui/display/icon.component';
 import { UiPrefsService } from '../../../shared/ui/overlay/ui-prefs.service';
 
 const DESCRIPTIONS: Readonly<Record<string, string>> = {
@@ -23,7 +23,7 @@ const DESCRIPTIONS: Readonly<Record<string, string>> = {
  */
 @Component({
   selector: 'app-settings-home-page',
-  imports: [RouterLink, GlyphComponent],
+  imports: [RouterLink, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page page--narrow">
@@ -49,7 +49,7 @@ const DESCRIPTIONS: Readonly<Record<string, string>> = {
                 [attr.data-area]="slug(area)"
               >
                 <span class="cluster">
-                  <svg [appGlyph]="area.icon"></svg>
+                  <svg [appIcon]="iconOf(area)"></svg>
                   <strong class="t-strong">{{ area.label }}</strong>
                 </span>
                 <span class="t-muted t-ui">{{ description(area) }}</span>
@@ -70,7 +70,7 @@ const DESCRIPTIONS: Readonly<Record<string, string>> = {
                 [attr.aria-pressed]="prefs.theme() === 'light'"
                 (click)="prefs.setTheme('light')"
               >
-                <svg appGlyph="sun" glyphSize="sm"></svg>Claro
+                <svg appIcon="sun" size="sm"></svg>Claro
               </button>
               <button
                 type="button"
@@ -79,7 +79,7 @@ const DESCRIPTIONS: Readonly<Record<string, string>> = {
                 [attr.aria-pressed]="prefs.theme() === 'dark'"
                 (click)="prefs.setTheme('dark')"
               >
-                <svg appGlyph="moon" glyphSize="sm"></svg>Escuro
+                <svg appIcon="moon" size="sm"></svg>Escuro
               </button>
             </div>
             <p class="t-muted t-ui">
@@ -108,6 +108,10 @@ export class SettingsHomePageComponent {
   protected readonly prefs = inject(UiPrefsService);
 
   /** As telas de Configurações que o perfil abre, pela mesma matriz do menu. */
+  protected iconOf(area: ScreenDef): IconName {
+    return toIconName(area.icon);
+  }
+
   protected readonly areas = computed<ScreenDef[]>(() => {
     const role = this.auth.role();
     return role

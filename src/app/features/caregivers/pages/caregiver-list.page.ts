@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, afterNextRender, comput
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth';
+import { Clock, addDays } from '@core/clock';
 import { Database } from '@core/data';
 import { downloadTextFile } from '@core/export/file-download';
 import type { ID, PlanId } from '@core/models';
@@ -44,6 +45,7 @@ const VIEWS: readonly { value: string; label: string; partner: boolean }[] = [
   { value: 'sem-consentimento', label: 'Sem consentimento de saúde', partner: false },
   { value: 'sem-psicologo', label: 'Sem psicólogo responsável', partner: false },
   { value: 'encerramento', label: 'Encerramento pedido', partner: true },
+  { value: 'novos', label: 'Cadastros dos últimos 7 dias', partner: true },
 ];
 
 /**
@@ -211,6 +213,7 @@ const VIEWS: readonly { value: string; label: string; partner: boolean }[] = [
 export class CaregiverListPage {
   private readonly auth = inject(AuthService);
   private readonly db = inject(Database);
+  private readonly clock = inject(Clock);
   private readonly router = inject(Router);
   private readonly doc = inject(DOCUMENT);
   private readonly toasts = inject(ToastService);
@@ -391,6 +394,9 @@ export class CaregiverListPage {
         return row.psychologistId === null && row.status !== 'closed';
       case 'encerramento':
         return row.status === 'closure_requested';
+      case 'novos':
+        // Mesma conta do KPI "Cadastros novos" do painel: ativos que entraram nos últimos 7 dias.
+        return row.status === 'active' && row.enrolledAt > addDays(this.clock.today(), -7);
       default:
         return true;
     }

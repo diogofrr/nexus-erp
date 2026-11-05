@@ -44,7 +44,7 @@
               (click)="toggleGroup(entry.id)"
             >
               {{ entry.title }}
-              <svg appGlyph="chevron-down" glyphSize="sm"></svg>
+              <svg appIcon="chevron-down" size="sm"></svg>
             </button>
             @if (isExpanded(entry.id)) {
               <ul class="nav-list" [id]="'nx-nav-' + entry.id">
@@ -77,7 +77,7 @@
         [attr.aria-pressed]="prefs.menuRail()"
         (click)="prefs.setMenuRail(!prefs.menuRail())"
       >
-        <svg appGlyph="panel-left"></svg>
+        <svg appIcon="panel-left"></svg>
         <span class="nav-item__label">{{
           prefs.menuRail() ? 'Expandir o menu' : 'Recolher o menu'
         }}</span>
@@ -95,7 +95,7 @@
       [attr.aria-expanded]="menuExpanded()"
       (click)="toggleNav()"
     >
-      <svg appGlyph="menu"></svg>
+      <svg appIcon="menu"></svg>
     </button>
     <div class="topbar__brand">
       <svg class="brand-symbol" aria-hidden="true"><use href="icons/sprite.svg#nx-symbol" /></svg>
@@ -110,7 +110,7 @@
         aria-label="Buscar ou ir para (Ctrl K)"
         (click)="palette.open()"
       >
-        <svg appGlyph="search"></svg>
+        <svg appIcon="search"></svg>
         <span>Buscar ou ir para...</span>
         <kbd class="kbd hide-sm">Ctrl K</kbd>
       </button>
@@ -143,7 +143,7 @@
         aria-label="Ajuda e atalhos de teclado"
         (click)="dialogs.openShortcuts()"
       >
-        <svg appGlyph="circle-help"></svg>
+        <svg appIcon="circle-help"></svg>
       </button>
       <app-user-menu area="team" />
     </div>
@@ -161,7 +161,7 @@
   </main>
 
   <footer class="app-footer" [attr.inert]="drawerOpen() ? '' : null">
-    <svg appGlyph="info"></svg>
+    <svg appIcon="info"></svg>
     <span>{{ notice }}</span>
     <nav class="app-footer__links" aria-label="Rodapé">
       <a routerLink="/app/canal-do-titular">Privacidade e canal do titular</a>
@@ -187,7 +187,7 @@
       [attr.aria-label]="linkLabel(link)"
       [attr.title]="link.label"
     >
-      <svg [appGlyph]="link.icon"></svg>
+      <svg [appIcon]="link.icon"></svg>
       <span class="nav-item__label">{{ link.label }}</span>
       @if (counterOf(link.key); as counter) {
         <span class="nav-item__badge" aria-hidden="true">{{ counter.count }}</span>
@@ -205,14 +205,14 @@
         "
         (click)="togglePin(link)"
       >
-        <svg appGlyph="star" glyphSize="sm"></svg>
+        <svg appIcon="star" size="sm"></svg>
       </button>
     }
   </li>
 </ng-template>
 
 <ng-template #clockChip>
-  <svg appGlyph="clock" glyphSize="sm"></svg>
+  <svg appIcon="clock" size="sm"></svg>
   <span class="hide-sm">Hoje (simulado): {{ clock.today() | dateBr }}</span>
   <span class="show-sm" aria-hidden="true">{{ clock.today() | dateBr }}</span>
 </ng-template>

@@ -1,7 +1,7 @@
 import { Audited, ID, ISODateTime } from './primitives';
 
 /** Perfis de acesso (escopo, seção 1.1). */
-export type Role = 'partner' | 'technical_lead' | 'psychologist' | 'support' | 'provider';
+export type Role = 'partner' | 'technical_lead' | 'psychologist' | 'support';
 
 /** Usuário de demonstração (M01). Não há senha: o login é a escolha do perfil. */
 export interface AppUser extends Audited {
@@ -13,8 +13,6 @@ export interface AppUser extends Audited {
   requiresTwoFactor: boolean;
   /** Vínculo com o perfil de psicólogo(a), quando `role = psychologist`. */
   psychologistId?: ID;
-  /** Vínculo com o prestador, quando `role = provider`. */
-  providerId?: ID;
   /** Frase exibida na tela de entrada. */
   demoDescription: string;
 }
@@ -99,7 +97,6 @@ export type Resource =
   | 'lgpd_audit_log'
   | 'governance'
   | 'occurrences'
-  | 'provider_portal'
   | 'settings';
 
 /** Ações verificadas por `can()`. */

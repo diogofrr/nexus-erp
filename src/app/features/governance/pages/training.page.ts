@@ -294,7 +294,7 @@ export class TrainingPageComponent {
     }
     return this.db.users
       .all()
-      .filter((u) => u.role !== 'provider' && u.active && (front === 'management' || u.role === 'psychologist'))
+      .filter((u) => u.active && (front === 'management' || u.role === 'psychologist'))
       .map((u) => ({ type: 'user' as const, id: u.id, name: u.displayName }));
   });
 

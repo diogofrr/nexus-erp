@@ -76,7 +76,7 @@ Em `core/auth/module-map.ts` (constante `MODULES`) está a fonte do roteador, do
 | M11 Reclamações | `messages` (`COMPLAINT_ROUTES`) | `/app/reclamacoes` | `complaints` | partner, technical_lead (L), support |
 | M12 LGPD | `privacy` | `/app/lgpd` | `privacy` | partner, technical_lead, support (consentimentos e solicitações; o log e o RIPD são só de partner e technical_lead) |
 | M13 Governança | `governance` | `/app/governanca` | `governance` | partner, technical_lead, psychologist (L), support (L) |
-| M14 Portal do profissional | `provider-portal` | `/portal` | `provider-portal` | só provider |
+| M14 (removido) | removido por decisão do dono | (nenhuma) | (nenhuma) | ninguém: os prestadores são cadastros geridos pela equipe, sem login |
 | M15 Configurações | `settings` | `/app/configuracoes` | `settings` | partner, technical_lead (só ARBE e conteúdos) |
 
 Como preencher um módulo (sem mexer no roteador central):
@@ -88,14 +88,14 @@ Como preencher um módulo (sem mexer no roteador central):
 
 ## 4. Convenções
 
-- **Idioma**: identificadores em inglês (ou siglas consagradas: Zarit, ARBE, ARP, POP, CRP, CRO); textos de interface, comentários e documentação em pt-BR. Nada de travessão (nem o longo, nem o médio): use vírgula, ponto ou dois-pontos. `node scripts/check-core.mjs` falha se encontrar.
+- **Idioma**: identificadores em inglês (ou siglas consagradas: Zarit, ARBE, ARP, POP, CRP, CREFITO); textos de interface, comentários e documentação em pt-BR. Nada de travessão (nem o longo, nem o médio): use vírgula, ponto ou dois-pontos. `node scripts/check-core.mjs` falha se encontrar.
 - **Componentes**: standalone, `changeDetection: ChangeDetectionStrategy.OnPush`, estado em **signals** (`signal`, `computed`, `input`, `output`), `inject()` no lugar de construtor, controle de fluxo novo (`@if`, `@for`, `@switch`), formulários reativos tipados (`FormGroup<...>` com `NonNullableFormBuilder`).
 - **Sem `any`**: use `unknown` e estreite; tipos do modelo vêm de `@core/models`.
 - **Dados**: sempre pelo `Database` (`inject(Database)`). Dinheiro em centavos inteiros (`Cents`), formatado com o pipe `money`. IDs são strings com prefixo; datas `ISODate` e `ISODateTime` (com `-03:00`).
 - **Tempo**: `Clock.today()` e `Clock.now()`. Nunca `Date.now()` nem `new Date()`. Conta de calendário: `@core/clock` (`addDays`, `addMonths`, `daysBetween`...).
 - **Permissão**: `AuthService.can(resource, action, { own })`, `canOnRecord` para registros próprios, `menuFor(role)` para o menu. A interface esconde o que o perfil não pode, mas a checagem de verdade é a do guard e do serviço.
 - **Log**: leitura de dado sensível chama `AuditLogService.view(...)`; o RT em caso que não é dele chama `supervise(...)` com justificativa; "mostrar" dado mascarado chama `reveal(...)`; gravações sensíveis chamam `write(...)`; exportar e imprimir chamam `exported(...)` e `printed(...)`.
-- **Privacidade**: `partner` só vê código `CUI-0000` e agregados (`aggregateCount`, `zaritDistribution`) com mínimo de 5 por recorte; `support` vê CPF, telefone e e-mail mascarados (pipes e `maskCpf`); `provider` só vê o mínimo (`providerRequestVisibility`, `providerCaregiverView`).
+- **Privacidade**: `partner` só vê código `CUI-0000` e agregados (`aggregateCount`, `zaritDistribution`) com mínimo de 5 por recorte; `support` vê CPF, telefone e e-mail mascarados (pipes e `maskCpf`); o prestador não tem login: a equipe só repassa a ele o mínimo, e só com solicitação aceita e cláusula de proteção de dados assinada (`providerMaySeeCaregiverData`, RN-LGPD-13).
 - **Texto de tela**: acolhedor e direto, sem jargão clínico, sem "guerreira" ou "anjo", sem promessa de resultado terapêutico, sem "diagnóstico" nem "eficácia" sobre os resultados (RN-ZRT-18, 22).
 - **Regras de negócio**: ficam em `core/rules` como funções puras com o RN no comentário. Se a regra muda, muda lá e o teste acompanha. A tela não recalcula regra.
 
@@ -133,7 +133,7 @@ No PowerShell, o filtro `--include` aceita aspas simples. Os testes rodam em Nod
 
 Dados 100% fictícios: CPF no formato `000.MMM.NNN-00` com dígitos verificadores inválidos e `cpfIsFictitious: true`, e-mails `@exemplo.com.br`, telefones `(34) 90000-0000` a `(34) 90000-0999`, endereços "Rua Exemplo, N", registros de conselho com número fictício. Nenhum dado dos autores do documento.
 
-Contagens conferidas pelos testes (`seed.spec.ts`): 12 usuários; 4 psicólogos; 3 salas; 340 cuidadores (29 de cenário e 311 de volume), 340 pessoas idosas, 340 assinaturas e 17 cartões ativos; 158 aplicações de Zarit concluídas (38 de cenário e 120 de volume) mais as próximas agendadas; 9 alertas de Zarit nomeados; 20 prestadores e 20 credenciamentos; 213 solicitações de serviço (124 históricas e 89 dos últimos 30 dias); 124 avaliações; 8 grupos e capacitações; 9 parceiros e 3 empresas; 28 mensagens e 5 reclamações; 5 solicitações do titular; 80 linhas de log; 10 POPs, 12 riscos, 10 encaminhamentos e 3 ocorrências; 60 sessões; 15 cuidadores no piloto. O seed ocupa cerca de 1,7 milhão de caracteres no JSON (a cota do navegador é de cerca de 5 milhões).
+Contagens conferidas pelos testes (`seed.spec.ts`): 8 usuários (todos da equipe); 4 psicólogos; 3 salas; 340 cuidadores (29 de cenário e 311 de volume), 340 pessoas idosas, 340 assinaturas e 17 cartões ativos (mais 1 inativo, de quem voltou ao Livre); 158 aplicações de Zarit concluídas (38 de cenário e 120 de volume) mais as próximas agendadas; 9 alertas de Zarit nomeados; 20 prestadores e 20 credenciamentos; 213 solicitações de serviço (124 históricas e 89 dos últimos 30 dias); 124 avaliações; 8 grupos e capacitações; 9 parceiros e 3 empresas; 28 mensagens (app 9, WhatsApp 8, telefone 4, e-mail 7) e 5 reclamações; 5 solicitações do titular; 2 incidentes de dados (1 encerrado e 1 aberto); 80 linhas de log; 10 POPs, 12 riscos, 10 encaminhamentos e 3 ocorrências; 60 sessões; 15 cuidadores no piloto. O seed ocupa cerca de 1,7 milhão de caracteres no JSON (a cota do navegador é de cerca de 5 milhões).
 
 ### 7.1 Usuários de demonstração (entrada)
 
@@ -147,12 +147,9 @@ Contagens conferidas pelos testes (`seed.spec.ts`): 12 usuários; 4 psicólogos;
 | `u6` | Dr. Tiago Brandão | `psychologist` (`psy_0004`) | Mês -2 sem agenda: n/d |
 | `u7` | Camila Duarte | `support` | Atendimento |
 | `u8` | Wesley Lacerda | `support` | Atendimento |
-| `u9` | Dr. Eduardo Falcão | `provider` (`prv_11`) | **Dentista (CRO), persona do CS/CX**; nota 4,70; 2 solicitações novas |
-| `u10` | Dra. Renata Sampaio | `provider` (`prv_01`) | Fisioterapeuta, excelência |
-| `u11` | Clínica Saúde Integral | `provider` (`prv_10`) | Suspenso, com avaliação interna e justificativa enviada |
-| `u12` | Cuidadora Rosimeire Tavares | `provider` (`prv_20`) | Nova, sem cláusula de dados assinada |
+Os ids `u9` a `u12` eram os usuários do perfil de prestador credenciado (portal, M14). O perfil foi **removido por decisão do dono**: os ids não existem mais nem são reaproveitados, e os prestadores correspondentes (P11, P01, P10 e P20) continuam como cadastros da rede, geridos pela equipe e sem login. A persona de teste do CS/CX passa a ser a equipe da Nexus: psicólogo(a) (`u3`), atendimento (`u7`) e sócia (`u1`).
 
-Segundo fator da equipe: código `123456`, exibido na tela. O credenciado entra sem segundo fator.
+Segundo fator: código `123456`, exibido na tela, para todos os usuários (todos são da equipe).
 
 ### 7.2 Os 29 cenários de cuidadores (C01 a C29)
 
@@ -211,7 +208,7 @@ Totais por plano nesses 29: Livre 12, Essencial 7, Cuida 5, Sustenta 5. Os 311 c
 
 | Id | Nome | Categoria | Estado | Cenário |
 |---|---|---|---|---|
-| `prv_01` | Dra. Renata Sampaio | Fisioterapia | ativa | Excelência (4,83), login `u10` |
+| `prv_01` | Dra. Renata Sampaio | Fisioterapia | ativa | Excelência (4,83) |
 | `prv_02` | Clínica Movimento Vital | Fisioterapia | ativa | Excelência (4,61) |
 | `prv_03` | Fisio em Casa Uberlândia | Fisioterapia | monitoramento | Alerta (4,25); recusa 28,6%, abaixo do limiar |
 | `prv_04` | Aline Cristina Pires | Cuidador(a) | monitoramento | **Recusa 62,5%**, queda de 60% na disponibilidade, selo "risco de saída" |
@@ -221,8 +218,8 @@ Totais por plano nesses 29: Livre 12, Essencial 7, Cuida 5, Sustenta 5. Os 311 c
 | `prv_08` | Farmácia Vida Plena | Farmácia | ativa | Exatamente **4,50**: excelência |
 | `prv_09` | Drogaria Santa Clara | Farmácia | monitoramento | Exatamente **4,00** com 5 avaliações: alerta |
 | `prv_10` | Clínica Saúde Integral | Clínica | **suspensa** | Média 3,57; avaliação interna com justificativa; nenhuma opção de clínica |
-| `prv_11` | **Dr. Eduardo Falcão** | **Odontologia (CRO)** | ativo | **Dentista**, 4,70, 2 solicitações novas, login `u9` |
-| `prv_12` | Dra. Sônia Peixoto | Odontologia (CRO) | monitoramento | Alerta (4,33); segunda opção de odontologia |
+| `prv_11` | **Dr. Eduardo Falcão** | **Fisioterapia (CREFITO)** | ativo | Excelência, 4,70, 2 solicitações novas, cláusula assinada |
+| `prv_12` | Dra. Sônia Peixoto | Fisioterapia (CREFITO) | monitoramento | Alerta (4,33); mais uma opção de fisioterapia |
 | `prv_13` | Dra. Valéria Costa | Psicologia (CRP) | ativa | 3 avaliações: sem média; única opção de psicologia; validada pelo RT |
 | `prv_14` | Nutri Camila Rezende | Nutrição | **suspensa** | 3 reclamações graves com média 4,31; avaliação interna sem justificativa |
 | `prv_15` | Dr. Heitor Magalhães | Advocacia (OAB) | ativo | Exatamente 5 avaliações; única opção de advocacia |
@@ -230,9 +227,9 @@ Totais por plano nesses 29: Livre 12, Essencial 7, Cuida 5, Sustenta 5. Os 311 c
 | `prv_17` | Equipamentos Cuidar+ | Serviço especializado | candidata (`in_review`) | Documentos ok, integração pendente |
 | `prv_18` | Cuidadores Express | Cuidador(a) | reprovada | Sem contrato e sem comprovação de formação |
 | `prv_19` | Dr. Otávio Lima | Fisioterapia | descredenciado (D-60) | E-mail de encerramento registrado |
-| `prv_20` | Cuidadora Rosimeire Tavares | Cuidador(a) | ativa | Sem cláusula de dados assinada; 2 solicitações novas; login `u12` |
+| `prv_20` | Cuidadora Rosimeire Tavares | Cuidador(a) | ativa | Sem cláusula de dados assinada; 2 solicitações novas |
 
-Opções por especialidade na busca (ativos e em monitoramento): Fisioterapia 3, Cuidador(a) 3, Farmácia 2, Odontologia 2; **única opção**: home care, enfermagem, psicologia, advocacia; **nenhuma**: clínica, nutrição, serviço especializado.
+Opções por especialidade na busca (ativos e em monitoramento): Fisioterapia 5, Cuidador(a) 3, Farmácia 2; **única opção**: home care, enfermagem, psicologia, advocacia; **nenhuma**: clínica, nutrição, serviço especializado.
 
 ## 8. Divergências e decisões do Dev Core (para os próximos devs, QA e PM)
 
@@ -247,7 +244,7 @@ Onde o escopo foi omisso, ambíguo ou contraditório, o núcleo seguiu a regra d
 5. Campos opcionais acrescentados: `retentionBlock` (bloqueio por retenção documental) em `ZaritAssessment`, `ZaritAlert`, `ArbeAlert`, `SessionNote` e `Occurrence`; `closureReason` em `ArbeAlert`; `erasedAt` e `anonymizedAt` em `Caregiver`; `exitedAt` em `PilotEnrollment`; `fictitious` em `ProviderCouncil`. `RetentionPolicy` e `NormReference` ganharam `id` e carimbos para serem registros comuns.
 6. `AppUsageSummary` (resumo de uso do aplicativo por cuidador) e `Notification` foram acrescentados para K31 e para o sino (M02). `PilotInstrumentRecord` não foi criado: os dados do instrumento ficam em `PilotEnrollment` e `ZaritAssessment`.
 7. `CareSession.priceCents` é o valor **cobrado** (já com o desconto do plano).
-8. A matriz do escopo tem uma linha única "M10 Financeiro e indicadores"; o núcleo a **desdobrou** em `finance`, `indicators` e `pilot` para dar um guard por tela sem violar a seção 1.3 (RT, psicólogo e atendimento não veem valores em reais). Dentro do plano e do perfil, o `provider` só vê mensagens, reclamações e a própria rede pelo portal (células `embeddedOnly`).
+8. A matriz do escopo tem uma linha única "M10 Financeiro e indicadores"; o núcleo a **desdobrou** em `finance`, `indicators` e `pilot` para dar um guard por tela sem violar a seção 1.3 (RT, psicólogo e atendimento não veem valores em reais). Dentro do plano e do perfil, o psicólogo só vê o plano do próprio cuidador (célula `embeddedOnly`). A coluna do perfil `provider` (portal, M14) foi removida da matriz por decisão do dono.
 
 **Regras e números**
 
@@ -271,6 +268,15 @@ Onde o escopo foi omisso, ambíguo ou contraditório, o núcleo seguiu a regra d
 **Configuração do projeto alterada pelo Dev Core**
 
 22. `tsconfig.json`: `strict: true` (o projeto gerado não tinha), `strictTemplates: true` e os aliases `@core/*`, `@shared/*`, `@features/*`, `@layout/*`. `tsconfig.app.json`: exclui `src/app/core/testing/**` (ajudantes só de teste). `package.json`: só os scripts `test:ci`, `typecheck` e `check:core`. Nenhuma dependência foi instalada ou pedida: o núcleo usa só o que o projeto já tem (`@angular/*`, `rxjs`, `vitest`, `jsdom`).
+
+**Remoção do portal e integração (Dev E)**
+
+23. **Portal do prestador credenciado (M14) e o perfil de login do prestador removidos** por decisão do dono. O tipo dos perfis de acesso ficou com 4 valores (`partner`, `technical_lead`, `psychologist`, `support`); a matriz perdeu a coluna e o recurso do portal; `/portal`, o shell do portal e `features/provider-portal` não existem mais; a entrada lista só os 8 usuários da equipe, agrupados em Gestão, Psicologia e Atendimento. A entidade `Provider` (prestador) e a rede credenciada continuam como cadastros da equipe. O id M14 não é reaproveitado.
+24. **Um só serviço de supervisão**: `SupervisionWindowService` (`core/audit/supervision-window.service.ts`) e um só portão, `app-supervision-gate` (`shared/ui/access`). A janela de 30 minutos por caso e por sessão conta pelo relógio do sistema (o relógio simulado do M15 permite testar a expiração), fica em `sessionStorage` e cada abertura grava `supervise` com o mesmo motivo.
+25. **Um só componente de ícone**: `svg[appIcon]` (`IconComponent`). Nome vindo de dado do núcleo (texto) passa por `toIconName`, que cai num ícone neutro se o nome não existir no sprite.
+26. **Mudança de plano agendada**: `SubscriptionService.applyDueChanges` chama `GroupMembershipService.reconcilePlanLoss` quando uma descida ou um cancelamento passa a valer (AC-M07-09; o canal corporativo faz o mesmo ao devolver o cuidador ao Livre). `PlanChangeScheduler`, ligado no inicializador do aplicativo, aplica o que já venceu ao iniciar e sempre que a data de hoje (real ou simulada) muda; testes de tela e de serviço não o instanciam.
+27. **Filtros `?filtro=` dos painéis (AC-M02-08)**: cuidadores (`novos`), rede (`excelencia`, `alerta`, `risco-de-saida`, `em-andamento` no credenciamento, `sem-retorno` nas solicitações), mensagens (`atrasadas`, `sinalizadas`) e reclamações (`abertas`, `vencidas`) aceitam as chaves que os painéis e o sino usam.
+28. **Testes e downloads**: `configureCoreTest` intercepta o clique do `<a download>` que `downloadTextFile` cria (o jsdom não implementa navegação) e o registra em `TEST_DOWNLOADS`; erros reais continuam aparecendo. Há um só `downloadTextFile` (`core/export/file-download.ts`).
 
 ## 9. Como estender o núcleo
 

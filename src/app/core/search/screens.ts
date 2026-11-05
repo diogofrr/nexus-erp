@@ -196,8 +196,6 @@ export interface ScreenDef {
   resource?: Resource;
   /** Área interna de Configurações (`arbe`, `guidance_content`) liberada ao RT. */
   settingsArea?: string;
-  /** Só estes perfis (telas que não são da matriz, como o portal). */
-  onlyRoles?: readonly Role[];
   keywords?: readonly string[];
 }
 
@@ -294,92 +292,20 @@ const SUB_SCREENS: readonly ScreenDef[] = [
   screen('Configurações', 'settings', '/sobre', 'Sobre o protótipo', 'info'),
 ];
 
-/** Telas do portal do profissional credenciado (UX 3.3), navegação própria e mais curta. */
-export const PORTAL_SCREENS: readonly ScreenDef[] = [
-  {
-    id: 'screen:/portal',
-    label: 'Início',
-    link: '/portal',
-    icon: 'layout-dashboard',
-    onlyRoles: ['provider'],
-  },
-  {
-    id: 'screen:/portal/solicitacoes',
-    label: 'Solicitações',
-    link: '/portal/solicitacoes',
-    icon: 'clipboard-list',
-    onlyRoles: ['provider'],
-    keywords: ['pedidos'],
-  },
-  {
-    id: 'screen:/portal/disponibilidade',
-    label: 'Disponibilidade',
-    link: '/portal/disponibilidade',
-    icon: 'calendar-days',
-    onlyRoles: ['provider'],
-    keywords: ['agenda', 'horarios'],
-  },
-  {
-    id: 'screen:/portal/avaliacao',
-    label: 'Minha avaliação',
-    link: '/portal/avaliacao',
-    icon: 'star',
-    onlyRoles: ['provider'],
-    keywords: ['nota'],
-  },
-  {
-    id: 'screen:/portal/documentos',
-    label: 'Documentos',
-    link: '/portal/documentos',
-    icon: 'file-check',
-    onlyRoles: ['provider'],
-    keywords: ['registro', 'clausula', 'contrato'],
-  },
-  {
-    id: 'screen:/portal/integracao',
-    label: 'Integração',
-    link: '/portal/integracao',
-    icon: 'user-check',
-    onlyRoles: ['provider'],
-  },
-  {
-    id: 'screen:/portal/mensagens',
-    label: 'Mensagens',
-    link: '/portal/mensagens',
-    icon: 'messages-square',
-    onlyRoles: ['provider'],
-  },
-  {
-    id: 'screen:/portal/perfil',
-    label: 'Meu perfil',
-    link: '/portal/perfil',
-    icon: 'user',
-    onlyRoles: ['provider'],
-  },
-  {
-    id: 'screen:/portal/privacidade',
-    label: 'Privacidade',
-    link: '/portal/privacidade',
-    icon: 'shield-check',
-    onlyRoles: ['provider'],
-    keywords: ['o que posso ver'],
-  },
-];
-
 /** Telas de rodapé, para todos os perfis (LP-23 e SCR-M12-10). */
-function footerScreens(prefix: '/app' | '/portal'): ScreenDef[] {
+function footerScreens(): ScreenDef[] {
   return [
     {
-      id: `screen:${prefix}/canal-do-titular`,
+      id: 'screen:/app/canal-do-titular',
       label: 'Privacidade e canal do titular',
-      link: `${prefix}/canal-do-titular`,
+      link: '/app/canal-do-titular',
       icon: 'shield-check',
       keywords: ['dpo', 'encarregado', 'lgpd', 'direitos'],
     },
     {
-      id: `screen:${prefix}/meus-dados`,
+      id: 'screen:/app/meus-dados',
       label: 'Meus dados no navegador',
-      link: `${prefix}/meus-dados`,
+      link: '/app/meus-dados',
       icon: 'database',
       keywords: ['apagar tudo', 'armazenamento'],
     },
@@ -387,9 +313,6 @@ function footerScreens(prefix: '/app' | '/portal'): ScreenDef[] {
 }
 
 function allowed(role: Role, def: ScreenDef): boolean {
-  if (def.onlyRoles && !def.onlyRoles.includes(role)) {
-    return false;
-  }
   if (def.moduleKey && !canAccessModule(role, moduleByKey(def.moduleKey))) {
     return false;
   }
@@ -408,9 +331,6 @@ function allowed(role: Role, def: ScreenDef): boolean {
 
 /** Telas que o perfil pode abrir: itens do menu, subtelas permitidas e telas de rodapé. */
 export function screensFor(role: Role): ScreenDef[] {
-  if (role === 'provider') {
-    return [...PORTAL_SCREENS, ...footerScreens('/portal')];
-  }
   const items: ScreenDef[] = NAV_ITEMS.filter((i) => canAccessModule(role, moduleByKey(i.key))).map(
     (item): ScreenDef => {
       const module: ModuleDef = moduleByKey(item.key);
@@ -424,7 +344,7 @@ export function screensFor(role: Role): ScreenDef[] {
       };
     },
   );
-  return [...items, ...SUB_SCREENS.filter((s) => allowed(role, s)), ...footerScreens('/app')];
+  return [...items, ...SUB_SCREENS.filter((s) => allowed(role, s)), ...footerScreens()];
 }
 
 // ===== Ações da paleta =====
@@ -563,22 +483,6 @@ export const ACTIONS: readonly ActionDef[] = [
     icon: 'shield-check',
     moduleKey: 'privacy',
     roles: ['support'],
-  },
-  {
-    id: 'action:update-availability',
-    label: 'Atualizar disponibilidade',
-    link: '/portal/disponibilidade',
-    icon: 'calendar-days',
-    moduleKey: 'provider-portal',
-    roles: ['provider'],
-  },
-  {
-    id: 'action:send-document',
-    label: 'Enviar documento',
-    link: '/portal/documentos',
-    icon: 'upload',
-    moduleKey: 'provider-portal',
-    roles: ['provider'],
   },
 ];
 

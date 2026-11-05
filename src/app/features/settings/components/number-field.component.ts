@@ -12,7 +12,7 @@ import {
   ReactiveFormsModule,
   ValidationErrors,
 } from '@angular/forms';
-import { GlyphComponent } from '../../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../../shared/ui/display/icon.component';
 
 /** Valida número inteiro (os parâmetros do protótipo são todos inteiros). */
 export function integerValidator(control: AbstractControl): ValidationErrors | null {
@@ -30,7 +30,7 @@ let sequence = 0;
  */
 @Component({
   selector: 'app-number-field',
-  imports: [ReactiveFormsModule, GlyphComponent],
+  imports: [ReactiveFormsModule, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="field" [class.field--error]="showError()">
@@ -57,7 +57,7 @@ let sequence = 0;
       </div>
       @if (showError()) {
         <span class="field__error" [id]="id + '-error'">
-          <svg appGlyph="circle-alert"></svg>
+          <svg appIcon="circle-alert"></svg>
           <span><span class="sr-only">Erro: </span>{{ message() }}</span>
         </span>
       }

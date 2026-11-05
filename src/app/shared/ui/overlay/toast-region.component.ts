@@ -1,12 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router } from '@angular/router';
-import { filter, map, startWith } from 'rxjs';
-import { GlyphComponent } from './glyph.component';
+import { IconComponent, IconName } from '../display/icon.component';
 import { isTypingTarget } from './modal';
 import { ToastItem, ToastService, ToastTone } from './toast.service';
 
-const TONE_ICON: Record<ToastTone, string> = {
+const TONE_ICON: Record<ToastTone, IconName> = {
   success: 'circle-check',
   attention: 'triangle-alert',
   danger: 'octagon-alert',
@@ -14,23 +11,17 @@ const TONE_ICON: Record<ToastTone, string> = {
 };
 
 /**
- * Região de toasts (canto inferior direito; no celular, centralizada e acima da barra inferior do
- * portal). Fica numa região `aria-live`. Pausa a contagem com o mouse em cima ou com o foco dentro.
+ * Região de toasts (canto inferior direito; no celular, centralizada). Fica numa região `aria-live`. Pausa a contagem com o mouse em cima ou com o foco dentro.
  * `Ctrl+Z` (ou `Cmd+Z`) desfaz o toast mais recente que tem "Desfazer", fora de campos de texto.
  * Monte UMA vez, na raiz do aplicativo.
  */
 @Component({
   selector: 'app-toast-region',
-  imports: [GlyphComponent],
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown)': 'onKeydown($event)' },
   template: `
-    <div
-      class="toast-region"
-      [class.toast-region--above-nav]="aboveNav()"
-      aria-live="polite"
-      aria-atomic="false"
-    >
+    <div class="toast-region" aria-live="polite" aria-atomic="false">
       @for (toast of toasts.toasts(); track toast.id) {
         <div
           class="toast"
@@ -43,7 +34,7 @@ const TONE_ICON: Record<ToastTone, string> = {
           (focusin)="toasts.hold(toast.id)"
           (focusout)="toasts.release(toast.id)"
         >
-          <svg [appGlyph]="iconOf(toast)"></svg>
+          <svg [appIcon]="iconOf(toast)"></svg>
           <div class="flex-1">
             @if (toast.title) {
               <strong>{{ toast.title }}</strong>
@@ -61,7 +52,7 @@ const TONE_ICON: Record<ToastTone, string> = {
             aria-label="Fechar aviso"
             (click)="toasts.dismiss(toast.id)"
           >
-            <svg appGlyph="x" glyphSize="sm"></svg>
+            <svg appIcon="x" size="sm"></svg>
           </button>
         </div>
       }
@@ -70,19 +61,8 @@ const TONE_ICON: Record<ToastTone, string> = {
 })
 export class ToastRegionComponent {
   protected readonly toasts = inject(ToastService);
-  private readonly router = inject(Router);
 
-  /** No portal, a barra inferior ocupa o rodapé: o toast sobe. */
-  protected readonly aboveNav = toSignal(
-    this.router.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      map((e) => e.urlAfterRedirects.startsWith('/portal')),
-      startWith(this.router.url.startsWith('/portal')),
-    ),
-    { initialValue: false },
-  );
-
-  protected iconOf(toast: ToastItem): string {
+  protected iconOf(toast: ToastItem): IconName {
     return TONE_ICON[toast.tone];
   }
 

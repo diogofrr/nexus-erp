@@ -16,7 +16,7 @@ import {
   NotificationItem,
   NotificationService,
 } from '../../core/notifications/notification.service';
-import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../shared/ui/display/icon.component';
 
 /**
  * Sino de notificações com contador e painel (SCR-M02-03, UX 3.6).
@@ -31,7 +31,7 @@ import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
  */
 @Component({
   selector: 'app-notification-bell',
-  imports: [GlyphComponent, NgTemplateOutlet, RelativeTimePipe],
+  imports: [IconComponent, NgTemplateOutlet, RelativeTimePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'menu-anchor',
@@ -49,7 +49,7 @@ import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
       [attr.aria-label]="bellLabel()"
       (click)="toggle()"
     >
-      <svg appGlyph="bell"></svg>
+      <svg appIcon="bell"></svg>
       @if (unread() > 0) {
         <span class="nav-item__badge topbar__badge" aria-hidden="true">{{ unread() }}</span>
       }
@@ -140,7 +140,7 @@ import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
           [class.avatar--danger]="item.severity === 'danger'"
           [class.avatar--attention]="item.severity === 'attention'"
         >
-          <svg [appGlyph]="item.icon" glyphSize="sm"></svg>
+          <svg [appIcon]="item.icon" size="sm"></svg>
         </span>
         <button type="button" class="list-row__main" (click)="openItem(item)">
           <span class="list-row__title">{{ item.title }}</span>
@@ -153,7 +153,7 @@ import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
             [attr.aria-label]="'Marcar como vista: ' + item.title"
             (click)="markSeen(item)"
           >
-            <svg appGlyph="check" glyphSize="sm"></svg>
+            <svg appIcon="check" size="sm"></svg>
           </button>
         } @else {
           <span></span>

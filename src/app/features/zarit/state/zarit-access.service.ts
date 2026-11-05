@@ -66,12 +66,4 @@ export class ZaritAccessService {
   actorUserId(): ID {
     return this.auth.actor()?.userId ?? '';
   }
-
-  /** "a Dra. Beatriz Nogueira", com artigo, para o portão de supervisão. */
-  ownerName(caregiver: Pick<Caregiver, 'assignedPsychologistId'> | undefined): string {
-    const psy = caregiver?.assignedPsychologistId
-      ? this.db.psychologists.get(caregiver.assignedPsychologistId)
-      : undefined;
-    return psy ? `${psy.displayName.startsWith('Dra.') ? 'a' : 'o'} ${psy.displayName}` : 'outro psicólogo da equipe';
-  }
 }

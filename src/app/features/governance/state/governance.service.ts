@@ -530,7 +530,7 @@ export class GovernanceService {
       );
     return this.db.users
       .all()
-      .filter((u) => u.role !== 'provider' && u.active)
+      .filter((u) => u.active)
       .map((u) => ({
         personType: 'user' as const,
         personId: u.id,

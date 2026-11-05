@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { GlyphComponent } from './glyph.component';
+import { IconComponent, IconName } from '../display/icon.component';
 
 export type BannerVariant = 'info' | 'success' | 'attention' | 'danger' | 'prototype' | 'consent';
 
-const ICONS: Record<BannerVariant, string> = {
+const ICONS: Record<BannerVariant, IconName> = {
   info: 'info',
   success: 'circle-check',
   attention: 'triangle-alert',
@@ -28,7 +28,7 @@ const ICONS: Record<BannerVariant, string> = {
  */
 @Component({
   selector: 'app-banner',
-  imports: [GlyphComponent],
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -41,7 +41,7 @@ const ICONS: Record<BannerVariant, string> = {
       [class.banner--consent]="variant() === 'consent'"
       [attr.role]="resolvedRole()"
     >
-      <svg [appGlyph]="resolvedIcon()"></svg>
+      <svg [appIcon]="resolvedIcon()"></svg>
       <div class="banner__body">
         @if (heading()) {
           <p class="banner__title">{{ heading() }}</p>
@@ -56,7 +56,7 @@ const ICONS: Record<BannerVariant, string> = {
           [attr.aria-label]="dismissLabel()"
           (click)="dismissed.emit()"
         >
-          <svg appGlyph="x" glyphSize="sm"></svg>
+          <svg appIcon="x" size="sm"></svg>
         </button>
       }
     </div>
@@ -67,7 +67,7 @@ export class BannerComponent {
   /** Título curto em destaque (não use `title`, que vira dica do navegador). */
   readonly heading = input<string>('');
   /** Nome de um ícone do sprite; por padrão vem da variante. */
-  readonly icon = input<string | null>(null);
+  readonly icon = input<IconName | null>(null);
   readonly liveRole = input<'status' | 'alert' | 'note' | null>(null);
   readonly dismissible = input(false);
   readonly dismissLabel = input('Dispensar aviso');

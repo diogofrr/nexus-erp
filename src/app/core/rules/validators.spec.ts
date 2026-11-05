@@ -11,7 +11,6 @@ import {
   validateCouncilRegistration,
   validateCouncilValidity,
   validateCrp,
-  validateCro,
   validateDailyCareHours,
   validateDiscountPercent,
   validateEvaluationScores,
@@ -100,11 +99,10 @@ describe('E-mail e telefone fictícios (AC-GL-12)', () => {
 });
 
 describe('Registro em conselho (RN-ATD-06, RN-REDE-03, 22)', () => {
-  it('CRP e CRO no formato fictício', () => {
+  it('CRP e CREFITO no formato fictício', () => {
     expect(validateCrp('CRP-04/00102').valid).toBe(true);
     expect(validateCrp('CRP-4/102').valid).toBe(false);
-    expect(validateCro('CRO-MG 00000').valid).toBe(true);
-    expect(validateCro('CRO-MG00000').valid).toBe(false);
+    expect(validateCouncilRegistration('CREFITO', 'CREFITO-4/0000-F').valid).toBe(false);
     expect(validateCouncilRegistration('CREFITO', 'CREFITO-4/00000-F').valid).toBe(true);
     expect(validateCouncilRegistration('COREN', 'COREN-MG 000123').valid).toBe(true);
     expect(validateCouncilRegistration('CRN', 'CRN-9/00231').valid).toBe(true);

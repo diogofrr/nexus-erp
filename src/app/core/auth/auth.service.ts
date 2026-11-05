@@ -26,8 +26,8 @@ export type TwoFactorOutcome =
 export type SessionEndReason = 'user' | 'switch_profile' | 'inactivity' | 'two_factor_failures';
 
 /**
- * Login simulado por perfil de demonstração (M01). Não há senha: escolhe-se um dos 12 usuários.
- * `partner`, `technical_lead`, `psychologist` e `support` exigem o código `123456`; `provider` não (E-02).
+ * Login simulado por perfil de demonstração (M01). Não há senha: escolhe-se um dos 8 usuários da equipe.
+ * Todos os perfis exigem o código `123456` (E-02: o perfil do prestador credenciado foi removido).
  * Cada login, logout e acesso negado gera linha no log (AC-M01-05).
  */
 @Injectable({ providedIn: 'root' })

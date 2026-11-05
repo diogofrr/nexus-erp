@@ -521,6 +521,7 @@ export class DashboardStore {
         key: 'exit-risk',
         text: `${n} ${n === 1 ? 'prestador com risco de saída' : 'prestadores com risco de saída'}`,
         link: '/app/rede/prestadores',
+        queryParams: { filtro: 'risco-de-saida' },
         icon: 'stethoscope',
       });
     }
@@ -530,6 +531,7 @@ export class DashboardStore {
         key: 'accreditation',
         text: `${n} ${n === 1 ? 'credenciamento aguarda' : 'credenciamentos aguardam'} decisão`,
         link: '/app/rede/credenciamento',
+        queryParams: { filtro: 'em-andamento' },
         icon: 'stethoscope',
       });
     }

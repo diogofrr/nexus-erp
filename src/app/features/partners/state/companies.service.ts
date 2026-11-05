@@ -3,6 +3,7 @@ import { AuditLogService } from '@core/audit';
 import { AuthService } from '@core/auth';
 import { Clock, addMonths } from '@core/clock';
 import { Database } from '@core/data';
+import { GroupMembershipService } from '@core/groups';
 import type {
   BenefitCard,
   Caregiver,
@@ -80,6 +81,7 @@ export class CompaniesService {
   private readonly clock = inject(Clock);
   private readonly auth = inject(AuthService);
   private readonly audit = inject(AuditLogService);
+  private readonly membership = inject(GroupMembershipService);
 
   readonly accounts = this.db.corporateAccounts.all;
   readonly canWrite = computed(() => this.auth.can('partners_corporate', 'update'));
@@ -617,6 +619,8 @@ export class CompaniesService {
       this.db.benefitCards.update(card.id, { status: 'inactive', inactivatedAt: today });
     }
     this.db.caregivers.update(caregiverId, { corporateAccountId: undefined });
+    // O plano caiu para o Livre: o M07 tira o cuidador das turmas futuras sem acesso (AC-M07-09).
+    this.membership.reconcilePlanLoss(caregiverId);
   }
 
   private nextCardNumber(): string {

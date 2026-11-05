@@ -26,6 +26,16 @@ export type IconName = (typeof ICON_NAMES)[number];
 
 export type IconSize = 'sm' | 'md' | 'lg' | 'xl';
 
+const KNOWN_ICONS: ReadonlySet<string> = new Set(ICON_NAMES);
+
+/**
+ * Nome de ícone vindo de dados do núcleo (telas, ações, notificações), que não conhece a interface e guarda o
+ * nome como texto. Devolve o próprio nome se ele existe no sprite; senão, o ícone neutro `fallback`.
+ */
+export function toIconName(name: string, fallback: IconName = 'circle-dot'): IconName {
+  return KNOWN_ICONS.has(name) ? (name as IconName) : fallback;
+}
+
 /**
  * Ícone do sprite. É um atributo em `<svg>`, para que os seletores do design system (`.banner > .icon`,
  * `.input-wrap > .icon`) continuem valendo: `<svg appIcon="calendar" size="sm"></svg>`.

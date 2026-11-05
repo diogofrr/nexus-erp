@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Clock } from '../../../core/clock/clock.service';
 import { isValidIsoDate } from '../../../core/clock/date-utils';
 import { DateBrPipe } from '../../../core/format/pipes';
-import { GlyphComponent } from '../../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../../shared/ui/display/icon.component';
 import { ToastService } from '../../../shared/ui/overlay/toast.service';
 
 /** Mensagem de data inválida (catálogo de erros, 7.4). */
@@ -27,7 +27,7 @@ export function parseBrDate(text: string): string | null {
  */
 @Component({
   selector: 'app-settings-clock-page',
-  imports: [GlyphComponent, DateBrPipe],
+  imports: [IconComponent, DateBrPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page page--narrow">
@@ -49,7 +49,7 @@ export function parseBrDate(text: string): string | null {
           @if (clock.isSimulated()) {
             <p class="cluster">
               <span class="badge badge--gold badge--lg"
-                ><svg appGlyph="clock" glyphSize="sm"></svg>Simulado</span
+                ><svg appIcon="clock" size="sm"></svg>Simulado</span
               >
               <strong class="t-display t-num" data-role="today">{{
                 clock.today() | dateBr
@@ -59,7 +59,7 @@ export function parseBrDate(text: string): string | null {
           } @else {
             <p class="cluster">
               <span class="badge badge--outline badge--lg"
-                ><svg appGlyph="clock" glyphSize="sm"></svg>Relógio real</span
+                ><svg appIcon="clock" size="sm"></svg>Relógio real</span
               >
               <strong class="t-display t-num" data-role="today">{{
                 clock.today() | dateBr
@@ -87,7 +87,7 @@ export function parseBrDate(text: string): string | null {
               />
               @if (error()) {
                 <span class="field__error" id="nx-clock-error">
-                  <svg appGlyph="circle-alert"></svg>
+                  <svg appIcon="circle-alert"></svg>
                   <span><span class="sr-only">Erro: </span>{{ error() }}</span>
                 </span>
               }
@@ -111,7 +111,7 @@ export function parseBrDate(text: string): string | null {
               [disabled]="!clock.isSimulated()"
               (click)="backToReal()"
             >
-              <svg appGlyph="undo-2"></svg>Voltar ao relógio real
+              <svg appIcon="undo-2"></svg>Voltar ao relógio real
             </button>
           </div>
           <p class="t-muted t-ui">

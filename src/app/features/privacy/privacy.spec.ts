@@ -366,11 +366,13 @@ describe('M12 LGPD', () => {
   });
 
   describe('incidentes (SCR-M12-06, F13)', () => {
-    it('o incidente do seed está encerrado, mostra as comunicações e não tem botão de edição (AC-M12-09)', async () => {
+    it('o seed tem 1 incidente aberto (o mais novo, em contenção) e 1 encerrado, que mostra as comunicações e não tem botão de edição (AC-M12-09)', async () => {
       await open('u1', '/app/lgpd/incidentes');
-      expect(all('tbody tr')).toHaveLength(1);
-      expect(text(q('tbody'))).toContain('Encerrado');
-      await click(q('tbody tr'));
+      const rows = all('tbody tr');
+      expect(rows).toHaveLength(2);
+      expect(text(rows[0])).toContain('Aberto');
+      expect(text(rows[1])).toContain('Encerrado');
+      await click(rows[1] ?? null);
       expect(app.router.url).toContain('/app/lgpd/incidentes/inc_0001');
       expect(text(q('main'))).toContain('Comunicar à ANPD');
       expect(text(q('main'))).toContain('Comunicação do incidente à Autoridade Nacional');

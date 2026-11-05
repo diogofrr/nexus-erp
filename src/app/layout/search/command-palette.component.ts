@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { SearchGroup, SearchResult, SearchService } from '../../core/search/search.service';
-import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
+import { IconComponent, IconName, toIconName } from '../../shared/ui/display/icon.component';
 import { closeModalDialog, showModalDialog } from '../../shared/ui/overlay/modal';
 import { PaletteService } from './palette.service';
 
@@ -48,7 +48,7 @@ interface PaletteGroup {
  */
 @Component({
   selector: 'app-command-palette',
-  imports: [GlyphComponent],
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <dialog
@@ -61,7 +61,7 @@ interface PaletteGroup {
     >
       <div class="cmdk__input">
         <div class="input-wrap">
-          <svg appGlyph="search"></svg>
+          <svg appIcon="search"></svg>
           <input
             #input
             class="input"
@@ -97,10 +97,10 @@ interface PaletteGroup {
                 (click)="activate(item.result)"
                 (mousemove)="active.set(item.index)"
               >
-                <svg [appGlyph]="item.result.icon"></svg>
+                <svg [appIcon]="iconOf(item.result.icon)"></svg>
                 @if (item.result.code && item.result.title === item.result.code) {
                   <span class="code-chip"
-                    ><svg appGlyph="shield-check"></svg>{{ item.result.code }}</span
+                    ><svg appIcon="shield-check"></svg>{{ item.result.code }}</span
                   >
                   <span class="t-caption t-truncate">{{ item.result.subtitle }}</span>
                 } @else {
@@ -262,6 +262,10 @@ export class CommandPaletteComponent {
   }
 
   /** Abre o resultado: na mesma aba, ou em nova aba com `Ctrl+Enter`. */
+  protected iconOf(name: string): IconName {
+    return toIconName(name);
+  }
+
   protected activate(result: SearchResult, newTab = false): void {
     this.search.recordOpened(result);
     this.palette.close();

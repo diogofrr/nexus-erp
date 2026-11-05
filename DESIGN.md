@@ -27,10 +27,10 @@ DM Serif Display (400) em `h1`, `h2`, display; Figtree Variable em todo o resto,
 Grade de 8 px (`--space-2` = 8 px; passos ímpares só dentro de componente). Raios 4, 8, 12, 16, 24 px e pílula. Separação por borda de 1 px; sombras de 4 níveis, sempre com deslocamento e desfoque. Movimento de 120, 200 e 320 ms, saída exponencial, zerado com `prefers-reduced-motion`.
 
 ## Layout e responsivo
-Menu lateral de 264 px a partir de 1280 px, trilho de 72 px de 1024 a 1279 px, gaveta abaixo de 1024 px; portal mobile first com barra inferior (até 1023 px). Alvos de teste: 360, 768, 1024, 1440 px. Controles de 44 px (32 px com mouse na densidade compacta).
+Menu lateral de 264 px a partir de 1280 px, trilho de 72 px de 1024 a 1279 px, gaveta abaixo de 1024 px. Alvos de teste: 360, 768, 1024, 1440 px. Controles de 44 px (32 px com mouse na densidade compacta).
 
 ## Componentes (classes CSS, `src/styles/components/`)
-Shell (`app-shell`, `sidebar`, `topbar`, `portal-shell`, `bottom-nav`, `login`), `page-header`, `btn`, `field` / `input` / `select` / `check` / `switch` / `likert` / `rating` / `masked` / `code-chip`, `table` (ordenação, seleção, densidade, cartões no celular), `badge` (status, plano, Zarit), `chip`, `avatar`, `card`, `kpi-strip`, `plan-card`, `tabs`, `segmented`, `menu`, `popover`, `cmdk`, `banner` (protótipo, consentimento LGPD), `toast`, `dialog` / `drawer`, `empty`, `skeleton`, `deadline`, `stepper` / `wizard` / `item-map`, `timeline`, `kanban`, `agenda`, `checklist`, `list-row`, gráficos em SVG (`chart`, `donut`, `spark`, `progress`, `meter`, `occ`, `thermo`, `heat`).
+Shell (`app-shell`, `sidebar`, `topbar`, `login`), `page-header`, `btn`, `field` / `input` / `select` / `check` / `switch` / `likert` / `rating` / `masked` / `code-chip`, `table` (ordenação, seleção, densidade, cartões no celular), `badge` (status, plano, Zarit), `chip`, `avatar`, `card`, `kpi-strip`, `plan-card`, `tabs`, `segmented`, `menu`, `popover`, `cmdk`, `banner` (protótipo, consentimento LGPD), `toast`, `dialog` / `drawer`, `empty`, `skeleton`, `deadline`, `stepper` / `wizard` / `item-map`, `timeline`, `kanban`, `agenda`, `checklist`, `list-row`, gráficos em SVG (`chart`, `donut`, `spark`, `progress`, `meter`, `occ`, `thermo`, `heat`).
 
 ## Marca (`public/brand/`)
 `nexus-symbol.svg` (traço fino) e `nexus-symbol-bold.svg` (até 64 px), `nexus-wordmark.svg`, `nexus-logo.svg`, `favicon.svg`. Redesenhados em SVG limpo a partir do logo; `currentColor` com dourado `#B8901F` por padrão. Ícones: Lucide em sprite local `public/icons/sprite.svg`.

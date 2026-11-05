@@ -83,7 +83,7 @@ export class Database {
   readonly activities = this.repo('activities');
   readonly activityEnrollments = this.repo('activityEnrollments');
 
-  // ===== Rede credenciada (M08, M14) =====
+  // ===== Rede credenciada (M08) =====
   readonly providers = this.repo('providers');
   readonly accreditations = this.repo('accreditations');
   readonly providerDocuments = this.repo('providerDocuments');

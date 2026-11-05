@@ -42,12 +42,12 @@ describe('App', () => {
     const app = routes.find((r) => r.path === 'app');
     const children = app?.children ?? [];
     const segments = children.map((r) => r.path);
-    MODULES.filter((m) => m.key !== 'provider-portal').forEach((m) =>
-      expect(segments, m.key).toContain(m.segment),
-    );
+    MODULES.forEach((m) => expect(segments, m.key).toContain(m.segment));
     expect(routes.map((r) => r.path)).toEqual(
-      expect.arrayContaining(['login', '403', 'portal', 'app', '**']),
+      expect.arrayContaining(['login', '403', 'app', '**']),
     );
+    // O portal do prestador credenciado (M14) foi removido por decisão do dono.
+    expect(routes.map((r) => r.path)).not.toContain('portal');
     expect(AUTH_ROUTES.length).toBeGreaterThan(0);
     // Carrega cada feature (os imports dinâmicos precisam resolver).
     const loaders = [...children, ...routes].filter((r) => typeof r.loadChildren === 'function');
@@ -68,14 +68,6 @@ describe('App', () => {
     // Sem sessão: vai à entrada.
     await router.navigateByUrl('/app/cuidadores');
     expect(router.url).toBe('/login');
-
-    // Credenciado entra no portal e não abre /app/financeiro.
-    auth.selectProfile('u9');
-    await router.navigateByUrl('/portal');
-    expect(router.url).toBe('/portal');
-    await router.navigateByUrl('/app/financeiro');
-    expect(router.url).toBe('/403');
-    expect(TestBed.inject(AuthService).isAuthenticated()).toBe(true);
 
     // Sócia abre o financeiro; atendimento não.
     auth.selectProfile('u1');

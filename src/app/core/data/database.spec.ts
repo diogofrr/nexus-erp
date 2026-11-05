@@ -42,7 +42,7 @@ describe('Database: seed, reset e primeira visita', () => {
 
   it('as contagens da tabela 5.15 após o seed (AC-M15-01)', () => {
     const { db } = configureCoreTest({ seed: true });
-    expect(db.users.size()).toBe(12);
+    expect(db.users.size()).toBe(8);
     expect(db.caregivers.size()).toBe(340);
     expect(db.elders.size()).toBe(340);
     expect(db.subscriptions.size()).toBe(340);

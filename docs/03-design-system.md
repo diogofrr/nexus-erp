@@ -172,11 +172,11 @@ Curto e funcional: `--dur-1` 120 ms (hover, foco), `--dur-2` 200 ms (troca de es
 | base | 360 px | uma coluna; menu em gaveta; tabela em cartões; busca vira ícone |
 | `sm` | 480 px | dois KPIs por linha, diálogo com rodapé em linha |
 | `md` | 768 px | tabela volta a ser tabela; formulário em 2 colunas; KPIs em faixa; margens 24 px |
-| `lg` | 1024 px | menu vira **trilho de ícones** (72 px); margens 32 px; lista com gaveta lateral acoplada; portal passa da barra inferior para a barra sob o cabeçalho |
+| `lg` | 1024 px | menu vira **trilho de ícones** (72 px); margens 32 px; lista com gaveta lateral acoplada |
 | `xl` | 1280 px | menu **completo** (264 px, recolhível a trilho); painel "Precisa de atenção" ao lado na ficha |
 | `xxl` | 1440 px | conteúdo centralizado em no máximo 1280 px |
 
-Controles: `--control-h` 44 px; `--control-h-sm` 32 px com mouse e 44 px em toque (`pointer: coarse`); `--topbar-h` 64 px; `--sidebar-w` 264 px; `--bottom-nav-h` 56 px mais a área segura do aparelho; item do menu na gaveta do celular com 48 px.
+Controles: `--control-h` 44 px; `--control-h-sm` 32 px com mouse e 44 px em toque (`pointer: coarse`); `--topbar-h` 64 px; `--sidebar-w` 264 px; item do menu na gaveta do celular com 48 px.
 
 ---
 
@@ -236,20 +236,11 @@ Convenções: classe `bloco`, parte `bloco__parte`, variante `bloco--variante`. 
 - **Busca global** (SCR-M02-02): `Ctrl+K` e o botão abrem um `<dialog class="dialog">` com `.input-wrap`, resultados em `.list-row` agrupados por tipo e mensagem "só mostra o que seu perfil pode ver". Abaixo de `md` o disparador vira só o ícone.
 - **Rodapé** em toda tela (AC-GL-05): aviso literal de protótipo mais os links "Privacidade e canal do titular", "Meus dados no navegador", "Atalhos" e "Sobre"; fica no fim da janela em páginas curtas (`min-height: 100dvh` em coluna) e nada o cobre. Na entrada, banner de protótipo no topo do painel.
 
-### 4.2 Shell do portal do profissional (mobile first) e entrada
+### 4.2 Entrada (login)
 
-```html
-<div class="portal-shell">
-  <header class="portal-header">...brand, sino, avatar dourado...</header>
-  <nav class="bottom-nav" aria-label="Portal">
-    <a class="bottom-nav__item" href="/portal" aria-current="page">ICON(layout-dashboard)<span>Início</span></a> ...Solicitações, Disponibilidade, Mensagens, Mais...</nav>
-  <main class="portal-main">...</main>
-  <footer class="app-footer">...</footer>
-</div>
-```
-Barra inferior fixa em celular **e tablet** (até 1023 px): 56 px mais a área segura do aparelho, **cinco destinos: Início, Solicitações, Disponibilidade, Mensagens e Mais** ("Mais" abre Minha avaliação, Documentos, Integração, Meu perfil, Privacidade e Sair), alvo mínimo 44 px, linha dourada no item atual; de `lg` em diante vira barra horizontal sob o cabeçalho. Conteúdo em uma coluna de até 60 rem; o rodapé rola acima da barra e nada o cobre.
+Removido por decisão do dono: o portal do prestador, com seu cabeçalho e a barra inferior (`portal-shell`, `portal-header`, `bottom-nav`). No celular só existe o shell da equipe, com a gaveta do menu (4.1).
 
-Entrada: `.login` com `.login__brand` (azul 900, símbolo, frase "Quem cuida também precisa de sustentação.", as mãos em linha dourada a 10% de opacidade como arte) e `.login__panel` com banner de protótipo, título "Entrar como" e grupos `.profile-group` com `.list-card` de `.list-row` (avatar, nome, uma frase do que o perfil vê, selo "Código" para quem exige o segundo fator). Os 12 usuários do seed em dois grupos: Equipe Nexus e Profissionais credenciados. Abaixo de `lg` o painel de marca vira cabeçalho.
+Entrada: `.login` com `.login__brand` (azul 900, símbolo, frase "Quem cuida também precisa de sustentação.", as mãos em linha dourada a 10% de opacidade como arte) e `.login__panel` com banner de protótipo, título "Entrar como" e grupos `.profile-group` com `.list-card` de `.list-row` (avatar, nome, uma frase do que o perfil vê, selo "Código" para quem exige o segundo fator). Os 8 usuários do seed, todos da Equipe Nexus, em um único grupo. Abaixo de `lg` o painel de marca vira cabeçalho.
 
 ### 4.3 Cabeçalho de página, breadcrumb, seção
 
@@ -315,7 +306,7 @@ A **linha dourada** de 48 × 2 px sob o título vem do CSS (`::after`). Um `h1` 
 - `.badge` + `--success`, `--attention`, `--danger`, `--info`, `--gold`, `--plan-livre|essencial|cuida|sustenta`, `--zarit-1..4`, `--outline`, `--dot` (ponto mais texto), `--lg`, `--count`. Todo selo tem **texto mais ponto (`--dot`) ou ícone**, nunca só cor.
 - Zarit: `<span class="badge badge--zarit-4">ICON(octagon-alert)Severa · 63</span>`. ARP (linguagem neutra para o profissional): "Em destaque" (`--success` + `award`), "Em acompanhamento" (`--attention` + `triangle-alert`); para a gestão: "Excelência", "Alerta", "Descredenciamento" (`--danger` + `ban`). "Sem média (menos de 5 avaliações)". "Risco de saída" com `triangle-alert`.
 - `.chip` (filtro, `aria-pressed`), `.chip--removable` com `.chip__remove` (`aria-label="Remover filtro X"`).
-- `.avatar` (iniciais; sem foto, dado mínimo), `--sm`, `--lg`, `--xl` (serifa, perfil), `--gold` (profissional credenciado), `--nav` (sobre o menu escuro); `.avatar-group`.
+- `.avatar` (iniciais; sem foto, dado mínimo), `--sm`, `--lg`, `--xl` (serifa, perfil), `--gold` (prestador da rede), `--nav` (sobre o menu escuro); `.avatar-group`.
 
 ### 4.8 Cartões, KPI, plano
 - `.card` (borda, sem sombra) com `.card__header` (título `h3` + ação), `.card__body`, `.card__footer`; `.card--pad`, `--sunken` (grupo dentro de grupo, **nunca cartão dentro de cartão**), `--raised`, `--interactive` (hover com sombra 2, foco com borda azul).
@@ -331,12 +322,12 @@ A **linha dourada** de 48 × 2 px sob o título vem do CSS (`::after`). Um `h1` 
 - **Banner** `.banner` + `--success|attention|danger|prototype|consent`: ícone, `banner__title`, `banner__text`, `banner__actions`. Informação e sucesso `role="status"`; erro e prazo `role="alert"`.
 - **Banner de protótipo** `.banner--prototype`: faixa fina dourada suave, texto fixo "Protótipo de demonstração. Todos os dados são fictícios e ficam apenas neste navegador." (rodapé de toda tela e entrada).
 - **Banner de consentimento LGPD** `.banner--consent` (LP-01): cartão no canto inferior esquerdo (tela cheia no celular), título em serifa, texto curto, "Entendi" (primário) e "Ver detalhes" (fantasma); não bloqueia a tela; grava `nexus-erp:ui-notice` pelo repositório; some depois.
-- **Toast** `.toast-region` > `.toast--success|attention|danger`: canto inferior direito (centralizado no celular, acima da barra inferior), **6 segundos, pausa com hover e com foco**, `role="status"` (`alert` para erro), botão fechar e, quando dá para desfazer, o botão `.toast__action` "Desfazer" (também `Ctrl+Z` enquanto aberto); nunca é o único registro da ação.
+- **Toast** `.toast-region` > `.toast--success|attention|danger`: canto inferior direito (centralizado no celular), **6 segundos, pausa com hover e com foco**, `role="status"` (`alert` para erro), botão fechar e, quando dá para desfazer, o botão `.toast__action` "Desfazer" (também `Ctrl+Z` enquanto aberto); nunca é o único registro da ação.
 - **Diálogo** `<dialog class="dialog">` aberto por `showModal()` (foco preso, Esc fecha, foco volta ao gatilho): `.dialog__header` (`.dialog__icon` + `h2`), `.dialog__body`, `.dialog__footer` (cancelar à esquerda do perigo; no celular os botões empilham com o primário acima). **Ação destrutiva descreve o efeito** (AC-GL-09) com `.effects` (`is-erase` será eliminado, `is-block` ficará bloqueado, `is-keep` continua registrado). Usar diálogo só para confirmar ou para tarefa que exige foco; o resto é inline.
 - **Gaveta** `<dialog class="drawer">` à direita (30 rem = 480 px; tela cheia no celular): formulário curto (até ~6 campos) e detalhe modal. **Gaveta acoplada** (`.drawer--docked`, PD-02: mensagens, solicitações do titular): não é modal, ocupa a coluna da direita de `.layout-list-detail` a partir de `lg`, a lista continua visível e navegável, cabeçalho com "‹ 3 de 28 ›", Esc fecha e devolve o foco à linha de origem, a rota muda (`/app/mensagens/:id`) para recarregar mantendo o painel; abaixo de `lg` vira tela inteira com "Voltar".
 - **Folha inferior** (`.dialog--sheet`): formulários em diálogo viram folha quase cheia no celular (abaixo de 768 px); confirmação continua diálogo compacto central.
 - **Popover** `.popover` (22,5 rem; `__header`, `__body`, `__footer`): painel de notificações (linhas `.list-row--unread`, "Marcar tudo como visto"; página inteira no celular) e popover de motivo de acesso. **Paleta de comandos e busca global** `<dialog class="dialog cmdk">` (640 px; tela cheia no celular): `.cmdk__input`, `.cmdk__list` com `.cmdk__group` e `.cmdk__item[aria-selected]`, `.cmdk__foot` com as teclas ("Setas navegar", "Enter abrir", "Esc fechar") e o aviso "Só mostra o que o seu perfil pode ver".
-- **Barra de ação fixa** `.action-bar`: ação primária presa ao rodapé do celular (acima da barra do portal), com `scroll-padding` para o foco nunca ficar atrás dela; de 768 px em diante vai para o cabeçalho ou o fim do formulário.
+- **Barra de ação fixa** `.action-bar`: ação primária presa ao rodapé do celular, com `scroll-padding` para o foco nunca ficar atrás dela; de 768 px em diante vai para o cabeçalho ou o fim do formulário.
 - **Selo de prazo** (`DeadlineBadge`): `.badge` com ícone de relógio e texto ("No prazo", "Faltam 1 h 20 min úteis", "Atrasada há 6 h úteis"; âmbar até 3 dias, vermelho vencido); o horário absoluto aparece ao focar. **Cronômetro** (`DeadlineTimer`): `.deadline`.
 - **Prazo de alerta** `.deadline` (`role="timer"`): ícone de relógio, tempo restante em 24 px tabular ("06h 42min") e rótulo ("para o contato de hoje, até 23h59"). Vencido: texto "vencido há 3 h 12 min", mesma cor, sem piscar.
 - **Estado vazio** `.empty`: ilustração `.empty__art` (as mãos da marca em linha dourada, com um círculo pontilhado onde ainda não há ninguém), título serifado acolhedor, uma frase, até duas ações. Variante `--compact` para dentro de cartão e tabela. Toda lista tem (AC-GL-01). **Erro de carregamento, sem permissão (403) e offline** usam o mesmo bloco com `.empty__icon` (`--danger` para erro, neutro para cadeado) no lugar das mãos; offline é um `.banner--attention` no topo ("Você está sem conexão. Seus dados continuam neste navegador.").
@@ -371,12 +362,12 @@ A **linha dourada** de 48 × 2 px sob o título vem do CSS (`::after`). Um `h1` 
 
 | Largura | Shell | Conteúdo | Tabelas e listas | Formulários |
 |---|---|---|---|---|
-| **360** | topbar com menu (gaveta de 48 px por item), símbolo e ícones; busca vira ícone; rodapé de protótipo no fim; portal com barra inferior | uma coluna; KPIs 2 por linha; abas rolam; gráfico rola dentro do cartão (ou abas Gráfico e Tabela) | `.table--stack` em cartões; lista e detalhe em telas separadas (detalhe em tela cheia com "Voltar"); filtros em folha; kanban em acordeão; agenda em visão do dia | uma coluna; `.action-bar` fixa ao fim; formulário em folha inferior; Zarit com 5 botões empilhados de 56 px |
+| **360** | topbar com menu (gaveta de 48 px por item), símbolo e ícones; busca vira ícone; rodapé de protótipo no fim | uma coluna; KPIs 2 por linha; abas rolam; gráfico rola dentro do cartão (ou abas Gráfico e Tabela) | `.table--stack` em cartões; lista e detalhe em telas separadas (detalhe em tela cheia com "Voltar"); filtros em folha; kanban em acordeão; agenda em visão do dia | uma coluna; `.action-bar` fixa ao fim; formulário em folha inferior; Zarit com 5 botões empilhados de 56 px |
 | **768** | topbar com busca por extenso; ainda gaveta | KPIs em faixa; formulário em 2 colunas | tabela volta a ser tabela com rolagem interna | 2 colunas; diálogo com ações em linha |
-| **1024** | **trilho** de ícones 72 px; portal com barra sob o cabeçalho | margens 32 px; ficha com abas | tabela completa; lista com **gaveta acoplada de 480 px** (`.layout-list-detail`) | 2 colunas só para campos curtos |
+| **1024** | **trilho** de ícones 72 px | margens 32 px; ficha com abas | tabela completa; lista com **gaveta acoplada de 480 px** (`.layout-list-detail`) | 2 colunas só para campos curtos |
 | **1440** | menu **completo** 264 px | conteúdo máximo 1280 px; ficha com painel lateral "Precisa de atenção" de 21 rem (`xl`) | tabela confortável ou compacta | formulário centralizado em 48 rem |
 
-Portal (`provider`): sempre uma coluna até 60 rem, barra inferior abaixo de `lg` (inclui tablet), barra sob o cabeçalho de `lg` em diante. Nenhuma tela tem rolagem horizontal da página (AC-GL-06): o que é largo rola dentro do próprio contêiner. Verificação: o guia de estilo mostra molduras reais em 360, 390, 768, 1024 e 1440 px.
+Nenhuma tela tem rolagem horizontal da página (AC-GL-06): o que é largo rola dentro do próprio contêiner. Verificação: o guia de estilo mostra molduras reais em 360, 390, 768, 1024 e 1440 px.
 
 ---
 
@@ -401,8 +392,6 @@ Legenda: `[Botão]`, `(selo)`, `{campo}`, `[x]` marcado, `[ ]` vazio, `###` pree
 |  Escolha um perfil.            |  | (BN) Dra. Beatriz Nogueira     (Código)|  |
 |                                |  | ... 8 da equipe                         |  |
 |                                |  +----------------------------------------+  |
-|                                |  Profissionais credenciados                  |
-|                                |  | (EF) Dr. Eduardo Falcão              >  |  |
 +--------------------------------+----------------------------------------------+
 2FA: mesma coluna da direita: "Confirme o código" + código exibido na tela
 (123456) em 40 px tabular + 6 caixas de 1 dígito (44 px) + [Confirmar]; erro
@@ -434,7 +423,6 @@ support (Atendimento)
  [Fila de mensagens por SLA: atrasadas primeiro (selo "atrasada 2 h")]
  [KPI reclamações abertas][solicitações sem retorno][solicitações LGPD a registrar]
  [cadastros novos][cancelamentos agendados]   (nenhum dado clínico)
-provider (Profissional): ver 6.14
 ```
 
 ### 6.3 Cuidadores: lista (PD-01) e ficha com abas (PD-03, SCR-M03-01 e 03), 1440
@@ -507,9 +495,9 @@ Credenciamento                         (kanban em 5 colunas; celular: rola)
 | Solicitado 1 | Em análise 1 | Docs pendentes 1 | Aprovado 0 | Reprovado 0 |
 | Dra. Sônia   | Fisio em Casa| Cand. fisio      |  Nada por  |  Nada por   |
 |  (há 2 dias) | ####..3/5    | (!venc.)         |  aqui      |  aqui       |
-Processo · Dra. Sônia Peixoto · Odontologia
+Processo · Dra. Sônia Peixoto · Fisioterapia
  Checklist (5 critérios)                          Documentos
- (v) Registro ativo no conselho  (Cumprido)       CRO fictício   válido até 30/06/2027
+ (v) Registro ativo no conselho  (Cumprido)       CREFITO fictício   válido até 30/06/2027
  (v) Comprovação de formação     (Cumprido)       Diploma        enviado
  (!) Documento na validade       (Vencido)        Contrato       [Anexar]
  (relógio) Integração concluída  (Pendente)       Cláusula LGPD  [Anexar]
@@ -519,7 +507,7 @@ Processo · Dra. Sônia Peixoto · Odontologia
 
 ### 6.7 Ficha do prestador com ARP (SCR-M08-02)
 ```
-Dr. Eduardo Falcão · Odontologia · CRO-MG 00000 (fictício)   (Ativo) [Suspender][...]
+Dr. Eduardo Falcão · Fisioterapia · CREFITO-4/00000-F (fictício)   (Ativo) [Suspender][...]
 Dados | Documentos | Avaliações | Solicitações | Histórico | E-mails
 +--- ARP (último snapshot 28/10/2026) ---+ +--- Sinais da rede ------------------+
 | Média 4,7  (Excelência)                | | Taxa de recusa 30 dias  12,5%  (1/8) |
@@ -570,33 +558,9 @@ Solicitações do titular (prazo de 15 dias)
 Gaveta: tipo, titular, prazo, ações por tipo, texto de e-mail registrado, "Exportar JSON do titular".
 ```
 
-### 6.11 Portal do profissional credenciado (M14), 390, mobile first
-```
-+--------------------------------+
-| [símbolo] NEXUS     (sino)(EF) |
-+--------------------------------+
-| Olá, Dr. Eduardo               |
-| ----                           |
-| Você tem 2 pedidos novos e     |
-| 1 documento a vencer.          |
-|                                |
-| Pedido novo       (Aguardando) |
-| Atendimento odontológico       |
-| domiciliar · Uberlândia.       |
-| Os dados do cuidador aparecem  |
-| depois que você aceita.        |
-| [  Aceitar  ] [  Recusar  ]    |
-|                                |
-| Sua avaliação      Recusa 30d  |
-| 4,7 (Em destaque)  12,5%       |
-|                                |
-| (!) Registro no conselho vence |
-|     em 12 dias [Enviar novo]   |
-+--------------------------------+
-| Início Pedidos Agenda Aval. Doc|  barra inferior, 5 itens
-+--------------------------------+
-```
-Sem números de outros prestadores, sem nada clínico. Faixa em linguagem neutra ("Em destaque", "Em acompanhamento"). Dados do cuidador só com solicitação aceita e cláusula assinada; sem a cláusula, o cartão mostra o banner "Assine a cláusula de proteção de dados para ver os dados do usuário".
+### 6.11 (removido por decisão do dono)
+
+O wireframe do portal do prestador saiu junto com o módulo M14. A numeração das seções seguintes não muda.
 
 ### 6.12 Caixa de mensagens (PD-02 e PD-05, SCR-M11-01 e 02), 1440
 ```
@@ -748,7 +712,6 @@ O `04-ux.md` foi lido depois deste documento e já usa o vocabulário do guia de
 
 ### 10.4 Pontos conferidos e ajustes que fiz por causa do UX
 - Menu: **264 px** (era 256), grupos e nomes do `04-ux.md` 3.2, grupos **recolhíveis**, item de 48 px na gaveta, e o botão de menu da barra também abre o menu completo **sobre o conteúdo** em 1024 a 1279 px (`04-ux.md` 3.10).
-- Portal: barra inferior de **56 px** com cinco destinos (Início, Solicitações, Disponibilidade, Mensagens, Mais), mantida também no **tablet** (até 1023 px).
 - Lista e detalhe: gaveta lateral **acoplada de 480 px** (PD-02); a ficha do cuidador é página própria (PD-03).
 - Stepper só indicativo; contador "Etapa X de Y" no celular; mapa dos itens recolhido no celular; Zarit com cinco botões de 56 px empilhados.
 - Quadro de estados **sem arrastar**, em acordeão no celular; texto "Nenhum processo aqui".

@@ -57,8 +57,8 @@ describe('catálogo de telas e ações por perfil', () => {
           const module = MODULES.find((m) => m.key === s.moduleKey);
           expect(module && canAccessModule(role, module), `${role} ${s.link}`).toBe(true);
         }
-        // O credenciado só abre o portal; a equipe nunca abre o portal.
-        expect(s.link.startsWith('/portal'), `${role} ${s.link}`).toBe(role === 'provider');
+        // Não há portal: toda tela do catálogo fica dentro de /app.
+        expect(s.link.startsWith('/app/'), `${role} ${s.link}`).toBe(true);
       });
       actionsFor(role).forEach((a) => {
         const module = MODULES.find((m) => m.key === a.moduleKey);
@@ -177,26 +177,17 @@ describe('SearchService', () => {
     });
   });
 
-  it('o credenciado não encontra cuidador algum, só as próprias telas e solicitações', () => {
-    loginAs('u9');
-    const response = search.search('Ana');
-    expect(caregiverGroup(response)).toBeUndefined();
-    const docs = search.search('documentos');
-    expect(docs.groups.find((g) => g.key === 'screens')?.results[0]?.link).toBe(
-      '/portal/documentos',
-    );
-    const requests = search.search('solicitação');
-    const own = requests.groups.find((g) => g.key === 'requests');
-    expect(own?.total).toBeGreaterThanOrEqual(2);
-    // Nenhuma rota da equipe em nenhum resultado.
-    ['a', 'e', 'o', 'documentos', 'CUI-0001'].forEach((q) => {
-      search
-        .search(q)
-        .groups.flatMap((g) => g.results)
-        .forEach((r) => expect(r.link.startsWith('/app'), `${q}: ${r.link}`).toBe(false));
+  it('nenhum resultado aponta para o antigo portal (/portal) em nenhum perfil', () => {
+    ['u1', 'u2', 'u3', 'u7'].forEach((userId) => {
+      loginAs(userId);
+      ['a', 'e', 'o', 'documentos', 'solicitação', 'CUI-0001'].forEach((q) => {
+        const response = search.search(q);
+        expect(response.groups.some((g) => (g.key as string) === 'requests')).toBe(false);
+        response.groups
+          .flatMap((g) => g.results)
+          .forEach((r) => expect(r.link.startsWith('/portal'), `${q}: ${r.link}`).toBe(false));
+      });
     });
-    // E a solicitação mostrada não identifica o cuidador.
-    expect(JSON.stringify(own)).not.toMatch(/CUI-|cg_/);
   });
 
   it('nenhum perfil recebe resultado de uma tela que não pode abrir', () => {

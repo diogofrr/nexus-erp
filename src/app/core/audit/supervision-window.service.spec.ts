@@ -24,6 +24,28 @@ describe('janela de supervisão (F16-A, U-13)', () => {
     expect(supervision.access('zarit_alert', 'zal_0002', 'cg_0002')).toBe('needs_reason');
   });
 
+  it('a faixa discreta mostra motivo e hora; a janela sobrevive a recarregar a página e não passa de um usuário a outro', () => {
+    const options = { seed: true, today: '2026-11-04', time: '12:00' } as const;
+    const env = configureCoreTest(options);
+    loginAs('u2');
+    const supervision = TestBed.inject(SupervisionWindowService);
+    expect(supervision.info('cg_0002')).toBeNull();
+    supervision.grant('zarit_alert', 'zal_0002', 'cg_0002', 'Auditoria de qualidade');
+    expect(supervision.info('cg_0002')).toEqual({
+      reason: 'Auditoria de qualidade',
+      atLabel: '12:00',
+    });
+    // Recarregar a página: mesmo sessionStorage, mesma sessão, a janela continua valendo.
+    TestBed.resetTestingModule();
+    configureCoreTest({ ...options, local: env.local, session: env.session });
+    const reloaded = TestBed.inject(SupervisionWindowService);
+    expect(reloaded.isOpen('cg_0002')).toBe(true);
+    expect(reloaded.access('zarit_alert', 'zal_0002', 'cg_0002')).toBe('open');
+    // Outro usuário na mesma aba não herda a janela.
+    loginAs('u3');
+    expect(reloaded.isOpen('cg_0002')).toBe(false);
+  });
+
   it('o motivo "Outro" exige 10 caracteres; os prontos valem; a janela some ao trocar de sessão', () => {
     configureCoreTest({ seed: true });
     expect(SupervisionWindowService.isValidReason(null, '')).toBe(false);

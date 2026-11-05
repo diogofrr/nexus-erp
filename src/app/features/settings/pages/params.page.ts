@@ -20,7 +20,7 @@ import {
 } from '../../../core/rules/arp';
 import { BENEFIT_LABELS, DEFAULT_PLANS } from '../../../core/rules/plans';
 import { ZARIT_BANDS } from '../../../core/rules/zarit';
-import { GlyphComponent } from '../../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../../shared/ui/display/icon.component';
 import { ToastService } from '../../../shared/ui/overlay/toast.service';
 import { NumberFieldComponent, integerValidator } from '../components/number-field.component';
 
@@ -164,7 +164,7 @@ const SECTIONS: readonly { title: string; fields: readonly FieldDef[] }[] = [
  */
 @Component({
   selector: 'app-settings-params-page',
-  imports: [ReactiveFormsModule, NumberFieldComponent, GlyphComponent],
+  imports: [ReactiveFormsModule, NumberFieldComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page page--narrow">
@@ -179,7 +179,7 @@ const SECTIONS: readonly { title: string; fields: readonly FieldDef[] }[] = [
           </div>
           <div class="page-header__actions">
             <button type="button" class="btn" data-role="restore" (click)="restoreDefaults()">
-              <svg appGlyph="undo-2"></svg>Restaurar padrões
+              <svg appIcon="undo-2"></svg>Restaurar padrões
             </button>
             <button type="submit" form="nx-params-form" class="btn btn--primary" data-role="save">
               Salvar parâmetros
@@ -198,7 +198,7 @@ const SECTIONS: readonly { title: string; fields: readonly FieldDef[] }[] = [
         @if (errors().length > 0) {
           <div class="error-summary" role="alert" tabindex="-1">
             <h2>
-              <svg appGlyph="circle-alert"></svg>Há {{ errors().length }}
+              <svg appIcon="circle-alert"></svg>Há {{ errors().length }}
               {{ errors().length === 1 ? 'ponto' : 'pontos' }} para corrigir
             </h2>
             <ul>

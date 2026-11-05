@@ -21,7 +21,7 @@ import { DateBrPipe } from '../../../core/format/pipes';
 import { GuidanceContent } from '../../../core/models/governance';
 import { DialogService } from '../../../shared/ui/overlay/dialog.service';
 import { DrawerComponent } from '../../../shared/ui/overlay/drawer.component';
-import { GlyphComponent } from '../../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../../shared/ui/display/icon.component';
 import { ToastService } from '../../../shared/ui/overlay/toast.service';
 
 const STATUS_TEXT: Record<GuidanceContent['status'], string> = {
@@ -37,7 +37,7 @@ const STATUS_TEXT: Record<GuidanceContent['status'], string> = {
  */
 @Component({
   selector: 'app-settings-contents-page',
-  imports: [ReactiveFormsModule, DrawerComponent, GlyphComponent, DateBrPipe],
+  imports: [ReactiveFormsModule, DrawerComponent, IconComponent, DateBrPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -52,7 +52,7 @@ const STATUS_TEXT: Record<GuidanceContent['status'], string> = {
           </div>
           <div class="page-header__actions">
             <button type="button" class="btn btn--primary" data-role="new" (click)="openNew()">
-              <svg appGlyph="plus"></svg>Novo conteúdo
+              <svg appIcon="plus"></svg>Novo conteúdo
             </button>
           </div>
         </div>
@@ -153,7 +153,7 @@ const STATUS_TEXT: Record<GuidanceContent['status'], string> = {
             />
             @if (titleError()) {
               <span class="field__error"
-                ><svg appGlyph="circle-alert"></svg
+                ><svg appIcon="circle-alert"></svg
                 ><span><span class="sr-only">Erro: </span>Informe o título do conteúdo.</span></span
               >
             }
@@ -169,7 +169,7 @@ const STATUS_TEXT: Record<GuidanceContent['status'], string> = {
             ></textarea>
             @if (bodyError()) {
               <span class="field__error"
-                ><svg appGlyph="circle-alert"></svg
+                ><svg appIcon="circle-alert"></svg
                 ><span
                   ><span class="sr-only">Erro: </span>Escreva o texto do conteúdo, com ao menos 10
                   caracteres.</span

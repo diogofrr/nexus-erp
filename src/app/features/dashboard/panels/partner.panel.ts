@@ -147,14 +147,15 @@ import { DashboardStore } from '../state/dashboard.store';
 
       <app-panel-section title="Rede credenciada" hint="Prestadores, credenciamentos e risco de saída" open>
         <app-kpi-strip>
-          <app-panel-kpi label="Em excelência" [value]="band('excellence')" link="/app/rede/prestadores" />
-          <app-panel-kpi label="Em alerta" [value]="band('alert')" link="/app/rede/prestadores" />
-          <app-panel-kpi label="Credenciamentos em andamento" [value]="store.accreditationsInProgress()" link="/app/rede/credenciamento" />
+          <app-panel-kpi label="Em excelência" [value]="band('excellence')" link="/app/rede/prestadores" [queryParams]="{ filtro: 'excelencia' }" />
+          <app-panel-kpi label="Em alerta" [value]="band('alert')" link="/app/rede/prestadores" [queryParams]="{ filtro: 'alerta' }" />
+          <app-panel-kpi label="Credenciamentos em andamento" [value]="store.accreditationsInProgress()" link="/app/rede/credenciamento" [queryParams]="{ filtro: 'em-andamento' }" />
           <app-panel-kpi
             label="Risco de saída"
             [value]="store.exitRiskCount()"
             context="recusa alta ou queda de disponibilidade"
             link="/app/rede/prestadores"
+            [queryParams]="{ filtro: 'risco-de-saida' }"
           />
         </app-kpi-strip>
         <p class="t-caption">
@@ -195,7 +196,7 @@ import { DashboardStore } from '../state/dashboard.store';
           </ul>
           <app-kpi-strip>
             <app-panel-kpi label="Mensagens atrasadas" [value]="store.overdueMessages()" link="/app/mensagens" [queryParams]="{ filtro: 'atrasadas' }" />
-            <app-panel-kpi label="Reclamações abertas" [value]="store.complaints().open" [context]="store.complaints().overdue + ' vencidas'" link="/app/reclamacoes" />
+            <app-panel-kpi label="Reclamações abertas" [value]="store.complaints().open" [context]="store.complaints().overdue + ' vencidas'" link="/app/reclamacoes" [queryParams]="{ filtro: 'abertas' }" />
           </app-kpi-strip>
         </div>
       </app-panel-section>

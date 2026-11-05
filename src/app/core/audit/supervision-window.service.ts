@@ -1,8 +1,10 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { SessionStore } from '../auth/session.store';
 import { Clock } from '../clock/clock.service';
 import { minutesBetween } from '../clock/date-utils';
+import { formatTime } from '../format/format';
 import { ID, ISODateTime } from '../models';
+import { StorageService } from '../storage/storage.service';
 import { AuditLogService } from './audit-log.service';
 
 /** Motivos prontos de supervisão (UX 6.5): reduzem o clique e evitam justificativas inúteis. */
@@ -20,13 +22,19 @@ export const SUPERVISION_OTHER_MIN_CHARS = 10;
 
 interface SupervisionGrant {
   reason: string;
+  /** Quando foi registrada, no horário do sistema (relógio simulado, se houver). */
   at: ISODateTime;
 }
 
+/** Nome do item em `sessionStorage`: some ao fechar a aba, como a sessão (AC-M01-04). */
+const STORAGE_NAME = 'supervision-grants';
+
 /**
- * Janela de supervisão do responsável técnico (F16, LP-14, U-13). Abrir um caso que não é dele exige um
- * motivo; o motivo vale 30 minutos para aquele caso nesta sessão, mas CADA abertura continua gerando uma
- * linha `supervise` no log com o mesmo motivo.
+ * Janela de supervisão do responsável técnico (F16, LP-14, U-13). É o ÚNICO serviço de supervisão do ERP:
+ * abrir um caso que não é dele exige um motivo; o motivo vale 30 minutos para aquele caso nesta sessão (conta
+ * pelo relógio do sistema, então o relógio simulado do M15 permite testar a expiração), mas CADA abertura
+ * continua gerando uma linha `supervise` no log com o mesmo motivo. A janela fica só na sessão da aba
+ * (sobrevive a recarregar a página e some ao trocar de usuário ou fechar a aba).
  *
  * ```ts
  * if (supervision.access('zarit_alert', alert.id, alert.caregiverId) === 'needs_reason') { ...mostra o portão... }
@@ -37,17 +45,30 @@ export class SupervisionWindowService {
   private readonly clock = inject(Clock);
   private readonly audit = inject(AuditLogService);
   private readonly session = inject(SessionStore);
-  private readonly windows = new Map<string, SupervisionGrant>();
+  private readonly storage = inject(StorageService);
+
+  /** Concessões por `usuário:sessão:caso`. Em signal para que telas reajam à liberação. */
+  private readonly windows = signal<Readonly<Record<string, SupervisionGrant>>>(
+    this.storage.readSession<Record<string, SupervisionGrant>>(STORAGE_NAME, {}),
+  );
 
   /** O motivo vale agora para este caso? */
   isOpen(caseId: ID): boolean {
-    const found = this.windows.get(this.keyOf(caseId));
-    return found !== undefined && minutesBetween(found.at, this.clock.now()) <= SUPERVISION_WINDOW_MINUTES;
+    const found = this.windows()[this.keyOf(caseId)];
+    return (
+      found !== undefined && minutesBetween(found.at, this.clock.now()) <= SUPERVISION_WINDOW_MINUTES
+    );
   }
 
   /** Motivo e horário da supervisão registrada (para a faixa discreta "Supervisão registrada às 10:15"). */
   current(caseId: ID): { reason: string; at: ISODateTime } | null {
-    return this.isOpen(caseId) ? (this.windows.get(this.keyOf(caseId)) ?? null) : null;
+    return this.isOpen(caseId) ? (this.windows()[this.keyOf(caseId)] ?? null) : null;
+  }
+
+  /** Motivo vigente e a hora para exibir, ou `null` sem janela aberta. */
+  info(caseId: ID): { reason: string; atLabel: string } | null {
+    const found = this.current(caseId);
+    return found ? { reason: found.reason, atLabel: formatTime(found.at) } : null;
   }
 
   /**
@@ -67,7 +88,17 @@ export class SupervisionWindowService {
   grant(entity: string, entityId: ID, caseId: ID, reason: string): void {
     const clean = reason.trim();
     this.audit.supervise(entity, entityId, caseId, clean);
-    this.windows.set(this.keyOf(caseId), { reason: clean, at: this.clock.now() });
+    const now = this.clock.now();
+    const next: Record<string, SupervisionGrant> = {};
+    // Descarta o que já venceu, para o item da aba não crescer sem fim.
+    Object.entries(this.windows()).forEach(([key, grant]) => {
+      if (minutesBetween(grant.at, now) <= SUPERVISION_WINDOW_MINUTES) {
+        next[key] = grant;
+      }
+    });
+    next[this.keyOf(caseId)] = { reason: clean, at: now };
+    this.windows.set(next);
+    this.storage.writeSession(STORAGE_NAME, next);
   }
 
   /** Motivo válido? Os prontos valem; "Outro" exige ao menos 10 caracteres. */

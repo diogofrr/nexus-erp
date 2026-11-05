@@ -3,17 +3,17 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 import { InactivityService, INACTIVITY_CONFIG } from '../../../core/auth/inactivity.service';
-import { AuthService } from '../../../core/auth/auth.service';
+import { AuthService, TWO_FACTOR_CODE } from '../../../core/auth/auth.service';
 import { UiNoticeService } from '../../../core/privacy/browser-data.service';
 import { configureCoreTest } from '../../../core/testing/test-helpers';
 import { BannerComponent } from './banner.component';
 import { ConsentBannerComponent } from './consent-banner.component';
 import { DrawerComponent } from './drawer.component';
-import { GlyphComponent } from './glyph.component';
+import { IconComponent } from '../display/icon.component';
 import { SessionDialogComponent, formatCountdown, spokenTime } from './session-dialog.component';
 
 @Component({
-  imports: [BannerComponent, GlyphComponent],
+  imports: [BannerComponent, IconComponent],
   template: `
     <app-banner variant="attention" heading="Documento vence em 12 dias">
       Peça o novo registro.
@@ -21,12 +21,12 @@ import { SessionDialogComponent, formatCountdown, spokenTime } from './session-d
     </app-banner>
     <app-banner variant="danger">Não foi possível salvar.</app-banner>
     <app-banner variant="prototype">Protótipo de demonstração.</app-banner>
-    <svg appGlyph="clock" glyphSize="lg"></svg>
+    <svg appIcon="clock" size="lg"></svg>
   `,
 })
 class BannerHostComponent {}
 
-describe('BannerComponent e GlyphComponent', () => {
+describe('BannerComponent e IconComponent', () => {
   it('aplica a variante, o ícone e o papel certos', async () => {
     const fixture = TestBed.createComponent(BannerHostComponent);
     await fixture.whenStable();
@@ -130,7 +130,8 @@ describe('SessionDialogComponent', () => {
       ],
     });
     const auth = TestBed.inject(AuthService);
-    auth.selectProfile('u9');
+    auth.selectProfile('u1');
+    auth.verifyTwoFactor(TWO_FACTOR_CODE);
     const inactivity = TestBed.inject(InactivityService);
     const fixture = TestBed.createComponent(SessionDialogComponent);
     const root = fixture.nativeElement as HTMLElement;

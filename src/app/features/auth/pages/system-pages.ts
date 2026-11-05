@@ -3,19 +3,19 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { homePathFor } from '../../../core/auth/module-map';
 import { PROTOTYPE_NOTICE } from '../../../core/privacy/browser-data.service';
-import { GlyphComponent } from '../../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../../shared/ui/display/icon.component';
 import { StandaloneFrameComponent } from '../components/standalone-frame.component';
 import { SESSION_EXPIRED_TEXT } from './login.page';
 
 /** Acesso negado (SCR-M01-05, AC-GL-04): texto neutro, sem dizer se o recurso existe, e o caminho de volta. */
 @Component({
   selector: 'app-forbidden-page',
-  imports: [StandaloneFrameComponent, GlyphComponent, RouterLink],
+  imports: [StandaloneFrameComponent, IconComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-standalone-frame>
       <div class="empty">
-        <span class="empty__icon"><svg appGlyph="lock" glyphSize="lg"></svg></span>
+        <span class="empty__icon"><svg appIcon="lock" size="lg"></svg></span>
         <h1 class="empty__title">Você não tem acesso a esta página</h1>
         <p class="empty__text">
           O seu perfil não abre este endereço. Volte ao início para continuar. Se você precisa deste
@@ -36,23 +36,19 @@ export class ForbiddenPageComponent {
     return role ? homePathFor(role) : '/login';
   });
   protected readonly label = computed(() =>
-    this.auth.role() === 'provider'
-      ? 'Ir para o início'
-      : this.auth.role()
-        ? 'Ir para o painel'
-        : 'Ir para a entrada',
+    this.auth.role() ? 'Ir para o painel' : 'Ir para a entrada',
   );
 }
 
 /** Página não encontrada (SCR-M01-06): link para o painel (ou para a entrada, sem sessão). */
 @Component({
   selector: 'app-not-found-page',
-  imports: [StandaloneFrameComponent, GlyphComponent, RouterLink],
+  imports: [StandaloneFrameComponent, IconComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-standalone-frame>
       <div class="empty">
-        <span class="empty__icon"><svg appGlyph="circle-help" glyphSize="lg"></svg></span>
+        <span class="empty__icon"><svg appIcon="circle-help" size="lg"></svg></span>
         <h1 class="empty__title">Página não encontrada</h1>
         <p class="empty__text">
           O endereço pode ter mudado ou não existir. Volte ao início e tente de novo.
@@ -72,11 +68,7 @@ export class NotFoundPageComponent {
     return role ? homePathFor(role) : '/login';
   });
   protected readonly label = computed(() =>
-    this.auth.isAuthenticated()
-      ? this.auth.role() === 'provider'
-        ? 'Ir para o início'
-        : 'Ir para o painel'
-      : 'Ir para a entrada',
+    this.auth.isAuthenticated() ? 'Ir para o painel' : 'Ir para a entrada',
   );
 }
 
@@ -86,7 +78,7 @@ export class NotFoundPageComponent {
  */
 @Component({
   selector: 'app-session-expired-page',
-  imports: [GlyphComponent, RouterLink],
+  imports: [IconComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="login">
@@ -105,7 +97,7 @@ export class NotFoundPageComponent {
       <main class="login__panel" id="conteudo" tabindex="-1">
         <div class="empty">
           <span class="empty__icon empty__icon--attention"
-            ><svg appGlyph="clock" glyphSize="lg"></svg
+            ><svg appIcon="clock" size="lg"></svg
           ></span>
           <h1 class="empty__title">Sua sessão terminou</h1>
           <p class="empty__text">{{ text }}</p>

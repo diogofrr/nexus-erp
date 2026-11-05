@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { BrowserDataService } from '../../core/privacy/browser-data.service';
 import { STORAGE_KEYS, StorageService, StorageUsageItem } from '../../core/storage/storage.service';
 import { DialogService } from '../../shared/ui/overlay/dialog.service';
-import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../shared/ui/display/icon.component';
 import { BannerComponent } from '../../shared/ui/overlay/banner.component';
 import { HARD_NAVIGATE } from '../../shared/ui/overlay/hard-navigation';
 import { UiPrefsService } from '../../shared/ui/overlay/ui-prefs.service';
@@ -57,7 +57,7 @@ export function formatBytes(bytes: number): string {
  */
 @Component({
   selector: 'app-browser-data-page',
-  imports: [GlyphComponent, BannerComponent],
+  imports: [IconComponent, BannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page page--narrow">
@@ -134,7 +134,7 @@ export function formatBytes(bytes: number): string {
           </p>
           <div>
             <button type="button" class="btn btn--danger-quiet" data-role="erase" (click)="erase()">
-              <svg appGlyph="trash-2"></svg>Apagar todos os dados do navegador
+              <svg appIcon="trash-2"></svg>Apagar todos os dados do navegador
             </button>
           </div>
         </section>

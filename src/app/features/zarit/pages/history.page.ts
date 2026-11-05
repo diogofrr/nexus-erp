@@ -71,7 +71,6 @@ import { ZaritService } from '../state/zarit.service';
           entity="zarit_history"
           [entityId]="caregiver()?.id ?? ''"
           [caregiverId]="caregiver()?.id ?? ''"
-          [ownerName]="ownerName()"
           (granted)="unlocked.set(true)"
         />
       } @else if (!consentOk()) {
@@ -247,7 +246,6 @@ export class ZaritHistoryPageComponent {
     return !!c && this.consentOk() && this.access.canApply(c.id);
   });
   protected readonly planId = computed(() => planIdOfCaregiver(this.db, this.caregiver()?.id ?? ''));
-  protected readonly ownerName = computed(() => this.access.ownerName(this.caregiver()));
   protected readonly subtitle = computed(() => {
     const c = this.caregiver();
     return c ? `${c.fullName} (${c.code})` : '';

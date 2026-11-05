@@ -13,7 +13,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { GlyphComponent } from './glyph.component';
+import { IconComponent } from '../display/icon.component';
 import { closeModalDialog, showModalDialog } from './modal';
 
 let drawerSequence = 0;
@@ -40,7 +40,7 @@ let drawerSequence = 0;
  */
 @Component({
   selector: 'app-drawer',
-  imports: [GlyphComponent, NgTemplateOutlet],
+  imports: [IconComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'drawer-host' },
   template: `
@@ -58,7 +58,7 @@ let drawerSequence = 0;
           [attr.aria-label]="closeLabel()"
           (click)="close()"
         >
-          <svg appGlyph="x"></svg>
+          <svg appIcon="x"></svg>
         </button>
       </div>
       <div class="drawer__body"><ng-content /></div>

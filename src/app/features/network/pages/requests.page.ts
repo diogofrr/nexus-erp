@@ -244,7 +244,7 @@ export class RequestsPage {
   private readonly dialogs = inject(DialogService);
   private readonly toasts = inject(ToastService);
 
-  readonly list = createListState({ key: 'network-requests', filterKeys: ['estado'] });
+  readonly list = createListState({ key: 'network-requests', filterKeys: ['estado', 'filtro'] });
 
   protected readonly stateOptions = STATE_OPTIONS;
   protected readonly narrow = mediaQuery('(max-width: 1023.98px)');
@@ -305,7 +305,9 @@ export class RequestsPage {
   });
 
   protected readonly visibleRows = computed(() => {
-    const filter = this.list.filters()['estado'];
+    const { estado, filtro } = this.list.filters();
+    // `?filtro=sem-retorno` vem do painel (solicitações que o prestador ainda não respondeu): são as novas.
+    const filter = estado ?? (filtro === 'sem-retorno' ? 'novas' : undefined);
     return this.rows().filter((row) => {
       switch (filter) {
         case 'novas':

@@ -14,7 +14,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { PROTOTYPE_NOTICE } from '../../../core/privacy/browser-data.service';
 import { BannerComponent } from '../../../shared/ui/overlay/banner.component';
-import { GlyphComponent } from '../../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../../shared/ui/display/icon.component';
 import { roleLabel } from '../../../shared/ui/overlay/user-display';
 import { destinationAfterLogin } from '../return-url';
 
@@ -40,7 +40,7 @@ export const CODE_FORMAT_TEXT = 'O código tem 6 números. Digite os 6 números 
  */
 @Component({
   selector: 'app-two-factor-page',
-  imports: [BannerComponent, GlyphComponent],
+  imports: [BannerComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="login">
@@ -73,7 +73,7 @@ export const CODE_FORMAT_TEXT = 'O código tem 6 números. Digite os 6 números 
         <form class="login__form" novalidate (submit)="submit($event)">
           @if (error()) {
             <div class="error-summary" role="alert" tabindex="-1" #summary>
-              <h2><svg appGlyph="circle-alert"></svg>Há 1 ponto para corrigir</h2>
+              <h2><svg appIcon="circle-alert"></svg>Há 1 ponto para corrigir</h2>
               <ul>
                 <li>
                   <a href="#nx-code" (click)="focusField($event)">{{ error() }}</a>
@@ -120,7 +120,7 @@ export const CODE_FORMAT_TEXT = 'O código tem 6 números. Digite os 6 números 
             />
             @if (error()) {
               <span class="field__error" id="nx-code-error">
-                <svg appGlyph="circle-alert"></svg>
+                <svg appIcon="circle-alert"></svg>
                 <span><span class="sr-only">Erro: </span>{{ error() }}</span>
               </span>
             }

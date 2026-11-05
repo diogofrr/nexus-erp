@@ -16,7 +16,7 @@ import {
 } from '@core/rules/finance';
 import { changedFinancialParamPaths, projectionToCsv } from '@core/rules/finance-params';
 import { countFreeUsers, countSubscribers } from '@core/rules/kpi';
-import { downloadTextFile } from './download';
+import { downloadTextFile } from '@core/export/file-download';
 
 export const SCENARIO_ORDER: readonly ScenarioKey[] = ['pessimistic', 'base', 'optimistic'];
 

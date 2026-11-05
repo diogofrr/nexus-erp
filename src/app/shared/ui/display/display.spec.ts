@@ -17,7 +17,7 @@ import { StepperComponent } from './stepper.component';
 import { TimelineComponent } from './timeline.component';
 
 const ITEMS: ChecklistItem[] = [
-  { id: 'a', title: 'Registro ativo no conselho', text: 'CRO fictício, válido até 30/06/2027', state: 'ok' },
+  { id: 'a', title: 'Registro ativo no conselho', text: 'CREFITO fictício, válido até 30/06/2027', state: 'ok' },
   { id: 'b', title: 'Documento na validade', state: 'fail', badge: 'Vencido' },
   { id: 'c', title: 'Integração concluída', state: 'pending' },
   { id: 'd', title: 'Registro em conselho', state: 'na' },

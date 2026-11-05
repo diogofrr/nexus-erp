@@ -83,12 +83,12 @@ import { DashboardStore, MessageRow } from '../state/dashboard.store';
       </app-card>
 
       <app-kpi-strip>
-        <app-panel-kpi label="Reclamações abertas" [value]="store.complaints().open" [context]="store.complaints().overdue + ' vencidas'" link="/app/reclamacoes" />
-        <app-panel-kpi label="Solicitações de serviço sem retorno" [value]="store.serviceRequestsWithoutReply()" link="/app/rede/solicitacoes" />
-        <app-panel-kpi label="Solicitações do titular a registrar" [value]="store.dsr().open" [context]="store.dsr().dueSoon + store.dsr().overdue + ' perto do prazo'" link="/app/lgpd/solicitacoes" />
+        <app-panel-kpi label="Reclamações abertas" [value]="store.complaints().open" [context]="store.complaints().overdue + ' vencidas'" link="/app/reclamacoes" [queryParams]="{ filtro: 'abertas' }" />
+        <app-panel-kpi label="Solicitações de serviço sem retorno" [value]="store.serviceRequestsWithoutReply()" link="/app/rede/solicitacoes" [queryParams]="{ filtro: 'sem-retorno' }" />
+        <app-panel-kpi label="Solicitações do titular a registrar" [value]="store.dsr().open" [context]="store.dsr().dueSoon + store.dsr().overdue + ' perto do prazo'" link="/app/lgpd/solicitacoes" [queryParams]="{ visao: 'abertas' }" />
       </app-kpi-strip>
       <app-kpi-strip>
-        <app-panel-kpi label="Cadastros novos" [value]="store.newRegistrations()" context="nos últimos 7 dias" link="/app/cuidadores" />
+        <app-panel-kpi label="Cadastros novos" [value]="store.newRegistrations()" context="nos últimos 7 dias" link="/app/cuidadores" [queryParams]="{ filtro: 'novos' }" />
         <app-panel-kpi label="Cancelamentos agendados" [value]="store.scheduledCancellations()" link="/app/assinaturas" [queryParams]="{ filtro: 'cancelamento-agendado' }" />
       </app-kpi-strip>
     </div>

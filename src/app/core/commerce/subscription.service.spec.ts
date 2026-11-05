@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Clock } from '../clock/clock.service';
 import { addMonths } from '../clock/date-utils';
 import { Database } from '../data/database';
+import { GroupMembershipService } from '../groups/group-membership.service';
 import { countSubscribers } from '../rules/kpi';
 import { configureCoreTest } from '../testing/test-helpers';
 import { loginAs } from '../../shared/ui/testing/dom';
@@ -204,6 +205,57 @@ describe('SubscriptionService (RN-PLN-14, RN-CRT-02, 03, 11)', () => {
     service.applyDueChanges();
     expect(db.activityEnrollments.get(mine.id)?.status).toBe('cancelled');
     expect(db.activityEnrollments.get(waiting.id)?.status).toBe('enrolled');
+  });
+
+  it('quando a descida ou o cancelamento passa a valer, o M07 é acionado para o cuidador (AC-M07-09)', () => {
+    const membership = TestBed.inject(GroupMembershipService);
+    const reconcile = vi.spyOn(membership, 'reconcilePlanLoss');
+    const sub = subOf('cg_0007');
+    const quote = service.quote(sub, 'livre');
+    service.changePlan(sub.id, 'livre');
+    // Agendar não derruba ninguém de turma: só vale no fim do ciclo.
+    service.applyDueChanges();
+    expect(reconcile).not.toHaveBeenCalled();
+    clock.setSimulated(quote.effectiveAt, '12:00');
+    expect(service.applyDueChanges()).toBeGreaterThanOrEqual(1);
+    expect(reconcile).toHaveBeenCalledWith('cg_0007');
+    // Chamar de novo, sem nada a aplicar, não aciona o M07.
+    reconcile.mockClear();
+    expect(service.applyDueChanges()).toBe(0);
+    expect(reconcile).not.toHaveBeenCalled();
+  });
+
+  it('no fim do ciclo o cuidador sai das turmas futuras sem acesso e a turma que já começou permanece (AC-M07-09)', () => {
+    const sub = subOf('cg_0024');
+    expect(sub.planId).toBe('sustenta');
+    const group = db.activities.create({
+      kind: 'support_group',
+      title: 'Grupo futuro',
+      theme: 'self_care',
+      character: 'guidance',
+      leaders: [],
+      mode: 'online',
+      meetings: [{ id: 'm1', startAt: '2026-12-01T18:00:00-03:00', endAt: '2026-12-01T19:00:00-03:00', done: false }],
+      capacity: 5,
+      status: 'open',
+      minPlan: 'cuida',
+      requiresEligibility: false,
+      confidentialityText: '',
+    });
+    const future = db.activityEnrollments.create({ activityId: group.id, caregiverId: 'cg_0024', status: 'enrolled', attendance: [] });
+    const g1 = db.activityEnrollments.find((e) => e.activityId === 'act_0001' && e.caregiverId === 'cg_0024');
+    const quote = service.quote(sub, 'essencial');
+    service.changePlan(sub.id, 'essencial');
+    clock.setSimulated(quote.effectiveAt, '12:00');
+    service.applyDueChanges();
+    expect(subOf('cg_0024').planId).toBe('essencial');
+    expect(db.activityEnrollments.get(future.id)?.status).toBe('cancelled');
+    // G1 já começou antes do fim do ciclo (embora o estado continue "lotada"): permanece.
+    if (g1) {
+      expect(db.activityEnrollments.get(g1.id)?.status).toBe(g1.status);
+    }
+    const log = db.accessLog.list().filter((l) => l.entity === 'activity_enrollment' && l.detail?.includes('mudança de plano'));
+    expect(log.length).toBeGreaterThanOrEqual(1);
   });
 
   it('registrar uso de R$ 100,00 em parceiro com 10% grava desconto de R$ 10,00 (AC-M04-07)', () => {

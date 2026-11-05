@@ -14,7 +14,7 @@ import {
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { InactivityService } from '../../../core/auth/inactivity.service';
-import { GlyphComponent } from './glyph.component';
+import { IconComponent } from '../display/icon.component';
 import { closeModalDialog, showModalDialog } from './modal';
 
 /** `119` segundos viram `1:59`. */
@@ -46,7 +46,7 @@ export function spokenTime(totalSeconds: number): string {
  */
 @Component({
   selector: 'app-session-dialog',
-  imports: [GlyphComponent],
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <dialog
@@ -60,7 +60,7 @@ export function spokenTime(totalSeconds: number): string {
     >
       <div class="dialog__header">
         <span class="dialog__icon dialog__icon--attention"
-          ><svg appGlyph="clock" glyphSize="lg"></svg
+          ><svg appIcon="clock" size="lg"></svg
         ></span>
         <h2 class="dialog__title" id="nx-session-title">Sua sessão está para terminar</h2>
       </div>

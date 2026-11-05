@@ -3,7 +3,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { PROTOTYPE_NOTICE } from '../../../core/privacy/browser-data.service';
 import { SCHEMA_VERSION } from '../../../core/storage/migrations';
 import { APP_VERSION } from '../../../shared/ui/overlay/app-info';
-import { GlyphComponent } from '../../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../../shared/ui/display/icon.component';
 import { initialsOf, roleLabel } from '../../../shared/ui/overlay/user-display';
 
 /**
@@ -12,7 +12,7 @@ import { initialsOf, roleLabel } from '../../../shared/ui/overlay/user-display';
  */
 @Component({
   selector: 'app-settings-users-page',
-  imports: [GlyphComponent],
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -46,11 +46,7 @@ import { initialsOf, roleLabel } from '../../../shared/ui/overlay/user-display';
               <tr [attr.aria-selected]="auth.user()?.id === user.id">
                 <td data-label="Usuário" class="col-primary">
                   <span class="cluster">
-                    <span
-                      class="avatar avatar--sm"
-                      [class.avatar--gold]="user.role === 'provider'"
-                      >{{ initials(user.displayName) }}</span
-                    >
+                    <span class="avatar avatar--sm">{{ initials(user.displayName) }}</span>
                     {{ user.displayName }}
                   </span>
                 </td>
@@ -69,7 +65,7 @@ import { initialsOf, roleLabel } from '../../../shared/ui/overlay/user-display';
                 <td data-label="Agora">
                   @if (auth.user()?.id === user.id) {
                     <span class="badge badge--gold"
-                      ><svg appGlyph="user-check" glyphSize="sm"></svg>Conectado</span
+                      ><svg appIcon="user-check" size="sm"></svg>Conectado</span
                     >
                   }
                 </td>
@@ -104,7 +100,7 @@ export class UsersPageComponent {
           <div class="page-header__titles">
             <h1>Sobre o protótipo</h1>
             <p class="page-header__desc">
-              Nexus ERP: back-office da Nexus e portal do profissional credenciado.
+              Nexus ERP: back-office da Nexus.
             </p>
           </div>
         </div>

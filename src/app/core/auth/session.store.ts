@@ -53,9 +53,6 @@ export class SessionStore {
     if (user.psychologistId) {
       actor.psychologistId = user.psychologistId;
     }
-    if (user.providerId) {
-      actor.providerId = user.providerId;
-    }
     return actor;
   });
 

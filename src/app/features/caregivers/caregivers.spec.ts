@@ -112,6 +112,17 @@ describe('M03 Cuidadores', () => {
       expect(text(q('.empty__title'))).toContain('Nenhum resultado');
     });
 
+    it('a visão "novos" (?filtro=novos, do painel) mostra só os cadastros ativos dos últimos 7 dias (AC-M02-08)', async () => {
+      await open('u7', '/app/cuidadores?filtro=novos');
+      const from = app.clock.addDays(-7);
+      const expected = app.db.caregivers.list().filter((c) => c.enrolledAt > from && c.status === 'active').length;
+      expect(expected).toBeGreaterThan(0);
+      expect(all('tbody tr')).toHaveLength(expected);
+      expect(text(q('app-active-filters'))).toContain('Cadastros dos últimos 7 dias');
+      await go('/app/cuidadores');
+      expect(all('tbody tr').length).toBeGreaterThan(expected);
+    });
+
     it('a visão "Aplicação da escala pendente" e o contador usam a escala só como pendente ou em dia (E-05)', async () => {
       await open('u7', '/app/cuidadores');
       expect(app.root.innerHTML).not.toMatch(/Sobrecarga|Severa|alerta vermelho/i);
@@ -268,6 +279,7 @@ describe('M03 Cuidadores', () => {
     it('o responsável técnico passa pelo portão de supervisão e cada abertura grava supervise e view (AC-M03-08, F16-A)', async () => {
       await open('u2', '/app/cuidadores/cg_0002?aba=acompanhamento');
       expect(q('[data-role="supervision-gate"]')).not.toBeNull();
+      expect(text(q('[data-role="supervision-gate"]'))).toContain('Este caso é acompanhado pela Dra. Beatriz Nogueira.');
       expect(text(q('[data-role="supervision-gate"]'))).toContain('Seu acesso será registrado no log');
       const before = app.db.accessLog.size();
       // Sem motivo, não abre.

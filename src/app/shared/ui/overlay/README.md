@@ -1,6 +1,6 @@
 # Sobreposições e gráficos (`shared/ui/overlay` e `shared/ui/charts`)
 
-Tudo usa só as classes do design system (`src/styles`) e tokens. Importe pelos barris: `@shared/ui/overlay` e `@shared/ui/charts`. Ícone dentro destes componentes: `<svg appGlyph="nome"></svg>` (nas telas de módulo use o `IconComponent` da biblioteca, `appIcon`).
+Tudo usa só as classes do design system (`src/styles`) e tokens. Importe pelos barris: `@shared/ui/overlay` e `@shared/ui/charts`. Ícone: sempre o `IconComponent` da biblioteca, `<svg appIcon="nome" size="sm"></svg>` (há um só componente de ícone).
 
 ## Confirmação: `DialogService.confirm(...)` (guia de UX 5.8)
 

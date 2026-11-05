@@ -202,7 +202,7 @@ export function buildLgpd(s: SeedState): void {
     handledByUserId: USER.camila,
   });
 
-  // ===== Incidente (1) =====
+  // ===== Incidentes (2): 1 encerrado e 1 aberto, em contenção =====
   c.incidents.push(
     ctx.entity<Incident>('inc_0001', ctx.dt(-45, '14:10'), {
       occurredAt: ctx.dt(-45, '14:10'),
@@ -224,6 +224,20 @@ export function buildLgpd(s: SeedState): void {
           text: 'Comunicação do incidente à Autoridade Nacional de Proteção de Dados (simulada).',
         },
       ],
+    }),
+  );
+
+  c.incidents.push(
+    ctx.entity<Incident>('inc_0002', ctx.dt(-3, '09:30'), {
+      occurredAt: ctx.dt(-3, '09:30'),
+      description:
+        'Planilha com a lista de inscritos de um grupo de apoio compartilhada por engano com outra turma (simulado).',
+      dataAffected: ['Nome dos inscritos', 'Tema e horário do grupo'],
+      affectedSubjects: 4,
+      measures:
+        'Acesso à planilha revogado. Aguardando a confirmação do descarte pela outra turma e a avaliação do risco pelo responsável técnico.',
+      status: 'open',
+      communications: [],
     }),
   );
 
@@ -294,7 +308,7 @@ export function buildLgpd(s: SeedState): void {
     USER.camila,
     USER.technicalLead,
     USER.beatriz,
-    USER.dentist,
+    USER.wesley,
     USER.leticia,
     USER.partner,
     USER.tiago,
@@ -370,8 +384,8 @@ export function buildLgpd(s: SeedState): void {
   });
   push('export', USER.technicalLead, 'access_log_csv', { detail: 'log sem conteúdo clínico' });
 
-  push('denied', USER.dentist, 'route', { detail: 'sem permissão em finance: /app/financeiro' });
-  push('denied', USER.dentist, 'route', { detail: 'perfil não permitido: /app/painel' });
+  push('denied', USER.wesley, 'route', { detail: 'sem permissão em finance: /app/financeiro' });
+  push('denied', USER.tiago, 'route', { detail: 'sem permissão em lgpd_audit_log: /app/lgpd/log' });
   push('denied', USER.rafael, 'route', { detail: 'sem permissão em finance: /app/financeiro' });
   push('denied', USER.rafael, 'route', {
     detail: `caso de outro psicólogo: /app/cuidadores/${caregiverId(2)}`,

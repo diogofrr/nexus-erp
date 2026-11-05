@@ -1,7 +1,7 @@
 # PRODUCT.md: Nexus ERP
 
 ## Propósito
-Protótipo de front-end do ERP da **Nexus**, empresa de Uberlândia que cuida de quem cuida: o cuidador familiar de pessoas idosas. O ERP é o back-office da empresa mais o Portal do Profissional Credenciado. Não é home care, clínica tradicional nem app de lembretes. Roda só no navegador (Angular, `localStorage` e `sessionStorage`), com dados 100% fictícios, mas se comporta como se tratasse dado real (LGPD).
+Protótipo de front-end do ERP da **Nexus**, empresa de Uberlândia que cuida de quem cuida: o cuidador familiar de pessoas idosas. O ERP é o back-office da empresa, usado só pela equipe (a rede credenciada é cadastro gerido pela equipe, sem login próprio). Não é home care, clínica tradicional nem app de lembretes. Roda só no navegador (Angular, `localStorage` e `sessionStorage`), com dados 100% fictícios, mas se comporta como se tratasse dado real (LGPD).
 
 Registro: **produto** (a pessoa está em tarefa, não em campanha). A interface serve ao trabalho; a marca aparece em medida, nunca atrapalha o dado.
 
@@ -12,9 +12,10 @@ Registro: **produto** (a pessoa está em tarefa, não em campanha). A interface 
 | `technical_lead` | Responsável técnica (CRP) | Supervisionar todos os casos, tratar alertas vermelhos no mesmo dia |
 | `psychologist` | Psicólogo(a) da Nexus | Agenda, sessões, Zarit e alertas dos seus cuidadores |
 | `support` | Atendimento e relacionamento | Cadastros, mensagens no prazo, solicitações do titular; sem dado clínico |
-| `provider` | Profissional credenciado (ex.: dentista) | Pedidos, nota, documentos; no celular, vendo só o mínimo necessário |
 
-Passam horas por dia no sistema, lendo tabelas, agendas e casos delicados. Contexto: escritório e coworking, luz do dia, monitor; o portal, no celular entre atendimentos.
+São quatro papéis de login. Os prestadores da rede credenciada são cadastros gerenciados por esses perfis, sem acesso próprio ao sistema.
+
+Passam horas por dia no sistema, lendo tabelas, agendas e casos delicados. Contexto: escritório e coworking, luz do dia, monitor; no celular, a equipe consulta o essencial entre atendimentos.
 
 ## Personalidade da marca (do documento, seção 4.1.3)
 **Acolhimento, confiança e organização.** Mãos abertas sustentando pessoas: sustentação, não controle. Tom: acolhedor, direto, sem jargão clínico; não infantiliza, não romantiza o sacrifício (nada de "guerreira" ou "anjo"), não promete resultado terapêutico, nunca diz "diagnóstico" nem "eficácia" para a escala de Zarit.

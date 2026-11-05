@@ -18,7 +18,6 @@ export type SearchGroupKey =
   | 'providers'
   | 'partners'
   | 'activities'
-  | 'requests'
   | 'recent';
 
 export interface SearchResult {
@@ -63,7 +62,6 @@ const GROUP_LABELS: Record<SearchGroupKey, string> = {
   providers: 'Prestadores',
   partners: 'Parceiros e empresas',
   activities: 'Atividades',
-  requests: 'Minhas solicitações',
   recent: 'Recentes',
 };
 
@@ -147,8 +145,7 @@ interface RecentStore {
  * | `technical_lead` | todos | nome, código e psicólogo |
  * | `psychologist` | só os seus | nome, código e data da última aplicação |
  * | `support` | todos | nome, código, plano e contato MASCARADO |
- * | `provider` | nenhum | só as próprias telas e solicitações |
- *
+ *  *
  * - O texto digitado NUNCA é guardado nem vai a URL, título da aba ou log (LP-21). O log registra o `view`
  *   do registro aberto, na tela que abrir.
  * - "Recentes" guarda as últimas 5 telas e registros abertos, só na sessão do navegador e por usuário.
@@ -209,11 +206,7 @@ export class SearchService {
     if (role === 'partner' || role === 'support') {
       push('partners', this.partnerResults(query));
     }
-    if (role !== 'provider') {
-      push('activities', this.activityResults(query));
-    } else {
-      push('requests', this.requestResults(query));
-    }
+    push('activities', this.activityResults(query));
 
     const total = groups.reduce((sum, g) => sum + g.total, 0);
     // A gestão que digita um nome recebe sempre a dica do código (A-09), mesmo que outras coisas casem.
@@ -317,9 +310,6 @@ export class SearchService {
   }
 
   private caregiverResults(role: Role, query: string): SearchResult[] {
-    if (role === 'provider') {
-      return [];
-    }
     const all = this.db.caregivers.list();
     let matches: readonly Caregiver[];
     if (role === 'partner') {
@@ -454,31 +444,6 @@ export class SearchService {
         icon: 'users-round',
         link: `/app/grupos/${a.id}`,
       }));
-  }
-
-  /** O credenciado busca só as próprias solicitações, sem identificar o cuidador. */
-  private requestResults(query: string): SearchResult[] {
-    const providerId = this.auth.actor()?.providerId;
-    if (!providerId) {
-      return [];
-    }
-    return this.db.serviceRequests
-      .query((r) => r.providerId === providerId)
-      .map((r) => {
-        const title = `Solicitação de atendimento ${r.modality === 'home' ? 'domiciliar' : 'no consultório'}`;
-        return {
-          id: `request:${r.id}`,
-          group: 'requests' as const,
-          title,
-          subtitle: `Recebida em ${formatDate(r.requestedAt)}`,
-          icon: 'clipboard-list',
-          link: '/portal/solicitacoes',
-          at: r.requestedAt,
-        };
-      })
-      .filter((r) => matchesQuery(`${r.title} ${r.subtitle}`, query))
-      .sort((a, b) => b.at.localeCompare(a.at))
-      .map(({ at: _at, ...rest }) => rest);
   }
 
   private planByCaregiver(): Map<string, string> {

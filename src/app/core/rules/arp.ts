@@ -55,7 +55,7 @@ export const ARP_BAND_LABELS: Readonly<Record<ArpBand, string>> = {
   no_average: 'Sem média',
 };
 
-/** Nome da faixa em linguagem neutra para o portal do prestador (RN-ARP-18; só "em destaque" ou "em acompanhamento"). */
+/** Nome da faixa em linguagem neutra para o que a equipe comunica ao prestador (RN-ARP-18; só "em destaque" ou "em acompanhamento"). */
 export function neutralBandLabel(band: ArpBand): string {
   return band === 'excellence' ? 'Em destaque' : 'Em acompanhamento';
 }

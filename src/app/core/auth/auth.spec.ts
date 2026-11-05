@@ -23,7 +23,6 @@ const ROLE_BY_USER: Record<string, string> = {
   u2: 'technical_lead',
   u3: 'psychologist',
   u7: 'support',
-  u9: 'provider',
 };
 
 function setup(
@@ -41,16 +40,26 @@ function login(auth: AuthService, userId: string): void {
 }
 
 describe('Login simulado por perfil (M01)', () => {
-  it('lista exatamente os 12 usuários de demonstração (AC-M01-01)', () => {
+  it('lista exatamente os 8 usuários de demonstração da equipe (AC-M01-01)', () => {
     const { auth } = setup();
-    expect(auth.demoUsers()).toHaveLength(12);
+    expect(auth.demoUsers()).toHaveLength(8);
+    expect(auth.demoUsers().map((u) => u.id)).toEqual([
+      'u1',
+      'u2',
+      'u3',
+      'u4',
+      'u5',
+      'u6',
+      'u7',
+      'u8',
+    ]);
     auth.demoUsers().forEach((u) => {
       expect(u.demoDescription.length).toBeGreaterThan(10);
       expect(u.email.endsWith('@exemplo.com.br')).toBe(true);
     });
   });
 
-  it('equipe exige o código 123456; credenciado entra sem segundo fator (AC-M01-02)', () => {
+  it('a equipe exige o código 123456 (AC-M01-02)', () => {
     const { auth } = setup();
     expect(auth.state()).toBe('anonymous');
     const staff = auth.selectProfile('u1');
@@ -63,17 +72,14 @@ describe('Login simulado por perfil (M01)', () => {
     expect(auth.isAuthenticated()).toBe(true);
     expect(auth.role()).toBe('partner');
     expect(auth.pendingTwoFactorCode()).toBeNull();
-    auth.logout();
-    expect(auth.selectProfile('u9')).toMatchObject({ status: 'authenticated' });
-    expect(auth.state()).toBe('authenticated');
-    expect(auth.role()).toBe('provider');
   });
 
-  it('todos os perfis de equipe pedem o código e os 4 credenciados não', () => {
+  it('todos os perfis pedem o código (não há perfil de login fora da equipe)', () => {
     const { auth } = setup();
     auth.demoUsers().forEach((u: AppUser) => {
       const outcome = auth.selectProfile(u.id);
-      expect(outcome.status).toBe(u.role === 'provider' ? 'authenticated' : 'needs_two_factor');
+      expect(outcome.status).toBe('needs_two_factor');
+      expect(u.requiresTwoFactor).toBe(true);
       auth.cancelPendingTwoFactor();
       auth.logout();
     });
@@ -136,14 +142,15 @@ describe('Login simulado por perfil (M01)', () => {
     const { auth, db } = setup();
     login(auth, 'u1');
     const before = db.accessLog.size();
-    auth.selectProfile('u9');
+    auth.selectProfile('u7');
+    expect(auth.verifyTwoFactor(TWO_FACTOR_CODE).status).toBe('ok');
     expect(
       db.accessLog
         .list()
         .slice(before)
         .map((e) => `${e.action}:${e.userId}`),
-    ).toEqual(['logout:u1', 'login:u9']);
-    expect(auth.role()).toBe('provider');
+    ).toEqual(['logout:u1', 'login:u7']);
+    expect(auth.role()).toBe('support');
     expect(auth.endReason()).toBeNull();
   });
 
@@ -161,11 +168,11 @@ describe('Login simulado por perfil (M01)', () => {
     again.session.data.set('nexus-erp:session', JSON.stringify(stored));
     TestBed.resetTestingModule();
     const reloaded = configureCoreTest({ local, session: again.session });
-    expect(reloaded.db.users.size()).toBe(12);
+    expect(reloaded.db.users.size()).toBe(8);
     expect(TestBed.inject(AuthService).isAuthenticated()).toBe(true);
   });
 
-  it('o ator carrega o psicólogo ou o prestador do usuário', () => {
+  it('o ator carrega o psicólogo do usuário', () => {
     const { auth } = setup();
     login(auth, 'u3');
     expect(auth.actor()).toEqual({
@@ -173,8 +180,8 @@ describe('Login simulado por perfil (M01)', () => {
       role: 'psychologist',
       psychologistId: 'psy_0001',
     });
-    login(auth, 'u9');
-    expect(auth.actor()).toEqual({ userId: 'u9', role: 'provider', providerId: 'prv_11' });
+    login(auth, 'u7');
+    expect(auth.actor()).toEqual({ userId: 'u7', role: 'support' });
   });
 
   it('can e canOnRecord do usuário logado; sem sessão nega', () => {
@@ -331,26 +338,24 @@ describe('Guards de rota (AC-GL-04, AC-M01-06)', () => {
 
   it('autenticado passa; quem já entrou é levado da entrada à sua tela inicial', () => {
     const { auth } = boot();
-    login(auth, 'u9');
-    expect(run(authGuard, '/portal')).toBe(true);
-    expect(path(run(guestGuard, '/login'))).toBe('/portal');
+    login(auth, 'u1');
+    expect(run(authGuard, '/app/painel')).toBe(true);
+    expect(path(run(guestGuard, '/login'))).toBe('/app/painel');
     auth.logout();
     expect(run(guestGuard, '/login')).toBe(true);
-    login(auth, 'u1');
-    expect(path(run(guestGuard, '/login'))).toBe('/app/painel');
   });
 
-  it('provider abrindo /app/financeiro vai a /403 e grava denied (AC-M01-06)', () => {
+  it('o atendimento abrindo /app/financeiro vai a /403 e grava denied (AC-M01-06)', () => {
     const { auth, db } = boot();
-    login(auth, 'u9');
+    login(auth, 'u7');
     const before = db.accessLog.size();
     expect(path(run(moduleGuard('finance'), '/app/financeiro'))).toBe('/403');
     const entry = db.accessLog.list().at(-1)!;
     expect(db.accessLog.size()).toBe(before + 1);
     expect(entry).toMatchObject({
       action: 'denied',
-      userId: 'u9',
-      role: 'provider',
+      userId: 'u7',
+      role: 'support',
       entity: 'route',
     });
     expect(entry.detail).toContain('/app/financeiro');
@@ -375,7 +380,7 @@ describe('Guards de rota (AC-GL-04, AC-M01-06)', () => {
     expect(run(permissionGuard('lgpd_audit_log', 'update'), '/app/lgpd/log')).toBe(true);
     expect(path(run(permissionGuard('lgpd_audit_log', 'supervise'), '/app/lgpd/log'))).toBe('/403');
     expect(run(roleGuard('technical_lead', 'partner'), '/x')).toBe(true);
-    expect(path(run(roleGuard('provider'), '/portal'))).toBe('/403');
+    expect(path(run(roleGuard('partner', 'psychologist'), '/x'))).toBe('/403');
     // Recurso só embutido (plano do cuidador) não é tela para o psicólogo.
     auth.logout();
     login(auth, 'u3');
@@ -394,13 +399,8 @@ describe('Guards de rota (AC-GL-04, AC-M01-06)', () => {
     Object.keys(ROLE_BY_USER).forEach((userId) => {
       auth.logout();
       login(auth, userId);
-      const role = ROLE_BY_USER[userId];
-      if (role === 'provider') {
-        expect(run(moduleGuard('provider-portal'), '/portal')).toBe(true);
-        expect(path(run(moduleGuard('dashboard'), '/app/painel'))).toBe('/403');
-      } else {
-        expect(run(moduleGuard('dashboard'), '/app/painel')).toBe(true);
-      }
+      expect(auth.role(), userId).toBe(ROLE_BY_USER[userId]);
+      expect(run(moduleGuard('dashboard'), '/app/painel')).toBe(true);
     });
   });
 });

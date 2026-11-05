@@ -65,7 +65,7 @@ export function permissionGuard(
   };
 }
 
-/** Exige um dos perfis informados: `roleGuard('provider')` para o portal. */
+/** Exige um dos perfis informados: `roleGuard('partner', 'technical_lead')`. */
 export function roleGuard(...roles: Role[]): CanActivateFn {
   return (_route, state) => {
     const auth = inject(AuthService);

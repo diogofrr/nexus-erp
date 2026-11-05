@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ROLES } from '../auth/permissions';
 import {
   addDays,
   compareDates,
@@ -59,13 +60,14 @@ function providerStats(n: number): { average: number | null; count: number; grav
 
 describe('seed: contagens da seção 5.15', () => {
   it('gera as quantidades esperadas', () => {
-    expect(c.users).toHaveLength(12);
+    expect(c.users).toHaveLength(8);
     expect(c.psychologists).toHaveLength(4);
     expect(c.rooms).toHaveLength(3);
     expect(c.caregivers).toHaveLength(340);
     expect(c.elders).toHaveLength(340);
     expect(c.subscriptions).toHaveLength(340);
     expect(c.benefitCards.filter((x) => x.status === 'active')).toHaveLength(17);
+    expect(c.benefitCards.filter((x) => x.status === 'inactive')).toHaveLength(1);
     expect(c.zaritAssessments.filter((z) => z.status === 'completed')).toHaveLength(158);
     expect(c.providers).toHaveLength(20);
     expect(c.accreditations).toHaveLength(20);
@@ -93,7 +95,7 @@ describe('seed: contagens da seção 5.15', () => {
       'service_contract',
     ]);
     expect(c.messageTemplates).toHaveLength(6);
-    expect(c.incidents).toHaveLength(1);
+    expect(c.incidents).toHaveLength(2);
     expect(c.trainingEvents).toHaveLength(6);
     expect(c.guidanceContents).toHaveLength(8);
     expect(c.norms).toHaveLength(6);
@@ -111,6 +113,24 @@ describe('seed: contagens da seção 5.15', () => {
     expect(paid.filter((s) => s.planId === 'sustenta')).toHaveLength(5);
     const scenarioPlans = SCENARIOS.map((d) => d.plan);
     expect(scenarioPlans.filter((p) => p === 'livre')).toHaveLength(12);
+  });
+
+  it('traz 1 cartão inativo (C120, de volta ao Livre) e 1 incidente de dados aberto, além do encerrado', () => {
+    const inactive = c.benefitCards.filter((x) => x.status === 'inactive');
+    expect(inactive).toHaveLength(1);
+    const card = inactive[0]!;
+    expect(card.caregiverId).toBe(caregiverId(120));
+    expect(card.inactivatedAt).toBeDefined();
+    expect(c.subscriptions.find((s) => s.caregiverId === card.caregiverId)?.planId).toBe('livre');
+    const history = c.planChanges.filter(
+      (p) => p.subscriptionId === c.subscriptions.find((s) => s.caregiverId === card.caregiverId)?.id,
+    );
+    expect(history.map((p) => p.kind)).toEqual(['upgrade', 'cancel']);
+    expect(new Set(c.benefitCards.map((x) => x.number)).size).toBe(c.benefitCards.length);
+    expect(c.incidents.map((i) => i.status).sort()).toEqual(['closed', 'open']);
+    const open = c.incidents.find((i) => i.status === 'open')!;
+    expect(open.communications).toEqual([]);
+    expect(open.affectedSubjects).toBeGreaterThan(0);
   });
 
   it('o realizado do seed reproduz o escopo: R$ 1.698,30, R$ 1.511,49, -R$ 843,51 e faltam 10', () => {
@@ -403,31 +423,32 @@ describe('seed: rede credenciada (5.8 e 5.9)', () => {
   it('a busca como o usuário vê: opções por especialidade, única opção e nenhuma opção', () => {
     const n = (category: Provider['category']) =>
       searchProviders(c.providers, category).options.length;
-    expect(n('physiotherapy')).toBe(3);
+    expect(n('physiotherapy')).toBe(5);
     expect(n('professional_caregiver')).toBe(3);
     expect(n('pharmacy')).toBe(2);
-    expect(n('dentistry')).toBe(2);
     (['home_care', 'nursing', 'psychology', 'legal'] as const).forEach((cat) =>
       expect(searchProviders(c.providers, cat).availability).toBe('single_option'),
     );
     (['clinic', 'nutrition', 'specialized_service'] as const).forEach((cat) =>
       expect(searchProviders(c.providers, cat).availability).toBe('none'),
     );
-    const dental = searchProviders(c.providers, 'dentistry').options.map((p) => p.name);
-    expect(dental).toContain('Dr. Eduardo Falcão');
-    expect(dental).toContain('Dra. Sônia Peixoto');
-    expect(dental[0]).toBe('Dr. Eduardo Falcão');
+    const physio = searchProviders(c.providers, 'physiotherapy').options;
+    const names = physio.map((p) => p.name);
+    expect(names).toContain('Dr. Eduardo Falcão');
+    expect(names).toContain('Dra. Sônia Peixoto');
+    expect(physio[0]?.highlight).toBe(true);
   });
 
-  it('o dentista (CRO) é um prestador ativo com 2 solicitações novas e cláusula assinada', () => {
-    const dentist = c.providers.find((p) => p.id === providerId(11)) as Provider;
-    expect(dentist.council.body).toBe('CRO');
-    expect(dentist.status).toBe('active');
-    expect(dentist.dataProtectionClauseSignedAt).toBeDefined();
-    const user = c.users.find((u) => u.id === 'u9');
-    expect(user?.providerId).toBe(dentist.id);
+  it('P11 (fisioterapeuta, CREFITO) é um prestador ativo com 2 solicitações novas e cláusula assinada; ninguém da rede tem login', () => {
+    const physio = c.providers.find((p) => p.id === providerId(11)) as Provider;
+    expect(physio.category).toBe('physiotherapy');
+    expect(physio.council.body).toBe('CREFITO');
+    expect(physio.status).toBe('active');
+    expect(physio.dataProtectionClauseSignedAt).toBeDefined();
+    expect(c.users.every((u) => ROLES.includes(u.role))).toBe(true);
+    expect(c.users.some((u) => 'providerId' in u)).toBe(false);
     const recent = c.serviceRequests.filter(
-      (r) => r.providerId === dentist.id && r.status !== 'evaluated',
+      (r) => r.providerId === physio.id && r.status !== 'evaluated',
     );
     expect(recent.filter((r) => r.status === 'requested')).toHaveLength(2);
     expect(recent.filter((r) => r.status === 'accepted')).toHaveLength(1);
@@ -536,9 +557,9 @@ describe('seed: agenda e equipe (5.2)', () => {
 });
 
 describe('seed: comunicação, grupos, parceiros e governança', () => {
-  it('28 mensagens (app 10, WhatsApp 8, telefone 4, e-mail 6) com 5 atrasadas em qualquer hora do dia', () => {
+  it('28 mensagens (app 9, WhatsApp 8, telefone 4, e-mail 7) com 5 atrasadas em qualquer hora do dia', () => {
     const by = (channel: string): number => c.messages.filter((m) => m.channel === channel).length;
-    expect([by('app'), by('whatsapp'), by('phone'), by('email')]).toEqual([10, 8, 4, 6]);
+    expect([by('app'), by('whatsapp'), by('phone'), by('email')]).toEqual([9, 8, 4, 7]);
     ['00:30', '07:00', '12:00', '23:30'].forEach((time) => {
       const now = toIsoDateTime(TODAY, time);
       expect(
@@ -749,7 +770,6 @@ describe('seed: integridade, dados fictícios e determinismo', () => {
     });
     c.users.forEach((u) => {
       ok(ids.psychologists, u.psychologistId, 'user.psychologistId');
-      ok(ids.providers, u.providerId, 'user.providerId');
     });
     c.psychologists.forEach((p) => ok(ids.users, p.userId, 'psychologist.userId'));
     c.subscriptions.forEach((x) => {

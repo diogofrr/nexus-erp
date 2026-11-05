@@ -40,7 +40,7 @@ export function initialsOf(name: string): string {
 export class AvatarComponent {
   readonly name = input('');
   readonly size = input<'sm' | 'md' | 'lg' | 'xl'>('md');
-  /** Profissional credenciado (fundo dourado suave). */
+  /** Variante dourada suave, para destacar uma pessoa ou prestador da rede nas listas. */
   readonly gold = input(false, { transform: booleanAttribute });
   /** Sobre o menu escuro. */
   readonly nav = input(false, { transform: booleanAttribute });

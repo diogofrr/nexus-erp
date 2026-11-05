@@ -22,7 +22,7 @@ import { NotificationService } from '../../core/notifications/notification.servi
 import { PROTOTYPE_NOTICE } from '../../core/privacy/browser-data.service';
 import { NavGroupId, screensFor } from '../../core/search/screens';
 import { SearchService } from '../../core/search/search.service';
-import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../shared/ui/display/icon.component';
 import { ToastService } from '../../shared/ui/overlay/toast.service';
 import { NavEntry, NavLink, activeGroupOf, buildNavigation, pinnedLinks } from '../nav/nav.model';
 import { CommandPaletteComponent } from '../search/command-palette.component';
@@ -60,7 +60,7 @@ import { UserMenuComponent } from './user-menu.component';
     RouterLinkActive,
     RouterOutlet,
     DateBrPipe,
-    GlyphComponent,
+    IconComponent,
     BreadcrumbsComponent,
     CommandPaletteComponent,
     LayoutDialogsComponent,
@@ -132,7 +132,7 @@ export class TeamShellComponent {
   );
 
   protected readonly canOpenClock = computed(() =>
-    screensFor(this.auth.role() ?? 'provider').some((s) => s.link === '/app/configuracoes/relogio'),
+    screensFor(this.auth.role() ?? 'support').some((s) => s.link === '/app/configuracoes/relogio'),
   );
   protected readonly clockLabel = computed(() =>
     `Hoje (simulado): ${this.clock.today().split('-').reverse().join('/')}. ${this.canOpenClock() ? 'Abrir o relógio simulado' : ''}`.trim(),

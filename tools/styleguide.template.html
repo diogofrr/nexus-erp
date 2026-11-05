@@ -409,7 +409,7 @@
     </ol></div></div>
     <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Checklist de credenciamento (5 critérios)</h3>
     <div class="sg-panel"><ul class="checklist">
-      <li class="checklist__item" data-state="ok">{{i:circle-check}}<div><p class="checklist__title">Registro ativo no conselho</p><p class="checklist__text">CRO-MG 00000 (fictício) · válido até 30/06/2027</p></div><span class="badge badge--success">Cumprido</span></li>
+      <li class="checklist__item" data-state="ok">{{i:circle-check}}<div><p class="checklist__title">Registro ativo no conselho</p><p class="checklist__text">CREFITO-4/00000-F (fictício) · válido até 30/06/2027</p></div><span class="badge badge--success">Cumprido</span></li>
       <li class="checklist__item" data-state="ok">{{i:circle-check}}<div><p class="checklist__title">Comprovação de formação</p></div><span class="badge badge--success">Cumprido</span></li>
       <li class="checklist__item" data-state="fail">{{i:circle-alert}}<div><p class="checklist__title">Documento dentro da validade</p><p class="checklist__text">CREFITO vencido em 15/09/2026. Peça um novo anexo.</p></div><span class="badge badge--danger">Vencido</span></li>
       <li class="checklist__item" data-state="pending">{{i:clock}}<div><p class="checklist__title">Integração concluída</p><p class="checklist__text">Ciência dos POPs ainda não registrada.</p></div><span class="badge badge--attention">Pendente</span></li>
@@ -420,7 +420,7 @@
 
   <div class="sg-block"><h3>Kanban simples (credenciamento por estado)</h3>
     <div class="kanban">
-      <div class="kanban__col"><button class="kanban__head" aria-expanded="true"><span>Solicitado </span><span class="cluster"><span class="badge badge--count">1</span><span class="kanban__chevron">{{i:chevron-down:sm}}</span></span></button><div class="kanban__card"><strong>Dra. Sônia Peixoto</strong><span class="t-caption">Odontologia · CRO fictício</span><span class="badge badge--info">{{i:clock}}há 2 dias</span></div></div>
+      <div class="kanban__col"><button class="kanban__head" aria-expanded="true"><span>Solicitado </span><span class="cluster"><span class="badge badge--count">1</span><span class="kanban__chevron">{{i:chevron-down:sm}}</span></span></button><div class="kanban__card"><strong>Dra. Sônia Peixoto</strong><span class="t-caption">Fisioterapia · CREFITO fictício</span><span class="badge badge--info">{{i:clock}}há 2 dias</span></div></div>
       <div class="kanban__col"><button class="kanban__head" aria-expanded="true"><span>Em análise </span><span class="cluster"><span class="badge badge--count">1</span><span class="kanban__chevron">{{i:chevron-down:sm}}</span></span></button><div class="kanban__card"><strong>Fisio em Casa Uberlândia</strong><span class="t-caption">Fisioterapia · domiciliar</span><div class="progress"><span class="progress__bar" style="--value:60%"></span></div><span class="t-caption">3 de 5 critérios</span></div></div>
       <div class="kanban__col"><button class="kanban__head" aria-expanded="true"><span>Documentos pendentes </span><span class="cluster"><span class="badge badge--count">1</span><span class="kanban__chevron">{{i:chevron-down:sm}}</span></span></button><div class="kanban__card"><strong>Candidata a fisioterapeuta</strong><span class="t-caption">CREFITO vencido</span><span class="badge badge--danger">{{i:triangle-alert}}Documento vencido</span></div></div>
       <div class="kanban__col"><button class="kanban__head" aria-expanded="true"><span>Aprovado </span><span class="cluster"><span class="badge badge--count">0</span><span class="kanban__chevron">{{i:chevron-down:sm}}</span></span></button><div class="kanban__empty">Nenhum processo aqui.</div></div>
@@ -593,24 +593,21 @@
       <div class="sg-panel stack stack--3" style="max-width:26rem"><div class="day-picker" role="group" aria-label="Dia da agenda"><button class="chip" aria-pressed="false"><span>seg</span><b>02</b></button><button class="chip" aria-pressed="false"><span>ter</span><b>03</b></button><button class="chip" aria-pressed="true"><span>qua</span><b>04</b></button><button class="chip" aria-pressed="false"><span>qui</span><b>05</b></button><button class="chip" aria-pressed="false"><span>sex</span><b>06</b></button></div>
         <div class="list-card"><button class="list-row"><span class="t-num t-strong">09:00</span><span><span class="list-row__title">CUI-0044</span><span class="list-row__meta">Em domicílio</span></span><span class="badge badge--info">{{i:user}}Reservada</span></button><button class="list-row"><span class="t-num t-strong">10:00</span><span><span class="list-row__title">CUI-0060</span><span class="list-row__meta">Presencial no coworking</span></span><span class="badge badge--danger">{{i:circle-alert}}Falta</span></button><button class="list-row"><span class="t-num t-strong">11:00</span><span><span class="list-row__title">Vaga aberta</span></span><span class="badge">{{i:circle-dashed}}Aberta</span></button></div>
         <div class="action-bar" style="margin-inline:0"><button class="btn">Cancelar</button><button class="btn btn--primary">Agendar sessão</button></div>
-        <p class="sg-cap">Barra de ação fixa: no celular fica presa ao rodapé (acima da barra do portal); de 768 px em diante vai para o cabeçalho ou para o fim do formulário.</p></div></div>
+        <p class="sg-cap">Barra de ação fixa: no celular fica presa ao rodapé; de 768 px em diante vai para o cabeçalho ou para o fim do formulário.</p></div></div>
   </div>
 </section>
 
 <!-- ============================ TELAS ============================ -->
 <section class="sg-section" id="telas">
   <h2>Telas-chave e comportamento responsivo</h2>
-  <p class="lede">Cada moldura abaixo é uma página real carregada na largura indicada, com o mesmo CSS. Menu lateral completo a partir de 1280 px, trilho de ícones de 1024 a 1279 px, gaveta abaixo de 1024 px. O portal do profissional é mobile first, com barra de navegação inferior.</p>
+  <p class="lede">Cada moldura abaixo é uma página real carregada na largura indicada, com o mesmo CSS. Menu lateral completo a partir de 1280 px, trilho de ícones de 1024 a 1279 px, gaveta abaixo de 1024 px.</p>
   <div class="sg-block"><h3>Painel da equipe, 1440 × 800</h3><div class="sg-device" data-w="1440" data-h="800" data-tpl="shell"></div></div>
   <div class="sg-block"><h3>Trilho de ícones, 1024 × 700</h3><div class="sg-device" data-w="1024" data-h="700" data-tpl="shell"></div></div>
   <div class="sg-2col sg-block" style="align-items:start">
     <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Tablet, 768 × 800</h3><div class="sg-device" data-w="768" data-h="800" data-tpl="shell"></div></div>
     <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Celular 390, com a gaveta aberta</h3><div class="sg-device" data-w="390" data-h="800" data-tpl="shell" data-open="true"></div></div>
   </div>
-  <div class="sg-2col sg-block" style="align-items:start">
-    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Portal do profissional, 390 × 800 (mobile first)</h3><div class="sg-device" data-w="390" data-h="800" data-tpl="portal"></div></div>
-    <div><h3 class="t-h4" style="margin-bottom:var(--space-3)">Celular 360, painel da equipe</h3><div class="sg-device" data-w="360" data-h="800" data-tpl="shell"></div></div>
-  </div>
+  <div class="sg-block"><h3>Celular 360, painel da equipe</h3><div class="sg-device" data-w="360" data-h="800" data-tpl="shell"></div></div>
   <div class="sg-block"><h3>Entrada: seleção de perfil, 1280 × 800</h3><div class="sg-device" data-w="1280" data-h="800" data-tpl="login"></div></div>
 </section>
 
@@ -682,20 +679,6 @@
   </div>
 </template>
 
-<template id="tpl-portal">
-  <div class="portal-shell">
-    <header class="portal-header"><div class="topbar__brand"><svg class="brand-symbol" style="stroke-width:3.2" aria-hidden="true"><use href="#nx-symbol"/></svg><span class="wordmark">Nexus</span></div><div class="topbar__actions"><button class="btn btn--ghost btn--icon" aria-label="Notificações">{{i:bell}}</button><span class="avatar avatar--sm avatar--gold">EF</span></div></header>
-    <nav class="bottom-nav" aria-label="Portal"><a class="bottom-nav__item" href="#" aria-current="page">{{i:layout-dashboard}}<span>Início</span></a><a class="bottom-nav__item" href="#">{{i:clipboard-list}}<span>Solicitações</span></a><a class="bottom-nav__item" href="#">{{i:calendar-days}}<span>Disponibilidade</span></a><a class="bottom-nav__item" href="#">{{i:messages-square}}<span>Mensagens</span></a><a class="bottom-nav__item" href="#">{{i:ellipsis}}<span>Mais</span></a></nav>
-    <main class="portal-main stack stack--6">
-      <div class="page-header__titles"><h1>Olá, Dr. Eduardo</h1><p class="page-header__desc">Você tem 2 pedidos novos e 1 documento a vencer.</p></div>
-      <div class="card card--pad stack stack--3"><div class="cluster cluster--between"><h3 class="card__title">Pedido novo</h3><span class="badge badge--info badge--dot">Aguardando você</span></div><p class="t-muted t-ui">Atendimento odontológico domiciliar · Uberlândia. Os dados do cuidador aparecem depois que você aceita.</p><div class="cluster"><button class="btn btn--primary" style="flex:1">Aceitar</button><button class="btn" style="flex:1">Recusar</button></div></div>
-      <div class="kpi-strip"><div class="kpi"><span class="kpi__label">Sua avaliação</span><span class="kpi__value t-num">4,7</span><span class="badge badge--success" style="justify-self:start">{{i:award}}Em destaque</span></div><div class="kpi"><span class="kpi__label">Recusas em 30 dias</span><span class="kpi__value t-num">12,5<small>%</small></span></div></div>
-      <div class="banner banner--attention">{{i:triangle-alert}}<div class="banner__body"><p class="banner__title">Registro no conselho vence em 12 dias</p><div class="banner__actions"><button class="btn btn--sm">Enviar novo documento</button></div></div></div>
-    </main>
-    <footer class="app-footer">{{i:info}}<span>Protótipo de demonstração. Dados fictícios, só neste navegador.</span></footer>
-  </div>
-</template>
-
 <template id="tpl-login">
   <div class="login">
     <section class="login__brand">
@@ -706,14 +689,15 @@
     <section class="login__panel">
       <div class="banner banner--prototype" style="border-radius:var(--radius-md);border-width:1px;justify-content:flex-start;text-align:left">{{i:info}}<span>Protótipo de demonstração. Todos os dados são fictícios e ficam apenas neste navegador.</span></div>
       <div><h1>Entrar como</h1><p class="page-header__desc" style="margin-top:var(--space-2);color:var(--text-muted)">Não há senha. A equipe confirma um código de 6 dígitos.</p></div>
-      <div class="profile-group"><h3>Equipe Nexus</h3><div class="list-card">
+      <div class="profile-group"><h3>Gestão</h3><div class="list-card">
         <button class="list-row"><span class="avatar">HP</span><span><span class="list-row__title">Helena Prado Vasconcelos</span><span class="list-row__meta">Sócia e gestão · vê indicadores sem identificar ninguém</span></span><span class="badge">{{i:key-round}}Código</span></button>
         <button class="list-row"><span class="avatar">CM</span><span><span class="list-row__title">Dra. Cecília Montenegro</span><span class="list-row__meta">Responsável técnica · supervisão de todos os casos</span></span><span class="badge">{{i:key-round}}Código</span></button>
-        <button class="list-row"><span class="avatar">BN</span><span><span class="list-row__title">Dra. Beatriz Nogueira</span><span class="list-row__meta">Psicóloga · agenda e acompanhamento dos seus cuidadores</span></span><span class="badge">{{i:key-round}}Código</span></button>
-        <button class="list-row"><span class="avatar">CD</span><span><span class="list-row__title">Camila Duarte</span><span class="list-row__meta">Atendimento · cadastros, mensagens e solicitações</span></span><span class="badge">{{i:key-round}}Código</span></button>
       </div></div>
-      <div class="profile-group"><h3>Profissionais credenciados</h3><div class="list-card">
-        <button class="list-row"><span class="avatar avatar--gold">EF</span><span><span class="list-row__title">Dr. Eduardo Falcão</span><span class="list-row__meta">Cirurgião-dentista · portal do profissional</span></span>{{i:chevron-right}}</button>
+      <div class="profile-group"><h3>Psicologia</h3><div class="list-card">
+        <button class="list-row"><span class="avatar">BN</span><span><span class="list-row__title">Dra. Beatriz Nogueira</span><span class="list-row__meta">Psicóloga · agenda e acompanhamento dos seus cuidadores</span></span><span class="badge">{{i:key-round}}Código</span></button>
+      </div></div>
+      <div class="profile-group"><h3>Atendimento</h3><div class="list-card">
+        <button class="list-row"><span class="avatar">CD</span><span><span class="list-row__title">Camila Duarte</span><span class="list-row__meta">Atendimento · cadastros, mensagens e solicitações</span></span><span class="badge">{{i:key-round}}Código</span></button>
       </div></div>
     </section>
   </div>

@@ -69,7 +69,11 @@ describe('M02 Painel: sócia (AC-M02-01, 03 e 08)', () => {
     expect(links).toContain('/app/mensagens?filtro=atrasadas');
     expect(links).toContain('/app/governanca/pops?filtro=a-revisar');
     expect(links).toContain('/app/lgpd/solicitacoes?filtro=vencendo');
-    expect(links).toContain('/app/rede/credenciamento');
+    expect(links).toContain('/app/rede/credenciamento?filtro=em-andamento');
+    expect(links).toContain('/app/rede/prestadores?filtro=excelencia');
+    expect(links).toContain('/app/rede/prestadores?filtro=alerta');
+    expect(links).toContain('/app/rede/prestadores?filtro=risco-de-saida');
+    expect(links).toContain('/app/reclamacoes?filtro=abertas');
   });
 
   it('a rede, a equipe e o resto ficam em seções recolhíveis; a equipe mostra o alerta de sobrecarga', async () => {
@@ -196,6 +200,9 @@ describe('M02 Painel: atendimento (AC-M02-05)', () => {
     expect(kpi(app, 'Solicitações do titular a registrar')).toMatch(/\d/);
     expect(kpi(app, 'Solicitações de serviço sem retorno')).toMatch(/\d/);
     expect(hrefs(app, 'app-panel-kpi a')).toContain('/app/assinaturas?filtro=cancelamento-agendado');
+    expect(hrefs(app, 'app-panel-kpi a')).toContain('/app/cuidadores?filtro=novos');
+    expect(hrefs(app, 'app-panel-kpi a')).toContain('/app/reclamacoes?filtro=abertas');
+    expect(hrefs(app, 'app-panel-kpi a')).toContain('/app/rede/solicitacoes?filtro=sem-retorno');
     expect(pickAll(app.root, '.discreet').length).toBeGreaterThan(0);
   });
 });

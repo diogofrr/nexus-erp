@@ -6,7 +6,6 @@ import {
   afterNextRender,
   computed,
   inject,
-  input,
   signal,
   viewChild,
 } from '@angular/core';
@@ -14,7 +13,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { SearchService } from '../../core/search/search.service';
 import { DialogService } from '../../shared/ui/overlay/dialog.service';
-import { GlyphComponent } from '../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../shared/ui/display/icon.component';
 import { LayoutDialogsService } from '../state/layout-dialogs.service';
 import { UiPrefsService } from '../../shared/ui/overlay/ui-prefs.service';
 import { initialsOf, roleLabel } from '../../shared/ui/overlay/user-display';
@@ -30,7 +29,7 @@ import { initialsOf, roleLabel } from '../../shared/ui/overlay/user-display';
  */
 @Component({
   selector: 'app-user-menu',
-  imports: [GlyphComponent, RouterLink],
+  imports: [IconComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'menu-anchor',
@@ -49,14 +48,12 @@ import { initialsOf, roleLabel } from '../../shared/ui/overlay/user-display';
         [attr.aria-label]="'Menu do usuário: ' + u.displayName + ', ' + role()"
         (click)="toggle()"
       >
-        <span class="avatar avatar--sm" [class.avatar--gold]="u.role === 'provider'">{{
-          initials()
-        }}</span>
+        <span class="avatar avatar--sm">{{ initials() }}</span>
         <span class="user-trigger__text hide-md">
           <span class="user-trigger__name">{{ u.displayName }}</span>
           <span class="user-trigger__role">{{ role() }}</span>
         </span>
-        <svg appGlyph="chevron-down" glyphSize="sm"></svg>
+        <svg appIcon="chevron-down" size="sm"></svg>
       </button>
 
       @if (open()) {
@@ -82,7 +79,7 @@ import { initialsOf, roleLabel } from '../../shared/ui/overlay/user-display';
             [attr.aria-checked]="prefs.theme() === 'dark'"
             (click)="prefs.toggleTheme()"
           >
-            <svg [appGlyph]="prefs.theme() === 'dark' ? 'moon' : 'sun'"></svg>
+            <svg [appIcon]="prefs.theme() === 'dark' ? 'moon' : 'sun'"></svg>
             <span class="flex-1">Tema escuro</span>
             <span class="menu__state">{{ prefs.theme() === 'dark' ? 'Ligado' : 'Desligado' }}</span>
           </button>
@@ -93,7 +90,7 @@ import { initialsOf, roleLabel } from '../../shared/ui/overlay/user-display';
             [attr.aria-checked]="prefs.discreet()"
             (click)="prefs.setDiscreet(!prefs.discreet())"
           >
-            <svg appGlyph="eye-off"></svg>
+            <svg appIcon="eye-off"></svg>
             <span class="flex-1">Modo discreto</span>
             <span class="menu__state">{{ prefs.discreet() ? 'Ligado' : 'Desligado' }}</span>
           </button>
@@ -104,7 +101,7 @@ import { initialsOf, roleLabel } from '../../shared/ui/overlay/user-display';
             [attr.aria-checked]="prefs.density() === 'compact'"
             (click)="prefs.setDensity(prefs.density() === 'compact' ? 'comfortable' : 'compact')"
           >
-            <svg appGlyph="table"></svg>
+            <svg appIcon="table"></svg>
             <span class="flex-1">Tabelas compactas</span>
             <span class="menu__state">{{
               prefs.density() === 'compact' ? 'Ligado' : 'Desligado'
@@ -117,7 +114,7 @@ import { initialsOf, roleLabel } from '../../shared/ui/overlay/user-display';
             [attr.aria-checked]="prefs.singleKeyShortcuts()"
             (click)="prefs.setSingleKeyShortcuts(!prefs.singleKeyShortcuts())"
           >
-            <svg appGlyph="key-round"></svg>
+            <svg appIcon="key-round"></svg>
             <span class="flex-1">Atalhos de uma tecla</span>
             <span class="menu__state">{{
               prefs.singleKeyShortcuts() ? 'Ligado' : 'Desligado'
@@ -130,32 +127,32 @@ import { initialsOf, roleLabel } from '../../shared/ui/overlay/user-display';
             [attr.aria-checked]="prefs.reduceMotion()"
             (click)="prefs.setReduceMotion(!prefs.reduceMotion())"
           >
-            <svg appGlyph="pause"></svg>
+            <svg appIcon="pause"></svg>
             <span class="flex-1">Reduzir movimento</span>
             <span class="menu__state">{{ prefs.reduceMotion() ? 'Ligado' : 'Desligado' }}</span>
           </button>
 
           <div class="menu__sep" role="separator"></div>
           <button type="button" class="menu__item" role="menuitem" (click)="openShortcuts()">
-            <svg appGlyph="circle-help"></svg><span class="flex-1">Atalhos de teclado</span
+            <svg appIcon="circle-help"></svg><span class="flex-1">Atalhos de teclado</span
             ><kbd class="kbd">?</kbd>
           </button>
           <a
             class="menu__item"
             role="menuitem"
-            [routerLink]="prefix() + '/canal-do-titular'"
+            routerLink="/app/canal-do-titular"
             (click)="close(false)"
           >
-            <svg appGlyph="shield-check"></svg
+            <svg appIcon="shield-check"></svg
             ><span class="flex-1">Privacidade e canal do titular</span>
           </a>
           <a
             class="menu__item"
             role="menuitem"
-            [routerLink]="prefix() + '/meus-dados'"
+            routerLink="/app/meus-dados"
             (click)="close(false)"
           >
-            <svg appGlyph="database"></svg><span class="flex-1">Meus dados no navegador</span>
+            <svg appIcon="database"></svg><span class="flex-1">Meus dados no navegador</span>
           </a>
 
           <div class="menu__sep" role="separator"></div>
@@ -166,7 +163,7 @@ import { initialsOf, roleLabel } from '../../shared/ui/overlay/user-display';
             data-role="switch-profile"
             (click)="switchProfile()"
           >
-            <svg appGlyph="refresh-cw"></svg><span class="flex-1">Trocar perfil</span>
+            <svg appIcon="refresh-cw"></svg><span class="flex-1">Trocar perfil</span>
           </button>
           <button
             type="button"
@@ -175,7 +172,7 @@ import { initialsOf, roleLabel } from '../../shared/ui/overlay/user-display';
             data-role="sign-out"
             (click)="signOut()"
           >
-            <svg appGlyph="log-out"></svg><span class="flex-1">Sair</span>
+            <svg appIcon="log-out"></svg><span class="flex-1">Sair</span>
           </button>
         </div>
       }
@@ -194,12 +191,8 @@ export class UserMenuComponent {
   private readonly trigger = viewChild<ElementRef<HTMLButtonElement>>('trigger');
   private readonly menu = viewChild<ElementRef<HTMLElement>>('menu');
 
-  /** `team` (shell da equipe) ou `portal` (credenciado): muda só o destino dos links de rodapé. */
-  readonly area = input<'team' | 'portal'>('team');
-
   protected readonly user = this.auth.user;
   protected readonly open = signal(false);
-  protected readonly prefix = computed(() => (this.area() === 'portal' ? '/portal' : '/app'));
   protected readonly role = computed(() => {
     const role = this.auth.role();
     return role ? roleLabel(role) : '';

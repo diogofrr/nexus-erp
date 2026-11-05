@@ -7,12 +7,12 @@ import { BrowserDataService } from '../../../core/privacy/browser-data.service';
 import { StorageService } from '../../../core/storage/storage.service';
 import { BannerComponent } from '../../../shared/ui/overlay/banner.component';
 import { DialogService } from '../../../shared/ui/overlay/dialog.service';
-import { GlyphComponent } from '../../../shared/ui/overlay/glyph.component';
+import { IconComponent } from '../../../shared/ui/display/icon.component';
 import { HARD_NAVIGATE } from '../../../shared/ui/overlay/hard-navigation';
 import { ToastService } from '../../../shared/ui/overlay/toast.service';
 import { firstNameOf } from '../../../shared/ui/overlay/user-display';
 import { DemoDataService, IMPORT_REFUSED_TEXT, ImportPreview } from '../state/demo-data.service';
-import { downloadTextFile } from '../state/download';
+import { downloadTextFile } from '../../../core/export/file-download';
 
 /** O que o seed gera (escopo, 5.15): usado no texto do diálogo de reset. */
 export const SEED_SUMMARY = '340 cuidadores, 20 prestadores e 60 sessões';
@@ -49,7 +49,7 @@ function nextPaint(): Promise<void> {
  */
 @Component({
   selector: 'app-settings-data-page',
-  imports: [BannerComponent, GlyphComponent, DateBrPipe, NumberBrPipe],
+  imports: [BannerComponent, IconComponent, DateBrPipe, NumberBrPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page page--narrow">
@@ -108,10 +108,10 @@ function nextPaint(): Promise<void> {
           </p>
           <div class="cluster">
             <button type="button" class="btn" data-role="export" (click)="exportCopy()">
-              <svg appGlyph="download"></svg>Baixar cópia (JSON)
+              <svg appIcon="download"></svg>Baixar cópia (JSON)
             </button>
             <button type="button" class="btn" data-role="import" (click)="file.click()">
-              <svg appGlyph="upload"></svg>Importar cópia
+              <svg appIcon="upload"></svg>Importar cópia
             </button>
             <input
               #file
@@ -127,7 +127,7 @@ function nextPaint(): Promise<void> {
           @if (preview(); as p) {
             @if (p.ok) {
               <div class="banner banner--attention" role="status" data-role="preview">
-                <svg appGlyph="triangle-alert"></svg>
+                <svg appIcon="triangle-alert"></svg>
                 <div class="banner__body">
                   <p class="banner__title">Cópia de {{ p.exportedAt }} pronta para importar</p>
                   <p class="banner__text">
@@ -176,10 +176,10 @@ function nextPaint(): Promise<void> {
           </p>
           <div class="cluster">
             <button type="button" class="btn btn--danger-quiet" data-role="reset" (click)="reset()">
-              <svg appGlyph="refresh-cw"></svg>Voltar aos dados de demonstração
+              <svg appIcon="refresh-cw"></svg>Voltar aos dados de demonstração
             </button>
             <button type="button" class="btn btn--danger-quiet" data-role="erase" (click)="erase()">
-              <svg appGlyph="trash-2"></svg>Apagar todos os dados
+              <svg appIcon="trash-2"></svg>Apagar todos os dados
             </button>
           </div>
         </section>

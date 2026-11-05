@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FIRST_VISIT_NOTICE, UiNoticeService } from '../../../core/privacy/browser-data.service';
-import { GlyphComponent } from './glyph.component';
+import { IconComponent } from '../display/icon.component';
 
 /**
  * Banner da primeira visita (LP-01, UX 6.7): três frases e dois botões, no canto inferior esquerdo
@@ -9,12 +9,12 @@ import { GlyphComponent } from './glyph.component';
  */
 @Component({
   selector: 'app-consent-banner',
-  imports: [GlyphComponent],
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (notice.bannerVisible()) {
       <section class="banner banner--consent" role="region" aria-labelledby="nx-consent-title">
-        <svg appGlyph="shield-check" glyphSize="lg"></svg>
+        <svg appIcon="shield-check" size="lg"></svg>
         <div class="banner__body">
           <h2 class="banner__title" id="nx-consent-title">{{ text.title }}</h2>
           <p class="banner__text">{{ text.body }}</p>

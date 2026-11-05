@@ -3,7 +3,6 @@ export * from './pages/browser-data.page';
 export * from './pages/privacy-channel.page';
 export * from './search/command-palette.component';
 export * from './search/palette.service';
-export * from './shell/portal-shell.component';
 export * from './shell/team-shell.component';
 export * from './shortcuts/shortcut.service';
 export * from './state/layout-dialogs.service';

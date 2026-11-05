@@ -82,12 +82,7 @@
   pointer-events: none;
 
   @include up(md) { inset: auto var(--space-6) var(--space-6) auto; justify-items: end; width: 26rem; }
-
-  .portal-shell ~ & { bottom: calc(var(--bottom-nav-h) + var(--space-4)); }
 }
-
-// No portal (barra inferior fixa abaixo de lg) o toast sobe acima da barra e da área segura do aparelho.
-.toast-region--above-nav { @include down(lg) { bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom) + var(--space-4)); } }
 
 .toast {
   --toast-bg: var(--nx-slate-900);

@@ -64,10 +64,6 @@ export function shortcutsFor(role: Role): ShortcutHelp[] {
       group: 'Em toda tela',
     },
   ];
-  if (role === 'provider') {
-    list.push({ keys: ['G', 'P'], text: 'Ir ao Início', group: 'Ir para' });
-    return list;
-  }
   Object.values(GO_TO).forEach((target) => {
     if (canAccessModule(role, moduleByKey(target.key))) {
       list.push({ keys: ['G', target.letter], text: target.label, group: 'Ir para' });
@@ -223,13 +219,6 @@ export class ShortcutService implements OnDestroy {
   }
 
   private goTo(role: Role, letter: string, event: KeyboardEvent): void {
-    if (role === 'provider') {
-      if (letter === 'p') {
-        event.preventDefault();
-        void this.router.navigateByUrl('/portal');
-      }
-      return;
-    }
     const target = GO_TO[letter];
     if (target && canAccessModule(role, moduleByKey(target.key))) {
       event.preventDefault();

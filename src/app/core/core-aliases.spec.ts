@@ -23,7 +23,7 @@ describe('aliases e barris do núcleo (@core/*)', () => {
     expect(maskCpf('123.456.789-00')).toBe('***.***.***-**');
     expect(addDays('2026-11-04', 1)).toBe('2026-11-05');
     expect(can('partner', 'finance', 'view')).toBe(true);
-    expect(menuFor('provider')).toEqual([]);
+    expect(menuFor('support').map((m) => m.key)).toContain('dashboard');
     expect(zaritTotal(new Array<number>(22).fill(1))).toBe(22);
     expect(generateSeed('2026-11-04').collections.caregivers).toHaveLength(340);
     const draft: NewEntity<Caregiver> | null = null;

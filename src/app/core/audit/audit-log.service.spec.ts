@@ -51,8 +51,8 @@ describe('AuditLogService: gravação (AC-GL-10, RN-LGPD-12)', () => {
     expect(audit.logout({ userId: 'u1', role: 'partner' }, 'saída pelo usuário')?.detail).toBe(
       'saída pelo usuário',
     );
-    expect(audit.denied('route', 'sem permissão', { userId: 'u9', role: 'provider' })?.role).toBe(
-      'provider',
+    expect(audit.denied('route', 'sem permissão', { userId: 'u8', role: 'support' })?.role).toBe(
+      'support',
     );
   });
 
@@ -130,7 +130,7 @@ describe('AuditLogService: consulta com filtros (AC-M12-06)', () => {
   it('filtra por usuário, perfil, ação, entidade, titular, período e texto', () => {
     const { audit } = setup();
     expect(audit.query({ userId: 'u2', action: 'supervise' })).toHaveLength(12);
-    expect(audit.query({ role: 'provider', action: 'denied' })).toHaveLength(2);
+    expect(audit.query({ role: 'support', action: 'denied' })).toHaveLength(2);
     expect(audit.query({ action: 'denied' })).toHaveLength(6);
     expect(audit.query({ entity: 'occurrence' })).toHaveLength(4);
     expect(audit.query({ subjectCaregiverId: 'cg_0001' }).length).toBeGreaterThan(2);

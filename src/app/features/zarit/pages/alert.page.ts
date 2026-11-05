@@ -74,7 +74,6 @@ const RISK_OPTIONS: RadioOption<RiskLevel>[] = (['low', 'moderate', 'high'] as R
           entity="zarit_alert"
           [entityId]="alert()?.id ?? ''"
           [caregiverId]="alert()?.caregiverId ?? ''"
-          [ownerName]="ownerName()"
           (granted)="unlocked.set(true)"
         />
       } @else {
@@ -317,7 +316,6 @@ export class ZaritAlertPageComponent {
     const a = this.alert();
     return !!a && this.access.mustJustify(a.caregiverId) && !this.unlocked();
   });
-  protected readonly ownerName = computed(() => this.access.ownerName(this.caregiver()));
   protected readonly subtitle = computed(() => {
     const c = this.caregiver();
     return c ? `${c.fullName} (${c.code})` : '';

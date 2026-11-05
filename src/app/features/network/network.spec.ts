@@ -87,6 +87,29 @@ describe('M08 Rede credenciada', () => {
       expect(text(q('main'))).toContain('Nenhum resultado com esses filtros');
     });
 
+    it('os filtros do painel da gestão levam à lista certa: excelência, alerta, credenciamento em andamento e solicitações sem retorno (AC-M02-08)', async () => {
+      const visible = (band: string): number =>
+        all('tbody tr').filter((r) => text(r).includes(band)).length;
+      app = await bootApp({ userId: 'u1', url: '/app/rede/prestadores?filtro=excelencia' });
+      const excellence = all('tbody tr');
+      expect(excellence.length).toBeGreaterThan(0);
+      excellence.forEach((r) => expect(text(r)).toContain('Excelência'));
+      expect(text(q('app-active-filters'))).toContain('Em excelência');
+      await go('/app/rede/prestadores?filtro=alerta');
+      expect(all('tbody tr').length).toBeGreaterThan(0);
+      expect(visible('Alerta')).toBe(all('tbody tr').length);
+      await go('/app/rede/credenciamento?filtro=em-andamento');
+      const inProgress = app.db.accreditations.count(
+        (a) => a.status === 'requested' || a.status === 'in_review' || a.status === 'pending_documents',
+      );
+      expect(inProgress).toBeGreaterThan(0);
+      expect(text(q('main'))).toContain(`${inProgress} ${inProgress === 1 ? 'processo' : 'processos'}`);
+      await go('/app/rede/solicitacoes?filtro=sem-retorno');
+      const waiting = app.db.serviceRequests.count((r) => r.status === 'requested');
+      expect(waiting).toBeGreaterThan(0);
+      expect(all('tbody tr')).toHaveLength(waiting);
+    });
+
     it('ficha: ARP, sinais, abas e aviso do papel da Nexus, e prestador inexistente vira estado de erro', async () => {
       app = await bootApp({ userId: 'u1', url: '/app/rede/prestadores/prv_04' });
       expect(text(q('[data-role="arp-card"]'))).toContain('4,14');
@@ -337,14 +360,13 @@ describe('M08 Rede credenciada', () => {
       await go(`/app/rede/busca?categoria=${pair}`);
       const options = (): string[] =>
         all('[data-role="search-option"]').map((li) => li.getAttribute('data-provider') ?? '');
-      expect(options()).toEqual(['prv_11', 'prv_12']);
+      expect(options()).toEqual(['prv_01', 'prv_11', 'prv_02', 'prv_12', 'prv_03']);
       expect(text(all('[data-role="search-option"]')[0] ?? null)).toContain('Em destaque');
-      // O destaque do primeiro não esconde o segundo; suspender o primeiro deixa o outro como única opção.
+      // O destaque dos primeiros não esconde os demais; suspender um tira só ele da lista.
       admin().suspend('prv_11', 'Documentos incompletos');
       await settle(app.fixture);
-      expect(options()).toEqual(['prv_12']);
-      expect(q('[data-role="search-result"]')?.getAttribute('data-availability')).toBe('single_option');
-      expect(text(q('[data-role="search-result"]'))).toContain('Única opção disponível no momento');
+      expect(options()).toEqual(['prv_01', 'prv_02', 'prv_12', 'prv_03']);
+      expect(q('[data-role="search-result"]')?.getAttribute('data-availability')).toBe('multiple');
       expect(text(q('[data-role="hidden-from-search"]'))).toContain('suspenso');
       const nutrition = app.db.providers.get('prv_14')?.category as ProviderCategory;
       await go(`/app/rede/busca?categoria=${nutrition}`);

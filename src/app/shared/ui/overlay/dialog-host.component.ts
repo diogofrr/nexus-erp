@@ -12,10 +12,10 @@ import {
   viewChild,
 } from '@angular/core';
 import { ActiveDialog, ConfirmResult, DialogService, DialogTone } from './dialog.service';
-import { GlyphComponent } from './glyph.component';
+import { IconComponent, IconName } from '../display/icon.component';
 import { closeModalDialog, showModalDialog } from './modal';
 
-const TONE_ICON: Record<DialogTone, string> = {
+const TONE_ICON: Record<DialogTone, IconName> = {
   danger: 'octagon-alert',
   attention: 'triangle-alert',
   info: 'info',
@@ -31,7 +31,7 @@ export const DIALOG_RUN_ERROR =
  */
 @Component({
   selector: 'app-dialog-host',
-  imports: [GlyphComponent],
+  imports: [IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <dialog
@@ -49,7 +49,7 @@ export const DIALOG_RUN_ERROR =
             [class.dialog__icon--danger]="d.tone === 'danger'"
             [class.dialog__icon--attention]="d.tone === 'attention'"
           >
-            <svg [appGlyph]="icon()" glyphSize="lg"></svg>
+            <svg [appIcon]="icon()" size="lg"></svg>
           </span>
           <h2 class="dialog__title" [id]="titleId()">{{ d.config.title }}</h2>
         </div>
@@ -61,7 +61,7 @@ export const DIALOG_RUN_ERROR =
             <ul class="effects">
               @if (d.config.effects?.erase?.length) {
                 <li class="is-erase">
-                  <svg appGlyph="trash-2"></svg>
+                  <svg appIcon="trash-2"></svg>
                   <span
                     ><strong>Será eliminado:</strong> {{ joinItems(d.config.effects.erase) }}.</span
                   >
@@ -69,7 +69,7 @@ export const DIALOG_RUN_ERROR =
               }
               @if (d.config.effects?.block?.length) {
                 <li class="is-block">
-                  <svg appGlyph="lock"></svg>
+                  <svg appIcon="lock"></svg>
                   <span
                     ><strong>Ficará bloqueado:</strong>
                     {{ joinItems(d.config.effects.block) }}.</span
@@ -78,7 +78,7 @@ export const DIALOG_RUN_ERROR =
               }
               @if (d.config.effects?.keep?.length) {
                 <li class="is-keep">
-                  <svg appGlyph="shield-check"></svg>
+                  <svg appIcon="shield-check"></svg>
                   <span
                     ><strong>Continua registrado:</strong>
                     {{ joinItems(d.config.effects.keep) }}.</span
@@ -122,7 +122,7 @@ export const DIALOG_RUN_ERROR =
           }
           @if (error()) {
             <p class="field__error" role="alert">
-              <svg appGlyph="circle-alert"></svg>
+              <svg appIcon="circle-alert"></svg>
               <span><span class="sr-only">Erro: </span>{{ error() }}</span>
             </p>
           }

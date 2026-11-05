@@ -64,7 +64,7 @@ export async function bootApp(options: BootOptions = {}): Promise<BootedApp> {
   }
   const fixture = TestBed.createComponent(App);
   const router = TestBed.inject(Router);
-  await router.navigateByUrl(options.url ?? (options.userId === 'u9' ? '/portal' : '/app/painel'));
+  await router.navigateByUrl(options.url ?? '/app/painel');
   await settle(fixture);
   return {
     fixture,

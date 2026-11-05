@@ -320,7 +320,7 @@ export class KitDisplaySection {
     { title: 'Consentimento concedido', at: '2026-03-12T14:05:00-03:00', text: 'Termo v1.0, aplicativo.' },
   ];
   protected readonly criteria: ChecklistItem[] = [
-    { id: 'c1', title: 'Registro ativo no conselho', text: 'CRO fictício, válido até 30/06/2027', state: 'ok' },
+    { id: 'c1', title: 'Registro ativo no conselho', text: 'CREFITO fictício, válido até 30/06/2027', state: 'ok' },
     { id: 'c2', title: 'Comprovação de formação', text: 'Diploma enviado', state: 'ok' },
     { id: 'c3', title: 'Documento na validade', text: 'Vencido em 04/10/2026', state: 'fail', badge: 'Vencido' },
     { id: 'c4', title: 'Integração concluída', state: 'pending' },
@@ -333,7 +333,7 @@ export class KitDisplaySection {
   // ---- Quadro ----
   protected readonly board = signal('');
   protected readonly columns: KanbanColumn<Process>[] = [
-    { id: 'requested', label: 'Solicitado', items: [{ name: 'Dra. Sônia Peixoto', specialty: 'Odontologia, CRO fictício', missing: 'há 2 dias' }] },
+    { id: 'requested', label: 'Solicitado', items: [{ name: 'Dra. Sônia Peixoto', specialty: 'Fisioterapia, CREFITO fictício', missing: 'há 2 dias' }] },
     { id: 'review', label: 'Em análise', items: [{ name: 'Fisio em Casa Uberlândia', specialty: 'Fisioterapia, domiciliar', missing: 'faltam 2 critérios' }] },
     { id: 'pending', label: 'Documentos pendentes', items: [{ name: 'Candidata a fisioterapeuta', specialty: 'Fisioterapia', missing: 'documento vencido' }] },
     { id: 'approved', label: 'Aprovado', items: [] },

@@ -5,9 +5,8 @@ Guia curto para quem constrói um módulo. O shell envolve a sua tela; você só
 ## Onde a sua tela aparece
 
 - `/app/**` abre dentro do **shell da equipe** (`TeamShellComponent`): menu lateral por perfil, barra superior, `main`, rodapé com o aviso de protótipo. Responsivo: gaveta abaixo de 1024 px, trilho de 1024 a 1279 px, menu completo de 1280 px.
-- `/portal/**` abre dentro do **shell do portal** (`PortalShellComponent`): mobile first, barra inferior com 5 destinos (Início, Solicitações, Disponibilidade, Mensagens, Mais).
 - `/login`, `/403` e `**` não têm shell.
-- Sua página renderiza só o conteúdo, dentro de `<div class="page">` (equipe) ou direto no `portal-main` (portal). **Não** desenhe menu, topo, rodapé nem migalhas.
+- Sua página renderiza só o conteúdo, dentro de `<div class="page">`. **Não** desenhe menu, topo, rodapé nem migalhas.
 - Registre rotas só em `features/<slug>/<slug>.routes.ts`. O roteador central (`app.routes.ts`) já monta o shell e os guards.
 
 ## Título da aba, migalhas e foco
@@ -45,7 +44,7 @@ notifications.unreadCount();          // número do sino
 notifications.counterFor('messages'); // contador do item de menu (ou null)
 ```
 
-O título descreve a TAREFA ("Contato do mesmo dia pendente"); nunca escore, faixa ou condição. Ao clicar, a tela abre com `?filtro=<chave>`: **leia o parâmetro `filtro`** na sua lista. Chaves usadas: `contato-hoje`, `contato-vencido`, `em-andamento`, `tarefas`, `aplicacao-vencendo`, `alertas-a-confirmar`, `pedidos-de-revisao`, `sem-anotacao`, `minha-ocupacao`, `atrasadas`, `sinalizadas`, `vencendo`, `vencidas`, `cancelamento-agendado`, `documento-vencendo`. O portal usa `?aba=novas`.
+O título descreve a TAREFA ("Contato do mesmo dia pendente"); nunca escore, faixa ou condição. Ao clicar, a tela abre com `?filtro=<chave>`: **leia o parâmetro `filtro`** na sua lista. Chaves usadas: `contato-hoje`, `contato-vencido`, `em-andamento`, `tarefas`, `aplicacao-vencendo`, `alertas-a-confirmar`, `pedidos-de-revisao`, `sem-anotacao`, `minha-ocupacao`, `atrasadas`, `sinalizadas`, `vencendo`, `vencidas`, `cancelamento-agendado`, `documento-vencendo`. Também aceitam chave os links dos painéis (M02, AC-M02-08): cuidadores `novos`; rede `excelencia`, `alerta`, `risco-de-saida`, `em-andamento` (credenciamento) e `sem-retorno` (solicitações); reclamações `abertas`; LGPD `?visao=abertas`. Não há mais portal do prestador (removido por decisão do dono).
 
 ## Atalhos de teclado
 
@@ -69,7 +68,7 @@ Modo discreto: marque nomes e contatos com `class="discreet"`. O CSS borra e um 
 
 ## Páginas do rodapé
 
-`/app/canal-do-titular` e `/app/meus-dados` (e as versões `/portal/...`) são do layout e abrem para todos os perfis. Não crie outras.
+`/app/canal-do-titular` e `/app/meus-dados` são do layout e abrem para todos os perfis. Não crie outras.
 
 ## Testar
 
