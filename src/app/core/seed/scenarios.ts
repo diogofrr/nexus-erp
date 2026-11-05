@@ -102,6 +102,8 @@ export const SCENARIOS: readonly ScenarioDef[] = [
     literacy: 'low',
     dependency: 'total',
     pilot: true,
+    // Não autorizou compartilhar com a família (o aplicativo do cuidador mostra os dois lados: Ana autorizou, João não).
+    consents: { family_sharing: 'pending' },
     scenario:
       'Persona João: baixa familiaridade digital, canal preferido telefone; Zarit 66 na adesão (D-100, vermelho, contato no mesmo dia, risco moderado, encaminhado ao CAPS) e 52 em D-10: evolução -21,2%; piloto',
     zarit: (c) => [

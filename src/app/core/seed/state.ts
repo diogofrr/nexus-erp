@@ -35,6 +35,7 @@ export function emptyCollections(): CollectionData {
     caregivers: [],
     elders: [],
     medications: [],
+    doseChecks: [],
     careAppointments: [],
     wellbeingChecks: [],
     appUsage: [],

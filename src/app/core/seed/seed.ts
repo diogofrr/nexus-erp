@@ -13,6 +13,7 @@ import { defaultAppSettings, defaultPilotConfig } from '../data/defaults';
 import { DemoState, ISODate } from '../models';
 import { restoreFinancialParams } from '../rules/finance';
 import { SCHEMA_VERSION } from '../storage/migrations';
+import { buildCaregiverApp } from './build-caregiver-app';
 import { buildCaregivers } from './build-caregivers';
 import { buildClinical } from './build-clinical';
 import { buildCommercial } from './build-commercial';
@@ -63,6 +64,8 @@ export function generateSeed(today: ISODate): SeedDataset {
   buildGroups(state);
   buildGovernance(state);
   buildPilot(state);
+  // Por último e sem sorteio: acrescenta só os dados do aplicativo do cuidador (compromissos e remédios dados).
+  buildCaregiverApp(state);
 
   return {
     today,

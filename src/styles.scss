@@ -1,6 +1,6 @@
 /*
   Nexus ERP: estilos globais.
-  Ordem: tokens (variáveis CSS) > reset > tipografia > layout > componentes > utilitários.
+  Ordem: tokens (variáveis CSS) > reset > tipografia > layout > componentes > aplicativo do cuidador > utilitários.
   Fontes: DM Serif Display (títulos) e Figtree Variable (interface), arquivos locais
   declarados em src/styles/_typography.scss (só o subconjunto latino, cobre o português).
   Guia: docs/03-design-system.md. Exemplos vivos: docs/styleguide.html.
@@ -10,4 +10,5 @@
 @use 'styles/typography';
 @use 'styles/layout';
 @use 'styles/components';
+@use 'styles/caregiver';
 @use 'styles/utilities';

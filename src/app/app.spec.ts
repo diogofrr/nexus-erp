@@ -44,14 +44,15 @@ describe('App', () => {
     const segments = children.map((r) => r.path);
     MODULES.forEach((m) => expect(segments, m.key).toContain(m.segment));
     expect(routes.map((r) => r.path)).toEqual(
-      expect.arrayContaining(['login', '403', 'app', '**']),
+      expect.arrayContaining(['login', '403', 'app', 'cuidador', '**']),
     );
     // O portal do prestador credenciado (M14) foi removido por decisão do dono.
     expect(routes.map((r) => r.path)).not.toContain('portal');
     expect(AUTH_ROUTES.length).toBeGreaterThan(0);
     // Carrega cada feature (os imports dinâmicos precisam resolver).
     const loaders = [...children, ...routes].filter((r) => typeof r.loadChildren === 'function');
-    expect(loaders.length).toBe(21);
+    // 20 do back-office e da entrada mais `cuidador` (o aplicativo do cuidador, carregado sob demanda).
+    expect(loaders.length).toBe(22);
     for (const route of loaders) {
       const loaded = await (route.loadChildren as () => Promise<unknown>)();
       expect(Array.isArray(loaded)).toBe(true);

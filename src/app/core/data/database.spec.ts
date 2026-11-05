@@ -15,7 +15,8 @@ describe('Database: seed, reset e primeira visita', () => {
       expect(ID_PREFIXES[name].length).toBeGreaterThan(0);
     });
     expect(new Set(Object.values(ID_PREFIXES)).size).toBe(COLLECTION_NAMES.length);
-    expect(COLLECTION_NAMES).toHaveLength(57);
+    // 57 + `doseChecks` (tomada de remédio, aplicativo do cuidador: docs/11-cuidador-arquitetura.md).
+    expect(COLLECTION_NAMES).toHaveLength(58);
   });
 
   it('ensureSeeded gera o seed só na primeira visita', () => {

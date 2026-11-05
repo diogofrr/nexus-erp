@@ -7,12 +7,21 @@ import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { AuditLogService } from '../audit/audit-log.service';
 import { PermissionAction, Resource, Role } from '../models';
 import { AuthService } from './auth.service';
+import { CAREGIVER_HOME_PATH } from './caregiver-access';
+import { CaregiverSessionService } from './caregiver-session.service';
 import { ModuleKey, canAccessModule, homePathFor, moduleByKey } from './module-map';
 import { can, canOpenRoute } from './permissions';
 
 const FORBIDDEN_PATH = '/403';
 
+/**
+ * Sem sessão da equipe: leva à entrada. Quem tem sessão de CUIDADOR nunca abre `/app/**`: volta ao aplicativo
+ * dele (`/cuidador/hoje`), sem passar pela entrada nem guardar a rota pedida.
+ */
 function toLogin(router: Router, auth: AuthService, targetUrl: string): UrlTree {
+  if (inject(CaregiverSessionService).isSignedIn()) {
+    return router.createUrlTree([CAREGIVER_HOME_PATH]);
+  }
   if (auth.isPendingTwoFactor()) {
     return router.createUrlTree(['/login', '2fa']);
   }
@@ -32,12 +41,69 @@ export const authGuard: CanActivateFn = (_route, state) => {
   return auth.isAuthenticated() ? true : toLogin(router, auth, state.url);
 };
 
-/** Só para quem NÃO está logado (a entrada): quem já entrou vai à sua tela inicial. */
+/**
+ * Só para quem NÃO está logado (a entrada): quem já entrou vai à sua tela inicial (a equipe ao painel, o
+ * cuidador a `/cuidador/hoje`).
+ */
 export const guestGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   const role = auth.role();
+  if (auth.isAuthenticated() && role) {
+    return router.createUrlTree([homePathFor(role)]);
+  }
+  return inject(CaregiverSessionService).isSignedIn()
+    ? router.createUrlTree([CAREGIVER_HOME_PATH])
+    : true;
+};
+
+/**
+ * Raiz `/`: leva cada um ao seu lugar. Cuidador com sessão a `/cuidador/hoje`, equipe ao painel e quem ainda não
+ * entrou à entrada (segundo fator pendente volta à tela do código).
+ */
+export const homeRedirectGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  const role = auth.role();
+  if (auth.isAuthenticated() && role) {
+    return router.createUrlTree([homePathFor(role)]);
+  }
+  if (inject(CaregiverSessionService).isSignedIn()) {
+    return router.createUrlTree([CAREGIVER_HOME_PATH]);
+  }
+  return router.createUrlTree(auth.isPendingTwoFactor() ? ['/login', '2fa'] : ['/login']);
+};
+
+/**
+ * Raiz do aplicativo do cuidador (`/cuidador`): a sessão da EQUIPE nunca abre `/cuidador/**` (volta ao painel).
+ * Não exige sessão de cuidador: o cadastro de quem é novo (`/cuidador/comecar`) e "Ajuda agora" são abertos.
+ */
+export const caregiverAreaGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  const role = auth.role();
   return auth.isAuthenticated() && role ? router.createUrlTree([homePathFor(role)]) : true;
+};
+
+/**
+ * Exige sessão de cuidador. A equipe com sessão vai ao painel; quem não entrou vai a `/login` (a rota pedida
+ * fica em memória e o cuidador volta a ela depois de entrar). Segundo fator pendente da equipe volta ao código.
+ */
+export const caregiverGuard: CanActivateFn = (_route, state) => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (inject(CaregiverSessionService).isSignedIn()) {
+    return true;
+  }
+  const role = auth.role();
+  if (auth.isAuthenticated() && role) {
+    return router.createUrlTree([homePathFor(role)]);
+  }
+  if (auth.isPendingTwoFactor()) {
+    return router.createUrlTree(['/login', '2fa']);
+  }
+  auth.setReturnUrl(state.url);
+  return router.createUrlTree(['/login']);
 };
 
 /**

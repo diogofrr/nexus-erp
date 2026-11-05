@@ -16,6 +16,10 @@ export const STORAGE_PREFIX = 'nexus-erp:';
 export const STORAGE_KEYS = {
   schemaVersion: 'schema-version',
   session: 'session',
+  /** Sessão do cuidador (`sessionStorage`), separada da sessão da equipe. */
+  caregiverSession: 'caregiver-session',
+  /** Tamanho da letra do aplicativo do cuidador (Normal, Grande, Bem grande), guardado no navegador. */
+  caregiverFontScale: 'caregiver-font-scale',
   clock: 'clock',
   uiNotice: 'ui-notice',
   settings: 'settings',

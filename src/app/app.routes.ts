@@ -1,16 +1,26 @@
 import { inject, isDevMode } from '@angular/core';
 import { CanMatchFn, Route, Routes } from '@angular/router';
 import { AuthService } from './core/auth/auth.service';
-import { authGuard, guestGuard, moduleGuard, roleGuard } from './core/auth/guards';
+import {
+  authGuard,
+  caregiverAreaGuard,
+  guestGuard,
+  homeRedirectGuard,
+  moduleGuard,
+  roleGuard,
+} from './core/auth/guards';
 
 /**
  * Roteador central. Cada módulo é carregado sob demanda de `features/<slug>/<slug>.routes.ts`, que
  * exporta `ROUTES` (e, quando o módulo tem mais de uma rota base, `COMPANY_ROUTES`, `INDICATORS_ROUTES`...).
  * Os devs de módulo só preenchem a própria pasta e NÃO mexem neste arquivo.
  *
- * Shells (layout): `/app/**` abre dentro do shell da equipe (menu lateral, barra superior, rodapé) e `/login`,
- * `/403` e `**` não têm shell. O conteúdo de cada tela entra no `<router-outlet>` do shell. Não há portal
- * do prestador credenciado (M14 removido por decisão do dono): os prestadores são cadastros da equipe.
+ * Shells (layout): `/app/**` abre dentro do shell da equipe (menu lateral, barra superior, rodapé), `/cuidador/**`
+ * abre dentro do shell do cuidador (cabeçalho com Ajuda agora, barra inferior) e `/login`, `/403` e `**` não têm shell.
+ * São duas portas separadas: a sessão do cuidador nunca abre `/app/**` (vai a `/cuidador/hoje`) e a sessão da equipe
+ * nunca abre `/cuidador/**` (vai a `/app/painel`). A raiz `/` leva cada um ao seu lugar (`homeRedirectGuard`).
+ * O conteúdo de cada tela entra no `<router-outlet>` do shell. Não há portal do prestador credenciado (M14
+ * removido por decisão do dono): os prestadores são cadastros da equipe.
  *
  * Guards (core/auth/guards.ts): `authGuard` exige sessão; `moduleGuard(chave)` aplica a matriz de
  * permissões do módulo (mapa de módulos, escopo seção 2). Rota sem permissão leva a `/403` e grava `denied`.
@@ -19,7 +29,8 @@ import { authGuard, guestGuard, moduleGuard, roleGuard } from './core/auth/guard
 const signedIn: CanMatchFn = () => inject(AuthService).isAuthenticated();
 
 const baseRoutes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'app/painel' },
+  // Raiz: cuidador com sessão a /cuidador/hoje, equipe ao painel, quem não entrou à entrada.
+  { path: '', pathMatch: 'full', canActivate: [homeRedirectGuard], children: [] },
 
   // M01 Acesso
   {
@@ -31,6 +42,15 @@ const baseRoutes: Routes = [
     path: '403',
     canActivate: [authGuard],
     loadChildren: () => import('./features/auth/auth.routes').then((m) => m.FORBIDDEN_ROUTES),
+  },
+
+  // Aplicativo do cuidador (a equipe nunca entra aqui). As rotas, o shell e o mapa de áreas ficam em
+  // features/caregiver-app/routing; cada área é carregada sob demanda.
+  {
+    path: 'cuidador',
+    canActivate: [caregiverAreaGuard],
+    loadChildren: () =>
+      import('./features/caregiver-app/routing/caregiver.routes').then((m) => m.ROUTES),
   },
 
   // Back-office (equipe Nexus), dentro do shell da equipe (menu lateral e barra superior)

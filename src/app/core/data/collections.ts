@@ -21,6 +21,7 @@ import type {
   CorporateAccount,
   CorporateSeat,
   DataSubjectRequest,
+  DoseCheck,
   Elder,
   FinancialParams,
   GuidanceContent,
@@ -73,6 +74,7 @@ export interface CollectionTypes {
   caregivers: Caregiver;
   elders: Elder;
   medications: Medication;
+  doseChecks: DoseCheck;
   careAppointments: CareAppointment;
   wellbeingChecks: WellbeingCheck;
   appUsage: AppUsageSummary;
@@ -145,6 +147,7 @@ export const ID_PREFIXES: Record<CollectionName, string> = {
   caregivers: 'cg',
   elders: 'el',
   medications: 'med',
+  doseChecks: 'dose',
   careAppointments: 'apt',
   wellbeingChecks: 'wbc',
   appUsage: 'use',
@@ -195,6 +198,12 @@ export const ID_PREFIXES: Record<CollectionName, string> = {
 };
 
 export const COLLECTION_NAMES = Object.keys(ID_PREFIXES) as CollectionName[];
+
+/**
+ * Coleções criadas depois da primeira versão do arquivo de exportação. Um arquivo antigo, sem elas, continua
+ * valendo na importação e as deixa vazias (não foi preciso subir `SCHEMA_VERSION`: nenhum formato mudou).
+ */
+export const OPTIONAL_ON_IMPORT: readonly CollectionName[] = ['doseChecks'];
 
 /** Documentos únicos (não são listas). */
 export interface SingletonTypes {

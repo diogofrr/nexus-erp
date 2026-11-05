@@ -101,6 +101,17 @@ export class RetentionService {
   private readonly clock = inject(Clock);
   private readonly audit = inject(AuditLogService);
 
+  /** Marcações de "dei o remédio" dos medicamentos da pessoa idosa (apagadas junto com eles). */
+  private doseCount(elderId: ID | undefined): number {
+    if (!elderId) {
+      return 0;
+    }
+    const medicationIds = new Set(
+      this.db.medications.query((m) => m.elderId === elderId).map((m) => m.id),
+    );
+    return this.db.doseChecks.count((d) => medicationIds.has(d.medicationId));
+  }
+
   /** O que a eliminação apagaria e o que ficaria bloqueado (mostrar ANTES de confirmar, AC-M12-04). */
   plan(caregiverId: ID): ErasurePlan {
     this.db.caregivers.require(caregiverId);
@@ -113,6 +124,7 @@ export class RetentionService {
       messages: this.db.messages.count((m) => m.caregiverId === caregiverId),
       medications: elderId ? this.db.medications.count((m) => m.elderId === elderId) : 0,
       appointments: elderId ? this.db.careAppointments.count((a) => a.elderId === elderId) : 0,
+      doses: this.doseCount(elderId),
       wellbeing: this.db.wellbeingChecks.count((w) => w.caregiverId === caregiverId),
       usage: this.db.appUsage.count((u) => u.caregiverId === caregiverId),
       zarit: this.db.zaritAssessments.count(
@@ -139,6 +151,7 @@ export class RetentionService {
       { key: 'messages', label: 'Mensagens', count: count.messages },
       { key: 'medications', label: 'Medicamentos', count: count.medications },
       { key: 'appointments', label: 'Compromissos de cuidado', count: count.appointments },
+      { key: 'doses', label: 'Marcações de remédios dados', count: count.doses },
       {
         key: 'pendingScale',
         label: 'Aplicações da escala ainda não feitas (agendadas)',
@@ -185,6 +198,10 @@ export class RetentionService {
     );
     erased += this.db.appUsage.removeWhere((u) => u.caregiverId === caregiverId);
     if (elder) {
+      const medicationIds = new Set(
+        this.db.medications.query((m) => m.elderId === elder.id).map((m) => m.id),
+      );
+      erased += this.db.doseChecks.removeWhere((d) => medicationIds.has(d.medicationId));
       erased += this.db.medications.removeWhere((m) => m.elderId === elder.id);
       erased += this.db.careAppointments.removeWhere((a) => a.elderId === elder.id);
       this.db.elders.update(elder.id, {

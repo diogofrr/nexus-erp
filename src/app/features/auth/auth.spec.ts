@@ -7,6 +7,8 @@ import { destinationAfterLogin } from './return-url';
 import { CODE_FORMAT_TEXT, wrongCodeText } from './pages/two-factor.page';
 import { SESSION_EXPIRED_TEXT, TWO_FACTOR_FAILED_TEXT } from './pages/login.page';
 
+const staffToggle = '[data-role="staff-toggle"]';
+
 const click = (el: Element | null | undefined): void => {
   if (!el) {
     throw new Error('elemento não encontrado');
@@ -50,9 +52,15 @@ describe('entrada: seleção de perfil (SCR-M01-01, AC-M01-01 e 02)', () => {
 
   it('lista os 8 usuários da equipe em três grupos por função, com perfil por extenso, frase de cenário e aviso de protótipo', async () => {
     app = await bootApp({ url: '/login' });
-    expect(q('h1')?.textContent).toBe('Entrar como');
+    // A porta da equipe começa recolhida (a do cuidador vem primeiro) e abre com um toque.
+    expect(all('.profile-group')).toHaveLength(0);
+    expect(q(staffToggle)?.getAttribute('aria-expanded')).toBe('false');
+    click(q(staffToggle));
+    await settle(app.fixture);
+    expect(q(staffToggle)?.getAttribute('aria-expanded')).toBe('true');
+    expect(q('h1')?.textContent).toBe('Entrar');
     expect(q('.banner--prototype')?.textContent).toContain(PROTOTYPE_NOTICE);
-    const headings = all('.profile-group h2').map((h) => h.textContent?.trim());
+    const headings = all('.profile-group h3').map((h) => h.textContent?.trim());
     expect(headings).toEqual(['Gestão (2)', 'Psicologia (4)', 'Atendimento (2)']);
     const cards = all('.profile-group .list-row');
     expect(cards).toHaveLength(8);
@@ -68,12 +76,14 @@ describe('entrada: seleção de perfil (SCR-M01-01, AC-M01-01 e 02)', () => {
     expect(badges).toHaveLength(8);
     expect(badges.every((b) => b.textContent?.includes('Código'))).toBe(true);
     // Não há grupo da rede credenciada nem avatar dourado de prestador.
-    expect(all('.profile-group h2').some((h) => h.textContent?.includes('Rede'))).toBe(false);
+    expect(all('.profile-group h3').some((h) => h.textContent?.includes('Rede'))).toBe(false);
     expect(all('.avatar--gold')).toHaveLength(0);
   });
 
   it('a equipe vai ao segundo fator: código exibido, "Usar o código mostrado", confirmar e entrar no painel', async () => {
     app = await bootApp({ url: '/login' });
+    click(q(staffToggle));
+    await settle(app.fixture);
     click(all('.list-row').find((c) => c.textContent?.includes('Dra. Cecília Montenegro')));
     await settle(app.fixture);
     expect(app.router.url).toBe('/login/2fa');
@@ -99,6 +109,8 @@ describe('entrada: seleção de perfil (SCR-M01-01, AC-M01-01 e 02)', () => {
 
   it('código errado: erro no campo e no resumo, texto mantido, tentativas contadas; o 3º erro volta à entrada e grava denied (U-06)', async () => {
     app = await bootApp({ url: '/login' });
+    click(q(staffToggle));
+    await settle(app.fixture);
     click(all('.list-row').find((c) => c.textContent?.includes('Camila Duarte')));
     await settle(app.fixture);
     const submit = async (code: string): Promise<void> => {
@@ -136,6 +148,8 @@ describe('entrada: seleção de perfil (SCR-M01-01, AC-M01-01 e 02)', () => {
 
   it('código com menos de 6 números pede os 6 dígitos; o campo só aceita números', async () => {
     app = await bootApp({ url: '/login' });
+    click(q(staffToggle));
+    await settle(app.fixture);
     click(all('.list-row').find((c) => c.textContent?.includes('Wesley Lacerda')));
     await settle(app.fixture);
     const input = q<HTMLInputElement>('#nx-code') as HTMLInputElement;

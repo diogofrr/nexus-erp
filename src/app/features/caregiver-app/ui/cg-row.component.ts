@@ -1,0 +1,72 @@
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { IconComponent, IconName } from '../../../shared/ui/display/icon.component';
+
+/**
+ * Item de lista (UX A.2.6): destinos e itens (menu Mais, Meus pedidos, horários, profissionais). Ícone num
+ * círculo, título (até 3 linhas), apoio (até 2) e, no fim, uma seta ou o que você projetar em `[cgRowEnd]`.
+ * A linha INTEIRA é o alvo: com `link` é um `<a>`, sem `link` é um `<button>` que emite `activated`. Use dentro de
+ * `<ul class="cg-list"><li>...</li></ul>`.
+ *
+ * ```html
+ * <ul class="cg-list">
+ *   <li><app-cg-row title="Meu plano" description="Cuida · R$ 119,90 por mês" icon="credit-card" link="/cuidador/mais/plano" /></li>
+ *   <li><app-cg-row title="Sair" icon="log-out" (activated)="signOut()" [chevron]="false" /></li>
+ * </ul>
+ * ```
+ */
+@Component({
+  selector: 'app-cg-row',
+  imports: [NgTemplateOutlet, RouterLink, IconComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'cg-row-host' },
+  template: `
+    @if (link(); as href) {
+      <a class="cg-row" [routerLink]="href" [attr.aria-current]="current() ? 'true' : null">
+        <ng-container [ngTemplateOutlet]="body" />
+      </a>
+    } @else {
+      <button
+        type="button"
+        class="cg-row"
+        [attr.aria-current]="current() ? 'true' : null"
+        (click)="activated.emit()"
+      >
+        <ng-container [ngTemplateOutlet]="body" />
+      </button>
+    }
+
+    <ng-template #body>
+      @if (icon(); as name) {
+        <span class="cg-row__icon"><svg [appIcon]="name" size="lg"></svg></span>
+      }
+      <span class="cg-row__text">
+        <span class="cg-row__title">{{ title() }}</span>
+        @if (description(); as text) {
+          <span class="cg-row__desc">{{ text }}</span>
+        }
+      </span>
+      <span class="cg-row__end">
+        <ng-content select="[cgRowEnd]" />
+        @if (current()) {
+          <svg appIcon="check"></svg>
+        } @else if (chevron()) {
+          <svg appIcon="chevron-right"></svg>
+        }
+      </span>
+    </ng-template>
+  `,
+})
+export class CgRowComponent {
+  readonly title = input.required<string>();
+  readonly description = input<string>();
+  readonly icon = input<IconName>();
+  /** Rota absoluta. Sem ela, a linha é um botão. */
+  readonly link = input<string | null>(null);
+  /** Linha selecionada (`aria-current="true"`, fundo suave e `check`). */
+  readonly current = input(false);
+  /** Seta à direita (padrão). Desligue em ação que não leva a outra tela. */
+  readonly chevron = input(true);
+  readonly activated = output<void>();
+}

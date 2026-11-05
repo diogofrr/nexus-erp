@@ -32,6 +32,15 @@ export interface AuthSession {
   twoFactorFailures: number;
 }
 
+/**
+ * Sessão do cuidador no aplicativo (`sessionStorage`, chave `nexus-erp:caregiver-session`). Separada da sessão da
+ * equipe: no protótipo o cuidador não tem senha nem segundo fator (RN-LGPD-15 vale só para a equipe).
+ */
+export interface CaregiverSession {
+  caregiverId: ID;
+  startedAt: ISODateTime;
+}
+
 /** Estados do ciclo de sessão (M01). */
 export type AuthState = 'anonymous' | 'pending_2fa' | 'authenticated' | 'expiring' | 'expired';
 

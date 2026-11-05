@@ -26,3 +26,20 @@ export function destinationAfterLogin(role: Role, returnUrl: string | null): str
   ).sort((a, b) => b.path.length - a.path.length)[0];
   return module && canAccessModule(role, module) ? returnUrl : home;
 }
+
+/** Tela inicial do cuidador depois de entrar. */
+const CAREGIVER_HOME = '/cuidador/hoje';
+
+/**
+ * Para onde o CUIDADOR vai depois de entrar: ao link de origem, se era um endereço do aplicativo dele
+ * (`/cuidador/**`, fora o cadastro de quem é novo); senão, a Hoje. Nunca volta à entrada, a `/app/**` nem a um
+ * endereço de fora.
+ */
+export function destinationAfterCaregiverLogin(returnUrl: string | null): string {
+  if (!returnUrl || !returnUrl.startsWith('/')) {
+    return CAREGIVER_HOME;
+  }
+  const path = returnUrl.split(/[?#]/)[0] ?? '';
+  const inApp = path === '/cuidador' || path.startsWith('/cuidador/');
+  return inApp && path !== '/cuidador/comecar' ? returnUrl : CAREGIVER_HOME;
+}

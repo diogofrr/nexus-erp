@@ -1,4 +1,7 @@
 export * from './auth.service';
+export * from './caregiver-access';
+export * from './caregiver-session.service';
+export * from './caregiver-session.store';
 export * from './guards';
 export * from './inactivity.service';
 export * from './module-map';

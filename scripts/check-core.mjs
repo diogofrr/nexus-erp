@@ -6,7 +6,10 @@
  *  - `console.*` esquecido;
  *  - `Date.now()` ou `new Date()` sem argumentos fora de `core/clock/clock.service.ts` (AC: regras de prazo usam o Clock);
  *  - `localStorage` ou `sessionStorage` fora de `core/storage/storage-tokens.ts` (AC-GL-03);
- *  - travessão (— ou –) em qualquer arquivo de código ou documentação do projeto (AC-GL-08).
+ *  - travessão (— ou –) em qualquer arquivo de código ou documentação do projeto (AC-GL-08);
+ *  - no aplicativo do cuidador (`features/caregiver-app` e a entrada), texto de interface com ponto de exclamação, emoji
+ *    ou as palavras proibidas (docs/10-cuidador-ux.md, AC-CG-12): guerreira, anjo, heroína, paciente, idoso, eficácia,
+ *    alerta e "diagnóstico" (esta só na frase "não é um diagnóstico").
  *
  * Uso: `node scripts/check-core.mjs`
  */
@@ -36,7 +39,7 @@ const isComment = (line) => /^\s*(\/\/|\*|\/\*)/.test(line);
 const codeFiles = walk(srcApp).filter((f) => /\.(ts|html)$/.test(f));
 const textFiles = [
   ...codeFiles,
-  ...['docs/08-arquitetura.md', 'src/app/core/README.md']
+  ...['docs/08-arquitetura.md', 'docs/11-cuidador-arquitetura.md', 'src/app/core/README.md']
     .map((f) => join(root, f))
     .filter((f) => {
       try {
@@ -88,11 +91,46 @@ for (const file of textFiles) {
     });
 }
 
+// Aplicativo do cuidador (AC-CG-12): texto de interface calmo e sem as palavras proibidas.
+const caregiverRoot = join(srcApp, 'features', 'caregiver-app');
+const caregiverFiles = codeFiles.filter(
+  (f) =>
+    !isSpec(f) &&
+    (f.startsWith(caregiverRoot) || rel(f) === 'src/app/features/auth/pages/login.page.ts'),
+);
+const FORBIDDEN_WORDS = /\b(guerreira|anjo|heroína|pacientes?|idosos?|eficácia|alertas?)\b/i;
+const EXCLAMATION_IN_TEXT = /[A-Za-zÀ-ÿ0-9]!(?=\s|['"`<]|$)/;
+const EMOJI = /\p{Extended_Pictographic}/u;
+for (const file of caregiverFiles) {
+  readFileSync(file, 'utf8')
+    .split(/\r?\n/)
+    .forEach((rawLine, i) => {
+      if (isComment(rawLine)) {
+        return;
+      }
+      // Comentário no fim da linha não é texto de interface.
+      const line = rawLine.replace(/\s\/\/\s.*$/, '');
+      if (EXCLAMATION_IN_TEXT.test(line)) {
+        report(file, i, 'cuidador: exclamação', rawLine);
+      }
+      if (EMOJI.test(line)) {
+        report(file, i, 'cuidador: emoji', rawLine);
+      }
+      const word = FORBIDDEN_WORDS.exec(line);
+      if (word) {
+        report(file, i, `cuidador: palavra proibida "${word[0]}"`, rawLine);
+      }
+      if (/diagn[óo]stic/i.test(line) && !/não é um diagnóstico/i.test(line)) {
+        report(file, i, 'cuidador: "diagnóstico" só em "não é um diagnóstico"', rawLine);
+      }
+    });
+}
+
 if (problems.length > 0) {
   console.error(`check-core: ${problems.length} problema(s)\n`);
   problems.forEach((p) => console.error(`  ${p}`));
   process.exit(1);
 }
 console.log(
-  `check-core: ok (${codeFiles.length} arquivos de código, ${textFiles.length} verificados para travessão)`,
+  `check-core: ok (${codeFiles.length} arquivos de código, ${textFiles.length} verificados para travessão, ${caregiverFiles.length} do aplicativo do cuidador)`,
 );

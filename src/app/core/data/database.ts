@@ -61,6 +61,8 @@ export class Database {
   readonly caregivers = this.repo('caregivers');
   readonly elders = this.repo('elders');
   readonly medications = this.repo('medications');
+  /** Tomadas de remédio marcadas pelo cuidador no aplicativo ("dei"). */
+  readonly doseChecks = this.repo('doseChecks');
   readonly careAppointments = this.repo('careAppointments');
   readonly wellbeingChecks = this.repo('wellbeingChecks');
   readonly appUsage = this.repo('appUsage');
@@ -244,7 +246,8 @@ export class Database {
       return { ok: false, errors: parsed.errors };
     }
     const { envelope } = parsed;
-    COLLECTION_NAMES.forEach((name) => this.admin(name).replaceAll(envelope.collections[name]));
+    const imported: Partial<CollectionData> = envelope.collections;
+    COLLECTION_NAMES.forEach((name) => this.admin(name).replaceAll(imported[name] ?? []));
     this.settings.set({ ...defaultAppSettings(), ...envelope.singletons.settings });
     this.financialParams.set({
       ...restoreFinancialParams(),

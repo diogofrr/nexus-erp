@@ -3,6 +3,7 @@ import { AuditLogService } from '../audit/audit-log.service';
 import { Clock } from '../clock/clock.service';
 import { Database } from '../data/database';
 import { AppUser, AuthState, PermissionAction, Resource, Role } from '../models';
+import { CaregiverSessionStore } from './caregiver-session.store';
 import { OwnershipSubject, PermissionContext, can, canOnRecord } from './permissions';
 import { SessionStore } from './session.store';
 
@@ -34,6 +35,7 @@ export type SessionEndReason = 'user' | 'switch_profile' | 'inactivity' | 'two_f
 export class AuthService {
   private readonly db = inject(Database);
   private readonly store = inject(SessionStore);
+  private readonly caregiverStore = inject(CaregiverSessionStore);
   private readonly audit = inject(AuditLogService);
   private readonly clock = inject(Clock);
 
@@ -86,6 +88,8 @@ export class AuthService {
       });
       return { status: 'denied', reason: 'inactive_user' };
     }
+    // Uma sessão por vez: a equipe entrando encerra a do cuidador (o aplicativo do cuidador é outra porta).
+    this.caregiverStore.clear();
     this.endReasonSignal.set(null);
     const now = this.clock.realNow();
     if (user.requiresTwoFactor) {
@@ -202,6 +206,11 @@ export class AuthService {
 
   setReturnUrl(url: string | null): void {
     this.returnUrlValue = url;
+  }
+
+  /** Olha a rota pedida antes do login sem consumi-la (a entrada decide qual porta abre primeiro). */
+  peekReturnUrl(): string | null {
+    return this.returnUrlValue;
   }
 
   /** Devolve e limpa a rota pedida antes do login. */

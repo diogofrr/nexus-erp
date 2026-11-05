@@ -24,6 +24,8 @@ export const ICONS = [
   'circle-check', 'circle-alert', 'triangle-alert', 'octagon-alert', 'info', 'circle-help', 'circle-dot', 'circle-dashed', 'ban', 'pause',
   'shield', 'shield-check', 'shield-alert', 'lock', 'key-round', 'fingerprint', 'eye', 'eye-off', 'file-lock', 'id-card',
   'user-check', 'user-x', 'star', 'award', 'badge-check', 'clock', 'timer', 'hourglass', 'map-pin', 'gauge', 'thermometer', 'siren',
+  // aplicativo do cuidador (docs/10-cuidador-ux.md A.5)
+  'house', 'life-buoy', 'pill', 'video', 'frown', 'annoyed', 'meh', 'smile', 'laugh',
 ];
 
 export function buildSprite() {

@@ -20,6 +20,8 @@ export const ICON_NAMES = [
   'pause', 'shield', 'shield-check', 'shield-alert', 'lock', 'key-round', 'fingerprint', 'eye',
   'eye-off', 'file-lock', 'id-card', 'user-check', 'user-x', 'star', 'award', 'badge-check',
   'clock', 'timer', 'hourglass', 'map-pin', 'gauge', 'thermometer', 'siren',
+  // aplicativo do cuidador
+  'house', 'life-buoy', 'pill', 'video', 'frown', 'annoyed', 'meh', 'smile', 'laugh',
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];

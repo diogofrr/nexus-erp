@@ -1,4 +1,4 @@
-import { Audited, Channel, ID, ISODate, ISODateTime } from './primitives';
+import { Audited, Channel, ID, ISODate, ISODateTime, TimeOfDay } from './primitives';
 
 export type Sex = 'female' | 'male' | 'other' | 'undisclosed';
 export type Relationship =
@@ -66,6 +66,19 @@ export interface Medication extends Audited {
   /** `HH:mm`. */
   times: string[];
   active: boolean;
+}
+
+/**
+ * Tomada de remédio marcada pelo cuidador ("dei", RN-USR-07: registro de remédios). Só existe o registro de
+ * quem foi dado: desmarcar apaga a linha. Uma marcação por medicamento, dia e horário previsto.
+ */
+export interface DoseCheck extends Audited {
+  medicationId: ID;
+  date: ISODate;
+  /** Horário previsto (`HH:mm`), um dos `times` do medicamento. */
+  time: TimeOfDay;
+  /** Quando o cuidador marcou. */
+  givenAt: ISODateTime;
 }
 
 export interface CareAppointment extends Audited {

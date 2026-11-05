@@ -5,7 +5,13 @@
 import { DemoState, ISODate, ISODateTime } from '../models';
 import { isCpfChecksumValid, validateFictitiousEmail } from '../rules/validators';
 import { SCHEMA_VERSION } from '../storage/migrations';
-import { COLLECTION_NAMES, CollectionData, CollectionName, SingletonTypes } from './collections';
+import {
+  COLLECTION_NAMES,
+  CollectionData,
+  CollectionName,
+  OPTIONAL_ON_IMPORT,
+  SingletonTypes,
+} from './collections';
 
 export const EXPORT_APP_ID = 'nexus-erp';
 export const EXPORT_FORMAT = 1;
@@ -94,6 +100,9 @@ export function validateImport(raw: unknown): ImportValidation {
     });
     COLLECTION_NAMES.forEach((name) => {
       const list = collections[name];
+      if (list === undefined && OPTIONAL_ON_IMPORT.includes(name)) {
+        return;
+      }
       if (!Array.isArray(list)) {
         errors.push(`Falta um grupo de dados no arquivo ou ele está danificado: "${name}".`);
         return;
