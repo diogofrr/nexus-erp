@@ -108,7 +108,8 @@ describe('entrada: porta do cuidador (UX C1, AC-CG-17 a 23)', () => {
     expect(JSON.parse(stored ?? '{}')).toMatchObject({ caregiverId: 'cg_0001' });
     expect(app.auth.isAuthenticated()).toBe(false);
     expect(app.auth.isPendingTwoFactor()).toBe(false);
-    expect(text(q('h1'))).toBe('Hoje');
+    // O h1 de Hoje é a saudação pela hora (UX C4): "Bom dia, Ana", "Boa tarde, Ana" ou "Boa noite, Ana".
+    expect(text(q('h1'))).toMatch(/^(Bom dia|Boa tarde|Boa noite), Ana$/);
   });
 
   it('volta à rota de origem depois de entrar (na mesma aba)', async () => {

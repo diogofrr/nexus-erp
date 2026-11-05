@@ -32,6 +32,7 @@ import {
   isSearchable,
   shouldSuspendForExpiredDocument,
 } from '@core/rules';
+import { isValidRating, serviceRequestProblem } from '@core/rules/service-requests';
 import { DOCUMENT_KIND_LABEL } from './network-labels';
 
 export type Result<T = void> = { ok: true; value: T } | { ok: false; error: string };
@@ -791,16 +792,18 @@ export class NetworkAdminService {
     if (!this.db.caregivers.exists(input.caregiverId)) {
       return fail('Escolha o cuidador que fez o pedido.');
     }
-    if (!provider) {
+    // A regra é a mesma do aplicativo do cuidador (`core/rules/service-requests.ts`); aqui só a frase da equipe.
+    const problem = serviceRequestProblem(provider, input.need, input.modality);
+    if (problem === 'no_provider' || !provider) {
       return fail('Escolha o prestador do serviço.');
     }
-    if (!isSearchable(provider.status)) {
+    if (problem === 'not_searchable') {
       return fail('Este prestador não está na busca. Escolha outro da mesma especialidade.');
     }
-    if (!need) {
+    if (problem === 'no_need') {
       return fail('Descreva a necessidade do serviço.');
     }
-    if (input.modality === 'home' && !provider.homeCare) {
+    if (problem === 'home_not_offered') {
       return fail('Este prestador não atende em domicílio. Escolha o atendimento no local do prestador.');
     }
     const created = this.db.serviceRequests.create({
@@ -907,12 +910,10 @@ export class NetworkAdminService {
     if (!request) {
       return fail('Não encontramos este serviço.');
     }
-    const valid = (n: number | null): n is 1 | 2 | 3 | 4 | 5 =>
-      n !== null && Number.isInteger(n) && n >= 1 && n <= 5;
-    if (!valid(input.technical)) {
+    if (!isValidRating(input.technical)) {
       return fail('Escolha uma nota de 1 a 5 para a qualidade técnica.');
     }
-    if (!valid(input.punctuality)) {
+    if (!isValidRating(input.punctuality)) {
       return fail('Escolha uma nota de 1 a 5 para a pontualidade e a cordialidade.');
     }
     if (request.evaluationId || request.status === 'evaluated') {

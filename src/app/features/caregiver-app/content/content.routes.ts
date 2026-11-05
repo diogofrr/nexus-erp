@@ -1,12 +1,14 @@
 import { Routes } from '@angular/router';
-import { CaregiverPlaceholderComponent } from '../routing/area-placeholder.component';
 
 /**
- * Área "Conteúdos" do aplicativo do cuidador (P3). Montada em `/cuidador/cuidar-de-mim/conteudos` por
- * `routing/caregiver-areas.ts`, com carregamento sob demanda. Cada rota abaixo aponta para a tela provisória:
- * troque `component` pela tela de verdade e MANTENHA `data.title` (vira o título da aba). Acrescente as
- * sub-rotas da área aqui, nunca em outro arquivo.
+ * Área "Conteúdos" do aplicativo do cuidador (P3, UX C11). Montada em `/cuidador/cuidar-de-mim/conteudos` por
+ * `routing/caregiver-areas.ts`, com carregamento sob demanda. A leitura abre em folha de tela cheia com `?conteudo=`
+ * (S-21), sem rota filha.
  */
 export const ROUTES: Routes = [
-  { path: '', component: CaregiverPlaceholderComponent, data: { title: 'Conteúdos' } },
+  {
+    path: '',
+    loadComponent: () => import('./pages/content.page').then((m) => m.ContentPage),
+    data: { title: 'Conteúdos' },
+  },
 ];

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { AuditLogService } from '@core/audit';
 import { Clock, addMonths } from '@core/clock';
-import { SubscriptionService } from '@core/commerce/subscription.service';
+import { CaregiverError, CaregiverRegistrationService } from '@core/care/caregiver-registration.service';
 import { Database } from '@core/data';
 import { buildCsv } from '@core/export/file-download';
 import type {
@@ -17,7 +17,6 @@ import type {
   Sex,
 } from '@core/models';
 import { ConsentService, DataSubjectRequestService } from '@core/privacy';
-import { caregiverCode } from '@core/privacy';
 import { PilotEligibility, evaluatePilotEligibility } from '@core/rules/pilot-eligibility';
 import type { CaregiverRow } from './caregiver-directory.service';
 import { STATUS_SHORT_LABELS } from './caregiver-labels';
@@ -46,14 +45,8 @@ export interface NewCaregiverInput extends CaregiverFields {
   planId: PlanId;
 }
 
-export class CaregiverError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'CaregiverError';
-  }
-}
-
-const PLACEHOLDER_CPF = '000.000.000-00';
+/** O erro de cadastro vive no núcleo (o aplicativo do cuidador usa o mesmo miolo); continua exportado daqui. */
+export { CaregiverError };
 
 /**
  * Gravações do cadastro do cuidador (M03): criar com consentimento granular e plano, editar, atribuir
@@ -65,76 +58,24 @@ export class CaregiverService {
   private readonly clock = inject(Clock);
   private readonly audit = inject(AuditLogService);
   private readonly consent = inject(ConsentService);
-  private readonly subscriptions = inject(SubscriptionService);
+  private readonly registration = inject(CaregiverRegistrationService);
   private readonly dsr = inject(DataSubjectRequestService);
 
   /** Cuidador que já usa este CPF fictício (para "Já existe um cuidador com este CPF"). */
   findByCpf(cpf: string, exceptId?: ID): Caregiver | undefined {
-    if (!cpf || cpf === PLACEHOLDER_CPF) {
-      return undefined;
-    }
-    return this.db.caregivers.find((c) => c.cpf === cpf && c.id !== exceptId);
+    return this.registration.findByCpf(cpf, exceptId);
   }
 
   /** Próximo código e id: `CUI-0341` e `cg_0341`. */
   nextIdentity(): { id: ID; code: string; elderId: ID } {
-    const highest = this.db.caregivers
-      .all()
-      .reduce((max, c) => Math.max(max, Number(/(\d+)$/.exec(c.id)?.[1] ?? 0)), 0);
-    const n = highest + 1;
-    const padded = String(n).padStart(4, '0');
-    return { id: `cg_${padded}`, code: caregiverCode(n), elderId: `el_${padded}` };
+    return this.registration.nextIdentity();
   }
 
+  /** O miolo do cadastro é do núcleo (o cuidador usa o mesmo pelo aplicativo); aqui fica o log da equipe. */
   create(input: NewCaregiverInput): { caregiver: Caregiver; elder: Elder } {
-    if (this.findByCpf(input.cpf)) {
-      throw new CaregiverError('Já existe um cuidador com este CPF fictício.');
-    }
-    const identity = this.nextIdentity();
-    const today = this.clock.today();
-    const caregiver = this.db.caregivers.create({
-      id: identity.id,
-      code: identity.code,
-      fullName: input.fullName.trim(),
-      cpf: input.cpf,
-      cpfIsFictitious: true,
-      email: input.email.trim(),
-      phone: input.phone,
-      ...(input.whatsapp ? { whatsapp: input.whatsapp } : {}),
-      birthDate: input.birthDate,
-      sex: input.sex,
-      relationship: input.relationship,
-      city: input.city.trim(),
-      dailyCareHours: input.dailyCareHours,
-      preferredChannel: input.preferredChannel,
-      digitalLiteracy: input.digitalLiteracy,
-      status: 'active',
-      enrolledAt: today,
-      isPilot: false,
-    });
-    const elder = this.db.elders.create({
-      id: identity.elderId,
-      caregiverId: caregiver.id,
-      fullName: input.elder.fullName.trim(),
-      birthDate: input.elder.birthDate,
-      dependency: input.elder.dependency,
-    });
-    // Os seis consentimentos nascem "pendente"; só o que a pessoa decidiu vira evento (AC-M03-02).
-    this.consent.initializeForNewCaregiver(caregiver.id);
-    const options = {
-      channel: input.consentChannel,
-      ...(input.evidence?.trim() ? { evidence: input.evidence.trim() } : {}),
-    };
-    (Object.entries(input.consents) as [ConsentKey, 'granted' | 'refused'][]).forEach(([key, decision]) => {
-      if (decision === 'granted') {
-        this.consent.grant(caregiver.id, key, options);
-      } else {
-        this.consent.refuse(caregiver.id, key, options);
-      }
-    });
-    this.subscriptions.startSubscription(caregiver.id, input.planId);
-    this.audit.write('create', 'caregiver', caregiver.id, caregiver.id, 'cadastro criado');
-    return { caregiver: this.db.caregivers.require(caregiver.id), elder };
+    const created = this.registration.register(input);
+    this.audit.write('create', 'caregiver', created.caregiver.id, created.caregiver.id, 'cadastro criado');
+    return created;
   }
 
   update(id: ID, fields: CaregiverFields): Caregiver {

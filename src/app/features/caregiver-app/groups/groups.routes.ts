@@ -1,12 +1,14 @@
 import { Routes } from '@angular/router';
-import { CaregiverPlaceholderComponent } from '../routing/area-placeholder.component';
 
 /**
- * Área "Grupos e capacitações" do aplicativo do cuidador (P3). Montada em `/cuidador/cuidar-de-mim/grupos` por
- * `routing/caregiver-areas.ts`, com carregamento sob demanda. Cada rota abaixo aponta para a tela provisória:
- * troque `component` pela tela de verdade e MANTENHA `data.title` (vira o título da aba). Acrescente as
- * sub-rotas da área aqui, nunca em outro arquivo.
+ * Área "Grupos e capacitações" do aplicativo do cuidador (P3, UX C10). Montada em `/cuidador/cuidar-de-mim/grupos` por
+ * `routing/caregiver-areas.ts`, com carregamento sob demanda. O detalhe da atividade abre em folha de tela cheia com
+ * `?atividade=<id>` (S-21), sem rota filha.
  */
 export const ROUTES: Routes = [
-  { path: '', component: CaregiverPlaceholderComponent, data: { title: 'Grupos e capacitações' } },
+  {
+    path: '',
+    loadComponent: () => import('./pages/groups.page').then((m) => m.GroupsPage),
+    data: { title: 'Grupos e capacitações' },
+  },
 ];

@@ -44,6 +44,8 @@ export interface Caregiver extends Audited {
   isPilot: boolean;
   closureRequestedAt?: ISODate;
   closedAt?: ISODate;
+  /** Aceite do aviso de emergência e dos canais, com data e hora (RN-ATD-11, RN-CAN-06): pedido no cadastro do aplicativo. */
+  emergencyNoticeAcceptedAt?: ISODateTime;
   /** Preenchido quando os identificadores foram eliminados ou anonimizados (M12). */
   anonymizedAt?: ISODateTime;
   erasedAt?: ISODateTime;
@@ -88,6 +90,8 @@ export interface CareAppointment extends Audited {
   kind: 'medical' | 'physio' | 'psychological' | 'other';
   providerId?: ID;
   reminder: boolean;
+  /** Onde ou com quem, em texto livre (opcional): "Clínica Movimento Vital". Preenchido pelo cuidador no aplicativo. */
+  place?: string;
 }
 
 /** SENSITIVE. */

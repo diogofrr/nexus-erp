@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { AuditLogService } from '@core/audit';
-import { Clock, addDays, compareDateTimes, toIsoDateTime } from '@core/clock';
+import { ReviewRequestService } from '@core/care/review-request.service';
+import { Clock, compareDateTimes, toIsoDateTime } from '@core/clock';
 import { Database } from '@core/data';
 import { RiskCaseService } from '@core/governance';
 import {
@@ -92,6 +93,8 @@ export class ZaritService {
   private readonly access = inject(ZaritAccessService);
   private readonly risk = inject(RiskCaseService);
   private readonly arbe = inject(ArbeService);
+  /** O miolo do pedido de revisão (sem checagem de perfil) vive no núcleo e também serve ao cuidador. */
+  private readonly reviews = inject(ReviewRequestService);
 
   // ===== Leitura =====
 
@@ -514,16 +517,11 @@ export class ZaritService {
     if (!caregiver || !this.access.canAct(caregiverId)) {
       return fail('caregiver', 'Escolha um cuidador que você acompanha.');
     }
-    if (text.trim().length < 5) {
+    const registered = this.reviews.register(caregiverId, about, text);
+    if (!registered.ok) {
       return fail('text', 'Escreva o pedido do cuidador.');
     }
-    const request = this.db.reviewRequests.create({
-      caregiverId,
-      psychologistId: caregiver.assignedPsychologistId as ID,
-      about,
-      text: text.trim(),
-      dueAt: addDays(this.clock.today(), this.db.settings.get().dsrDeadlineDays),
-    });
+    const request = registered.request;
     this.audit.write('create', 'review_request', request.id, caregiverId, 'pedido de revisão registrado');
     return { ok: true, value: request };
   }

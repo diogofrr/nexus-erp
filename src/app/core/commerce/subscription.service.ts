@@ -264,15 +264,18 @@ export class SubscriptionService {
 
   // ===== Ações =====
 
-  /** Troca, agenda ou cancela conforme a regra. Lança `SubscriptionError` com a frase para a tela. */
-  changePlan(subscriptionId: ID, to: PlanId): ChangeResult {
+  /**
+   * Troca, agenda ou cancela conforme a regra. Lança `SubscriptionError` com a frase para a tela. `author` é quem
+   * fez a troca no histórico (o aplicativo do cuidador passa o id do cuidador); sem ele vale a sessão da equipe, senão `system`.
+   */
+  changePlan(subscriptionId: ID, to: PlanId, author?: ID): ChangeResult {
     const sub = this.db.subscriptions.require(subscriptionId);
     const quote = this.quote(sub, to);
     if (quote.timing === 'blocked') {
       throw new SubscriptionError(quote.blockedReason ?? 'Esta troca não é possível agora.');
     }
     const today = this.clock.today();
-    const byUserId = this.session.user()?.id ?? 'system';
+    const byUserId = author ?? this.session.user()?.id ?? 'system';
     this.removeFutureChanges(sub.id);
     if (quote.kind === 'upgrade') {
       const wasFree = sub.planId === 'livre';
@@ -330,8 +333,8 @@ export class SubscriptionService {
     };
   }
 
-  /** "Manter o plano atual": desiste da mudança ou do cancelamento agendado (reversível, sem diálogo). */
-  keepPlan(subscriptionId: ID): Subscription {
+  /** "Manter o plano atual": desiste da mudança ou do cancelamento agendado (reversível, sem diálogo). `author` como em `changePlan`. */
+  keepPlan(subscriptionId: ID, author?: ID): Subscription {
     const sub = this.db.subscriptions.require(subscriptionId);
     if (sub.status !== 'cancel_scheduled') {
       throw new SubscriptionError('Não há mudança agendada para desfazer.');
@@ -348,14 +351,14 @@ export class SubscriptionService {
       sub.planId,
       'reactivate',
       this.clock.today(),
-      this.session.user()?.id ?? 'system',
+      author ?? this.session.user()?.id ?? 'system',
     );
     this.audit.write('update', 'subscription', sub.id, sub.caregiverId, 'plano mantido');
     return updated;
   }
 
-  /** Reativar uma assinatura cancelada cria uma assinatura nova no Livre (escopo M04, estados). */
-  reactivate(subscriptionId: ID): Subscription {
+  /** Reativar uma assinatura cancelada cria uma assinatura nova no Livre (escopo M04, estados). `author` como em `changePlan`. */
+  reactivate(subscriptionId: ID, author?: ID): Subscription {
     const old = this.db.subscriptions.require(subscriptionId);
     const caregiver = this.db.caregivers.require(old.caregiverId);
     if (old.status !== 'cancelled') {
@@ -377,14 +380,14 @@ export class SubscriptionService {
       'livre',
       'reactivate',
       this.clock.today(),
-      this.session.user()?.id ?? 'system',
+      author ?? this.session.user()?.id ?? 'system',
     );
     this.audit.write('create', 'subscription', fresh.id, old.caregiverId, 'assinatura reativada');
     return fresh;
   }
 
-  /** Assinatura de um cadastro novo: Livre por padrão, ou plano pago com cartão emitido (F02, etapa 4). */
-  startSubscription(caregiverId: ID, planId: PlanId = 'livre'): Subscription {
+  /** Assinatura de um cadastro novo: Livre por padrão, ou plano pago com cartão emitido (F02, etapa 4). `author` como em `changePlan`. */
+  startSubscription(caregiverId: ID, planId: PlanId = 'livre', author?: ID): Subscription {
     const today = this.clock.today();
     const sub = this.db.subscriptions.create({
       caregiverId,
@@ -395,7 +398,7 @@ export class SubscriptionService {
       ...(planId !== 'livre' ? { nextCycleAt: addMonths(today, 1) } : {}),
     });
     if (planId !== 'livre') {
-      this.recordChange(sub.id, 'livre', planId, 'upgrade', today, this.session.user()?.id ?? 'system');
+      this.recordChange(sub.id, 'livre', planId, 'upgrade', today, author ?? this.session.user()?.id ?? 'system');
       this.ensureActiveCard(caregiverId);
     }
     this.audit.write('create', 'subscription', sub.id, caregiverId, `plano ${PLAN_SHORT_NAMES[planId]}`);
