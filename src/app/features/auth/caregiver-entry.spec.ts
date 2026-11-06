@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PROTOTYPE_NOTICE } from '../../core/privacy/browser-data.service';
 import { DEMO_CAREGIVERS } from '../caregiver-app/state/demo-caregivers';
 import { BootedCaregiverApp, bootCaregiverApp, settleCaregiver } from '../caregiver-app/testing';
@@ -49,7 +49,7 @@ describe('entrada: porta do cuidador (UX C1, AC-CG-17 a 23)', () => {
     const doors = all('main > section.cg-door');
     expect(doors).toHaveLength(2);
     expect(text(doors[0]?.querySelector('h2'))).toBe('Sou cuidador(a)');
-    expect(text(doors[1]?.querySelector('h2'))).toBe('Sou da equipe Nexus');
+    expect(text(doors[1]?.querySelector('h2 .cg-accordion__title'))).toBe('Sou da equipe Nexus');
     expect(people()).toHaveLength(6);
     expect(people().map((p) => text(p.querySelector('.cg-door__name')))).toEqual([
       expect.stringContaining('Ana Paula Ferraz'),
@@ -148,6 +148,86 @@ describe('entrada: porta do cuidador (UX C1, AC-CG-17 a 23)', () => {
     await app.router.navigateByUrl('/cuidador/ajuda-agora');
     await settleCaregiver(app.fixture);
     expect(app.router.url).toBe('/cuidador/ajuda-agora');
+  });
+
+  it('E1: "Ajuda agora" fica na linha do título "Entrar", na coluna do formulário (não na faixa de marca), com o desenho do botão do aplicativo', async () => {
+    app = await bootCaregiverApp(null, { url: '/login' });
+    const help = q<HTMLAnchorElement>('[data-role="help-now"]');
+    expect(text(help)).toBe('Ajuda agora');
+    expect(help?.getAttribute('href')).toBe('/cuidador/ajuda-agora');
+    // Mesma linha do h1, dentro do painel do formulário; fora da faixa de marca azul.
+    const head = q('.login__head');
+    expect(head?.contains(help ?? null)).toBe(true);
+    expect(head?.querySelector('h1')).not.toBeNull();
+    expect(q('.login__panel')?.contains(head ?? null)).toBe(true);
+    expect(q('.login__brand')?.querySelector('[data-role="help-now"]')).toBeNull();
+    expect(all('[data-role="help-now"]')).toHaveLength(1);
+    // A um toque e sem entrar: o destino abre sem sessão.
+    await app.router.navigateByUrl('/cuidador/ajuda-agora');
+    await settleCaregiver(app.fixture);
+    expect(app.router.url).toBe('/cuidador/ajuda-agora');
+    expect(app.session.isSignedIn()).toBe(false);
+  });
+
+  it('E2: "Sou da equipe Nexus" é um acordeão: um botão no título com ícone, frase curta e seta, aria-expanded, abre e fecha por toque', async () => {
+    app = await bootCaregiverApp(null, { url: '/login' });
+    const toggle = q<HTMLButtonElement>('[data-role="staff-toggle"]');
+    // O botão é de verdade (Enter e Espaço funcionam sem código) e mora dentro do título h2.
+    expect(toggle?.tagName).toBe('BUTTON');
+    expect(toggle?.getAttribute('type')).toBe('button');
+    expect(toggle?.closest('h2')).not.toBeNull();
+    expect(toggle?.querySelector('.cg-accordion__icon svg')).not.toBeNull();
+    expect(text(toggle?.querySelector('.cg-accordion__title'))).toBe('Sou da equipe Nexus');
+    expect(text(toggle?.querySelector('.cg-accordion__hint'))).toBe(
+      'Painel de trabalho da equipe, com código de confirmação',
+    );
+    expect(toggle?.querySelector('.cg-accordion__chevron')).not.toBeNull();
+    // Nome acessível curto; a frase vai como descrição.
+    expect(toggle?.getAttribute('aria-label')).toBe('Sou da equipe Nexus');
+    expect(document.getElementById(toggle?.getAttribute('aria-describedby') ?? '')?.textContent).toContain('Painel de trabalho');
+    // Recolhido: o painel existe (o aria-controls aponta para ele), está escondido e vazio.
+    const panel = document.getElementById(toggle?.getAttribute('aria-controls') ?? '');
+    expect(panel).not.toBeNull();
+    expect(panel?.hasAttribute('hidden')).toBe(true);
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(all('.profile-group')).toHaveLength(0);
+    expect(q('.cg-accordion')?.classList.contains('cg-accordion--open')).toBe(false);
+    click(toggle);
+    await settleCaregiver(app.fixture);
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(panel?.hasAttribute('hidden')).toBe(false);
+    expect(panel?.querySelectorAll('.list-row')).toHaveLength(8);
+    expect(q('.cg-accordion')?.classList.contains('cg-accordion--open')).toBe(true);
+    // O foco continua no botão (Enter e Espaço de novo fecham); a escolha do perfil segue a de sempre.
+    click(toggle);
+    await settleCaregiver(app.fixture);
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(panel?.hasAttribute('hidden')).toBe(true);
+    expect(all('.profile-group')).toHaveLength(0);
+  });
+
+  it('E2: ao abrir, a tela rola até o começo do bloco; ao fechar, não rola', async () => {
+    app = await bootCaregiverApp(null, { url: '/login' });
+    const door = q<HTMLElement>('.cg-accordion');
+    const scroll = vi.fn();
+    (door as HTMLElement).scrollIntoView = scroll;
+    click(q('[data-role="staff-toggle"]'));
+    await settleCaregiver(app.fixture);
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(scroll.mock.calls[0]?.[0]).toMatchObject({ block: 'start' });
+    click(q('[data-role="staff-toggle"]'));
+    await settleCaregiver(app.fixture);
+    expect(scroll).toHaveBeenCalledTimes(1);
+  });
+
+  it('E2: aberto, escolher a equipe continua levando ao segundo fator; a lista tem os 3 grupos', async () => {
+    app = await bootCaregiverApp(null, { url: '/login' });
+    click(q('[data-role="staff-toggle"]'));
+    await settleCaregiver(app.fixture);
+    expect(all('.profile-group h3').map(text)).toEqual(['Gestão (2)', 'Psicologia (4)', 'Atendimento (2)']);
+    click(all('.profile-group .list-row')[0]);
+    await settleCaregiver(app.fixture);
+    expect(app.router.url).toBe('/login/2fa');
   });
 
   it('AC-CG-22: quem já tem sessão de cuidador não vê a entrada; a equipe segue com o segundo fator', async () => {

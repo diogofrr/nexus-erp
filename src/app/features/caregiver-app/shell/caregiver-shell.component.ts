@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
+import { ToastProfile, ToastService } from '../../../shared/ui/overlay/toast.service';
 import { ViewportService } from '../../../layout/state/viewport.service';
 import { CaregiverContextService } from '../state/caregiver-context.service';
 import { STORAGE_NOT_SAVING_TEXT, StorageStatusService } from '../state/storage-status.service';
@@ -10,6 +11,12 @@ import { CgNavComponent } from '../ui/cg-nav.component';
 import { CgNoteComponent } from '../ui/cg-note.component';
 import { CgProtoNoteComponent } from '../ui/cg-proto-note.component';
 import { CaregiverUserMenuComponent } from './caregiver-user-menu.component';
+
+/**
+ * O aviso rápido do aplicativo do cuidador: um por vez, e some sozinho em 8 s (com ou sem "Desfazer", UX 5.8). Fica no alto,
+ * abaixo do cabeçalho, para nunca cobrir um botão nem a barra inferior (ver `_caregiver.scss`).
+ */
+export const CAREGIVER_TOAST_PROFILE: ToastProfile = { maxStack: 1, defaultMs: 8000, undoMs: 8000 };
 
 /**
  * Casca do aplicativo do cuidador (`/cuidador/**`, UX A.2 e A.3). Reúne, nesta ordem: o link "Ir para o
@@ -76,6 +83,7 @@ export class CaregiverShellComponent {
   protected readonly ctx = inject(CaregiverContextService);
   private readonly viewport = inject(ViewportService);
   private readonly doc = inject(DOCUMENT);
+  private readonly toasts = inject(ToastService);
 
   /** 1024 px ou mais: a navegação vai para o cabeçalho e a barra inferior não existe. */
   protected readonly wide = computed(() => this.viewport.navLayout() !== 'drawer');
@@ -94,6 +102,7 @@ export class CaregiverShellComponent {
     const previousApp = root.getAttribute('data-app');
     root.setAttribute('data-theme', 'light');
     root.setAttribute('data-app', 'caregiver');
+    const restoreToasts = this.toasts.useProfile(CAREGIVER_TOAST_PROFILE);
 
     const view = this.doc.defaultView;
     const visual = view?.visualViewport ?? null;
@@ -114,6 +123,7 @@ export class CaregiverShellComponent {
       this.doc.removeEventListener('focusout', onResize);
       restoreAttribute(root, 'data-theme', previousTheme);
       restoreAttribute(root, 'data-app', previousApp);
+      restoreToasts();
     });
   }
 

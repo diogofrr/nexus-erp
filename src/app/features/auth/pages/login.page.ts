@@ -79,10 +79,6 @@ interface DemoPerson {
             <use href="icons/sprite.svg#nx-symbol" />
           </svg>
           <span class="wordmark">Nexus</span>
-          <a class="login__help" routerLink="/cuidador/ajuda-agora" data-role="help-now">
-            <svg appIcon="life-buoy" size="lg"></svg>
-            <span>Ajuda agora</span>
-          </a>
         </div>
         <svg class="login__art" viewBox="-18 3 156 98" aria-hidden="true">
           <use href="icons/sprite.svg#nx-hands" />
@@ -110,9 +106,15 @@ interface DemoPerson {
           }}</app-banner>
         }
 
-        <div>
-          <h1>Entrar</h1>
-          <p class="page-header__desc">Escolha como você quer entrar.</p>
+        <div class="login__head">
+          <div class="login__head-text">
+            <h1>Entrar</h1>
+            <p class="page-header__desc">Escolha como você quer entrar.</p>
+          </div>
+          <a class="login__help" routerLink="/cuidador/ajuda-agora" data-role="help-now">
+            <svg appIcon="life-buoy" size="lg"></svg>
+            <span>Ajuda agora</span>
+          </a>
         </div>
 
         <section class="cg-door" aria-labelledby="nx-door-caregiver" [attr.data-text]="fontScale()">
@@ -168,23 +170,33 @@ interface DemoPerson {
           <p class="cg-door__emergency">Em emergência, ligue 192 (SAMU).</p>
         </section>
 
-        <section class="cg-door cg-door--staff" aria-labelledby="nx-door-staff">
-          <h2 class="cg-door__title" id="nx-door-staff">
+        <section
+          class="cg-door cg-door--staff cg-accordion"
+          aria-labelledby="nx-door-staff"
+          [class.cg-accordion--open]="staffOpen()"
+          #staffDoor
+        >
+          <h2 class="cg-accordion__heading" id="nx-door-staff">
             <button
               type="button"
-              class="cg-door__toggle"
+              class="cg-accordion__trigger"
               data-role="staff-toggle"
               [attr.aria-expanded]="staffOpen()"
               aria-controls="nx-door-staff-body"
-              (click)="staffOpen.set(!staffOpen())"
+              aria-label="Sou da equipe Nexus"
+              aria-describedby="nx-door-staff-hint"
+              (click)="toggleStaff(staffDoor)"
             >
-              <span>Sou da equipe Nexus</span>
-              <svg [appIcon]="staffOpen() ? 'chevron-up' : 'chevron-down'"></svg>
+              <span class="cg-accordion__icon" aria-hidden="true"><svg appIcon="layout-dashboard"></svg></span>
+              <span class="cg-accordion__text">
+                <span class="cg-accordion__title">Sou da equipe Nexus</span>
+                <span class="cg-accordion__hint" id="nx-door-staff-hint">Painel de trabalho da equipe, com código de confirmação</span>
+              </span>
+              <svg class="cg-accordion__chevron" appIcon="chevron-down" aria-hidden="true"></svg>
             </button>
           </h2>
-          @if (staffOpen()) {
-            <div class="cg-door__body" id="nx-door-staff-body">
-              <p class="page-header__desc">Back-office. A equipe confirma um código de 6 dígitos.</p>
+          <div class="cg-accordion__panel" id="nx-door-staff-body" [hidden]="!staffOpen()">
+            @if (staffOpen()) {
               @for (group of groups(); track group.id) {
                 <section class="profile-group" [attr.aria-labelledby]="'nx-login-' + group.id">
                   <h3 [id]="'nx-login-' + group.id">{{ group.title }} ({{ group.users.length }})</h3>
@@ -198,8 +210,8 @@ interface DemoPerson {
                   </div>
                 </section>
               }
-            </div>
-          }
+            }
+          </div>
         </section>
       </main>
     </div>
@@ -320,6 +332,24 @@ export class LoginPageComponent {
     if (opening && first) {
       afterNextRender(
         () => document.querySelector<HTMLElement>(`[data-caregiver="${first.id}"]`)?.focus(),
+        { injector: this.injector },
+      );
+    }
+  }
+
+  /**
+   * Abre e fecha a lista da equipe (acordeão). Ao abrir, a tela rola até o começo do bloco para a lista aparecer: o foco
+   * fica no botão (Enter e Espaço continuam fechando) e a rolagem respeita "reduzir movimento".
+   */
+  protected toggleStaff(door: HTMLElement): void {
+    const opening = !this.staffOpen();
+    this.staffOpen.set(opening);
+    if (opening) {
+      afterNextRender(
+        () => {
+          const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+          door.scrollIntoView?.({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+        },
         { injector: this.injector },
       );
     }

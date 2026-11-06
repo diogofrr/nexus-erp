@@ -295,7 +295,7 @@ describe('Área privacy (Privacidade e meus dados)', () => {
       expect(text(s)).toContain('Entendi o que será eliminado e o que ficará guardado');
       const confirm = sheetButton('Pedir eliminação dos meus dados', 'Pedir eliminação');
       expect(confirm?.disabled).toBe(true);
-      expect(text(s.querySelector('[data-role="erasure-hint"]'))).toBe('Marque a caixa para ligar o botão.');
+      expect(text(s.querySelector('[data-role="erasure-hint"]'))).toBe('Marque a caixa para poder pedir.');
       expect(text(document.activeElement)).toBe('Voltar');
       await click(s.querySelector('input[type="checkbox"]'));
       expect(sheetButton('Pedir eliminação dos meus dados', 'Pedir eliminação')?.disabled).toBe(false);

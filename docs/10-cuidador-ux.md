@@ -407,6 +407,16 @@ Todos são standalone, `OnPush`, com signals (convenção do projeto) e vivem em
 - **Serve para**: confirmar ação reversível ("Anotado às 08:12", "Número copiado").
 - **Medidas**: 16 acima da barra inferior (`calc(var(--cg-nav-h) + 16px + safe area)`); largura da coluna; texto 18; **8 segundos**, pausa com foco; botão "Desfazer" (48 de altura) quando dá. `role="status"`. **Nunca é o único registro** da ação.
 
+### A.2.25 Calendário do mês (`app-cg-calendar`)
+- **Serve para**: ver os compromissos do mês de uma vez e escolher o dia (Agenda, tela 5). Quem usa o calendário pede o dia; o cartão do dia é da tela.
+- **Anatomia**: cartão com cabeçalho (mês e ano por extenso, 20/700; **Mês anterior** e **Próximo mês** de 48 x 48; **Hoje** de 48 de altura), linha dos dias da semana (dom a sáb, 14/600) e a grade de 5 ou 6 linhas, de domingo a sábado. Abaixo de 28 rem de largura o cabeçalho tem duas linhas (o mês em cima, os botões embaixo); de 28 rem em diante, uma só.
+- **Dia**: botão de **44 px de lado ou mais** (largura da coluna dividida por 7: 46 px em 360 px; altura 48, 56 de 768 px em diante). Número em 16/400 (negrito se há compromisso); **hoje** é o número num círculo cheio `--cg-action`; **o dia escolhido** é uma caixa de 2 px `--cg-action` com fundo `--brand-soft`; dia de outro mês fica com o número em `--cg-border-control` (4,6:1).
+- **Marcas** (10 px): **uma por compromisso, até 3**; com 4 ou mais, duas marcas e "+N" (14/600). **Cor e forma**, nunca só a cor: Consulta, círculo cheio `--cg-action`; Fisioterapia, quadrado cheio `--cg-ok-icon`; Psicologia, losango cheio `--cg-soft-icon`; Para você, triângulo cheio `--nx-gold-700`; Outro, círculo vazio com contorno `--cg-border-control`. Nenhum vermelho nem âmbar. Cada par passa 3:1 (`pnpm run check:a11y`).
+- **Legenda**: lista com a marca e o nome do tipo, abaixo da grade; **só quando há marcas à vista**, e só com os tipos que aparecem.
+- **Acessibilidade**: `role="grid"` com `role="row"`, `columnheader` e `gridcell`; cada dia é um `<button>` dentro do `gridcell` com o rótulo "6 de novembro, sexta-feira, 2 compromissos: Consulta e Fisioterapia"; `aria-selected` no `gridcell` do dia escolhido, `aria-current="date"` no botão de hoje; o mês é `aria-live="polite"`. **Teclado**: setas movem o foco (dia e semana), Home e End vão ao domingo e ao sábado da semana, PageUp e PageDown ao mês anterior e ao seguinte, Enter e Espaço escolhem; só um dia entra na ordem do Tab.
+- **Movimento**: o fundo muda em `var(--cg-dur)` (0 com `prefers-reduced-motion`); nada pisca nem desliza. Em modo de alto contraste as marcas mantêm as cores e hoje ganha contorno.
+- **Fonte de verdade**: regras puras em `core/rules/calendar-grid.ts` (grade, nomes, mês anterior e seguinte, teclado, marcas); "hoje" vem do `Clock`.
+
 ## A.3 Responsivo: 360, 768 e 1280
 
 | Elemento | 360 (celular) | 768 (tablet) | 1280 (tela larga) |
@@ -509,11 +519,11 @@ Cada fluxo traz **onde começa**, o **máximo de toques** (a partir de Hoje, sem
 - **Dúvida de dose**: o app **não orienta**. Texto fixo em Remédios: "O app só ajuda você a lembrar. Dúvida sobre dose ou troca de remédio: fale com o médico ou a farmácia."
 
 ## B3. Adicionar e remarcar um compromisso
-**Começa em**: Hoje ou Rotina. **Máximo**: 6 toques mais digitação do título; remarcar, 4. **Telas**: 5. **RN**: RN-USR-07.
-1. Rotina (1), aba Agenda, **Adicionar compromisso** (2).
-2. Folha de formulário: **O que é?** (título), **Tipo** (4 chips: Consulta, Fisioterapia, Psicologia, Outro) (3), **Dia** (data nativa) (4), **Hora** (5), **Lembrar de mim** (chave, ligada por padrão `[S-04]`), **Salvar compromisso** (6).
-3. A agenda mostra o compromisso e a faixa "Compromisso salvo. Desfazer."
-4. **Remarcar**: tocar no compromisso (1), **Remarcar** (2), novo dia e hora (3), **Salvar novo horário** (4). Faixa: "Remarcado para qui, 06/11, às 15:00."
+**Começa em**: Hoje ou Rotina. **Máximo**: 6 toques mais digitação do título; remarcar, 4 (5 quando o compromisso não é de hoje). **Telas**: 5. **RN**: RN-USR-07.
+1. Rotina (1), aba Agenda: o calendário abre com hoje escolhido; para outro dia, tocar nele; depois **Adicionar compromisso neste dia** (2).
+2. Folha de formulário: **O que é?** (título), **Tipo** (4 chips: Consulta, Fisioterapia, Psicologia, Outro) (3), **Dia** (data nativa, **já preenchido com o dia escolhido no calendário**), **Hora** (4), **Lembrar de mim** (chave, ligada por padrão `[S-04]`), **Salvar compromisso** (5).
+3. O calendário vai ao dia do compromisso (e ao mês, se for outro), mostra o compromisso no cartão do dia e a faixa "Compromisso salvo. Desfazer."
+4. **Remarcar**: tocar no compromisso (1, no cartão do dia), **Remarcar** (2), novo dia e hora (3), **Salvar novo horário** (4). O calendário vai ao dia novo. Faixa: "Remarcado para qui, 06/11, às 15:00."
 5. **Tirar da agenda**: no compromisso, "Tirar da agenda" abre folha "Tirar este compromisso da agenda? Ele some da sua agenda e dos lembretes." com **Tirar da agenda** (suave) e **Voltar**.
 
 **Erros e recuperação**: data no passado, "Escolha um dia de hoje em diante." (a hora de hoje já passada: "Escolha uma hora que ainda não passou."); título vazio, "Informe o que é o compromisso."; salvou duplicado, o app **não impede** e mostra os dois (a pessoa tira um); remarcou errado, "Desfazer" na faixa restaura o horário anterior.
@@ -845,26 +855,39 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-56** Dado Hoje, então não aparece plano, preço, desconto, pontuação, faixa, ARBE nem a palavra "alerta" para nenhuma pessoa de demonstração.
 
 ## C5. `/cuidador/rotina/agenda`: Rotina, aba Agenda (P1, `routine`)
-**Propósito.** Ver e organizar os compromissos da pessoa idosa (consultas, fisioterapia, outros), e ver a própria conversa com o psicólogo no mesmo dia.
-**Ação principal.** **Adicionar compromisso**.
-**De cara.** `h1` "Rotina"; abas **Agenda** e **Remédios** (2 abas de 56 px, linha dourada na atual); botão primário **Adicionar compromisso**; a lista dos próximos 14 dias agrupada por dia ("Hoje, qua 04/11", "Amanhã, qui 05/11", "sex, 06/11"), cada compromisso um item de lista: hora, título, tipo (ícone), onde ou com quem.
+**Propósito.** Ver e organizar os compromissos da pessoa idosa (consultas, fisioterapia, outros) **num calendário do mês**, com a lista do dia escolhido logo abaixo (ao lado, em tela larga), e ver a própria conversa com o psicólogo no mesmo dia. Mudou depois de o dono ver o app publicado: "agenda em lista (deveria ser em formato de calendário pra facilitar pro usuário)". O detalhe do que foi feito, as decisões e o que ficou para conferir no navegador estão em `docs/16-calendario-agenda.md`.
+**Ação principal.** **Adicionar compromisso neste dia** (o dia escolhido já vai preenchido).
+**De cara.**
+- `h1` "Rotina"; abas **Agenda** e **Remédios** (2 abas de 56 px, linha dourada na atual).
+- O alternador pequeno **Calendário | Lista** (Calendário marcado; a escolha fica guardada no navegador).
+- O **calendário** do mês de hoje (`app-cg-calendar`, A.2.25), com **hoje já escolhido**.
+- O **cartão do dia** escolhido ("Hoje, 4 de novembro"): os compromissos dele, em ordem de hora, e o botão primário **Adicionar compromisso neste dia**.
+- No celular o calendário fica em cima e o cartão do dia embaixo; **de 1024 px em diante** ficam lado a lado (calendário à esquerda, dia à direita).
+**O calendário.**
+- Cabeçalho: mês e ano por extenso ("novembro de 2026"), **Mês anterior** e **Próximo mês** (botões de 48 px) e **Hoje** (volta ao mês e ao dia de hoje).
+- Linha dos dias da semana (dom, seg, ter, qua, qui, sex, sáb) e a grade de dias, **começando no domingo**, com 5 ou 6 linhas; os dias do mês anterior e do seguinte aparecem esmaecidos.
+- Cada dia é um botão de 44 px de lado ou mais com o número e as **marcas** dos compromissos: **uma marca por compromisso, até 3**; com 4 ou mais, duas marcas e "+2" (o que falta). Cada tipo tem **cor e forma** (nunca só a cor): Consulta (círculo), Fisioterapia (quadrado), Psicologia (losango), Para você (triângulo), Outro (círculo vazio).
+- **Hoje** é o número num círculo cheio; **o dia escolhido** é uma caixa de borda grossa; dia com compromisso tem o número em negrito.
+- A **legenda** (as marcas com o nome do tipo) vem logo abaixo da grade, **só se houver compromissos à vista** e só com os tipos que aparecem.
 **Atrás de um toque.**
+- Tocar num dia o escolhe: o cartão mostra o dia dele. Dia vazio: "Nada marcado para este dia" e o botão de adicionar, já com a data. Dia que já passou: só se lê, sem botão de adicionar.
 - Tocar no compromisso abre a folha de detalhe (Remarcar, Lembrar de mim, Tirar da agenda).
-- "Ver anteriores" (botão de texto, últimos 7 dias, só leitura).
-- "Ver mais datas" amplia para 30 dias.
+- **Lista** (no alternador): a lista dos próximos 14 dias agrupada por dia ("Hoje, qua 04/11", "Amanhã, qui 05/11", "sex, 06/11"), com o botão primário **Adicionar compromisso** (sem dia preenchido), "Ver anteriores" (botão de texto, últimos 7 dias, só leitura) e "Ver mais datas" (30 dias).
 **Textos.**
-- Abas: "Agenda" e "Remédios". Dias vazios **não aparecem** (só os dias com compromisso).
+- Abas: "Agenda" e "Remédios". Alternador: "Calendário" e "Lista" (grupo "Ver a agenda como").
+- Título do dia: "Hoje, 4 de novembro", "Amanhã, 5 de novembro" ou "Sexta, 6 de novembro" (com o ano quando não é o corrente).
+- Rótulo de cada dia para leitor de tela: "6 de novembro, sexta-feira, 2 compromissos: Consulta e Fisioterapia" (hoje leva "hoje"; dia sem compromisso diz só a data).
 - Item: "14:00 Fisioterapia", apoio "Clínica Movimento Vital". A conversa da própria pessoa: "Sua conversa com a Dra. Beatriz" com a etiqueta "Para você", que leva a Conversar com um psicólogo `[S-27]`.
 - Folha **Novo compromisso**:
   - "O que é?" (hint "Exemplo: consulta com o cardiologista")
   - "Tipo" em chips (Consulta, Fisioterapia, Psicologia, Outro)
-  - "Dia"
+  - "Dia" (já vem o dia escolhido no calendário)
   - "Hora"
   - "Onde ou com quem (opcional)"
   - chave "Lembrar de mim" (ligada) com o apoio "Avisamos um dia antes e 1 hora antes. No protótipo, o aviso aparece só dentro do app." `[S-04]` `[S-17]`
   - botão **Salvar compromisso**
   - botão de texto **Voltar**.
-- Folha de detalhe: título do compromisso, "qui, 06/11, às 15:00", botões **Remarcar** (secundário) e **Tirar da agenda** (perigo suave), **Voltar**. Remarcar abre o mesmo formulário com os dados e o botão **Salvar novo horário**.
+- Folha de detalhe: título do compromisso, "qui, 06/11, às 15:00", botões **Remarcar** (secundário) e **Tirar da agenda** (perigo suave), **Voltar**. Remarcar abre só o dia e a hora (CXC-018), com o botão **Salvar novo horário**.
 - Folha de confirmação: título "Tirar este compromisso da agenda?" Texto: "Ele some da sua agenda e dos lembretes." Botões **Tirar da agenda** e **Voltar** (foco inicial).
 - Faixas:
   - "Compromisso salvo."
@@ -875,23 +898,29 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
   - "Escolha um dia de hoje em diante."
   - "Escolha uma hora que ainda não passou."
   - "Não foi possível salvar. Tente de novo; se continuar, fale com a gente."
-- Vazio: título "Nenhum compromisso por aqui", texto "Quando você adicionar uma consulta ou uma sessão, ela aparece nesta lista.", botão **Adicionar compromisso**.
+- Vazio do dia: "Nada marcado para este dia". Vazio da Lista (nenhum compromisso em lugar nenhum): título "Nenhum compromisso por aqui", texto "Quando você adicionar uma consulta ou uma sessão, ela aparece nesta lista.", botão **Adicionar compromisso**.
 **Estados.**
 - Carregando (esqueleto de 3 itens), erro com "Tentar de novo", sem conexão (nota `soft`).
 - Compromisso de hoje cuja hora já passou: etiqueta `late` "Já passou" (a hora já está no título; em tela estreita a etiqueta desce para baixo do título, CXC-001).
+- Depois de adicionar, remarcar ou desfazer, **o calendário vai ao dia (e ao mês) do compromisso**.
 - **Sem pessoa idosa cadastrada** não ocorre (o cadastro exige).
 **Por pessoa.**
-- Igual para todos; muda o conteúdo. Quem tem conversa marcada (Ana, Lourdes) vê o item "Para você".
+- Igual para todos; muda o conteúdo. Quem tem conversa marcada (Ana, Lourdes) vê a marca "Para você" no dia e o item no cartão.
 - **Nada de atendimento, grupo ou escala** entra no texto de compartilhamento com a família (tela 20).
 **RN.** RN-USR-07, RN-USR-09 (guarda só o necessário, sem decisão em nome da pessoa), RN-ATD-03, RN-ATD-18.
 **Critérios de aceite.**
-- **AC-CG-57** Dada a rota `/cuidador/rotina/agenda`, então aparecem o `h1` "Rotina", as abas Agenda (atual, `aria-selected`) e Remédios, o botão primário **Adicionar compromisso** e os próximos 14 dias agrupados por dia, só com os dias que têm compromisso.
-- **AC-CG-58** Dado **Adicionar compromisso**, quando se preenche título, tipo, dia e hora e se toca **Salvar compromisso**, então o compromisso aparece na lista no dia certo, com a faixa "Compromisso salvo." e **Desfazer**, em no máximo 6 toques fora a digitação.
+- **AC-CG-57** Dada a rota `/cuidador/rotina/agenda`, então aparecem o `h1` "Rotina", as abas Agenda (atual, `aria-selected`) e Remédios, o alternador **Calendário | Lista** (Calendário marcado, `aria-pressed`), o calendário de novembro de 2026 (mês e ano por extenso, semana de domingo a sábado, hoje com `aria-current="date"` e escolhido), **Mês anterior**, **Próximo mês** e **Hoje**, o cartão do dia escolhido com os compromissos dele, e um único botão primário, **Adicionar compromisso neste dia**. Na **Lista**, aparecem o botão primário **Adicionar compromisso** e os próximos 14 dias agrupados por dia, só com os dias que têm compromisso.
+- **AC-CG-57b** Dado o calendário, então ele é uma grade (`role="grid"` com linhas, cabeçalhos de coluna e células), cada dia é um botão de 44 px de lado ou mais com o rótulo "6 de novembro, sexta-feira, 2 compromissos: Consulta e Fisioterapia", o dia escolhido leva `aria-selected="true"` e hoje leva `aria-current="date"`; a marca de cada compromisso tem cor e forma, o nome do tipo vai no rótulo, e a legenda só aparece quando há marcas, só com os tipos que aparecem.
+- **AC-CG-57c** Dado o foco num dia, então as setas movem o foco (um dia e uma semana), **Home** e **End** vão ao domingo e ao sábado da semana, **PageUp** e **PageDown** ao mês anterior e ao seguinte, e **Enter** e **Espaço** escolhem o dia; passar do fim do mês leva o foco ao mês seguinte; só um dia entra na ordem do Tab.
+- **AC-CG-57d** Dado **Mês anterior**, **Próximo mês** ou **Hoje**, então o mês muda (de janeiro a dezembro do ano anterior e de dezembro a janeiro do seguinte), o dia do cartão não muda com o mês, e **Hoje** volta ao mês e ao dia de hoje. Escolher um dia esmaecido de outro mês leva a grade ao mês dele.
+- **AC-CG-57e** Dado um dia sem compromisso, então o cartão diz "Nada marcado para este dia" e o botão de adicionar continua ali; num dia que já passou o cartão só mostra o que havia, sem botão de adicionar.
+- **AC-CG-57f** Dado o alternador, quando se toca **Lista** ou **Calendário**, então a visão muda, a escolha fica guardada no navegador (chave `nexus-erp:caregiver-agenda-view`) e vale no próximo acesso; sem nada guardado, ou com valor desconhecido, abre o calendário; o dia aberto continua o mesmo ao ir e voltar.
+- **AC-CG-58** Dado **Adicionar compromisso neste dia** (o dia já vem preenchido), quando se preenche título, tipo e hora e se toca **Salvar compromisso**, então o compromisso aparece no dia certo, com a faixa "Compromisso salvo." e **Desfazer**, em no máximo 6 toques fora a digitação; se o dia salvo é de outro mês, o calendário vai a ele.
 - **AC-CG-59** Dado um título vazio, ou dia passado, ou hora de hoje que já passou, então aparecem as mensagens de erro de cima junto do campo e no resumo, e nada digitado é apagado.
-- **AC-CG-60** Dado um compromisso, quando se toca **Remarcar**, muda dia e hora e se salva, então o compromisso muda de lugar na lista, a faixa mostra o novo horário com **Desfazer**, e **Desfazer** restaura o horário anterior.
-- **AC-CG-61** Dado **Tirar da agenda**, então abre a folha com o efeito, o foco inicial fica em **Voltar**, e só depois de **Tirar da agenda** o compromisso sai da lista e dos lembretes.
+- **AC-CG-60** Dado um compromisso, quando se toca **Remarcar**, muda dia e hora e se salva, então o compromisso muda de lugar (o calendário vai ao dia novo), a faixa mostra o novo horário com **Desfazer**, e **Desfazer** restaura o horário anterior e volta ao dia de antes.
+- **AC-CG-61** Dado **Tirar da agenda**, então abre a folha com o efeito, o foco inicial fica em **Voltar**, e só depois de **Tirar da agenda** o compromisso sai do dia e dos lembretes (**Desfazer** devolve e leva o calendário ao dia dele).
 - **AC-CG-62** Dado o campo "Lembrar de mim", então vem **ligado** por padrão, e desligar grava `reminder: false` sem pedir confirmação.
-- **AC-CG-63** Dada uma conversa da própria pessoa com o psicólogo marcada, então ela aparece no dia certo com a etiqueta "Para você" e leva a Conversar com um psicólogo; ela **não** entra em nenhum texto de compartilhamento.
+- **AC-CG-63** Dada uma conversa da própria pessoa com o psicólogo marcada, então ela aparece no dia certo (a marca "Para você" no calendário e o item no cartão do dia) com a etiqueta "Para você" e leva a Conversar com um psicólogo; ela **não** entra em nenhum texto de compartilhamento.
 
 ## C6. `/cuidador/rotina/remedios`: Rotina, aba Remédios (P1, `routine`)
 **Propósito.** Marcar os remédios de hoje e manter a lista de remédios da pessoa idosa.
@@ -1786,6 +1815,17 @@ Todas **aceitas pelo líder** na integração. Três delas são decisões explí
 45. **S-45** O aceite do aviso de emergência do cadastro fica em `Caregiver.emergencyNoticeAcceptedAt`, com data e hora. (tela 2) *Aceita.*
 46. **S-46** "Agora não" em Família não grava nada e mostra a nota "Tudo bem. Nada foi compartilhado." (tela 20) *Aceita.*
 47. **S-47** `?novo=1` abre direto a folha de novo compromisso (Agenda) ou de novo remédio (Remédios), para os botões de Hoje levarem a um passo só. (telas 4, 5 e 6) *Aceita.*
+
+**Agenda em calendário (`docs/16-calendario-agenda.md`, S-CAL-01 a 08)**
+
+- **S-CAL-01** A Agenda abre em **calendário** (padrão) e a **Lista** antiga fica atrás do alternador "Calendário | Lista"; a escolha vale para o navegador, não por pessoa, como o tamanho da letra. (tela 5) *Aceita.*
+- **S-CAL-02** A semana começa no **domingo** e a grade tem **5 ou 6 linhas** (um mês que cabe em 4 ganha a quinta). (tela 5) *Aceita.*
+- **S-CAL-03** A conversa da própria pessoa com o psicólogo é o tipo **Para você** no calendário (marca própria), separado da **Psicologia** da pessoa idosa. (tela 5) *Aceita.*
+- **S-CAL-04** Dia com mais de 3 compromissos mostra **duas marcas e "+N"**. (tela 5) *Aceita.*
+- **S-CAL-05** **Mês anterior** e **Próximo mês** não mudam o dia escolhido; o cartão do dia diz qual é. Escolher um dia esmaecido leva a grade ao mês dele. (tela 5) *Aceita.*
+- **S-CAL-06** Dia que já passou só se lê: sem botão de adicionar (não se marca compromisso no passado) e sem tocar nos compromissos (a Lista antiga já era assim). (tela 5) *Aceita.*
+- **S-CAL-07** O calendário não passa dos anos 1900 e 2200. (tela 5) *Aceita.*
+- **S-CAL-08** Abrir a Agenda por `?novo=1` (vindo de Hoje) abre o formulário **sem o dia preenchido**; só o botão do cartão do dia preenche. (telas 4 e 5) *Aceita.*
 
 **P2 (Cuidar de mim, Conversar com um psicólogo, Como estou, Ajuda agora, Falar com a Nexus, Privacidade)**
 

@@ -37,6 +37,22 @@ export const TOAST_UNDO_MS = 10000;
 export const TOAST_MAX_STACK = 2;
 const TICK_MS = 100;
 
+/** Regras de um aplicativo para o aviso rápido: quantos ficam na tela e por quanto tempo. */
+export interface ToastProfile {
+  /** Quantos avisos cabem ao mesmo tempo; o mais antigo sai quando chega outro. */
+  readonly maxStack: number;
+  /** Duração quando o aviso não pede outra (e não tem "Desfazer"). */
+  readonly defaultMs: number;
+  /** Duração do aviso que tem "Desfazer". */
+  readonly undoMs: number;
+}
+
+const STANDARD_PROFILE: ToastProfile = {
+  maxStack: TOAST_MAX_STACK,
+  defaultMs: TOAST_DEFAULT_MS,
+  undoMs: TOAST_UNDO_MS,
+};
+
 /**
  * Toasts: confirmação leve de ação concluída, sem tirar a pessoa da tela. Nunca para erro que exija
  * leitura calma (use `BannerComponent`).
@@ -59,6 +75,7 @@ export class ToastService {
   /** Quantas razões de pausa (mouse, foco) estão ativas por toast. */
   private readonly holds = new Map<number, number>();
   private timer: ReturnType<typeof setInterval> | null = null;
+  private profile: ToastProfile = STANDARD_PROFILE;
 
   readonly toasts = this.itemsSignal.asReadonly();
 
@@ -66,9 +83,26 @@ export class ToastService {
     inject(DestroyRef).onDestroy(() => this.stopTimer());
   }
 
+  /**
+   * Troca as regras do aviso rápido enquanto um aplicativo está aberto (o do cuidador mostra um aviso por vez, por 8 s).
+   * Devolve a função que volta ao que havia; o chamador a roda ao sair. Se já há mais avisos do que o novo limite, os
+   * mais antigos saem.
+   */
+  useProfile(profile: ToastProfile): () => void {
+    const previous = this.profile;
+    this.profile = profile;
+    this.trimTo(profile.maxStack);
+    return () => {
+      if (this.profile === profile) {
+        this.profile = previous;
+      }
+    };
+  }
+
   show(options: ToastOptions): number {
     const tone = options.tone ?? 'success';
-    const durationMs = options.durationMs ?? (options.action ? TOAST_UNDO_MS : TOAST_DEFAULT_MS);
+    const durationMs =
+      options.durationMs ?? (options.action ? this.profile.undoMs : this.profile.defaultMs);
     const item: ToastItem = {
       id: this.nextId++,
       tone,
@@ -78,15 +112,9 @@ export class ToastService {
       ...(options.action ? { action: options.action } : {}),
     };
     this.remaining.set(item.id, durationMs);
-    const next = [...this.itemsSignal(), item];
+    this.itemsSignal.set([...this.itemsSignal(), item]);
     // Excedente sai pelo mais antigo.
-    while (next.length > TOAST_MAX_STACK) {
-      const dropped = next.shift();
-      if (dropped) {
-        this.forget(dropped.id);
-      }
-    }
-    this.itemsSignal.set(next);
+    this.trimTo(this.profile.maxStack);
     this.ensureTimer();
     return item.id;
   }
@@ -176,6 +204,20 @@ export class ToastService {
       }
     });
     expired.forEach((id) => this.dismiss(id));
+  }
+
+  private trimTo(max: number): void {
+    const list = [...this.itemsSignal()];
+    if (list.length <= max) {
+      return;
+    }
+    while (list.length > max) {
+      const dropped = list.shift();
+      if (dropped) {
+        this.forget(dropped.id);
+      }
+    }
+    this.itemsSignal.set(list);
   }
 
   private forget(id: number): void {

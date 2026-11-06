@@ -6,6 +6,7 @@
  * `appInput`, `appMask`, `app-checkbox`, `app-radio-group`, `app-empty-state`, `app-stepper`, `app-badge`,
  * `DialogService`, `ToastService`.
  */
+export * from './cg-calendar.component';
 export * from './cg-card.component';
 export * from './cg-choice-group.component';
 export * from './cg-contact-dialog.component';

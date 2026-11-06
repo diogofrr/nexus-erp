@@ -342,6 +342,9 @@
 .cg-app .cg-user-menu__name { display: none; @include up(md) { display: inline; } }
 // No celular o botão do menu é só o avatar (a Ajuda agora precisa do espaço).
 .cg-app .cg-user-menu__trigger .icon { display: none; @include up(md) { display: inline-block; } }
+// A camada transparente sob o painel consome o toque fora do menu (ele fecha o menu e mais nada); o botão do menu fica acima dela.
+.cg-app .cg-user-menu__scrim { position: fixed; inset: 0; z-index: calc(var(--z-popover) - 1); background: transparent; cursor: default; }
+.cg-app .cg-user-menu__trigger[aria-expanded='true'] { position: relative; z-index: var(--z-popover); }
 .cg-app .cg-user-menu__panel {
   position: absolute;
   inset: calc(100% + 0.5rem) 0 auto auto;
@@ -632,11 +635,14 @@
   font: inherit;
   text-align: left;
   text-decoration: none;
-  cursor: pointer;
   transition: background var(--cg-dur) var(--ease);
-  &:active { background: var(--cg-surface-sunken); }
   &:focus-visible { outline-offset: -3px; }
   &[aria-current='true'] { background: var(--brand-soft); }
+}
+// Só o que clica parece clicável: a linha de leitura (um `div.cg-row`, como o histórico do Cartão) não tem mão nem destaque ao toque.
+.cg-app a.cg-row, .cg-app button.cg-row {
+  cursor: pointer;
+  &:active { background: var(--cg-surface-sunken); }
 }
 .cg-app .cg-row__icon { display: grid; place-items: center; flex-shrink: 0; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--brand-soft); color: var(--cg-heading); }
 // Corpo da linha: o texto tem largura mínima (10 em) e a etiqueta (`[cgRowEnd]`) só fica ao lado dele se couber; senão
@@ -945,18 +951,28 @@
 .cg-app .cg-emergency__text { margin: 0; font-size: var(--cg-fs-small); }
 .cg-app .cg-emergency :focus-visible { outline-color: var(--cg-focus-on-dark); }
 
+@keyframes cg-toast-in { from { opacity: 0; transform: translateY(-0.5rem); } }
+
 // ---------------------------------------------------------------------------
 // Confirmação (DialogService) e toast do design system quando o aplicativo do cuidador está aberto.
 // Eles vivem fora do shell (na raiz do app), então o gancho é `<html data-app="caregiver">`.
 // ---------------------------------------------------------------------------
 :root[data-app='caregiver'] {
+  // Aviso rápido: no alto, centralizado, logo abaixo do cabeçalho (a altura dele é a de `--cg-header-h`, que vive no shell, fora desta raiz).
+  // Nunca fica sobre a barra inferior nem sobre o botão que a pessoa acabou de tocar e que o próximo toque procura (CXC-017). A região não
+  // pega toque (só o aviso pega), é uma coluna de um aviso por vez e tem largura máxima.
+  --cg-toast-top: calc(4rem + 0.5rem + env(safe-area-inset-top, 0px));
+  @include up(lg) { --cg-toast-top: calc(4.5rem + 0.5rem + env(safe-area-inset-top, 0px)); }
   .toast-region {
-    inset: auto 1rem calc(4rem + 1rem + env(safe-area-inset-bottom, 0px)) 1rem;
-    @include up(lg) { inset: auto 2rem 2rem auto; }
+    inset: var(--cg-toast-top) 0 auto 0;
+    width: min(32rem, calc(100% - 2rem));
+    margin-inline: auto;
+    justify-items: center;
   }
-  .toast { font-size: 1.125rem; min-height: 3rem; }
-  // Enquanto há um aviso rápido na tela, o conteúdo ganha folga embaixo: dá para rolar o botão que ele cobriria (CXC-017).
-  &:has(.toast) .cg-app .cg-main { padding-block-end: calc(var(--cg-nav-h) + 7rem + env(safe-area-inset-bottom, 0px)); }
+  // O texto do aviso deixa o toque passar para o que está embaixo: só "Desfazer" e "Fechar" pegam toque. Assim o aviso nunca "rouba" um toque
+  // (o toque que a pessoa dá em um botão que o aviso cobre chega ao botão).
+  .toast { font-size: 1.125rem; min-height: 3rem; animation-name: cg-toast-in; pointer-events: none; }
+  .toast .toast__action, .toast .toast__close { pointer-events: auto; }
   .dialog {
     @include down(md) {
       width: 100%;
@@ -1011,50 +1027,72 @@
 .cg-door__actions { display: grid; gap: 0.75rem; @include up(md) { display: flex; flex-wrap: wrap; align-items: center; } }
 .cg-door__actions .btn { min-height: 3.5rem; @include down(md) { width: 100%; } }
 .cg-door__more { justify-self: start; min-height: 3rem; }
-// "Ajuda agora" no cabeçalho da entrada (a faixa de marca), no mesmo lugar e com o mesmo texto das outras telas (CXC-014).
+// Cabeçalho da entrada: o título "Entrar" à esquerda e "Ajuda agora" à direita, na mesma linha, também no celular. O botão tem o
+// mesmo desenho do "Ajuda agora" do aplicativo (contorno azul, fundo claro, 48 px) e abre sem entrar (CXC-014).
+.login__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.login__head-text { flex: 1 1 auto; min-width: 0; }
 .login__help {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   min-height: 3rem;
-  margin-inline-start: auto;
   padding: 0 1rem;
-  border: 2px solid #fff;
+  border: 2px solid var(--nx-blue-800);
   border-radius: 0.75rem;
-  background: #fff;
+  background: var(--surface);
   color: var(--nx-blue-800);
   font-weight: var(--fw-semibold);
   line-height: 1.1;
   text-decoration: none;
   white-space: nowrap;
-  &:focus-visible { outline: 3px solid var(--nx-gold-300); outline-offset: 3px; }
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease);
+  &:hover, &:active { background: var(--brand-soft); }
+  &:focus-visible { outline: 3px solid var(--nx-blue-900); outline-offset: 3px; }
 }
+// Tela muito estreita ou letra grande demais: o botão desce para baixo do título em vez de espremê-lo.
+@media (max-width: 21.99rem) { .login__head { flex-wrap: wrap; } .login__head-text { flex-basis: 100%; } }
 .cg-door__emergency { margin: 0; color: var(--text-muted); font-size: calc(1rem * var(--cg-door-zoom, 1)); }
 .cg-door .cg-link-btn { color: var(--nx-blue-700); }
 
-.cg-door--staff {
+// Acordeão da equipe: uma linha de cabeçalho (ícone, título, frase curta e seta à direita que gira ao abrir), um botão de
+// verdade com `aria-expanded`, alvo de 72 px de altura e a lista logo abaixo, dentro do mesmo cartão.
+.cg-accordion {
+  display: block;
   padding: 0;
+  overflow: hidden;
   border: 1px solid var(--border);
-  background: transparent;
-  gap: 0.75rem;
-  > .cg-door__toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    width: 100%;
-    min-height: 3rem;
-    padding: 0.5rem 1rem;
-    border: 0;
-    background: transparent;
-    color: var(--text-muted);
-    font: inherit;
-    font-weight: var(--fw-semibold);
-    text-align: left;
-    cursor: pointer;
-  }
-  > .cg-door__body { display: grid; gap: 1rem; padding: 0 1rem 1rem; }
+  background: var(--surface);
+  scroll-margin-block-start: 1rem;
+  &.cg-accordion--open { border-color: var(--nx-blue-300); }
 }
+.cg-accordion__heading { margin: 0; font: inherit; }
+.cg-accordion__trigger {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  min-height: 4.5rem;
+  padding: 0.75rem 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease);
+  &:hover { background: var(--brand-soft); }
+  &:focus-visible { outline: 3px solid var(--nx-blue-900); outline-offset: -3px; }
+}
+.cg-accordion__icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--brand-soft); color: var(--nx-blue-800); }
+.cg-accordion__text { display: grid; gap: 0.125rem; min-width: 0; }
+.cg-accordion__title { font-family: var(--font-serif); font-size: var(--fs-xl); line-height: var(--lh-title); color: var(--text-heading); }
+.cg-accordion__hint { color: var(--text-muted); font-size: var(--fs-sm); line-height: 1.4; }
+.cg-accordion__chevron { transition: transform var(--dur-2) var(--ease); }
+.cg-accordion__trigger[aria-expanded='true'] .cg-accordion__chevron { transform: rotate(180deg); }
+.cg-accordion__panel { display: grid; gap: 1rem; padding: 0.25rem 1rem 1rem; border-top: 1px solid var(--border); padding-block-start: 1rem; &[hidden] { display: none; } }
 
 // No celular e no tablet o painel de marca da entrada vira uma faixa baixa: a porta do cuidador tem de aparecer
 // sem rolar muito (o público tem pouco tempo e uma mão ocupada).

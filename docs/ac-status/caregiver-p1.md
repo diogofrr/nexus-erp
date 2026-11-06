@@ -37,15 +37,20 @@ Estados: sem conexão (`OnlineStatusService`) atendido. **Carregando e erro** ("
 
 | AC | Status | Onde ver, e o que foi feito |
 |---|---|---|
-| AC-CG-57 | atendido | h1 "Rotina", abas Agenda (`aria-selected`) e Remédios com setas, **Adicionar compromisso** primário, próximos 14 dias por dia ("Hoje, qua 04/11", "Amanhã, qui 05/11", "sex, 06/11"), só dias com compromisso. "Ver anteriores" (7 dias, só leitura) e "Ver mais datas" (30 dias) |
-| AC-CG-58 | atendido | Folha "Novo compromisso" (título, tipo em chips, dia, hora, onde ou com quem opcional, lembrar); aparece no dia certo; faixa "Compromisso salvo." com **Desfazer** por 8 s |
+| AC-CG-57 | atendido | **Agenda em calendário** (`docs/16-calendario-agenda.md`): h1 "Rotina", abas Agenda (`aria-selected`) e Remédios com setas, alternador **Calendário** e **Lista** (`aria-pressed`), calendário do mês (`app-cg-calendar`) com hoje escolhido, cartão do dia ("Hoje, 4 de novembro") e um só botão primário, **Adicionar compromisso neste dia**. Na **Lista** (a visão antiga): **Adicionar compromisso** primário, próximos 14 dias por dia ("Hoje, qua 04/11", "Amanhã, qui 05/11", "sex, 06/11"), só dias com compromisso, "Ver anteriores" (7 dias, só leitura) e "Ver mais datas" (30 dias). Em 1024 px ou mais, calendário e cartão lado a lado: **não conferido em navegador** |
+| AC-CG-57b | atendido | Grade com `role="grid"`, linhas, cabeçalhos e células; cada dia é um botão com o rótulo "6 de novembro, sexta-feira, 2 compromissos: Consulta e Fisioterapia"; `aria-selected` no dia escolhido, `aria-current="date"` em hoje; marcas com cor e forma e legenda só quando há marcas (`cg-calendar.spec.ts`, `routine.spec.ts`). Alvo de 44 px e contraste: `pnpm run check:a11y` (as marcas passam 3:1); medida real em 360 px **não conferida em navegador** |
+| AC-CG-57c | atendido | Teclado: setas, Home, End, PageUp, PageDown, Enter e Espaço; passar do fim do mês leva o foco ao mês seguinte; um só dia no Tab (`cg-calendar.spec.ts`, `routine.spec.ts`) |
+| AC-CG-57d | atendido | Mês anterior, Próximo mês e Hoje (virada de ano nos dois sentidos); o cartão do dia não muda com o mês; dia esmaecido leva a grade ao mês dele (`calendar-grid.spec.ts`, `cg-calendar.spec.ts`, `routine.spec.ts`) |
+| AC-CG-57e | atendido | Dia vazio: "Nada marcado para este dia" com o botão de adicionar; dia que já passou: só leitura, sem botão (`routine.spec.ts`) |
+| AC-CG-57f | atendido | O alternador guarda a escolha em `nexus-erp:caregiver-agenda-view` (`AgendaViewService`); valor desconhecido abre o calendário; o dia aberto fica ao ir e voltar (`routine.spec.ts`) |
+| AC-CG-58 | atendido | **Adicionar compromisso neste dia** abre "Novo compromisso" com o dia já preenchido (título, tipo em chips, hora, onde ou com quem opcional, lembrar); aparece no dia certo e o calendário vai ao dia (e ao mês) dele; faixa "Compromisso salvo." com **Desfazer** por 8 s |
 | AC-CG-59 | atendido | "Informe o que é o compromisso.", "Escolha um dia de hoje em diante.", "Escolha uma hora que ainda não passou." junto do campo e no resumo; nada digitado é apagado |
-| AC-CG-60 | atendido | **Remarcar** reabre o formulário com os dados; "Remarcado para sex, 06/11, às 15:00." com **Desfazer** que restaura |
-| AC-CG-61 | atendido | "Tirar este compromisso da agenda?" com o efeito escrito, foco inicial em **Voltar**; só depois de confirmar sai; **Desfazer** devolve com o mesmo id |
+| AC-CG-60 | atendido | **Remarcar** abre só o dia e a hora (CXC-018); o calendário vai ao dia novo; "Remarcado para sex, 06/11, às 15:00." com **Desfazer** que restaura e volta ao dia de antes |
+| AC-CG-61 | atendido | "Tirar este compromisso da agenda?" com o efeito escrito, foco inicial em **Voltar**; só depois de confirmar sai; **Desfazer** devolve com o mesmo id e leva o calendário ao dia dele |
 | AC-CG-62 | atendido | "Lembrar de mim" vem ligado; desligar (no cadastro ou no detalhe) grava `reminder: false` sem confirmação |
-| AC-CG-63 | atendido | Conversa do próprio cuidador com o psicólogo aparece no dia com "Para você" e leva a `/cuidador/cuidar-de-mim/atendimento`; nunca entra no texto da família. No seed, Ana (seg, 09/11, on-line) e Lourdes (sex, 06/11, coworking) têm uma conversa futura desde a integração (`docs/12`, seção 1) |
+| AC-CG-63 | atendido | Conversa do próprio cuidador com o psicólogo aparece no dia (marca "Para você" no calendário e item no cartão do dia) com a etiqueta "Para você" e leva a `/cuidador/cuidar-de-mim/atendimento`; nunca entra no texto da família. No seed, Ana (seg, 09/11, on-line) e Lourdes (sex, 06/11, coworking) têm uma conversa futura desde a integração (`docs/12`, seção 1) |
 
-Estados: sem conexão atendido; etiqueta "Já passou" em compromisso de hoje atendido (docs/15, CXC-001); vazio atendido. Carregando e erro: não atendido, pelo mesmo motivo de Hoje.
+Estados: sem conexão atendido; etiqueta "Já passou" em compromisso de hoje atendido (docs/15, CXC-001); vazio atendido (no calendário, "Nada marcado para este dia"; na Lista, "Nenhum compromisso por aqui"). Carregando e erro: não atendido, pelo mesmo motivo de Hoje.
 
 ## Remédios (C6, `/cuidador/rotina/remedios`)
 

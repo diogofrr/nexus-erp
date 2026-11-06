@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ToastService } from '../../../shared/ui/overlay/toast.service';
+import { FakeStorage } from '../../../core/testing/test-helpers';
 import { BootedCaregiverApp, bootCaregiverApp, settleCaregiver } from '../testing';
-import { dayHeading, whenText } from './state/agenda-format';
+import { dayCardHeading, dayHeading, whenText } from './state/agenda-format';
 import { AgendaError, AgendaService } from './state/agenda.service';
 import {
   MedicationError,
@@ -91,6 +92,15 @@ describe('Rotina (UX C5 e C6)', () => {
       expect(whenText('2026-11-06T15:00:00-03:00', '2026-11-04')).toBe('sex, 06/11, às 15:00');
     });
 
+    it('o título do dia escolhido no calendário: Hoje, Amanhã e "Sexta, 6 de novembro"', () => {
+      expect(dayCardHeading('2026-11-04', '2026-11-04')).toBe('Hoje, 4 de novembro');
+      expect(dayCardHeading('2026-11-05', '2026-11-04')).toBe('Amanhã, 5 de novembro');
+      expect(dayCardHeading('2026-11-06', '2026-11-04')).toBe('Sexta, 6 de novembro');
+      expect(dayCardHeading('2026-11-08', '2026-11-04')).toBe('Domingo, 8 de novembro');
+      expect(dayCardHeading('2026-11-03', '2026-11-04')).toBe('Terça, 3 de novembro');
+      expect(dayCardHeading('2027-01-08', '2026-11-04')).toBe('Sexta, 8 de janeiro de 2027');
+    });
+
     it('remédio: sem nome ou sem horário não passa; horários sem repetição e em ordem', () => {
       expect(medicationProblems({ name: ' ', times: [] })).toEqual(['name_required', 'times_required']);
       expect(medicationProblems({ name: 'Losartana', times: ['25:00'] })).toEqual(['time_format']);
@@ -124,8 +134,37 @@ describe('Rotina (UX C5 e C6)', () => {
     });
   });
 
-  describe('Agenda: AC-CG-57', () => {
-    it('h1 "Rotina", as duas abas, o botão primário e os dias com compromisso agrupados', async () => {
+  /** Escolhe um dia no calendário (um toque no botão do dia). */
+  const pickDay = async (date: string): Promise<void> => {
+    await click(q(`[data-date="${date}"]`));
+  };
+  /** Abre a Agenda e passa para a lista (o alternador "Lista"). */
+  const openList = async (id: string, url: string, options: { time?: string; today?: string } = {}): Promise<void> => {
+    await open(id, url, options);
+    await click(buttonByText('Lista'));
+  };
+  const selectedHeading = (): string => text(q('#agenda-selected-day'));
+  const dateAfter = (date: string): string => {
+    const next = new Date(`${date}T12:00:00Z`);
+    next.setUTCDate(next.getUTCDate() + 1);
+    return next.toISOString().slice(0, 10);
+  };
+  /** O primeiro dia a partir de `from` em que a pessoa idosa e o cuidador não têm nada marcado. */
+  const freeDay = (from: string): string => {
+    const busy = new Set<string>([
+      ...app.db.careAppointments.list().map((a) => a.at.slice(0, 10)),
+      ...app.db.careSessions.list().map((x) => x.startAt.slice(0, 10)),
+    ]);
+    let date = from;
+    while (busy.has(date)) {
+      date = dateAfter(date);
+    }
+    return date;
+  };
+  const monthTitle = (): string => text(q('.cg-cal__title'));
+
+  describe('Agenda em calendário: AC-CG-57', () => {
+    it('h1 "Rotina", as duas abas, o alternador, o calendário do mês e o botão primário do dia', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda');
       expect(text(q('main h1'))).toBe('Rotina');
       const tabs = all('[role="tab"]');
@@ -133,15 +172,23 @@ describe('Rotina (UX C5 e C6)', () => {
       expect(tabs.map((t) => t.getAttribute('aria-selected'))).toEqual(['true', 'false']);
       expect(q('[role="tablist"]')).not.toBeNull();
       expect(q('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe('routine-tab-agenda');
-      expect(buttonByText('Adicionar compromisso')?.className).toContain('btn--primary');
-      const headings = all('main h2.routine-day').map(text);
-      expect(headings[0]).toBe('Hoje, qua 04/11');
-      expect(headings.every((h) => /^(Hoje|Amanhã), [^\s,]+ \d\d\/\d\d$|^[^\s,]+, \d\d\/\d\d$/.test(h))).toBe(true);
-      // Só os dias que têm compromisso aparecem (um título por dia, sem repetir), e cada título tem o seu compromisso.
-      expect(new Set(headings).size).toBe(headings.length);
-      expect(all('main section[aria-labelledby^="agenda-day-"]').every((s) => s.querySelectorAll('app-cg-row').length > 0)).toBe(true);
-      // Cada compromisso mostra a hora e o título.
-      expect(all('app-cg-row').every((r) => /^\d{2}:\d{2} /.test(text(r.querySelector('.cg-row__title'))))).toBe(true);
+      // O alternador: Calendário (marcado) e Lista.
+      const toggles = all('.routine-view__btn');
+      expect(toggles.map(text)).toEqual(['Calendário', 'Lista']);
+      expect(toggles.map((t) => t.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
+      expect(q('.routine-view')?.getAttribute('aria-label')).toBe('Ver a agenda como');
+      // O calendário do mês de hoje, com hoje escolhido.
+      expect(q('app-cg-calendar [role="grid"]')).not.toBeNull();
+      expect(monthTitle()).toBe('novembro de 2026');
+      expect(q('[data-date="2026-11-04"]')?.getAttribute('aria-current')).toBe('date');
+      expect(q('[data-date="2026-11-04"]')?.closest('[role="gridcell"]')?.getAttribute('aria-selected')).toBe('true');
+      // Um só botão primário na tela: o do dia.
+      expect(all('.routine-panel button.btn--primary').map(text)).toEqual(['Adicionar compromisso neste dia']);
+      // O cartão do dia: hoje, com o compromisso de hoje da Ana.
+      expect(selectedHeading()).toBe('Hoje, 4 de novembro');
+      expect(all('.routine-selected app-cg-row').map((r) => text(r.querySelector('.cg-row__title')))).toEqual(['16:00 Sessão de fisioterapia']);
+      // Em calendário não há títulos de grupo da lista.
+      expect(all('main h2.routine-day')).toHaveLength(0);
     });
 
     it('as setas movem entre as abas', async () => {
@@ -160,40 +207,100 @@ describe('Rotina (UX C5 e C6)', () => {
       expect(all('.cg-note--error')).toHaveLength(0);
     });
 
-    it('sem compromisso nenhum: o vazio acolhedor com "Adicionar compromisso"', async () => {
+    it('tocar noutro dia mostra a lista dele; o dia fica marcado e o cartão diz qual é', async () => {
+      await open('cg_0001', '/cuidador/rotina/agenda');
+      const apt = app.db.careAppointments.find((a) => a.elderId === app.context.elderId() && a.at.startsWith('2026-11-05')) as { title: string };
+      await pickDay('2026-11-05');
+      expect(selectedHeading()).toBe('Amanhã, 5 de novembro');
+      expect(all('.routine-selected app-cg-row').some((r) => text(r).includes(apt.title))).toBe(true);
+      expect(q('[data-date="2026-11-05"]')?.closest('[role="gridcell"]')?.getAttribute('aria-selected')).toBe('true');
+      expect(q('[data-date="2026-11-04"]')?.closest('[role="gridcell"]')?.getAttribute('aria-selected')).toBe('false');
+      await pickDay('2026-11-06');
+      expect(selectedHeading()).toBe('Sexta, 6 de novembro');
+      // O compromisso de amanhã não aparece mais no cartão.
+      expect(all('.routine-selected app-cg-row').some((r) => text(r).includes(apt.title))).toBe(false);
+    });
+
+    it('dia vazio: "Nada marcado para este dia" e o botão de adicionar continua ali', async () => {
+      await open('cg_0001', '/cuidador/rotina/agenda');
+      await pickDay(freeDay('2026-11-12'));
+      expect(text(q('.routine-selected .cg-note'))).toBe('Nada marcado para este dia');
+      expect(all('.routine-selected app-cg-row')).toHaveLength(0);
+      expect(all('.routine-panel button.btn--primary').map(text)).toEqual(['Adicionar compromisso neste dia']);
+    });
+
+    it('as marcas do calendário dizem o tipo no rótulo: a fisioterapia de hoje, a consulta de amanhã e a conversa "Para você"', async () => {
+      await open('cg_0001', '/cuidador/rotina/agenda');
+      expect(q('[data-date="2026-11-04"]')?.getAttribute('aria-label')).toBe('4 de novembro, quarta-feira, hoje, 1 compromisso: Fisioterapia');
+      expect(q('[data-date="2026-11-05"]')?.getAttribute('aria-label')).toContain('1 compromisso: Consulta');
+      expect(q('[data-date="2026-11-09"]')?.getAttribute('aria-label')).toContain('Para você');
+      // A legenda só traz os tipos que aparecem no mês.
+      expect(all('.cg-cal__legend li').map(text)).toEqual(expect.arrayContaining(['Consulta', 'Fisioterapia', 'Para você']));
+    });
+
+    it('sem compromisso nenhum: o calendário aparece, sem legenda, e o dia diz que não há nada marcado', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda');
       app.db.careAppointments.removeWhere((a) => a.elderId === app.context.elderId());
       // A conversa com o psicólogo que o seed deixa para a Ana também é compromisso.
       app.db.careSessions.removeWhere((x) => x.caregiverId === app.context.caregiverId());
       await flush();
-      expect(text(q('.empty__title'))).toBe('Nenhum compromisso por aqui');
-      expect(text(q('.empty__text'))).toBe('Quando você adicionar uma consulta ou uma sessão, ela aparece nesta lista.');
-      expect(all('button.btn--primary').filter((b) => text(b) === 'Adicionar compromisso')).toHaveLength(1);
+      expect(q('app-cg-calendar')).not.toBeNull();
+      expect(q('.cg-cal__legend')).toBeNull();
+      expect(all('.cg-cal__mark')).toHaveLength(0);
+      expect(text(q('.routine-selected .cg-note'))).toBe('Nada marcado para este dia');
+      expect(all('.routine-panel button.btn--primary').map(text)).toEqual(['Adicionar compromisso neste dia']);
     });
 
-    it('"Ver anteriores" mostra os últimos 7 dias só para ler, e "Ver mais datas" amplia para 30 dias', async () => {
+    it('dia que já passou: só se lê, sem botão de adicionar (não se marca compromisso no passado)', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda');
-      const elderId = app.context.elderId() as string;
-      app.db.careAppointments.create({ elderId, title: 'Consulta antiga', at: '2026-11-02T10:00:00-03:00', kind: 'medical', reminder: true });
-      app.db.careAppointments.create({ elderId, title: 'Consulta longe', at: '2026-11-25T10:00:00-03:00', kind: 'medical', reminder: true });
+      app.db.careAppointments.create({
+        elderId: app.context.elderId() as string,
+        title: 'Consulta de ontem',
+        at: '2026-11-03T10:00:00-03:00',
+        kind: 'medical',
+        reminder: true,
+      });
       await flush();
-      expect(text(q('main'))).not.toContain('Consulta antiga');
-      expect(text(q('main'))).not.toContain('Consulta longe');
-      await click(buttonByText('Ver anteriores'));
-      expect(text(q('main'))).toContain('Consulta antiga');
-      expect(all('.routine-plain').some((li) => text(li).includes('Consulta antiga'))).toBe(true);
-      await click(buttonByText('Ver mais datas'));
-      expect(text(q('main'))).toContain('Consulta longe');
-      expect(buttonByText('Ver mais datas')).toBeUndefined();
+      await pickDay('2026-11-03');
+      expect(selectedHeading()).toBe('Terça, 3 de novembro');
+      expect(text(q('.routine-selected'))).toContain('Consulta de ontem');
+      expect(all('.routine-selected app-cg-row')).toHaveLength(0);
+      expect(all('.routine-selected .routine-plain')).toHaveLength(1);
+      expect(all('.routine-panel button.btn--primary')).toHaveLength(0);
     });
 
-    it('abre o formulário direto com ?novo=1, vindo de Hoje', async () => {
+    it('o teclado leva ao dia: seta, Enter e o cartão muda', async () => {
+      await open('cg_0001', '/cuidador/rotina/agenda');
+      const today = q('[data-date="2026-11-04"]') as HTMLElement;
+      today.focus();
+      today.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+      await flush();
+      const next = q('[data-date="2026-11-05"]') as HTMLElement;
+      expect(document.activeElement).toBe(next);
+      next.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+      await flush();
+      expect(selectedHeading()).toBe('Amanhã, 5 de novembro');
+    });
+
+    it('Hoje, no calendário, volta ao dia de hoje; Próximo mês não troca o dia do cartão', async () => {
+      await open('cg_0001', '/cuidador/rotina/agenda');
+      await pickDay('2026-11-06');
+      await click(all('app-cg-calendar button').find((b) => b.getAttribute('aria-label') === 'Próximo mês'));
+      expect(monthTitle()).toBe('dezembro de 2026');
+      expect(selectedHeading()).toBe('Sexta, 6 de novembro');
+      await click(all('app-cg-calendar button').find((b) => text(b) === 'Hoje'));
+      expect(monthTitle()).toBe('novembro de 2026');
+      expect(selectedHeading()).toBe('Hoje, 4 de novembro');
+    });
+
+    it('abre o formulário direto com ?novo=1, vindo de Hoje (sem dia preenchido)', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda?novo=1');
       expect(sheet().querySelector('.cg-sheet__title')?.textContent).toContain('Novo compromisso');
+      expect(inSheet<HTMLInputElement>('#apt-date').value).toBe('');
     });
   });
 
-  describe('Agenda: AC-CG-58 a 63', () => {
+  describe('Agenda em calendário: AC-CG-58 a 63', () => {
     const fillNew = async (title: string, kind: number, date: string, time: string): Promise<void> => {
       await type(inSheet<HTMLInputElement>('#apt-title'), title);
       if (kind >= 0) {
@@ -202,11 +309,27 @@ describe('Rotina (UX C5 e C6)', () => {
       await type(inSheet<HTMLInputElement>('#apt-date'), date);
       await type(inSheet<HTMLInputElement>('#apt-time'), time);
     };
+    const addButton = (): HTMLElement | undefined => buttonByText('Adicionar compromisso neste dia');
 
-    it('adicionar: título, tipo, dia e hora; aparece no dia certo, com faixa de 8 s e "Desfazer"', async () => {
+    it('"Adicionar compromisso neste dia" abre o formulário com o dia já preenchido', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda');
-      await click(buttonByText('Adicionar compromisso'));
+      const day = freeDay('2026-11-12');
+      await pickDay(day);
+      await click(addButton());
       expect(text(sheet().querySelector('.cg-sheet__title'))).toBe('Novo compromisso');
+      expect(inSheet<HTMLInputElement>('#apt-date').value).toBe(day);
+      // O resto vem em branco, e o lembrete ligado.
+      expect(inSheet<HTMLInputElement>('#apt-title').value).toBe('');
+      expect(inSheet<HTMLInputElement>('#apt-time').value).toBe('');
+      expect(sheet().querySelectorAll<HTMLInputElement>('input[type="radio"]:checked')).toHaveLength(0);
+      expect(inSheet('app-cg-switch button').getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('adicionar: título, tipo e hora com o dia já escolhido; aparece no dia certo, com faixa de 8 s e "Desfazer"', async () => {
+      await open('cg_0001', '/cuidador/rotina/agenda');
+      await pickDay('2026-11-12');
+      await click(addButton());
+      expect(inSheet<HTMLInputElement>('#apt-date').value).toBe('2026-11-12');
       expect(Array.from(sheet().querySelectorAll('.routine-chip')).map(text)).toEqual(['Consulta', 'Fisioterapia', 'Psicologia', 'Outro']);
       // "Lembrar de mim" vem ligado (AC-CG-62).
       expect(inSheet('app-cg-switch button').getAttribute('aria-checked')).toBe('true');
@@ -218,19 +341,34 @@ describe('Rotina (UX C5 e C6)', () => {
       expect(created?.kind).toBe('medical');
       expect(created?.reminder).toBe(true);
       expect(created?.elderId).toBe(app.context.elderId());
-      expect(all('main h2').map(text)).toContain('qui, 12/11');
+      expect(selectedHeading()).toBe('Quinta, 12 de novembro');
       expect(all('app-cg-row').some((r) => text(r).includes('15:30 Consulta com o dentista'))).toBe(true);
+      // O dia ganhou a marca de consulta.
+      expect(q('[data-date="2026-11-12"]')?.getAttribute('aria-label')).toContain('1 compromisso: Consulta');
       const toast = TestBed.inject(ToastService).toasts()[0];
       expect(toast?.message).toBe('Compromisso salvo.');
       expect(toast?.action?.label).toBe('Desfazer');
       expect(toast?.durationMs).toBe(8000);
       toast?.action?.run();
+      await flush();
       expect(app.db.careAppointments.find((a) => a.title === 'Consulta com o dentista')).toBeUndefined();
+      expect(q('[data-date="2026-11-12"]')?.getAttribute('aria-label')).not.toContain('compromisso');
+    });
+
+    it('adicionar em outro mês: o calendário acompanha o dia (e o mês) do que foi salvo', async () => {
+      await open('cg_0001', '/cuidador/rotina/agenda');
+      await click(addButton());
+      await fillNew('Vacina da gripe', 3, '2027-01-15', '09:00');
+      await click(sheetButton('Salvar compromisso'));
+      expect(monthTitle()).toBe('janeiro de 2027');
+      expect(selectedHeading()).toBe('Sexta, 15 de janeiro de 2027');
+      expect(q('[data-date="2027-01-15"]')?.closest('[role="gridcell"]')?.getAttribute('aria-selected')).toBe('true');
+      expect(all('.routine-selected app-cg-row').map((r) => text(r.querySelector('.cg-row__title')))).toEqual(['09:00 Vacina da gripe']);
     });
 
     it('"Onde ou com quem" é opcional e aparece como apoio do compromisso', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda');
-      await click(buttonByText('Adicionar compromisso'));
+      await click(addButton());
       await fillNew('Fisioterapia', 1, '2026-11-10', '10:00');
       await type(inSheet<HTMLInputElement>('#apt-place'), 'Clínica Movimento Vital');
       await click(sheetButton('Salvar compromisso'));
@@ -239,7 +377,8 @@ describe('Rotina (UX C5 e C6)', () => {
     });
 
     it('erros junto do campo e no resumo, e nada do que foi digitado é apagado (AC-CG-59)', async () => {
-      await open('cg_0001', '/cuidador/rotina/agenda');
+      await openList('cg_0001', '/cuidador/rotina/agenda');
+      // Aberto da lista, o formulário vem sem o dia: o dia também é pedido.
       await click(buttonByText('Adicionar compromisso'));
       await click(sheetButton('Salvar compromisso'));
       expect(all('app-cg-sheet .field__error').map(text)).toEqual(
@@ -276,9 +415,21 @@ describe('Rotina (UX C5 e C6)', () => {
       expect(app.db.careAppointments.find((a) => a.title === 'Exame de vista')?.kind).toBe('psychological');
     });
 
+    it('com o dia preenchido faltam só título, tipo e hora; apagar o dia traz o pedido de volta', async () => {
+      await open('cg_0001', '/cuidador/rotina/agenda');
+      await pickDay('2026-11-06');
+      await click(addButton());
+      await click(sheetButton('Salvar compromisso'));
+      expect(text(inSheet('app-error-summary'))).toContain('Há 3 pontos para corrigir');
+      expect(inSheet<HTMLInputElement>('#apt-date').value).toBe('2026-11-06');
+      await type(inSheet<HTMLInputElement>('#apt-date'), '');
+      await click(sheetButton('Salvar compromisso'));
+      expect(text(inSheet('app-error-summary'))).toContain('Há 4 pontos para corrigir');
+    });
+
     it('desligar "Lembrar de mim" no cadastro grava reminder falso, sem confirmação (AC-CG-62)', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda');
-      await click(buttonByText('Adicionar compromisso'));
+      await click(addButton());
       await fillNew('Vacina', 3, '2026-11-09', '08:00');
       await click(inSheet('app-cg-switch button'));
       expect(inSheet('app-cg-switch button').getAttribute('aria-checked')).toBe('false');
@@ -290,6 +441,7 @@ describe('Rotina (UX C5 e C6)', () => {
     it('o detalhe liga e desliga o lembrete na hora (AC-CG-62)', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda');
       const apt = app.db.careAppointments.find((a) => a.elderId === app.context.elderId() && a.at.startsWith('2026-11-05')) as { id: string; title: string };
+      await pickDay('2026-11-05');
       await click(all('app-cg-row button').find((b) => text(b).includes(apt.title)));
       expect(sheet().querySelector('.cg-sheet__title')?.textContent).toContain(apt.title);
       expect(inSheet('app-cg-switch button').getAttribute('aria-checked')).toBe('true');
@@ -298,9 +450,10 @@ describe('Rotina (UX C5 e C6)', () => {
       expect(all('dialog[open]')).toHaveLength(1);
     });
 
-    it('remarcar muda o compromisso de lugar, mostra o novo horário com "Desfazer" e o "Desfazer" restaura (AC-CG-60)', async () => {
+    it('remarcar muda o compromisso de lugar, o calendário vai ao dia novo, e o "Desfazer" restaura e volta ao dia de antes (AC-CG-60)', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda');
       const apt = app.db.careAppointments.find((a) => a.elderId === app.context.elderId() && a.at.startsWith('2026-11-05')) as { id: string; title: string; at: string };
+      await pickDay('2026-11-05');
       await click(all('app-cg-row button').find((b) => text(b).includes(apt.title)));
       await click(sheetButton('Remarcar'));
       expect(text(sheet().querySelector('.cg-sheet__title'))).toBe('Remarcar compromisso');
@@ -310,21 +463,29 @@ describe('Rotina (UX C5 e C6)', () => {
       expect(sheet().querySelector('#apt-kind')).toBeNull();
       expect(sheet().querySelector('#apt-place')).toBeNull();
       expect(sheet().querySelectorAll('app-form-field')).toHaveLength(2);
+      // O dia e a hora de antes já vêm preenchidos.
+      expect(inSheet<HTMLInputElement>('#apt-date').value).toBe('2026-11-05');
       await type(inSheet<HTMLInputElement>('#apt-date'), '2026-11-06');
       await type(inSheet<HTMLInputElement>('#apt-time'), '15:00');
       await click(sheetButton('Salvar novo horário'));
       expect(app.db.careAppointments.get(apt.id)?.at).toBe('2026-11-06T15:00:00-03:00');
+      // O calendário foi ao dia novo e o compromisso está lá.
+      expect(selectedHeading()).toBe('Sexta, 6 de novembro');
+      expect(all('.routine-selected app-cg-row').some((r) => text(r).includes(`15:00 ${apt.title}`))).toBe(true);
       const toast = TestBed.inject(ToastService).toasts()[0];
       expect(toast?.message).toBe('Remarcado para sex, 06/11, às 15:00.');
       expect(toast?.action?.label).toBe('Desfazer');
       toast?.action?.run();
       await flush();
       expect(app.db.careAppointments.get(apt.id)?.at).toBe(apt.at);
+      expect(selectedHeading()).toBe('Amanhã, 5 de novembro');
+      expect(all('.routine-selected app-cg-row').some((r) => text(r).includes(apt.title))).toBe(true);
     });
 
     it('tirar da agenda: folha com o efeito, foco em "Voltar", e só depois de confirmar o compromisso sai (AC-CG-61)', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda');
       const apt = app.db.careAppointments.find((a) => a.elderId === app.context.elderId() && a.at.startsWith('2026-11-05')) as { id: string; title: string };
+      await pickDay('2026-11-05');
       await click(all('app-cg-row button').find((b) => text(b).includes(apt.title)));
       await click(sheetButton('Tirar da agenda'));
       expect(text(sheet().querySelector('.cg-sheet__title'))).toBe('Tirar este compromisso da agenda?');
@@ -340,11 +501,18 @@ describe('Rotina (UX C5 e C6)', () => {
       await click(sheetButton('Tirar da agenda'));
       expect(app.db.careAppointments.get(apt.id)).toBeUndefined();
       expect(all('app-cg-row').some((r) => text(r).includes(apt.title))).toBe(false);
+      // O dia continua aberto, agora sem o compromisso (e sem a marca de consulta).
+      expect(selectedHeading()).toBe('Amanhã, 5 de novembro');
+      expect(q('[data-date="2026-11-05"]')?.getAttribute('aria-label')).not.toContain('Consulta');
       const toast = TestBed.inject(ToastService).toasts()[0];
       expect(toast?.message).toBe('Compromisso retirado.');
+      // A pessoa foi para outro dia antes de desfazer: o "Desfazer" devolve o compromisso e o calendário volta ao dia dele.
+      await pickDay('2026-11-08');
       toast?.action?.run();
       await flush();
       expect(app.db.careAppointments.get(apt.id)?.title).toBe(apt.title);
+      expect(selectedHeading()).toBe('Amanhã, 5 de novembro');
+      expect(all('app-cg-row').some((r) => text(r).includes(apt.title))).toBe(true);
     });
 
     it('a conversa da própria pessoa com o psicólogo aparece com "Para você" e leva a Conversar com um psicólogo (AC-CG-63)', async () => {
@@ -363,10 +531,113 @@ describe('Rotina (UX C5 e C6)', () => {
         discountPercent: 15,
       });
       await flush();
+      expect(q('[data-date="2026-11-06"]')?.getAttribute('aria-label')).toContain('Para você');
+      await pickDay('2026-11-06');
       const row = all('app-cg-row').find((r) => text(r).includes('Sua conversa com a Dra. Beatriz'));
       expect(text(row)).toContain('14:00');
       expect(text(row)).toContain('Para você');
       expect(row?.querySelector('a')?.getAttribute('href')).toBe('/cuidador/cuidar-de-mim/atendimento');
+    });
+  });
+
+  describe('Agenda em lista: a visão antiga continua', () => {
+    it('o alternador passa para a Lista e a escolha fica guardada no navegador (e volta no próximo acesso)', async () => {
+      await open('cg_0001', '/cuidador/rotina/agenda');
+      expect(app.local.getItem('nexus-erp:caregiver-agenda-view')).toBeNull();
+      await click(buttonByText('Lista'));
+      expect(all('.routine-view__btn').map((t) => t.getAttribute('aria-pressed'))).toEqual(['false', 'true']);
+      expect(q('app-cg-calendar')).toBeNull();
+      expect(app.local.getItem('nexus-erp:caregiver-agenda-view')).toBe('"list"');
+      // Recarrega com o mesmo armazenamento: abre direto na lista.
+      const local = app.local;
+      TestBed.resetTestingModule();
+      app = await bootCaregiverApp('cg_0001', { url: '/cuidador/rotina/agenda', local, seed: false });
+      expect(q('app-cg-calendar')).toBeNull();
+      expect(all('main h2.routine-day').length).toBeGreaterThan(0);
+      // E volta ao calendário.
+      await click(buttonByText('Calendário'));
+      expect(q('app-cg-calendar')).not.toBeNull();
+      expect(app.local.getItem('nexus-erp:caregiver-agenda-view')).toBe('"calendar"');
+    });
+
+    it('um valor guardado que não é calendário nem lista cai no calendário', async () => {
+      const local = new FakeStorage();
+      local.setItem('nexus-erp:caregiver-agenda-view', '"mosaico"');
+      TestBed.resetTestingModule();
+      app = await bootCaregiverApp('cg_0001', { url: '/cuidador/rotina/agenda', local });
+      expect(q('app-cg-calendar')).not.toBeNull();
+    });
+
+    it('o dia aberto no calendário continua o mesmo depois de ir à lista e voltar', async () => {
+      await open('cg_0001', '/cuidador/rotina/agenda');
+      await pickDay('2026-11-06');
+      await click(buttonByText('Lista'));
+      await click(buttonByText('Calendário'));
+      expect(selectedHeading()).toBe('Sexta, 6 de novembro');
+      expect(monthTitle()).toBe('novembro de 2026');
+    });
+
+    it('h1 "Rotina", as duas abas, o botão primário e os dias com compromisso agrupados (AC-CG-57)', async () => {
+      await openList('cg_0001', '/cuidador/rotina/agenda');
+      expect(text(q('main h1'))).toBe('Rotina');
+      expect(all('[role="tab"]').map(text)).toEqual(['Agenda', 'Remédios']);
+      expect(buttonByText('Adicionar compromisso')?.className).toContain('btn--primary');
+      expect(all('.routine-panel button.btn--primary')).toHaveLength(1);
+      const headings = all('main h2.routine-day').map(text);
+      expect(headings[0]).toBe('Hoje, qua 04/11');
+      expect(headings.every((h) => /^(Hoje|Amanhã), [^\s,]+ \d\d\/\d\d$|^[^\s,]+, \d\d\/\d\d$/.test(h))).toBe(true);
+      // Só os dias que têm compromisso aparecem (um título por dia, sem repetir), e cada título tem o seu compromisso.
+      expect(new Set(headings).size).toBe(headings.length);
+      expect(all('main section[aria-labelledby^="agenda-day-"]').every((s) => s.querySelectorAll('app-cg-row').length > 0)).toBe(true);
+      // Cada compromisso mostra a hora e o título.
+      expect(all('app-cg-row').every((r) => /^\d{2}:\d{2} /.test(text(r.querySelector('.cg-row__title'))))).toBe(true);
+    });
+
+    it('compromisso de hoje cuja hora já passou também leva "Já passou" na lista', async () => {
+      await openList('cg_0001', '/cuidador/rotina/agenda', { time: '19:00' });
+      expect(text(q('.routine-late'))).toBe('Já passou');
+    });
+
+    it('sem compromisso nenhum: o vazio acolhedor com "Adicionar compromisso"', async () => {
+      await openList('cg_0001', '/cuidador/rotina/agenda');
+      app.db.careAppointments.removeWhere((a) => a.elderId === app.context.elderId());
+      // A conversa com o psicólogo que o seed deixa para a Ana também é compromisso.
+      app.db.careSessions.removeWhere((x) => x.caregiverId === app.context.caregiverId());
+      await flush();
+      expect(text(q('.empty__title'))).toBe('Nenhum compromisso por aqui');
+      expect(text(q('.empty__text'))).toBe('Quando você adicionar uma consulta ou uma sessão, ela aparece nesta lista.');
+      expect(all('button.btn--primary').filter((b) => text(b) === 'Adicionar compromisso')).toHaveLength(1);
+    });
+
+    it('"Ver anteriores" mostra os últimos 7 dias só para ler, e "Ver mais datas" amplia para 30 dias', async () => {
+      await openList('cg_0001', '/cuidador/rotina/agenda');
+      const elderId = app.context.elderId() as string;
+      app.db.careAppointments.create({ elderId, title: 'Consulta antiga', at: '2026-11-02T10:00:00-03:00', kind: 'medical', reminder: true });
+      app.db.careAppointments.create({ elderId, title: 'Consulta longe', at: '2026-11-25T10:00:00-03:00', kind: 'medical', reminder: true });
+      await flush();
+      expect(text(q('main'))).not.toContain('Consulta antiga');
+      expect(text(q('main'))).not.toContain('Consulta longe');
+      await click(buttonByText('Ver anteriores'));
+      expect(text(q('main'))).toContain('Consulta antiga');
+      expect(all('.routine-plain').some((li) => text(li).includes('Consulta antiga'))).toBe(true);
+      await click(buttonByText('Ver mais datas'));
+      expect(text(q('main'))).toContain('Consulta longe');
+      expect(buttonByText('Ver mais datas')).toBeUndefined();
+    });
+
+    it('na lista também: tocar abre o detalhe, remarcar muda o compromisso de dia e "Adicionar compromisso" abre o formulário em branco', async () => {
+      await openList('cg_0001', '/cuidador/rotina/agenda');
+      const apt = app.db.careAppointments.find((a) => a.elderId === app.context.elderId() && a.at.startsWith('2026-11-05')) as { id: string; title: string };
+      await click(all('app-cg-row button').find((b) => text(b).includes(apt.title)));
+      expect(sheet().querySelector('.cg-sheet__title')?.textContent).toContain(apt.title);
+      await click(sheetButton('Remarcar'));
+      await type(inSheet<HTMLInputElement>('#apt-date'), '2026-11-06');
+      await type(inSheet<HTMLInputElement>('#apt-time'), '15:00');
+      await click(sheetButton('Salvar novo horário'));
+      expect(app.db.careAppointments.get(apt.id)?.at).toBe('2026-11-06T15:00:00-03:00');
+      expect(all('main h2.routine-day').map(text)).toContain('sex, 06/11');
+      await click(buttonByText('Adicionar compromisso'));
+      expect(inSheet<HTMLInputElement>('#apt-date').value).toBe('');
     });
   });
 

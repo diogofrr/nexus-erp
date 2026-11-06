@@ -48,6 +48,8 @@ import { CaregiverSignOutService } from './caregiver-sign-out.service';
       </button>
 
       @if (open()) {
+        <!-- O toque fora do menu só fecha o menu: esta camada o consome, então ele não cai no cartão ou botão que estava embaixo. -->
+        <div class="cg-user-menu__scrim" data-role="menu-scrim" aria-hidden="true" (click)="close(false)"></div>
         <div
           #menu
           class="cg-user-menu__panel"

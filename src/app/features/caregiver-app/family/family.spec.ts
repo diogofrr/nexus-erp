@@ -105,7 +105,7 @@ describe('Família (UX C20)', () => {
       expect(switches().every((s) => s.getAttribute('aria-checked') === 'false')).toBe(true);
       expect(box()).toBe('Escolha o que você quer compartilhar.');
       expect(copyButton()?.disabled).toBe(true);
-      expect(text(q('#family-reason'))).toBe('Ligue pelo menos um item.');
+      expect(text(q('#family-reason'))).toBe('Escolha pelo menos um item.');
       expect(copyButton()?.getAttribute('aria-describedby')).toBe('family-reason');
       expect(text(q('.cg-page-header__desc'))).toBe(
         'Gere um texto com a rotina de Benedito para mandar à sua família. Você escolhe o que entra.',

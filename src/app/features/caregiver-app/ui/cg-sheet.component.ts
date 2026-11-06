@@ -47,6 +47,7 @@ import { HistoryLayersService } from '../state/history-layers.service';
       #dialog
       class="cg-sheet"
       [attr.aria-labelledby]="titleId"
+      (cancel)="onCancel($event)"
       (close)="onNativeClose()"
       (click)="onDialogClick($event)"
     >
@@ -82,15 +83,28 @@ export class CgSheetComponent {
         // O voltar do aparelho fecha a folha (CXC-013).
         this.layers.open(this.titleId, () => this.open.set(false));
         afterNextRender(() => this.focusInitial(), { injector: this.injector });
-      } else if (!wanted && isDialogOpen(dialog)) {
-        closeModalDialog(dialog);
+      } else if (!wanted) {
+        if (isDialogOpen(dialog)) {
+          closeModalDialog(dialog);
+        }
+        // Sempre solta a entrada de histórico (não faz nada se ela já saiu): a folha nunca fica com uma camada "aberta" sem estar.
         this.layers.release(this.titleId);
       }
     });
     inject(DestroyRef).onDestroy(() => this.layers.forget(this.titleId));
   }
 
-  /** Esc fecha pelo navegador: o estado acompanha. */
+  /**
+   * Esc: o navegador ia fechar a folha por conta própria. Fechamos pelo estado, na hora (o evento `cancel` é síncrono), em vez de
+   * esperar o evento `close`, que chega depois e pode não chegar (aba sem foco): sem isso o estado ficava "aberto" com a folha
+   * fechada e o botão que a abre parava de funcionar.
+   */
+  protected onCancel(event: Event): void {
+    event.preventDefault();
+    this.open.set(false);
+  }
+
+  /** Fechou pelo navegador (por exemplo, o segundo Esc seguido): o estado acompanha. */
   protected onNativeClose(): void {
     if (this.open()) {
       this.open.set(false);

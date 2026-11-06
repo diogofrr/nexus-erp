@@ -16,6 +16,7 @@ const NAMES: Readonly<Record<string, string>> = {
   'ui-prefs': 'Preferências de tela',
   'caregiver-session': 'Sua sessão no aplicativo do cuidador (fecha com a aba)',
   'caregiver-font-scale': 'Tamanho da letra do aplicativo do cuidador',
+  'caregiver-agenda-view': 'Jeito de ver a agenda no aplicativo do cuidador (calendário ou lista)',
   settings: 'Parâmetros do protótipo',
   'financial-params': 'Parâmetros financeiros',
   'pilot-config': 'Metas do piloto',

@@ -64,6 +64,44 @@ describe('ToastService', () => {
     expect(toasts.remainingMs(a)).toBeUndefined();
   });
 
+  it('um perfil de aplicativo troca o limite e o tempo (o do cuidador: um por vez, 8 s com ou sem Desfazer) e devolve o padrão ao sair', () => {
+    const restore = toasts.useProfile({ maxStack: 1, defaultMs: 8000, undoMs: 8000 });
+    toasts.success('A');
+    toasts.success('B');
+    expect(toasts.toasts().map((t) => t.message)).toEqual(['B']);
+    vi.advanceTimersByTime(7800);
+    expect(toasts.toasts()).toHaveLength(1);
+    vi.advanceTimersByTime(300);
+    expect(toasts.toasts()).toHaveLength(0);
+
+    toasts.show({ message: 'C', action: { label: 'Desfazer', run: () => undefined } });
+    vi.advanceTimersByTime(7800);
+    expect(toasts.toasts()).toHaveLength(1);
+    vi.advanceTimersByTime(300);
+    expect(toasts.toasts()).toHaveLength(0);
+
+    // Um tempo pedido pela tela continua valendo.
+    toasts.show({ message: 'D', durationMs: 3000 });
+    vi.advanceTimersByTime(3100);
+    expect(toasts.toasts()).toHaveLength(0);
+
+    restore();
+    toasts.success('E');
+    toasts.success('F');
+    toasts.success('G');
+    expect(toasts.toasts()).toHaveLength(TOAST_MAX_STACK);
+    vi.advanceTimersByTime(TOAST_DEFAULT_MS + 100);
+    expect(toasts.toasts()).toHaveLength(0);
+  });
+
+  it('um perfil que cabe menos avisos tira os mais antigos que já estavam na tela', () => {
+    toasts.success('A');
+    toasts.success('B');
+    const restore = toasts.useProfile({ maxStack: 1, defaultMs: 8000, undoMs: 8000 });
+    expect(toasts.toasts().map((t) => t.message)).toEqual(['B']);
+    restore();
+  });
+
   it('a ação roda uma vez e fecha o toast; Ctrl+Z equivale ao toast mais recente com ação', () => {
     const calls: string[] = [];
     toasts.show({ message: 'A', action: { label: 'Desfazer', run: () => calls.push('A') } });

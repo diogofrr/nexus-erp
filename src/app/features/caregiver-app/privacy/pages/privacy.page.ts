@@ -257,7 +257,7 @@ const CONSENT_ICONS: Readonly<Record<ConsentKey, IconName>> = {
           <p data-role="erasure-continue">{{ continueText }}</p>
           <app-checkbox [(checked)]="understood">Entendi o que será eliminado e o que ficará guardado</app-checkbox>
           @if (!understood()) {
-            <p class="priv__hint" data-role="erasure-hint">Marque a caixa para ligar o botão.</p>
+            <p class="priv__hint" data-role="erasure-hint">Marque a caixa para poder pedir.</p>
           }
         }
         @if (error()) {

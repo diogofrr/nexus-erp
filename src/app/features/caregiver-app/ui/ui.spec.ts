@@ -6,6 +6,7 @@ import { CaregiverSessionService } from '../../../core/auth/caregiver-session.se
 import { DoseSlot, dosesForDate } from '../../../core/rules/medication-doses';
 import { configureCoreTest } from '../../../core/testing/test-helpers';
 import { ContactDialogService } from '../state/contact-dialog.service';
+import { HistoryLayersService } from '../state/history-layers.service';
 import { BootedCaregiverApp, bootCaregiverApp, settleCaregiver } from '../testing';
 import {
   CG_NAV_ITEMS,
@@ -306,6 +307,54 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
     expect(host.undone()).toEqual(['20:00']);
   });
 
+  it('C4: com o foco no Dei (teclado), marcar leva o foco ao Desfazer da mesma linha, e o Desfazer o devolve ao Dei; sem foco na linha, nada rouba o foco', async () => {
+    const f = mountKit('cg_0001');
+    const host = f.componentInstance;
+    const row = (): HTMLElement | undefined => all(f, '.cg-dose')[2];
+    const settle = async (): Promise<void> => {
+      f.detectChanges();
+      await f.whenStable();
+    };
+    const setGiven = (given: boolean): void => {
+      const slot = host.slots()[2] as DoseSlot;
+      host.slots.set(
+        host.slots().map((item): DoseSlot => {
+          if (item.key !== slot.key) {
+            return item;
+          }
+          const { givenAt: _previous, ...rest } = item;
+          return given ? { ...rest, given, givenAt: '2026-11-04T12:01:00-03:00' } : { ...rest, given };
+        }),
+      );
+    };
+    const dei = row()?.querySelector<HTMLButtonElement>('.cg-dose__action');
+    dei?.focus();
+    expect(document.activeElement).toBe(dei);
+    click(dei);
+    setGiven(true);
+    await settle();
+    // O botão Dei saiu da tela: o foco não se perde no corpo da página.
+    expect(row()?.querySelector('.cg-dose__action')).toBeNull();
+    expect(document.activeElement).toBe(row()?.querySelector('.cg-dose__undo'));
+    // Depois do tempo de guarda, o Desfazer devolve o foco ao Dei.
+    const later = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 1500);
+    click(row()?.querySelector('.cg-dose__undo'));
+    setGiven(false);
+    await settle();
+    later.mockRestore();
+    expect(document.activeElement).toBe(row()?.querySelector('.cg-dose__action'));
+
+    // Toque sem foco na linha (o foco está em outro lugar): o foco não é tomado.
+    const elsewhere = document.createElement('button');
+    document.body.append(elsewhere);
+    elsewhere.focus();
+    click(row()?.querySelector('.cg-dose__action'));
+    setGiven(true);
+    await settle();
+    expect(document.activeElement).toBe(elsewhere);
+    elsewhere.remove();
+  });
+
   it('CXC-005: com quietLate a dose que passou do horário fica neutra, sem o âmbar', () => {
     const f = mountKit('cg_0001');
     const quiet = TestBed.createComponent(CgDoseComponent);
@@ -480,6 +529,54 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
     vi.restoreAllMocks();
   });
 
+  it('C2: Esc (o evento "cancel", síncrono) fecha a folha pelo estado e ela abre de novo; o "close" que chega depois não atrapalha', async () => {
+    const f = mountKit('cg_0001');
+    const dialog = root(f).querySelector<HTMLDialogElement>('dialog.cg-sheet');
+    const layers = TestBed.inject(HistoryLayersService);
+    const open = async (): Promise<void> => {
+      f.componentInstance.sheetOpen.set(true);
+      f.detectChanges();
+      await f.whenStable();
+    };
+    await open();
+    expect(dialog?.hasAttribute('open')).toBe(true);
+    expect(layers.depth).toBe(1);
+    const esc = new Event('cancel', { cancelable: true });
+    dialog?.dispatchEvent(esc);
+    f.detectChanges();
+    await f.whenStable();
+    // Quem fecha é o estado (o navegador não fecha por conta própria): estado, folha e histórico concordam na hora.
+    expect(esc.defaultPrevented).toBe(true);
+    expect(f.componentInstance.sheetOpen()).toBe(false);
+    expect(dialog?.hasAttribute('open')).toBe(false);
+    expect(layers.depth).toBe(0);
+    dialog?.dispatchEvent(new Event('close'));
+    f.detectChanges();
+    expect(f.componentInstance.sheetOpen()).toBe(false);
+    // O botão que abre a folha volta a funcionar.
+    await open();
+    expect(dialog?.hasAttribute('open')).toBe(true);
+    expect(layers.depth).toBe(1);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+  });
+
+  it('C2: se o estado fecha a folha e ela já estava fechada (o navegador fechou antes), a entrada de histórico é solta do mesmo jeito', async () => {
+    const f = mountKit('cg_0001');
+    const dialog = root(f).querySelector<HTMLDialogElement>('dialog.cg-sheet');
+    const layers = TestBed.inject(HistoryLayersService);
+    f.componentInstance.sheetOpen.set(true);
+    f.detectChanges();
+    await f.whenStable();
+    expect(layers.depth).toBe(1);
+    // O navegador fecha a folha sem que o "close" chegue (aba sem foco).
+    dialog?.removeAttribute('open');
+    f.componentInstance.sheetOpen.set(false);
+    f.detectChanges();
+    await f.whenStable();
+    expect(layers.depth).toBe(0);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+  });
+
   it('a barra de navegação tem os 5 destinos fixos, nesta ordem', () => {
     expect(CG_NAV_ITEMS.map((i) => `${i.label}:${i.path}`)).toEqual([
       'Hoje:/cuidador/hoje',
@@ -563,6 +660,28 @@ describe('Diálogo "Como falar com a gente" (UX A.2.16)', () => {
     expect(q('.cg-contact__status')?.closest('.cg-contact__item')?.querySelector('.cg-contact__action')).toBe(copy);
     // O número fica selecionado para a pessoa segurar e copiar à mão (AC-CG-161).
     expect(window.getSelection()?.toString().trim()).toBe('(34) 90000-0000');
+  });
+
+  it('C2: depois de fechar com Esc, "Falar com a gente" abre o diálogo de novo (o estado do serviço acompanha o Esc)', async () => {
+    app = await bootCaregiverApp('cg_0001', { url: '/cuidador/hoje' });
+    const service = TestBed.inject(ContactDialogService);
+    for (let round = 0; round < 3; round += 1) {
+      await open();
+      expect(service.isOpen()).toBe(true);
+      expect(q('dialog.cg-sheet')?.hasAttribute('open')).toBe(true);
+      q('dialog.cg-sheet')?.dispatchEvent(new Event('cancel', { cancelable: true }));
+      await settleCaregiver(app.fixture);
+      expect(service.isOpen()).toBe(false);
+      expect(q('dialog.cg-sheet')?.hasAttribute('open')).toBe(false);
+    }
+    // Pelo botão da tela, como a pessoa faz.
+    const trigger = Array.from(app.root.querySelectorAll<HTMLButtonElement>('main button')).find((b) =>
+      /falar agora|Falar com a gente/.test(text(b)),
+    );
+    expect(trigger).toBeDefined();
+    click(trigger);
+    await settleCaregiver(app.fixture);
+    expect(q('dialog.cg-sheet')?.hasAttribute('open')).toBe(true);
   });
 
   it('"Escrever mensagem" leva a Falar com a Nexus e fecha o diálogo; "Voltar" também fecha', async () => {

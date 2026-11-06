@@ -7,7 +7,7 @@ import { Clock } from '../../../../core/clock/clock.service';
 import { addDays, dateOf, timeOf } from '../../../../core/clock/date-utils';
 import { Database } from '../../../../core/data/database';
 import { NAME_MAX_CHARS, tooLongText } from '../../../../core/rules/text-limits';
-import { CareAppointment, ID, ISODate, ISODateTime } from '../../../../core/models';
+import { ID, ISODate, ISODateTime } from '../../../../core/models';
 import {
   APPOINTMENT_KINDS,
   APPOINTMENT_KIND_LABELS,
@@ -16,6 +16,8 @@ import {
   betweenDates,
   groupByDay,
   isPastTime,
+  onDate,
+  sortByTime,
   windowEnd,
 } from '../../../../core/rules/care-agenda';
 import { EmptyStateComponent } from '../../../../shared/ui/display/empty-state.component';
@@ -27,30 +29,17 @@ import { ToastService } from '../../../../shared/ui/overlay/toast.service';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { OnlineStatusService } from '../../state/online-status.service';
 import { withArticle } from '../../state/people-format';
+import { CgCalendarComponent, CgCalendarEvent } from '../../ui/cg-calendar.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
-import { CgRowComponent } from '../../ui/cg-row.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import { CgSwitchComponent } from '../../ui/cg-switch.component';
+import { AgendaEntryComponent } from '../components/agenda-entry.component';
 import { RoutineTabsComponent } from '../components/routine-tabs.component';
-import { dayHeading, whenText } from '../state/agenda-format';
+import { AgendaEntry } from '../state/agenda-entry';
+import { dayCardHeading, dayHeading, whenText } from '../state/agenda-format';
 import { AgendaError, AgendaService, AppointmentInput } from '../state/agenda.service';
-
-/** Uma linha da lista: compromisso da pessoa idosa ou conversa do próprio cuidador com o psicólogo. */
-interface AgendaEntry {
-  key: string;
-  at: ISODateTime;
-  date: ISODate;
-  time: string;
-  title: string;
-  support: string | null;
-  icon: IconName;
-  /** A conversa da própria pessoa: leva a "Conversar com um psicólogo" (S-27). */
-  forYou: boolean;
-  appointment: CareAppointment | null;
-  /** Compromisso de hoje cuja hora já passou: a etiqueta neutra "Já passou" (a hora já está no título, CXC-001). */
-  passed: boolean;
-}
+import { AgendaView, AgendaViewService } from '../state/agenda-view.service';
 
 const KIND_ICON: Readonly<Record<AppointmentKind, IconName>> = {
   medical: 'stethoscope',
@@ -88,18 +77,24 @@ const FIELD_ID: Readonly<Record<string, string>> = {
 const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fale com a gente.';
 
 /**
- * Rotina, aba Agenda (UX C5, `/cuidador/rotina/agenda`): os próximos 14 dias da pessoa idosa agrupados por dia (só
- * os dias com compromisso) e, no mesmo dia, a conversa do próprio cuidador com o psicólogo ("Para você"). A ação
- * principal é **Adicionar compromisso**. Tocar num compromisso abre a folha de detalhe (Remarcar, Lembrar de mim,
- * Tirar da agenda). Atrás de um toque: "Ver anteriores" (últimos 7 dias, só leitura) e "Ver mais datas" (30 dias).
- * Cada gravação mostra uma faixa de 8 s com "Desfazer". Nada de atendimento, grupo ou escala entra nos textos.
+ * Rotina, aba Agenda (UX C5, `/cuidador/rotina/agenda`): um **calendário do mês** (`app-cg-calendar`) com o detalhe do dia
+ * escolhido (hoje, de começo). No celular o calendário fica em cima e o dia embaixo; em tela larga (1024 px ou mais) ficam
+ * lado a lado. O dia mostra os compromissos da pessoa idosa e, no mesmo dia, a conversa do próprio cuidador com o psicólogo
+ * ("Para você"), e a ação principal é **Adicionar compromisso neste dia** (a data já vai preenchida). Tocar num dia vazio
+ * diz "Nada marcado para este dia". Um alternador "Calendário | Lista" guarda o jeito preferido no navegador: a lista
+ * (próximos 14 dias agrupados por dia, "Ver anteriores" e "Ver mais datas") continua como era.
+ *
+ * Tocar num compromisso abre a folha de detalhe (Remarcar, Lembrar de mim, Tirar da agenda). Cada gravação mostra uma
+ * faixa de 8 s com "Desfazer", e o calendário acompanha o dia do que foi adicionado, remarcado ou devolvido. Nada de
+ * atendimento, grupo ou escala entra nos textos.
  */
 @Component({
   selector: 'app-agenda-page',
   imports: [
+    AgendaEntryComponent,
+    CgCalendarComponent,
     CgNoteComponent,
     CgPageHeaderComponent,
-    CgRowComponent,
     CgSheetComponent,
     CgSwitchComponent,
     EmptyStateComponent,
@@ -123,27 +118,56 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
     .routine-day {
       margin: 0 0 0.75rem;
     }
-    .routine-late {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0 0.5rem;
-      border: 1px solid var(--cg-late-border);
-      border-radius: var(--cg-radius-pill);
-      background: var(--cg-late-bg);
-      color: var(--cg-late-fg);
-      font-size: var(--cg-fs-caption);
-      font-weight: var(--fw-semibold);
-    }
-    .routine-plain {
+    .routine-view {
       display: flex;
-      gap: 0.75rem;
-      padding: 0.75rem 1rem;
-      color: var(--cg-text-soft);
+      width: fit-content;
+      max-width: 100%;
+      padding: 0.125rem;
+      border: 2px solid var(--cg-border-control);
+      border-radius: var(--cg-radius-pill);
+      background: var(--cg-surface);
     }
-    .routine-plain__time {
-      font-variant-numeric: tabular-nums;
+    .routine-view__btn {
+      display: inline-flex;
+      flex: 1 1 auto;
+      align-items: center;
+      justify-content: center;
+      gap: 0.375rem;
+      min-height: var(--cg-target);
+      padding: 0 1.125rem;
+      border: 0;
+      border-radius: var(--cg-radius-pill);
+      background: transparent;
+      color: var(--cg-text);
+      font: inherit;
       font-weight: var(--fw-semibold);
+      cursor: pointer;
+    }
+    .routine-view__btn[aria-pressed='true'] {
+      background: var(--cg-action);
+      color: var(--cg-surface);
+    }
+    .routine-cal {
+      display: grid;
+      gap: var(--cg-gap-block);
+      grid-template-columns: minmax(0, 1fr);
+      align-items: start;
+      max-width: var(--cg-reading);
+    }
+    .routine-selected {
+      display: grid;
+      gap: var(--cg-gap-stack);
+      align-content: start;
+      min-width: 0;
+    }
+    .routine-selected__title {
+      margin: 0;
+    }
+    @media (min-width: 64rem) {
+      .routine-cal {
+        grid-template-columns: minmax(0, 28rem) minmax(0, 1fr);
+        max-width: none;
+      }
     }
     .routine-form {
       display: grid;
@@ -213,85 +237,103 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
         <app-cg-note variant="soft" icon="info">Você está sem conexão. Seus dados continuam neste navegador.</app-cg-note>
       }
 
-      @if (isEmpty()) {
-        <app-empty-state
-          title="Nenhum compromisso por aqui"
-          text="Quando você adicionar uma consulta ou uma sessão, ela aparece nesta lista."
-        >
-          <button type="button" class="btn btn--primary" (click)="openNew()">Adicionar compromisso</button>
-        </app-empty-state>
-      } @else {
-        <div class="cg-actions">
-          <button type="button" class="btn btn--primary" (click)="openNew()">
-            <svg appIcon="plus" size="sm"></svg>
-            Adicionar compromisso
-          </button>
-        </div>
-      }
+      <div class="routine-view" role="group" aria-label="Ver a agenda como">
+        <button type="button" class="routine-view__btn" [attr.aria-pressed]="view() === 'calendar'" (click)="setView('calendar')">
+          @if (view() === 'calendar') {
+            <svg appIcon="check" size="sm"></svg>
+          }
+          Calendário
+        </button>
+        <button type="button" class="routine-view__btn" [attr.aria-pressed]="view() === 'list'" (click)="setView('list')">
+          @if (view() === 'list') {
+            <svg appIcon="check" size="sm"></svg>
+          }
+          Lista
+        </button>
+      </div>
 
-      @if (hasPast()) {
-        <div>
-          <button type="button" class="cg-link-btn" [attr.aria-expanded]="showPast()" (click)="showPast.set(!showPast())">
-            {{ showPast() ? 'Esconder anteriores' : 'Ver anteriores' }}
-          </button>
+      @if (view() === 'calendar') {
+        <div class="routine-cal">
+          <app-cg-calendar [events]="calendarEvents()" [selected]="selectedDate()" (selectedChange)="selectDay($event)" />
+
+          <section class="routine-selected" aria-labelledby="agenda-selected-day">
+            <h2 class="cg-section__title routine-selected__title" id="agenda-selected-day" aria-live="polite">{{ selectedHeading() }}</h2>
+            @if (dayEntries().length > 0) {
+              <ul class="cg-list">
+                @for (entry of dayEntries(); track entry.key) {
+                  <li><app-agenda-entry [entry]="entry" [plain]="selectedIsPast()" (open)="openDetail($event)" /></li>
+                }
+              </ul>
+            } @else {
+              <app-cg-note variant="soft" icon="calendar">Nada marcado para este dia</app-cg-note>
+            }
+            @if (!selectedIsPast()) {
+              <div class="cg-actions">
+                <button type="button" class="btn btn--primary" (click)="openNew(selectedDate())">
+                  <svg appIcon="plus" size="sm"></svg>
+                  Adicionar compromisso neste dia
+                </button>
+              </div>
+            }
+          </section>
         </div>
-      }
-      @if (showPast()) {
-        @for (group of pastGroups(); track group.date) {
+      } @else {
+        @if (isEmpty()) {
+          <app-empty-state
+            title="Nenhum compromisso por aqui"
+            text="Quando você adicionar uma consulta ou uma sessão, ela aparece nesta lista."
+          >
+            <button type="button" class="btn btn--primary" (click)="openNew()">Adicionar compromisso</button>
+          </app-empty-state>
+        } @else {
+          <div class="cg-actions">
+            <button type="button" class="btn btn--primary" (click)="openNew()">
+              <svg appIcon="plus" size="sm"></svg>
+              Adicionar compromisso
+            </button>
+          </div>
+        }
+
+        @if (hasPast()) {
+          <div>
+            <button type="button" class="cg-link-btn" [attr.aria-expanded]="showPast()" (click)="showPast.set(!showPast())">
+              {{ showPast() ? 'Esconder anteriores' : 'Ver anteriores' }}
+            </button>
+          </div>
+        }
+        @if (showPast()) {
+          @for (group of pastGroups(); track group.date) {
+            <section [attr.aria-labelledby]="'agenda-day-' + group.date">
+              <h2 class="cg-section__title routine-day" [id]="'agenda-day-' + group.date">{{ heading(group.date) }}</h2>
+              <ul class="cg-list">
+                @for (entry of group.items; track entry.key) {
+                  <li><app-agenda-entry [entry]="entry" [plain]="true" /></li>
+                }
+              </ul>
+            </section>
+          }
+        }
+
+        @for (group of upcomingGroups(); track group.date) {
           <section [attr.aria-labelledby]="'agenda-day-' + group.date">
             <h2 class="cg-section__title routine-day" [id]="'agenda-day-' + group.date">{{ heading(group.date) }}</h2>
             <ul class="cg-list">
               @for (entry of group.items; track entry.key) {
-                <li class="routine-plain">
-                  <span class="routine-plain__time">{{ entry.time }}</span>
-                  <span>{{ entry.title }}@if (entry.support) {, {{ entry.support }}}</span>
-                </li>
+                <li><app-agenda-entry [entry]="entry" (open)="openDetail($event)" /></li>
               }
             </ul>
           </section>
         }
-      }
 
-      @for (group of upcomingGroups(); track group.date) {
-        <section [attr.aria-labelledby]="'agenda-day-' + group.date">
-          <h2 class="cg-section__title routine-day" [id]="'agenda-day-' + group.date">{{ heading(group.date) }}</h2>
-          <ul class="cg-list">
-            @for (entry of group.items; track entry.key) {
-              <li>
-                @if (entry.forYou) {
-                  <app-cg-row
-                    [title]="entry.time + ' ' + entry.title"
-                    [icon]="entry.icon"
-                    link="/cuidador/cuidar-de-mim/atendimento"
-                  >
-                    <span cgRowEnd class="cg-tag">Para você</span>
-                  </app-cg-row>
-                } @else {
-                  <app-cg-row
-                    [title]="entry.time + ' ' + entry.title"
-                    [description]="entry.support ?? undefined"
-                    [icon]="entry.icon"
-                    (activated)="openDetail(entry.appointment?.id ?? '')"
-                  >
-                    @if (entry.passed) {
-                      <span cgRowEnd class="routine-late"><svg appIcon="clock" size="sm"></svg>Já passou</span>
-                    }
-                  </app-cg-row>
-                }
-              </li>
-            }
-          </ul>
-        </section>
-      }
+        @if (!isEmpty() && upcomingGroups().length === 0) {
+          <app-cg-note variant="soft" icon="calendar">Nenhum compromisso nos próximos dias.</app-cg-note>
+        }
 
-      @if (!isEmpty() && upcomingGroups().length === 0) {
-        <app-cg-note variant="soft" icon="calendar">Nenhum compromisso nos próximos dias.</app-cg-note>
-      }
-
-      @if (windowDays() === baseWindow && !isEmpty()) {
-        <div>
-          <button type="button" class="cg-link-btn" (click)="windowDays.set(moreWindow)">Ver mais datas</button>
-        </div>
+        @if (windowDays() === baseWindow && !isEmpty()) {
+          <div>
+            <button type="button" class="cg-link-btn" (click)="windowDays.set(moreWindow)">Ver mais datas</button>
+          </div>
+        }
       }
     </div>
 
@@ -392,6 +434,7 @@ export class AgendaPage {
   private readonly db = inject(Database);
   private readonly clock = inject(Clock);
   private readonly agenda = inject(AgendaService);
+  private readonly views = inject(AgendaViewService);
   private readonly toasts = inject(ToastService);
   private readonly location = inject(Location);
   private readonly injector = inject(Injector);
@@ -403,6 +446,8 @@ export class AgendaPage {
   protected readonly baseWindow = UPCOMING_DAYS;
   protected readonly moreWindow = MORE_DAYS;
 
+  /** Calendário ou lista (guardado no navegador). */
+  protected readonly view = this.views.view;
   protected readonly windowDays = signal(UPCOMING_DAYS);
   protected readonly showPast = signal(false);
   protected readonly detailOpen = signal(false);
@@ -412,6 +457,8 @@ export class AgendaPage {
   protected readonly editingId = signal<ID | null>(null);
   private readonly submitted = signal(false);
   protected readonly failure = signal<string | null>(null);
+  /** O dia aberto no calendário: hoje, de começo. */
+  protected readonly selectedDate = signal<ISODate>(this.ctx.today());
 
   protected readonly form = new FormGroup({
     title: new FormControl('', { nonNullable: true }),
@@ -447,7 +494,7 @@ export class AgendaPage {
     this.problems().map((p) => ({ controlId: FIELD_ID[p.field] ?? 'apt-title', message: p.message })),
   );
 
-  // ===== Lista =====
+  // ===== Compromissos (calendário e lista leem os mesmos) =====
 
   private readonly entries = computed<AgendaEntry[]>(() => {
     const today = this.ctx.today();
@@ -466,6 +513,7 @@ export class AgendaPage {
           title: a.title,
           support: place ? place : null,
           icon: KIND_ICON[a.kind],
+          kind: a.kind,
           forYou: false,
           appointment: a,
           passed: date === today && isPastTime(a.at, now),
@@ -486,6 +534,7 @@ export class AgendaPage {
             title: `Sua conversa com ${psychologist ? withArticle(psychologist.displayName) : 'o psicólogo'}`,
             support: null,
             icon: s.modality === 'online' ? 'video' : s.modality === 'in_person_home' ? 'house' : 'building-2',
+            kind: 'you',
             forYou: true,
             appointment: null,
             passed: false,
@@ -494,6 +543,19 @@ export class AgendaPage {
     }
     return list;
   });
+
+  // ===== Calendário =====
+
+  /** O dia e o tipo de cada compromisso, na ordem do horário (a ordem das marcas do dia). */
+  protected readonly calendarEvents = computed<CgCalendarEvent[]>(() =>
+    sortByTime(this.entries()).map((e) => ({ date: e.date, kind: e.kind })),
+  );
+  protected readonly dayEntries = computed(() => onDate(this.entries(), this.selectedDate()));
+  protected readonly selectedHeading = computed(() => dayCardHeading(this.selectedDate(), this.ctx.today()));
+  /** Dia que já passou: só se lê (não se adiciona compromisso no passado). */
+  protected readonly selectedIsPast = computed(() => this.selectedDate() < this.ctx.today());
+
+  // ===== Lista =====
 
   protected readonly upcomingGroups = computed(() => {
     const today = this.ctx.today();
@@ -504,7 +566,7 @@ export class AgendaPage {
     return groupByDay(betweenDates(this.entries(), addDays(today, -PAST_DAYS), addDays(today, -1)));
   });
   protected readonly hasPast = computed(() => this.pastGroups().length > 0);
-  /** Nada na agenda nos próximos 30 dias e nada nos últimos 7: o vazio acolhedor. */
+  /** Nada na agenda: o vazio acolhedor da lista. */
   protected readonly isEmpty = computed(() => this.entries().length === 0);
 
   protected readonly selected = computed(() => {
@@ -537,11 +599,23 @@ export class AgendaPage {
     return this.problems().find((p) => p.field === field)?.message ?? null;
   }
 
+  protected setView(view: AgendaView): void {
+    this.views.set(view);
+  }
+
+  /** Escolhe o dia do calendário (o calendário acompanha). */
+  protected selectDay(date: ISODate | null): void {
+    if (date) {
+      this.selectedDate.set(date);
+    }
+  }
+
   // ===== Novo e remarcar =====
 
-  protected openNew(): void {
+  /** Abre "Novo compromisso". Com `date` (o dia aberto no calendário), o dia já vem preenchido. */
+  protected openNew(date: ISODate = ''): void {
     this.editingId.set(null);
-    this.resetForm({ title: '', kind: null, date: '', time: '', place: '', reminder: true });
+    this.resetForm({ title: '', kind: null, date, time: '', place: '', reminder: true });
     this.formOpen.set(true);
   }
 
@@ -598,14 +672,23 @@ export class AgendaPage {
       if (editing) {
         const { before, after } = this.agenda.update(editing, input);
         this.formOpen.set(false);
+        // O calendário vai ao dia novo; o "Desfazer" volta ao de antes.
+        this.selectDay(dateOf(after.at));
         this.toasts.show({
           message: `Remarcado para ${this.whenOf(after.at)}.`,
           durationMs: 8000,
-          action: { label: 'Desfazer', run: () => this.agenda.restore(before) },
+          action: {
+            label: 'Desfazer',
+            run: () => {
+              this.agenda.restore(before);
+              this.selectDay(dateOf(before.at));
+            },
+          },
         });
       } else {
         const created = this.agenda.add(this.ctx.elderId() ?? '', input);
         this.formOpen.set(false);
+        this.selectDay(dateOf(created.at));
         this.toasts.show({
           message: 'Compromisso salvo.',
           durationMs: 8000,
@@ -644,7 +727,13 @@ export class AgendaPage {
     this.toasts.show({
       message: 'Compromisso retirado.',
       durationMs: 8000,
-      action: { label: 'Desfazer', run: () => this.agenda.restore(removed) },
+      action: {
+        label: 'Desfazer',
+        run: () => {
+          this.agenda.restore(removed);
+          this.selectDay(dateOf(removed.at));
+        },
+      },
     });
   }
 }

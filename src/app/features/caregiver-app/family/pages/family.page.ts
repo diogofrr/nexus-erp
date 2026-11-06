@@ -129,7 +129,7 @@ const COPIED = 'Texto copiado. Cole na conversa da sua família.';
             tabindex="0"
           >{{ text() ?? 'Escolha o que você quer compartilhar.' }}</div>
           @if (!anySelected()) {
-            <p class="family-reason" id="family-reason">Ligue pelo menos um item.</p>
+            <p class="family-reason" id="family-reason">Escolha pelo menos um item.</p>
           }
           <div class="family-actions">
             <button

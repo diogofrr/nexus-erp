@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import { Clock } from '../../../core/clock/clock.service';
 import { minutesBetween, timeOf, toIsoDateTime } from '../../../core/clock/date-utils';
 import { ISODateTime } from '../../../core/models';
@@ -104,6 +114,8 @@ export function doseStateOf(slot: DoseSlot, now: ISODateTime): CgDoseState {
 })
 export class CgDoseComponent {
   private readonly clock = inject(Clock);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   /** Instante (tempo real, não o simulado) do último toque em "Dei" nesta linha. */
   private lastDeiAt = Number.NEGATIVE_INFINITY;
 
@@ -126,7 +138,12 @@ export class CgDoseComponent {
 
   protected onDei(): void {
     this.lastDeiAt = this.clock.realNowMs();
+    const hadFocus = this.hasFocus();
     this.dei.emit(this.slot());
+    // O botão Dei some quando a dose é marcada: o foco de quem usa o teclado vai para o Desfazer da mesma linha, e não para o fim da página.
+    if (hadFocus) {
+      this.focusAfterRender('.cg-dose__undo');
+    }
   }
 
   /** Ignora o toque que chega até 1 s depois do "Dei": o segundo toque do hábito não desfaz o que acabou de ser marcado. */
@@ -134,6 +151,21 @@ export class CgDoseComponent {
     if (this.clock.realNowMs() - this.lastDeiAt < UNDO_GUARD_MS) {
       return;
     }
+    const hadFocus = this.hasFocus();
     this.undo.emit(this.slot());
+    // O Desfazer some quando a marca sai: o foco volta ao Dei da mesma linha.
+    if (hadFocus) {
+      this.focusAfterRender('.cg-dose__action');
+    }
+  }
+
+  /** O foco está num controle desta linha (teclado ou leitor de tela)? Só então o foco precisa acompanhar. */
+  private hasFocus(): boolean {
+    const active = this.host.nativeElement.ownerDocument.activeElement;
+    return active !== null && this.host.nativeElement.contains(active);
+  }
+
+  private focusAfterRender(selector: string): void {
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>(selector)?.focus(), { injector: this.injector });
   }
 }

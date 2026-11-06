@@ -122,6 +122,21 @@ describe('Área card (Cartão Nexus)', () => {
     expect(text(app)).not.toContain('Uberlândia. Mostre o número do cartão no balcão.');
   });
 
+  it('C3: o histórico de compras é leitura: nenhuma linha dele é botão nem link (só o que clica parece clicável)', async () => {
+    const app = await bootCaregiverApp('cg_0027', { url: URL });
+    const rows = Array.from(app.root.querySelectorAll<HTMLElement>('[data-role="usage"]'));
+    expect(rows.length).toBeGreaterThan(0);
+    rows.forEach((row) => {
+      expect(row.tagName).toBe('DIV');
+      expect(row.querySelector('button, a, input')).toBeNull();
+      expect(row.closest('button, a')).toBeNull();
+    });
+    // Já os parceiros (onde usar) abrem e fecham: esses sim são botões, com aria-expanded.
+    const partners = Array.from(app.root.querySelectorAll<HTMLElement>('button.cg-row'));
+    expect(partners.length).toBeGreaterThan(0);
+    partners.forEach((p) => expect(p.getAttribute('aria-expanded')).not.toBeNull());
+  });
+
   it('um parceiro suspenso que fica ativo depois entra na lista, e um que é suspenso sai', async () => {
     const app = await bootCaregiverApp('cg_0002', { url: URL });
     app.db.partners.update('par_0001', { status: 'suspended' });

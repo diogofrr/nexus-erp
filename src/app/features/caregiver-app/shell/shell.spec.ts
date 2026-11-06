@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it } from 'vitest';
 import { PROTOTYPE_NOTICE } from '../../../core/privacy/browser-data.service';
+import { ToastService } from '../../../shared/ui/overlay/toast.service';
 import { ContactDialogService } from '../state/contact-dialog.service';
 import { BootedCaregiverApp, bootCaregiverApp, settleCaregiver } from '../testing';
 import { TWO_FACTOR_CODE } from '../../../core/auth/auth.service';
@@ -164,6 +165,99 @@ describe('Shell do aplicativo do cuidador (UX A.2 e A.3)', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await flush();
     expect(q('.cg-user-menu__panel')).toBeNull();
+  });
+
+  it('o toque fora do menu só fecha o menu: uma camada o consome e o que estava embaixo não é acionado (C1)', async () => {
+    app = await bootCaregiverApp('cg_0001', { url: '/cuidador/hoje' });
+    const url = app.router.url;
+    expect(q('[data-role="menu-scrim"]')).toBeNull();
+    click(q('.cg-user-menu__trigger'));
+    await flush();
+    const scrim = q('[data-role="menu-scrim"]');
+    expect(scrim).not.toBeNull();
+    expect(scrim?.getAttribute('aria-hidden')).toBe('true');
+    // A camada vem ANTES do painel (fica sob ele) e dentro do menu.
+    expect(scrim?.nextElementSibling?.classList.contains('cg-user-menu__panel')).toBe(true);
+    click(scrim);
+    await flush();
+    expect(q('.cg-user-menu__panel')).toBeNull();
+    expect(q('[data-role="menu-scrim"]')).toBeNull();
+    expect(q('.cg-user-menu__trigger')?.getAttribute('aria-expanded')).toBe('false');
+    expect(app.router.url).toBe(url);
+  });
+
+  it('o botão do menu abre e fecha o menu em toques seguidos', async () => {
+    app = await bootCaregiverApp('cg_0001');
+    const trigger = q<HTMLButtonElement>('.cg-user-menu__trigger');
+    click(trigger);
+    await flush();
+    expect(q('.cg-user-menu__panel')).not.toBeNull();
+    click(trigger);
+    await flush();
+    expect(q('.cg-user-menu__panel')).toBeNull();
+    click(trigger);
+    await flush();
+    expect(q('.cg-user-menu__panel')).not.toBeNull();
+  });
+});
+
+describe('Aviso rápido do aplicativo do cuidador (E3)', () => {
+  let app: BootedCaregiverApp;
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('mostra um aviso por vez e some sozinho em 8 s, com ou sem Desfazer', async () => {
+    app = await bootCaregiverApp('cg_0001');
+    const toasts = TestBed.inject(ToastService);
+    const first = toasts.success('Anotado às 08:00.');
+    expect(toasts.remainingMs(first)).toBe(8000);
+    toasts.success('Anotado às 12:00.');
+    expect(toasts.toasts().map((t) => t.message)).toEqual(['Anotado às 12:00.']);
+    const withUndo = toasts.show({ message: 'Feito.', action: { label: 'Desfazer', run: () => undefined } });
+    expect(toasts.remainingMs(withUndo)).toBe(8000);
+    expect(toasts.toasts()).toHaveLength(1);
+    toasts.dismissAll();
+  });
+
+  it('o aviso é uma região viva (status; erro é alert), não rouba o foco e tem Desfazer e Fechar', async () => {
+    app = await bootCaregiverApp('cg_0001', { url: '/cuidador/hoje' });
+    const toasts = TestBed.inject(ToastService);
+    const before = document.activeElement;
+    let undone = 0;
+    toasts.show({ message: 'Anotado às 08:00.', action: { label: 'Desfazer', run: () => (undone += 1) } });
+    await settleCaregiver(app.fixture);
+    const toast = app.root.querySelector('.toast');
+    expect(toast?.getAttribute('role')).toBe('status');
+    expect(text(toast)).toContain('Anotado às 08:00.');
+    expect(document.activeElement).toBe(before);
+    expect(toast?.querySelector('.toast__action')?.textContent?.trim()).toBe('Desfazer');
+    expect(toast?.querySelector('[aria-label="Fechar aviso"]')).not.toBeNull();
+    click(toast?.querySelector('.toast__action'));
+    await settleCaregiver(app.fixture);
+    expect(undone).toBe(1);
+    expect(app.root.querySelector('.toast')).toBeNull();
+    toasts.error('Não foi possível salvar.');
+    await settleCaregiver(app.fixture);
+    expect(app.root.querySelector('.toast')?.getAttribute('role')).toBe('alert');
+    toasts.dismissAll();
+  });
+
+  it('depois de tocar em "Dei", o aviso e o botão do remédio seguinte são controles diferentes e há um aviso só', async () => {
+    app = await bootCaregiverApp('cg_0001', { url: '/cuidador/hoje', time: '08:00' });
+    const deis = (): HTMLButtonElement[] =>
+      Array.from(app.root.querySelectorAll<HTMLButtonElement>('main button')).filter(
+        (b) => text(b) === 'Dei',
+      );
+    const initial = deis().length;
+    expect(initial).toBeGreaterThan(0);
+    click(deis()[0]);
+    await settleCaregiver(app.fixture);
+    expect(app.root.querySelectorAll('.toast')).toHaveLength(1);
+    expect(deis()).toHaveLength(initial - 1);
+    // Um segundo toque no mesmo lugar não desfaz nem duplica.
+    click(deis()[0]);
+    await settleCaregiver(app.fixture);
+    expect(app.root.querySelectorAll('.toast')).toHaveLength(1);
+    TestBed.inject(ToastService).dismissAll();
   });
 });
 

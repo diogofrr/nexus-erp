@@ -168,6 +168,7 @@ Tudo standalone, OnPush, signals, sem estilo inline (o CSS está em `src/styles/
 | `app-cg-emergency-note` | `variant` (`compact`, `full`) | Aviso de 192, compacto ou o bloco da Ajuda agora com 192 e 188 (A.2.19) |
 | `app-cg-text-size` | `showLegend` | Normal, Grande, Bem grande (A.2.20) |
 | `app-cg-trend` | `items*` (`CgTrendItem`) | Linha do tempo da evolução, rampa de azul, pontuação só em legenda; cada `<li>` leva o rótulo "04/11, sobrecarga severa, 63 pontos" (A.2.21) |
+| `app-cg-calendar` | `events` (`CgCalendarEvent[]`: dia e tipo), `selected` (model, `ISODate`) | Calendário do mês da Agenda: semana de domingo a sábado, marcas por tipo com cor e forma, legenda, Mês anterior, Próximo mês e Hoje, grade com teclado (A.2.25). Regras puras em `core/rules/calendar-grid.ts`; `docs/16-calendario-agenda.md` |
 | `app-cg-rating`, `app-cg-rating-pair` | `label*`, `value` (model); `quality` e `punctuality` (models); `ratingPairMissingText(q, p)` | Nota de 1 a 5 numerada, e as duas notas da avaliação (A.2.22) |
 | `app-cg-header`, `app-cg-nav`, `app-cg-proto-note`, `app-cg-contact-dialog` | montados pelo shell | Não use nas telas |
 

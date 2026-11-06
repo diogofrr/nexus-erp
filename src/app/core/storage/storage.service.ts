@@ -20,6 +20,8 @@ export const STORAGE_KEYS = {
   caregiverSession: 'caregiver-session',
   /** Tamanho da letra do aplicativo do cuidador (Normal, Grande, Bem grande), guardado no navegador. */
   caregiverFontScale: 'caregiver-font-scale',
+  /** Como o cuidador prefere ver a Agenda: calendário ou lista (guardado no navegador, não por pessoa). */
+  caregiverAgendaView: 'caregiver-agenda-view',
   clock: 'clock',
   uiNotice: 'ui-notice',
   settings: 'settings',

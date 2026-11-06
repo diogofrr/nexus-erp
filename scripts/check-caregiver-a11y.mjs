@@ -374,6 +374,15 @@ for (const state of ['care', 'soft', 'ok', 'late', 'error']) {
 // do preenchimento; o preenchimento mais escuro (faixa 3 e 4) também passa 3:1 sozinho.
 pair('faixa 3 da escala sobre cartão', '--cg-band-3', '--cg-surface', LARGE, 'A.2.21');
 pair('faixa 4 da escala sobre cartão', '--cg-band-4', '--cg-surface', LARGE, 'A.2.21');
+// Calendário da Agenda (`app-cg-calendar`): cada tipo de compromisso tem cor e forma, e o nome vai escrito na legenda e no
+// rótulo; a marca passa 3:1 sobre o cartão e sobre o dia escolhido. O número de um dia de outro mês é texto (4,5:1).
+for (const mark of ['--cg-action', '--cg-ok-icon', '--cg-soft-icon', '--nx-gold-700', '--cg-border-control']) {
+  pair(`marca do calendário (${mark})`, mark, '--cg-surface', LARGE, 'calendário da Agenda');
+  pair(`marca do calendário (${mark}) no dia escolhido`, mark, '--brand-soft', LARGE, 'calendário da Agenda');
+}
+pair('número do dia de outro mês no calendário', '--cg-border-control', '--cg-surface', TEXT, 'calendário da Agenda');
+pair('número do dia de hoje no calendário', '--cg-surface', '--cg-action', TEXT, 'calendário da Agenda');
+pair('número do dia escolhido no calendário', '--cg-heading', '--brand-soft', TEXT, 'calendário da Agenda');
 
 const LIST = process.argv.includes('--list');
 for (const theme of themes) {
