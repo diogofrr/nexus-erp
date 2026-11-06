@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { typeInto } from '../../../shared/ui/testing/dom';
 import { ContactDialogService } from '../state/contact-dialog.service';
 import { BootedCaregiverApp, bootCaregiverApp, settleCaregiver } from '../testing';
@@ -73,6 +73,28 @@ describe('Buscar profissionais e serviços', () => {
       };
       expect(await count('professional_caregiver')).toBe('3 opções em Cuidador(a).');
       expect(await count('pharmacy')).toBe('2 opções em Farmácia.');
+    });
+
+    it('CXC-011: escolher uma necessidade leva a tela até os resultados, com o foco na contagem ("5 opções")', async () => {
+      const scrolled = vi.fn();
+      const proto = Element.prototype as unknown as { scrollIntoView?: unknown };
+      const original = proto.scrollIntoView;
+      proto.scrollIntoView = scrolled;
+      try {
+        const app = await bootCaregiverApp('cg_0002', { url: URL });
+        expect(scrolled).not.toHaveBeenCalled();
+        await click(app, category(app, 'physiotherapy'));
+        await settleCaregiver(app.fixture);
+        expect(scrolled).toHaveBeenCalledTimes(1);
+        const count = app.root.querySelector<HTMLElement>('#search-results');
+        expect(norm(count?.textContent)).toBe('5 opções em Fisioterapia.');
+        expect(document.activeElement).toBe(count);
+        // Tocar na mesma necessidade de novo também leva até a lista.
+        await click(app, category(app, 'physiotherapy'));
+        expect(scrolled).toHaveBeenCalledTimes(2);
+      } finally {
+        proto.scrollIntoView = original;
+      }
     });
 
     it('uma categoria que não existe na URL é ignorada', async () => {
@@ -211,16 +233,24 @@ describe('Buscar profissionais e serviços', () => {
       await click(app, bar);
       const sheet = openSheet(app) as HTMLDialogElement;
       expect(norm(sheet.querySelector('.cg-sheet__title')?.textContent)).toBe('Lado a lado');
-      const columns = Array.from(sheet.querySelectorAll('[data-role="compare-col"]'));
-      expect(columns.length).toBe(2);
-      columns.forEach((col) => {
-        expect(Array.from(col.querySelectorAll('dt')).map((d) => norm(d.textContent))).toEqual(['Nota', 'Atende em casa', 'Condições']);
-        expect(norm(col.querySelector('a')?.textContent)).toBe('Ver ficha');
+      // CXC-012: uma tabela curta; só entram as linhas em que as opções são diferentes, e o que é igual vem uma vez só.
+      const names = Array.from(sheet.querySelectorAll('[data-role="compare-name"]')).map((n) => norm(n.textContent));
+      expect(names).toEqual(['Clínica Movimento Vital', 'Dr. Eduardo Falcão']);
+      const changing = Array.from(sheet.querySelectorAll('[data-role="compare-row"]')).map((r) => norm(r.querySelector('th')?.textContent));
+      const same = Array.from(sheet.querySelectorAll('[data-role="compare-same"] li')).map((li) => norm(li.textContent));
+      expect(changing.length + same.length).toBe(3);
+      expect(changing.length).toBeLessThan(3);
+      Array.from(sheet.querySelectorAll('[data-role="compare-row"]')).forEach((row) => {
+        const cells = Array.from(row.querySelectorAll('td')).map((c) => norm(c.textContent));
+        expect(cells).toHaveLength(2);
+        expect(cells[0]).not.toBe(cells[1]);
       });
-      expect(norm(columns[0]?.querySelector('h3')?.textContent)).toBe('Clínica Movimento Vital');
-      expect(norm(columns[0]?.querySelectorAll('dd')[1]?.textContent)).toBe('Não');
-      expect(norm(columns[1]?.querySelectorAll('dd')[1]?.textContent)).toBe('Não');
-      expect(norm(columns[1]?.querySelector('h3')?.textContent)).toBe('Dr. Eduardo Falcão');
+      // "Atende em casa" é "Não" nas duas: a linha igual não se repete na tabela.
+      expect(changing).not.toContain('Atende em casa');
+      expect(same).toContain('Atende em casa: Não');
+      expect(norm(sheet.querySelector('[data-role="compare-same"] h3')?.textContent)).toBe('Igual nas duas opções');
+      const links = Array.from(sheet.querySelectorAll('[data-role="compare-links"] a'));
+      expect(links.map((a) => norm(a.textContent))).toEqual(['Ver ficha de Clínica Movimento Vital', 'Ver ficha de Dr. Eduardo Falcão']);
     });
 
     it('com 3 marcadas, as outras caixas ficam sem uso com o motivo escrito', async () => {

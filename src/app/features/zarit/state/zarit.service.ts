@@ -30,6 +30,7 @@ import {
   zaritTotal,
   ZaritEvolution,
 } from '@core/rules';
+import { FREE_TEXT_MAX_CHARS, tooLongText } from '@core/rules/text-limits';
 import { ArbeService } from './arbe.service';
 import { CLOSURE_FIELD_LABELS } from './zarit-labels';
 import { ZaritAccessService } from './zarit-access.service';
@@ -519,6 +520,12 @@ export class ZaritService {
     }
     const registered = this.reviews.register(caregiverId, about, text);
     if (!registered.ok) {
+      if (registered.reason === 'health_consent_required') {
+        return fail('caregiver', 'O cuidador não tem a autorização de dados de saúde vigente: não há decisão da escala para rever.');
+      }
+      if (registered.reason === 'text_too_long') {
+        return fail('text', tooLongText(FREE_TEXT_MAX_CHARS));
+      }
       return fail('text', 'Escreva o pedido do cuidador.');
     }
     const request = registered.request;

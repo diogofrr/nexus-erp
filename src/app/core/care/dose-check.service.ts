@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { CaregiverOwnership } from '../auth/caregiver-ownership';
 import { Clock } from '../clock/clock.service';
 import { compareDates } from '../clock/date-utils';
 import { Database } from '../data/database';
@@ -31,9 +32,13 @@ export class DoseCheckError extends Error {
 export class DoseCheckService {
   private readonly db = inject(Database);
   private readonly clock = inject(Clock);
+  private readonly ownership = inject(CaregiverOwnership);
 
   /** Doses do dia da pessoa idosa, com o que já foi dado (reativo: lê as coleções por signals). */
   forElder(elderId: ID, date: ISODate): DoseSlot[] {
+    if (!this.ownership.ownsElder(elderId)) {
+      return [];
+    }
     const medications = this.db.medications.query((m) => m.elderId === elderId);
     const ids = new Set(medications.map((m) => m.id));
     const checks = this.db.doseChecks.query((d) => d.date === date && ids.has(d.medicationId));
@@ -42,6 +47,7 @@ export class DoseCheckService {
 
   /** Marca a dose como dada. Idempotente: se já estava marcada, devolve a marcação existente. */
   mark(medicationId: ID, date: ISODate, time: TimeOfDay): DoseCheck {
+    this.ownership.assertMedication(medicationId);
     const medication = this.db.medications.get(medicationId);
     if (!medication || !medication.active) {
       throw new DoseCheckError('Este remédio não está na lista de agora.');
@@ -61,12 +67,13 @@ export class DoseCheckService {
 
   /** Desfaz a marcação ("não dei"). Devolve `false` se não havia marcação. */
   unmark(medicationId: ID, date: ISODate, time: TimeOfDay): boolean {
+    this.ownership.assertMedication(medicationId);
     const existing = this.find(medicationId, date, time);
     return existing ? this.db.doseChecks.remove(existing.id) : false;
   }
 
   isGiven(medicationId: ID, date: ISODate, time: TimeOfDay): boolean {
-    return this.find(medicationId, date, time) !== undefined;
+    return this.ownership.ownsMedication(medicationId) && this.find(medicationId, date, time) !== undefined;
   }
 
   private find(medicationId: ID, date: ISODate, time: TimeOfDay): DoseCheck | undefined {

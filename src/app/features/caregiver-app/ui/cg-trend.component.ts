@@ -4,8 +4,10 @@ export interface CgTrendItem {
   id: string;
   /** Data por extenso curto ("04/11"). */
   dateLabel: string;
-  /** A faixa pelo nome oficial ("Sobrecarga moderada"), nunca só o número (RN-ZRT-08). */
+  /** A faixa pelo nome oficial ("Sobrecarga moderada"), nunca só o número (RN-ZRT-08). Vai em legenda pequena quando há `meaning`. */
   bandLabel: string;
+  /** A frase da faixa em linguagem de todo dia ("O cuidado está pesando muito"): vai PRIMEIRO, em destaque (CXC-004). */
+  meaning?: string;
   /** Faixa de 1 a 4: escolhe o tom da rampa de azul (do mais claro ao mais escuro). */
   band: 1 | 2 | 3 | 4;
   /** Pontuação, só como legenda pequena ("63 pontos"). Nunca em destaque. */
@@ -15,12 +17,13 @@ export interface CgTrendItem {
 }
 
 /**
- * O que o leitor de tela lê em cada item (UX A.2.21): "04/11, sobrecarga severa, 63 pontos". A pontuação entra só
+ * O que o leitor de tela lê em cada item (UX A.2.21): "04/11, o cuidado está pesando muito, sobrecarga severa, 63 pontos". A pontuação entra só
  * quando existe; a última conversa leva a etiqueta no fim.
  */
 export function trendItemLabel(item: CgTrendItem): string {
   const band = item.bandLabel.charAt(0).toLowerCase() + item.bandLabel.slice(1);
-  return [item.dateLabel, band, item.scoreText, item.latest ? 'última conversa' : undefined]
+  const meaning = item.meaning ? item.meaning.charAt(0).toLowerCase() + item.meaning.slice(1) : undefined;
+  return [item.dateLabel, meaning, band, item.scoreText, item.latest ? 'última conversa' : undefined]
     .filter((part): part is string => !!part)
     .join(', ');
 }
@@ -40,11 +43,14 @@ export function trendItemLabel(item: CgTrendItem): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'cg-trend-host' },
   template: `
-    <ol class="cg-trend" aria-label="Suas conversas de acompanhamento">
+    <ol class="cg-trend" aria-label="Suas conversas com a equipe">
       @for (item of items(); track item.id) {
         <li class="cg-trend__item" [class.is-latest]="item.latest" [attr.aria-label]="label(item)">
           <span class="cg-trend__dot" [attr.data-band]="item.band" aria-hidden="true"></span>
           <span class="cg-trend__date">{{ item.dateLabel }}</span>
+          @if (item.meaning) {
+            <span class="cg-trend__meaning">{{ item.meaning }}</span>
+          }
           <span class="cg-trend__band">{{ item.bandLabel }}</span>
           @if (item.scoreText) {
             <span class="cg-trend__score">{{ item.scoreText }}</span>

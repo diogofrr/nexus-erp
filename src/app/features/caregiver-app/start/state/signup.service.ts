@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { CaregiverOwnership } from '../../../../core/auth/caregiver-ownership';
 import { CaregiverSessionService } from '../../../../core/auth/caregiver-session.service';
 import {
   CaregiverRegistration,
@@ -69,6 +70,7 @@ export interface SignupExample {
 export class SignupService {
   private readonly registration = inject(CaregiverRegistrationService);
   private readonly session = inject(CaregiverSessionService);
+  private readonly ownership = inject(CaregiverOwnership);
   private readonly clock = inject(Clock);
 
   /** Já existe um cuidador com este CPF fictício? */
@@ -119,7 +121,7 @@ export class SignupService {
     });
     const channel: Channel = data.channel === 'whatsapp' && consents.whatsapp_contact !== 'granted' ? 'app' : data.channel;
     const whatsapp = data.whatsapp.trim();
-    const { caregiver } = this.registration.register({
+    const input: CaregiverRegistration = {
       fullName: data.fullName,
       birthDate: data.birthDate,
       cpf: data.cpf,
@@ -139,7 +141,22 @@ export class SignupService {
       planId: 'livre',
       registeredByUserId: 'self',
       emergencyNoticeAcceptedAt: noticeAcceptedAt,
-    });
+    };
+    // Criar uma conta nova encerra a sessão de quem estava dentro de outra (o aplicativo nunca cria o cadastro de uma pessoa
+    // dentro da sessão de outra: a posse é conferida na borda dos serviços, QAC-001). Se o cadastro falhar, a sessão volta.
+    const previous = this.ownership.actorId();
+    if (previous !== null) {
+      this.session.signOut();
+    }
+    let caregiver: Caregiver;
+    try {
+      ({ caregiver } = this.registration.register(input));
+    } catch (error) {
+      if (previous !== null) {
+        this.session.signIn(previous);
+      }
+      throw error;
+    }
     this.session.signIn(caregiver.id);
     return { caregiverId: caregiver.id, caregiver };
   }

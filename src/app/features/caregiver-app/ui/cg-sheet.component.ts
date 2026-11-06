@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   afterNextRender,
@@ -12,6 +13,7 @@ import {
 } from '@angular/core';
 import { closeModalDialog, isDialogOpen, showModalDialog } from '../../../shared/ui/overlay/modal';
 import { uniqueId } from '../../../shared/ui/util/ids';
+import { HistoryLayersService } from '../state/history-layers.service';
 
 /**
  * Folha de baixo (UX A.2.17): toda confirmação e todo formulário curto, ao alcance do polegar. Abaixo de 768 px
@@ -22,6 +24,9 @@ import { uniqueId } from '../../../shared/ui/util/ids';
  * Confirmação de ato com efeito: descreva o que acontece, quando e o que continua em 2 a 4 linhas (use
  * `<ul class="effects">` do design system) e dê ao botão o nome da ação ("Cancelar a conversa"), nunca "Sim".
  * No ato irreversível o foco inicial deve ficar no botão seguro ("Voltar").
+ *
+ * O botão voltar do aparelho **fecha a folha** (e não sai da tela): ao abrir, a folha registra uma entrada de histórico no
+ * `HistoryLayersService` e a retira ao fechar (CXC-013).
  *
  * ```html
  * <app-cg-sheet heading="Cancelar a conversa?" [(open)]="confirming">
@@ -56,6 +61,7 @@ import { uniqueId } from '../../../shared/ui/util/ids';
 })
 export class CgSheetComponent {
   private readonly injector = inject(Injector);
+  private readonly layers = inject(HistoryLayersService);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
   private readonly title = viewChild.required<ElementRef<HTMLElement>>('title');
 
@@ -73,11 +79,15 @@ export class CgSheetComponent {
       const dialog = this.dialog().nativeElement;
       if (wanted && !isDialogOpen(dialog)) {
         showModalDialog(dialog);
+        // O voltar do aparelho fecha a folha (CXC-013).
+        this.layers.open(this.titleId, () => this.open.set(false));
         afterNextRender(() => this.focusInitial(), { injector: this.injector });
       } else if (!wanted && isDialogOpen(dialog)) {
         closeModalDialog(dialog);
+        this.layers.release(this.titleId);
       }
     });
+    inject(DestroyRef).onDestroy(() => this.layers.forget(this.titleId));
   }
 
   /** Esc fecha pelo navegador: o estado acompanha. */
@@ -85,6 +95,7 @@ export class CgSheetComponent {
     if (this.open()) {
       this.open.set(false);
     }
+    this.layers.release(this.titleId);
   }
 
   /** Toque no fundo escurecido: o alvo do clique é o próprio `<dialog>`, não o painel. */

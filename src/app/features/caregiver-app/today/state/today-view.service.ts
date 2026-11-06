@@ -5,6 +5,7 @@ import { DoseCheckService } from '../../../../core/care/dose-check.service';
 import { Database } from '../../../../core/data/database';
 import { ID, ISODateTime } from '../../../../core/models';
 import { nextOne } from '../../../../core/rules/care-agenda';
+import { readingTimeLabel } from '../../../../core/rules/guidance-content';
 import { doseProgress } from '../../../../core/rules/medication-doses';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { formatDayLong, relativeDay, relativeDateTime } from '../../state/day-format';
@@ -120,6 +121,8 @@ export class TodayViewService {
 
   /** O humor só existe com a autorização de saúde (S-29): sem ela o bloco some. */
   readonly moodEnabled = this.ctx.healthConsent;
+  /** A pessoa retirou a autorização de saúde: o humor some e Hoje diz isso em uma linha (CXC-028). Quem nunca respondeu não vê nada. */
+  readonly moodPaused = computed(() => !this.ctx.healthConsent() && this.ctx.consentStatus('health_data') === 'revoked');
   readonly todayMood = computed(() => {
     const id = this.ctx.caregiverId();
     return id ? this.wellbeing.forDay(id, this.ctx.today()) : undefined;
@@ -189,7 +192,7 @@ export class TodayViewService {
     if (kind === 'reading' && reading) {
       const invite: DailyInvite = {
         kind,
-        title: 'Leitura de 3 minutos',
+        title: readingTimeLabel(reading.body),
         text: reading.title,
         actionLabel: 'Ler agora',
         link: '/cuidador/cuidar-de-mim/conteudos',
@@ -222,14 +225,14 @@ export class TodayViewService {
   }
 
   /** Um conteúdo livre (publicado e não exclusivo), escolhido pelo dia. */
-  private readingOfTheDay(): { id: ID; title: string } | null {
+  private readingOfTheDay(): { id: ID; title: string; body: string } | null {
     const free = this.db.guidanceContents.query((c) => c.status === 'published' && !c.exclusive);
     if (free.length === 0) {
       return null;
     }
     const day = Number(this.ctx.today().replace(/-/g, ''));
     const content = free[day % free.length];
-    return content ? { id: content.id, title: content.title } : null;
+    return content ? { id: content.id, title: content.title, body: content.body } : null;
   }
 
   /** "Quinta-feira, 12/11, às 19:00" (ou "Hoje, às 19:00", "Amanhã, às 19:00"). */

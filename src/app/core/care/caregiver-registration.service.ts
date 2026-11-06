@@ -1,5 +1,7 @@
 import { Injectable, inject } from '@angular/core';
+import { CaregiverOwnership } from '../auth/caregiver-ownership';
 import { Clock } from '../clock/clock.service';
+import { isValidIsoDate } from '../clock/date-utils';
 import { SubscriptionService } from '../commerce/subscription.service';
 import { Database } from '../data/database';
 import type {
@@ -16,6 +18,7 @@ import type {
 } from '../models';
 import { ConsentService } from '../privacy/consent.service';
 import { caregiverCode } from '../privacy/pseudonym';
+import { INVALID_DATE_TEXT, NAME_MAX_CHARS, isTooLong, tooLongText } from '../rules/text-limits';
 
 /** Cadastro que não pôde ser feito (por exemplo, CPF fictício já em uso). A frase é para a tela. */
 export class CaregiverError extends Error {
@@ -70,6 +73,7 @@ export class CaregiverRegistrationService {
   private readonly clock = inject(Clock);
   private readonly consent = inject(ConsentService);
   private readonly subscriptions = inject(SubscriptionService);
+  private readonly ownership = inject(CaregiverOwnership);
 
   /** Cuidador que já usa este CPF fictício (para "Já existe um cuidador com este CPF"). */
   findByCpf(cpf: string, exceptId?: ID): Caregiver | undefined {
@@ -90,6 +94,21 @@ export class CaregiverRegistrationService {
   }
 
   register(input: CaregiverRegistration): { caregiver: Caregiver; elder: Elder } {
+    // O cadastro novo nasce fora de qualquer sessão de cuidador: quem está dentro da própria conta não cria a de outra
+    // pessoa (os serviços de consentimento e de assinatura só agem sobre quem está na sessão, QAC-001).
+    if (this.ownership.actorId() !== null) {
+      throw new CaregiverError('Saia da sua conta para criar outro cadastro.');
+    }
+    // Datas que existem e textos com tamanho de nome (QAC-015): a tela confere, o serviço também.
+    if (!isValidIsoDate(input.birthDate) || !isValidIsoDate(input.elder.birthDate)) {
+      throw new CaregiverError(INVALID_DATE_TEXT);
+    }
+    if (input.birthDate > this.clock.today() || input.elder.birthDate > this.clock.today()) {
+      throw new CaregiverError('A data de nascimento não pode ser no futuro.');
+    }
+    if ([input.fullName, input.city, input.elder.fullName].some((text) => isTooLong(text, NAME_MAX_CHARS))) {
+      throw new CaregiverError(tooLongText(NAME_MAX_CHARS));
+    }
     if (this.findByCpf(input.cpf)) {
       throw new CaregiverError('Já existe um cuidador com este CPF fictício.');
     }

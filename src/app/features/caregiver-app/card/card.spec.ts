@@ -132,10 +132,16 @@ describe('Área card (Cartão Nexus)', () => {
     expect(text(app)).toContain('Drogaria Popular Central');
   });
 
-  it('AC-CG-141: Elza vê os 8 usos (parceiro, data, desconto) e a economia', async () => {
+  it('AC-CG-141 e CXC-026: Elza vê as 3 últimas compras e a economia; "Ver todas" abre os 8 usos (parceiro, data, desconto)', async () => {
     const app = await bootCaregiverApp('cg_0027', { url: URL });
+    expect(app.root.querySelectorAll('[data-role="usage"]').length).toBe(3);
+    const toggle = app.root.querySelector<HTMLElement>('[data-role="all-usages"]');
+    expect(toggle?.textContent?.trim()).toBe('Ver todas (8)');
+    toggle?.click();
+    await settleCaregiver(app.fixture);
     const usages = Array.from(app.root.querySelectorAll('[data-role="usage"]')).map(parts);
     expect(usages.length).toBe(8);
+    expect(app.root.querySelector('[data-role="all-usages"]')?.textContent?.trim()).toBe('Ver menos');
     expect(usages[0]).toBe('Drogaria Cuidar | sáb, 31/10 · desconto de R$ 9,36');
     // Hoje é 04/11 e o último uso foi em 31/10: o mês ainda não tem compras, e o total aparece.
     expect(app.root.querySelector('[data-role="month-total"]')?.textContent?.trim()).toBe('Neste mês: ainda sem compras com o cartão.');

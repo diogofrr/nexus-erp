@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { AuditLogService } from '../audit/audit-log.service';
+import { CaregiverOwnership, NOT_OWNER_TEXT } from '../auth/caregiver-ownership';
 import { Clock } from '../clock/clock.service';
 import { Database } from '../data/database';
 import {
@@ -18,6 +19,7 @@ import {
   isSearchable,
   providerAverage,
 } from '../rules/arp';
+import { FREE_TEXT_MAX_CHARS, isTooLong, tooLongText } from '../rules/text-limits';
 import {
   evaluationProblem,
   isEvaluationEditable,
@@ -123,6 +125,7 @@ export class CaregiverNetworkService {
   private readonly db = inject(Database);
   private readonly clock = inject(Clock);
   private readonly audit = inject(AuditLogService);
+  private readonly ownership = inject(CaregiverOwnership);
 
   // ===== Busca e ficha =====
 
@@ -187,6 +190,9 @@ export class CaregiverNetworkService {
 
   /** Os pedidos do cuidador, do mais recente para o mais antigo. */
   requestsOf(caregiverId: ID): ServiceRequest[] {
+    if (!this.ownership.ownsCaregiver(caregiverId)) {
+      return [];
+    }
     return this.db.serviceRequests
       .query((r) => r.caregiverId === caregiverId)
       .sort((a, b) => b.requestedAt.localeCompare(a.requestedAt) || b.id.localeCompare(a.id));
@@ -213,14 +219,12 @@ export class CaregiverNetworkService {
 
   /** Pedidos que esperam a resposta do profissional (a frase da porta de Rede). */
   awaitingCount(caregiverId: ID): number {
-    return this.db.serviceRequests.count((r) => r.caregiverId === caregiverId && r.status === 'requested');
+    return this.requestsOf(caregiverId).filter((r) => r.status === 'requested').length;
   }
 
   /** Serviços concluídos que ainda esperam a avaliação do cuidador. */
   toEvaluateCount(caregiverId: ID): number {
-    return this.db.serviceRequests.count(
-      (r) => r.caregiverId === caregiverId && r.status === 'completed' && !r.evaluationId,
-    );
+    return this.requestsOf(caregiverId).filter((r) => r.status === 'completed' && !r.evaluationId).length;
   }
 
   /**
@@ -228,6 +232,9 @@ export class CaregiverNetworkService {
    * local e se já não há um pedido em andamento com ele. NADA de saúde, pontuação, atendimento ou grupo vai no pedido.
    */
   createRequest(caregiverId: ID, input: RequestInput): CaregiverResult<ServiceRequest> {
+    if (!this.ownership.ownsCaregiver(caregiverId)) {
+      return fail(NOT_OWNER_TEXT);
+    }
     const caregiver = this.db.caregivers.get(caregiverId);
     if (!caregiver || caregiver.status === 'closed') {
       return fail('Entre no aplicativo para pedir um serviço.');
@@ -242,6 +249,9 @@ export class CaregiverNetworkService {
     }
     if (problem === 'no_need') {
       return fail('Conte em uma frase o que você precisa.', 'need');
+    }
+    if (isTooLong(input.need, FREE_TEXT_MAX_CHARS)) {
+      return fail(tooLongText(FREE_TEXT_MAX_CHARS), 'need');
     }
     if (!input.modality) {
       return fail('Escolha onde você quer ser atendido.', 'modality');
@@ -268,7 +278,7 @@ export class CaregiverNetworkService {
   /** O cuidador cancela o pedido enquanto estiver enviado ou aceito (RN-REDE-26). */
   cancelRequest(caregiverId: ID, requestId: ID): CaregiverResult<ServiceRequest> {
     const request = this.db.serviceRequests.get(requestId);
-    if (!request || request.caregiverId !== caregiverId) {
+    if (!request || request.caregiverId !== caregiverId || !this.ownership.ownsCaregiver(caregiverId)) {
       return fail('Não encontramos este pedido.');
     }
     if (!isRequestOpen(request.status)) {
@@ -288,7 +298,7 @@ export class CaregiverNetworkService {
   /** Duas notas de 1 a 5, comentário opcional, uma avaliação por serviço concluído (RN-ARP-02). */
   evaluate(caregiverId: ID, requestId: ID, input: EvaluationInput): CaregiverResult<OwnEvaluationView> {
     const request = this.db.serviceRequests.get(requestId);
-    if (!request || request.caregiverId !== caregiverId) {
+    if (!request || request.caregiverId !== caregiverId || !this.ownership.ownsCaregiver(caregiverId)) {
       return fail('Não encontramos este serviço.');
     }
     const problem = evaluationProblem(request, input.technical, input.punctuality);
@@ -303,6 +313,9 @@ export class CaregiverNetworkService {
     }
     if (problem === 'not_completed') {
       return fail('Só dá para avaliar um serviço concluído.');
+    }
+    if (isTooLong(input.comment ?? '', FREE_TEXT_MAX_CHARS)) {
+      return fail(tooLongText(FREE_TEXT_MAX_CHARS));
     }
     const technical = input.technical as Rating;
     const punctuality = input.punctuality as Rating;
@@ -326,7 +339,7 @@ export class CaregiverNetworkService {
   correctEvaluation(caregiverId: ID, requestId: ID, input: EvaluationInput): CaregiverResult<OwnEvaluationView> {
     const request = this.db.serviceRequests.get(requestId);
     const evaluation = request?.evaluationId ? this.db.providerEvaluations.get(request.evaluationId) : undefined;
-    if (!request || request.caregiverId !== caregiverId || !evaluation) {
+    if (!request || request.caregiverId !== caregiverId || !evaluation || !this.ownership.ownsCaregiver(caregiverId)) {
       return fail('Não encontramos esta avaliação.');
     }
     if (!isEvaluationEditable(evaluation, this.clock.today())) {
@@ -339,6 +352,9 @@ export class CaregiverNetworkService {
     }
     if (problem === 'bad_punctuality') {
       return fail('Escolha a nota da pontualidade e do atendimento.', 'punctuality');
+    }
+    if (isTooLong(input.comment ?? '', FREE_TEXT_MAX_CHARS)) {
+      return fail(tooLongText(FREE_TEXT_MAX_CHARS));
     }
     const technical = input.technical as Rating;
     const punctuality = input.punctuality as Rating;

@@ -163,8 +163,19 @@
   .brand-symbol { width: 2.25rem; height: 1.45rem; color: var(--nx-gold-500); }
   .wordmark { font-size: 0.9375rem; letter-spacing: 0.24em; color: var(--cg-heading); @include up(md) { font-size: 1rem; letter-spacing: 0.32em; } }
 }
-.cg-app[data-text='large'] .cg-header__brand .wordmark,
-.cg-app[data-text='xlarge'] .cg-header__brand .wordmark { @media (max-width: 29.99rem) { display: none; } }
+// Cabeçalho estreito (CXC-022 e CXC-023): a marca nunca encosta na Ajuda agora e a palavra NEXUS não some na letra
+// Grande ou Bem grande (nesses casos o símbolo é que dá lugar à palavra). Sem sessão, o link Entrar toma o lugar: só o símbolo.
+@media (max-width: 29.99rem) {
+  .cg-app .cg-header__bar { gap: 0.5rem; }
+  .cg-app .cg-header__brand { gap: 0.375rem; }
+  .cg-app .cg-header__brand .brand-symbol { width: 1.75rem; height: 1.15rem; }
+  .cg-app .cg-header__brand .wordmark { font-size: 0.8125rem; letter-spacing: 0.14em; }
+  .cg-app .cg-help-now { padding-inline: 0.75rem; gap: 0.375rem; }
+  .cg-app[data-text='large'] .cg-header__brand .brand-symbol,
+  .cg-app[data-text='xlarge'] .cg-header__brand .brand-symbol { display: none; }
+  .cg-app .cg-header__bar:has(.cg-header__login) .cg-header__brand .wordmark { display: none; }
+  .cg-app .cg-header__bar:has(.cg-header__login) .cg-header__brand .brand-symbol { display: inline; }
+}
 
 .cg-app .cg-header__end {
   display: flex;
@@ -212,6 +223,8 @@
 // Formulário e texto longo ficam na coluna de leitura (640 px).
 .cg-app .cg-reading { max-width: var(--cg-reading); }
 
+// Faixa de sistema do shell (armazenamento cheio ou bloqueado, QAC-010): no alto do conteúdo, sem pressa e sem susto.
+.cg-app .cg-system-note { padding-block: 1rem 0; }
 .cg-app .cg-proto-note {
   display: flex;
   flex-wrap: wrap;
@@ -227,6 +240,8 @@
   text-align: center;
   .icon { color: var(--cg-soft-icon); }
 }
+// Onde a faixa de protótipo já está na página (entrada e começo do cadastro), o aviso do rodapé não se repete (CXC-023).
+.cg-app .cg-main:has(.banner--prototype) .cg-proto-note { display: none; }
 .cg-app .cg-proto-note__link { display: inline-flex; align-items: center; min-height: var(--cg-target); padding-inline: 0.5rem; font-weight: var(--fw-semibold); }
 
 // Barra inferior (abaixo de 1024 px) e abas do cabeçalho (1024 px ou mais)
@@ -523,6 +538,7 @@
 .cg-app .field__hint { font-size: var(--cg-fs-small); color: var(--cg-text-soft); }
 .cg-app .field { gap: 0.5rem; }
 .cg-app .error-summary { border-radius: var(--cg-radius-control); }
+.cg-app .error-summary__short { margin: 0.25rem 0 0; font-size: var(--cg-fs-small); }
 
 // Estado vazio (app-empty-state): título serifado, uma frase, uma ação
 .cg-app .empty {
@@ -623,10 +639,14 @@
   &[aria-current='true'] { background: var(--brand-soft); }
 }
 .cg-app .cg-row__icon { display: grid; place-items: center; flex-shrink: 0; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--brand-soft); color: var(--cg-heading); }
-.cg-app .cg-row__text { flex: 1; min-width: 0; display: grid; gap: 0.125rem; }
+// Corpo da linha: o texto tem largura mínima (10 em) e a etiqueta (`[cgRowEnd]`) só fica ao lado dele se couber; senão
+// desce para baixo do título (CXC-001). A medida em `em` acompanha o tamanho da letra (Normal, Grande, Bem grande).
+.cg-app .cg-row__body { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }
+.cg-app .cg-row__text { flex: 1 1 10em; min-width: 0; display: grid; gap: 0.125rem; }
 .cg-app .cg-row__title { font-weight: var(--fw-semibold); overflow-wrap: anywhere; }
 .cg-app .cg-row__desc { color: var(--cg-text-soft); font-size: var(--cg-fs-small); line-height: 1.4; }
-.cg-app .cg-row__end { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--cg-text-soft); }
+.cg-app .cg-row__extra { flex: 0 1 auto; max-width: 100%; &:empty { display: none; } }
+.cg-app .cg-row__end { display: inline-flex; align-items: center; flex-shrink: 0; color: var(--cg-text-soft); }
 
 // ---------------------------------------------------------------------------
 // Escolha única, chave, humor, nota, tamanho da letra
@@ -705,8 +725,9 @@
 .cg-app .cg-switch[aria-checked='true'] .cg-switch__track { background: var(--cg-action); }
 .cg-app .cg-switch[aria-checked='true'] .cg-switch__thumb { transform: translateX(1.5rem); }
 
-// Humor: 5 colunas com letra Normal e 328 px ou mais; senão, lista de 5 linhas de 56 px
-.cg-app .cg-mood-host { display: block; container-type: inline-size; }
+// Humor: 5 colunas com letra Normal e 328 px ou mais; senão, lista de 5 linhas de 56 px. Largura total sempre
+// (CXC-002): sem ela, dentro de uma grade com justify-items: start o contêiner de medida encolhia a zero.
+.cg-app .cg-mood-host { display: block; width: 100%; container-type: inline-size; }
 .cg-app .cg-mood { display: grid; gap: 0.5rem; grid-template-columns: minmax(0, 1fr); }
 .cg-app .cg-mood__option {
   position: relative;
@@ -807,9 +828,12 @@
 .cg-app .cg-dose__dosage { color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
 .cg-app .cg-dose__time { grid-area: time; font-variant-numeric: tabular-nums; font-weight: var(--fw-semibold); text-align: right; }
 .cg-app .cg-dose__action { grid-area: action; justify-self: end; min-width: 5.5rem; min-height: var(--cg-target); }
-.cg-app .cg-dose__state { display: inline-flex; align-items: center; gap: 0.25rem; font-size: var(--cg-fs-small); font-weight: var(--fw-semibold); }
+// Neutro por padrão ("Ainda não anotado"); o âmbar só entra na primeira linha em atraso da tela (CXC-005).
+.cg-app .cg-dose__state { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--cg-text-soft); font-size: var(--cg-fs-small); font-weight: var(--fw-semibold); .icon { color: var(--cg-soft-icon); } }
 .cg-app .cg-dose__state--ok { color: var(--cg-ok-fg); .icon { color: var(--cg-ok-icon); } }
 .cg-app .cg-dose__state--late { color: var(--cg-late-fg); .icon { color: var(--cg-late-icon); } }
+// "Desfazer": link pequeno embaixo do texto, longe do lugar do "Dei" (CXC-008).
+.cg-app .cg-dose__undo { justify-self: start; margin-inline-start: -0.5rem; margin-block: -0.25rem; }
 // Variante grande, "por pessoa" de quem tem pouca familiaridade digital (UX C6, o João): hora em 22 px e Dei de 96 px.
 .cg-app .cg-dose--large .cg-dose__time { font-size: calc(1.375rem * var(--cg-zoom)); }
 .cg-app .cg-dose--large .cg-dose__action { min-width: 6rem; }
@@ -843,8 +867,8 @@
 .cg-app .cg-trend__item {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.125rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.125rem 0.5rem;
   padding-left: 2.25rem;
   &.is-latest .cg-trend__dot { box-shadow: 0 0 0 3px var(--cg-surface), 0 0 0 6px var(--cg-action); }
 }
@@ -852,10 +876,13 @@
 .cg-app .cg-trend__dot[data-band='2'] { background: var(--cg-band-2); }
 .cg-app .cg-trend__dot[data-band='3'] { background: var(--cg-band-3); }
 .cg-app .cg-trend__dot[data-band='4'] { background: var(--cg-band-4); }
-.cg-app .cg-trend__date { color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
+// A frase da faixa vai primeiro e em destaque; o nome técnico e os pontos viram legenda pequena (CXC-004, RN-ZRT-23).
+.cg-app .cg-trend__date { grid-column: 1 / -1; color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
+.cg-app .cg-trend__meaning { grid-column: 1 / -1; font-weight: var(--fw-semibold); }
 .cg-app .cg-trend__band { font-weight: var(--fw-semibold); }
+.cg-app .cg-trend__meaning ~ .cg-trend__band { color: var(--cg-text-soft); font-size: var(--cg-fs-caption); font-weight: 400; }
 .cg-app .cg-trend__score { color: var(--cg-text-soft); font-size: var(--cg-fs-caption); }
-.cg-app .cg-trend__tag { justify-self: start; padding: 0 0.5rem; border-radius: var(--cg-radius-pill); background: var(--brand-soft); color: var(--cg-heading); font-size: var(--cg-fs-caption); font-weight: var(--fw-semibold); }
+.cg-app .cg-trend__tag { grid-column: 1 / -1; justify-self: start; padding: 0 0.5rem; border-radius: var(--cg-radius-pill); background: var(--brand-soft); color: var(--cg-heading); font-size: var(--cg-fs-caption); font-weight: var(--fw-semibold); }
 
 // ---------------------------------------------------------------------------
 // Folha de baixo, "Como falar com a gente" e aviso de emergência
@@ -902,7 +929,10 @@
 .cg-app .cg-contact__closed { color: var(--cg-soft-fg); font-size: var(--cg-fs-small); font-weight: var(--fw-semibold); }
 .cg-app .cg-contact__value { font-size: 1.75rem; font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; color: var(--cg-heading); overflow-wrap: anywhere; user-select: all; }
 .cg-app .cg-contact__action { margin-top: 0.25rem; }
-.cg-app .cg-contact__status { margin: 0; min-height: 1.5rem; color: var(--cg-ok-fg); font-weight: var(--fw-semibold); &:empty { display: none; } }
+// O e-mail é menor e só quebra onde a lógica manda (depois do @); o resultado de "Copiar" fica junto do botão, a falha em cor de aviso.
+.cg-app .cg-contact__value--email { font-size: var(--cg-fs-lead); overflow-wrap: break-word; word-break: normal; }
+.cg-app .cg-contact__status { margin: 0; color: var(--cg-ok-fg); font-weight: var(--fw-semibold); &:empty { display: none; } }
+.cg-app .cg-contact__status--warn { color: var(--cg-late-fg); }
 
 .cg-app .cg-emergency-host { display: block; }
 .cg-app .cg-emergency { display: grid; gap: 1rem; padding: var(--cg-pad-card); border-radius: var(--cg-radius-card); background: var(--cg-emergency-bg); color: #fff; }
@@ -925,6 +955,8 @@
     @include up(lg) { inset: auto 2rem 2rem auto; }
   }
   .toast { font-size: 1.125rem; min-height: 3rem; }
+  // Enquanto há um aviso rápido na tela, o conteúdo ganha folga embaixo: dá para rolar o botão que ele cobriria (CXC-017).
+  &:has(.toast) .cg-app .cg-main { padding-block-end: calc(var(--cg-nav-h) + 7rem + env(safe-area-inset-bottom, 0px)); }
   .dialog {
     @include down(md) {
       width: 100%;
@@ -949,8 +981,10 @@
   background: var(--surface);
   @include up(md) { padding: 1.5rem; }
 }
-.cg-door__title { margin: 0; font-size: var(--fs-2xl); }
-.cg-door__lead { margin: 0; color: var(--text-muted); font-size: 1.0625rem; }
+// A entrada respeita a letra Grande e Bem grande (CXC-022): o texto da porta do cuidador se escala por esta variável.
+.cg-door { --cg-door-zoom: 1; &[data-text='large'] { --cg-door-zoom: 1.111; } &[data-text='xlarge'] { --cg-door-zoom: 1.222; } .btn, .cg-link-btn { font-size: calc(1rem * var(--cg-door-zoom)); } }
+.cg-door__title { margin: 0; font-size: calc(var(--fs-2xl) * var(--cg-door-zoom, 1)); }
+.cg-door__lead { margin: 0; color: var(--text-muted); font-size: calc(1.0625rem * var(--cg-door-zoom, 1)); }
 .cg-door__list { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
 .cg-door__person {
   display: flex;
@@ -971,13 +1005,31 @@
   &:focus-visible { outline: 3px solid var(--nx-blue-900); outline-offset: 3px; }
 }
 .cg-door__text { flex: 1; min-width: 0; display: grid; gap: 0.125rem; }
-.cg-door__name { font-weight: var(--fw-semibold); font-size: 1.0625rem; overflow-wrap: anywhere; }
-.cg-door__blurb { color: var(--text-muted); font-size: 1rem; line-height: 1.4; }
+.cg-door__name { font-weight: var(--fw-semibold); font-size: calc(1.0625rem * var(--cg-door-zoom, 1)); overflow-wrap: anywhere; }
+.cg-door__blurb { color: var(--text-muted); font-size: calc(1rem * var(--cg-door-zoom, 1)); line-height: 1.4; }
 .cg-door__plan { justify-self: start; margin-top: 0.125rem; }
 .cg-door__actions { display: grid; gap: 0.75rem; @include up(md) { display: flex; flex-wrap: wrap; align-items: center; } }
 .cg-door__actions .btn { min-height: 3.5rem; @include down(md) { width: 100%; } }
 .cg-door__more { justify-self: start; min-height: 3rem; }
-.cg-door__emergency { margin: 0; color: var(--text-muted); font-size: 1rem; }
+// "Ajuda agora" no cabeçalho da entrada (a faixa de marca), no mesmo lugar e com o mesmo texto das outras telas (CXC-014).
+.login__help {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  margin-inline-start: auto;
+  padding: 0 1rem;
+  border: 2px solid #fff;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: var(--nx-blue-800);
+  font-weight: var(--fw-semibold);
+  line-height: 1.1;
+  text-decoration: none;
+  white-space: nowrap;
+  &:focus-visible { outline: 3px solid var(--nx-gold-300); outline-offset: 3px; }
+}
+.cg-door__emergency { margin: 0; color: var(--text-muted); font-size: calc(1rem * var(--cg-door-zoom, 1)); }
 .cg-door .cg-link-btn { color: var(--nx-blue-700); }
 
 .cg-door--staff {

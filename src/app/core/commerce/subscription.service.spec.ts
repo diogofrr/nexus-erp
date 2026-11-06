@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Clock } from '../clock/clock.service';
 import { addMonths } from '../clock/date-utils';
 import { Database } from '../data/database';
+import { currentSubscriptionOf, planIdOfCaregiver } from '../data/plan-lookup';
 import { GroupMembershipService } from '../groups/group-membership.service';
 import { countSubscribers } from '../rules/kpi';
 import { configureCoreTest } from '../testing/test-helpers';
@@ -309,5 +310,49 @@ describe('SubscriptionService (RN-PLN-14, RN-CRT-02, 03, 11)', () => {
     clock.setSimulated(addMonths(sub.nextCycleAt as string, 2), '12:00');
     service.applyDueChanges();
     expect((subOf('cg_0008').nextCycleAt as string) > clock.today()).toBe(true);
+  });
+
+  it('o dia de cobrança é o do início, cortado só nos meses curtos: 31/01 cobra 28/02, 31/03, 30/04 (RN-PLN-14, QAC-004)', () => {
+    clock.setSimulated('2026-01-31', '12:00');
+    const sub = service.startSubscription('cg_0100', 'essencial');
+    expect(sub.nextCycleAt).toBe('2026-02-28');
+    const cycle = () => db.subscriptions.require(sub.id).nextCycleAt;
+    clock.setSimulated('2026-03-01', '12:00');
+    service.applyDueChanges();
+    expect(cycle()).toBe('2026-03-31');
+    clock.setSimulated('2026-03-31', '12:00');
+    service.applyDueChanges();
+    expect(cycle()).toBe('2026-04-30');
+    clock.setSimulated('2026-05-02', '12:00');
+    service.applyDueChanges();
+    expect(cycle()).toBe('2026-05-31');
+  });
+
+  it('descer no fim do ciclo de quem assinou no dia 31 mantém o dia de cobrança do plano novo e a previsão da tela (QAC-004)', () => {
+    clock.setSimulated('2026-01-31', '12:00');
+    const sub = service.startSubscription('cg_0100', 'cuida');
+    clock.setSimulated('2026-02-10', '12:00');
+    expect(service.quote(db.subscriptions.require(sub.id), 'essencial').effectiveAt).toBe('2026-02-28');
+    expect(service.changePlan(sub.id, 'essencial').kind).toBe('downgrade');
+    clock.setSimulated('2026-02-28', '12:00');
+    expect(service.applyDueChanges()).toBe(1);
+    const after = db.subscriptions.require(sub.id);
+    expect(after.planId).toBe('essencial');
+    expect(after.nextCycleAt).toBe('2026-03-31');
+    expect(service.quote(after, 'cuida').billingFrom).toBe('2026-03-31');
+  });
+
+  it('o plano que vale é um só: assinatura única cancelada é Livre para a tela, o preço e os grupos (QAC-003)', () => {
+    const sub = subOf('cg_0008');
+    db.subscriptions.update(sub.id, { status: 'cancelled' });
+    expect(service.planOf('cg_0008')).toBe('livre');
+    expect(planIdOfCaregiver(db, 'cg_0008')).toBe('livre');
+    expect(currentSubscriptionOf(db, 'cg_0008')?.id).toBe(sub.id);
+    expect(service.current('cg_0008')?.id).toBe(sub.id);
+    // Com uma assinatura viva mais recente, ela vale nos dois.
+    const fresh = service.reactivate(sub.id);
+    db.subscriptions.update(fresh.id, { planId: 'cuida' });
+    expect(service.planOf('cg_0008')).toBe('cuida');
+    expect(planIdOfCaregiver(db, 'cg_0008')).toBe('cuida');
   });
 });

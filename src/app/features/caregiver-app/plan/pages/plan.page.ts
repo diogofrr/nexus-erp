@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SubscriptionService } from '../../../../core/commerce/subscription.service';
@@ -9,10 +9,9 @@ import { planShortName } from '../../../../core/rules/plan-features';
 import { PageChromeService } from '../../../../layout/state/page-chrome.service';
 import { BadgeComponent } from '../../../../shared/ui/display/badge.component';
 import { CheckboxComponent } from '../../../../shared/ui/forms/checkbox.component';
-import { ToastService } from '../../../../shared/ui/overlay/toast.service';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
+import { CHANNELS_NOTICE } from '../../state/nexus-contact';
 import { CgCardComponent } from '../../ui/cg-card.component';
-import { CgEmergencyNoteComponent } from '../../ui/cg-emergency-note.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
 import { CgPlanTagComponent } from '../../ui/cg-plan-tag.component';
@@ -23,6 +22,7 @@ import {
   CHANGE_FAILED,
   NOT_INCLUDED_NOTICE,
   actionLabelFor,
+  allBenefits,
   changeCopy,
   ownBenefits,
   priceLine,
@@ -55,7 +55,6 @@ interface BoardPlan {
     BadgeComponent,
     CheckboxComponent,
     CgCardComponent,
-    CgEmergencyNoteComponent,
     CgNoteComponent,
     CgPageHeaderComponent,
     CgPlanTagComponent,
@@ -72,6 +71,7 @@ interface BoardPlan {
       .nx-plan__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
       .nx-plan__more { margin: 0; font-weight: var(--fw-semibold); }
       .nx-effect p { margin: 0; }
+      .nx-effect__notice { color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
     `,
   ],
   template: `
@@ -88,7 +88,7 @@ interface BoardPlan {
             <li>
               <section class="cg-card nx-plan" [attr.aria-labelledby]="'plan-' + plan.id" data-role="board-plan">
                 <div class="nx-plan__head">
-                  <h3 class="cg-card__title" [id]="'plan-' + plan.id">Plano {{ plan.name }}</h3>
+                  <h2 class="cg-card__title" [id]="'plan-' + plan.id">Plano {{ plan.name }}</h2>
                   @if (plan.current) {
                     <app-badge variant="info" icon="check">Seu plano agora</app-badge>
                   }
@@ -158,41 +158,39 @@ interface BoardPlan {
     }
 
     @if (copy(); as c) {
-      <app-cg-sheet [heading]="step() === 'accept' ? 'Antes de confirmar' : c.heading" [(open)]="sheetOpen">
-        @if (step() === 'effect') {
-          <div class="nx-effect cg-stack cg-stack--tight" data-role="effect">
-            @for (line of c.lines; track line) {
-              <p>{{ line }}</p>
-            }
-            @if (c.showNotice) {
-              <p data-role="notice">{{ notIncluded }}</p>
+      <app-cg-sheet [heading]="c.heading" [(open)]="sheetOpen">
+        <div class="nx-effect cg-stack cg-stack--tight" data-role="effect">
+          @for (line of c.lines; track line) {
+            <p>{{ line }}</p>
+          }
+          @if (c.showNotice) {
+            <p data-role="notice">{{ notIncluded }}</p>
+          }
+        </div>
+        @if (needsAcceptance()) {
+          <!-- O aviso de emergência é uma linha e a caixa fica na MESMA folha: uma decisão, um passo (CXC-010). -->
+          <div class="nx-effect cg-stack cg-stack--tight" data-role="emergency">
+            <p class="nx-effect__notice">{{ channelsNotice }}</p>
+            <app-checkbox [checked]="accepted()" (checkedChange)="onAccept($event)" data-role="accept">Li e entendi</app-checkbox>
+            @if (acceptError()) {
+              <app-cg-note variant="error" data-role="accept-error">Marque que você leu o aviso para continuar.</app-cg-note>
             }
           </div>
-        } @else {
-          <app-cg-emergency-note />
-          <app-checkbox [checked]="accepted()" (checkedChange)="onAccept($event)" data-role="accept">Li e entendi</app-checkbox>
-          @if (acceptError()) {
-            <app-cg-note variant="error" data-role="accept-error">Marque que você leu o aviso para continuar.</app-cg-note>
-          }
         }
         @if (failure(); as error) {
           <app-cg-note variant="error" data-role="failure">{{ error }}</app-cg-note>
         }
         <ng-container cgSheetActions>
-          @if (step() === 'effect') {
-            <button
-              type="button"
-              class="btn"
-              [class.btn--primary]="c.kind !== 'cancel'"
-              [class.btn--danger-quiet]="c.kind === 'cancel'"
-              data-role="confirm"
-              (click)="next()"
-            >
-              {{ c.actionLabel }}
-            </button>
-          } @else {
-            <button type="button" class="btn btn--primary" data-role="confirm" (click)="confirm()">Confirmar mudança de plano</button>
-          }
+          <button
+            type="button"
+            class="btn"
+            [class.btn--primary]="c.kind !== 'cancel'"
+            [class.btn--danger-quiet]="c.kind === 'cancel'"
+            data-role="confirm"
+            (click)="confirm()"
+          >
+            {{ c.actionLabel }}
+          </button>
           <button type="button" class="cg-link-btn" data-role="back" (click)="sheetOpen.set(false)">Voltar</button>
         </ng-container>
       </app-cg-sheet>
@@ -203,14 +201,12 @@ export class PlanPage {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly chrome = inject(PageChromeService);
-  private readonly toast = inject(ToastService);
   private readonly subscriptions = inject(SubscriptionService);
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-  private readonly injector = inject(Injector);
   protected readonly ctx = inject(CaregiverContextService);
   protected readonly service = inject(CaregiverPlanService);
 
   protected readonly notIncluded = NOT_INCLUDED_NOTICE;
+  protected readonly channelsNotice = CHANNELS_NOTICE;
   protected readonly cancelAnyMonth = CANCEL_ANY_MONTH;
 
   private readonly params = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });
@@ -224,7 +220,8 @@ export class PlanPage {
     this.ctx.planId() === 'livre' ? 'Sem custo, sem prazo' : this.currentPlan() ? priceLine(this.currentPlan()!) : '',
   );
 
-  protected readonly currentItems = computed(() => ownBenefits(this.ctx.planId(), this.ctx.plans()));
+  /** Tudo o que o plano inclui, também o que vem dos planos anteriores (CXC-010). */
+  protected readonly currentItems = computed(() => allBenefits(this.ctx.planId(), this.ctx.plans()));
 
   /** "Próxima cobrança em 18/11/2026"; com mudança agendada, até quando o plano vale. */
   protected readonly situation = computed(() => {
@@ -290,7 +287,6 @@ export class PlanPage {
 
   protected readonly target = signal<PlanId | null>(null);
   protected readonly sheetOpen = signal(false);
-  protected readonly step = signal<'effect' | 'accept'>('effect');
   protected readonly accepted = signal(false);
   protected readonly acceptError = signal(false);
   protected readonly failure = signal<string | null>(null);
@@ -303,6 +299,12 @@ export class PlanPage {
     }
     const plans = this.ctx.plans();
     return changeCopy(this.service.quote(to), (id) => formatMoney(plans.find((p) => p.id === id)?.monthlyPriceCents ?? 0));
+  });
+
+  /** Na primeira contratação paga a mesma folha pede o aceite do aviso de emergência (RN-CAN-06). */
+  protected readonly needsAcceptance = computed(() => {
+    const to = this.target();
+    return to !== null && this.service.needsEmergencyAcceptance(to);
   });
 
   private lastBoard: boolean | null = null;
@@ -325,7 +327,6 @@ export class PlanPage {
 
   protected openChange(to: PlanId): void {
     this.target.set(to);
-    this.step.set('effect');
     this.accepted.set(false);
     this.acceptError.set(false);
     this.failure.set(null);
@@ -337,20 +338,6 @@ export class PlanPage {
     if (checked) {
       this.acceptError.set(false);
     }
-  }
-
-  /** Botão do efeito: na primeira contratação paga pede o aceite do aviso; nos demais casos confirma na hora. */
-  protected next(): void {
-    const to = this.target();
-    if (!to) {
-      return;
-    }
-    if (this.service.needsEmergencyAcceptance(to)) {
-      this.step.set('accept');
-      this.focusSheetTitle();
-      return;
-    }
-    this.confirm();
   }
 
   protected confirm(): void {
@@ -366,7 +353,6 @@ export class PlanPage {
     }
     this.sheetOpen.set(false);
     this.result.set({ variant: 'ok', text: outcome.message });
-    this.toast.show({ message: outcome.message, durationMs: 8000 });
     if (this.boardOpen()) {
       this.hideBoard();
     } else {
@@ -381,14 +367,5 @@ export class PlanPage {
       return;
     }
     this.result.set({ variant: 'ok', text: outcome.message });
-    this.toast.show({ message: outcome.message, durationMs: 8000 });
-  }
-
-  /** Dentro da folha aberta, a troca de passo leva o foco ao novo título. */
-  private focusSheetTitle(): void {
-    afterNextRender(
-      () => this.host.nativeElement.querySelector<HTMLElement>('dialog[open] .cg-sheet__title')?.focus(),
-      { injector: this.injector },
-    );
   }
 }

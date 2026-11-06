@@ -5,7 +5,9 @@ import { IconComponent, IconName } from '../../../shared/ui/display/icon.compone
 
 /**
  * Item de lista (UX A.2.6): destinos e itens (menu Mais, Meus pedidos, horários, profissionais). Ícone num
- * círculo, título (até 3 linhas), apoio (até 2) e, no fim, uma seta ou o que você projetar em `[cgRowEnd]`.
+ * círculo, título (até 3 linhas), apoio (até 2) e, no fim, uma seta. O que você projetar em `[cgRowEnd]` (etiqueta)
+ * fica à direita do título quando há espaço e **desce para baixo do título em tela estreita**, para o texto nunca
+ * ficar espremido em uma coluna de letras (CXC-001).
  * A linha INTEIRA é o alvo: com `link` é um `<a>`, sem `link` é um `<button>` que emite `activated`. Use dentro de
  * `<ul class="cg-list"><li>...</li></ul>`.
  *
@@ -41,20 +43,20 @@ import { IconComponent, IconName } from '../../../shared/ui/display/icon.compone
       @if (icon(); as name) {
         <span class="cg-row__icon"><svg [appIcon]="name" size="lg"></svg></span>
       }
-      <span class="cg-row__text">
-        <span class="cg-row__title">{{ title() }}</span>
-        @if (description(); as text) {
-          <span class="cg-row__desc">{{ text }}</span>
-        }
+      <span class="cg-row__body">
+        <span class="cg-row__text">
+          <span class="cg-row__title">{{ title() }}</span>
+          @if (description(); as text) {
+            <span class="cg-row__desc">{{ text }}</span>
+          }
+        </span>
+        <span class="cg-row__extra"><ng-content select="[cgRowEnd]" /></span>
       </span>
-      <span class="cg-row__end">
-        <ng-content select="[cgRowEnd]" />
-        @if (current()) {
-          <svg appIcon="check"></svg>
-        } @else if (chevron()) {
-          <svg appIcon="chevron-right"></svg>
-        }
-      </span>
+      @if (current()) {
+        <span class="cg-row__end"><svg appIcon="check"></svg></span>
+      } @else if (chevron()) {
+        <span class="cg-row__end"><svg appIcon="chevron-right"></svg></span>
+      }
     </ng-template>
   `,
 })

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { Clock } from '../../../core/clock/clock.service';
 import { minutesBetween, timeOf, toIsoDateTime } from '../../../core/clock/date-utils';
+import { ISODateTime } from '../../../core/models';
 import { DoseSlot } from '../../../core/rules/medication-doses';
 import { IconComponent } from '../../../shared/ui/display/icon.component';
 
@@ -17,16 +18,37 @@ export type CgDoseSize = 'default' | 'large';
 export const DOSE_DUE_WINDOW_MIN = 30;
 
 /**
+ * Por quanto tempo (ms) um toque em "Desfazer" é ignorado depois do "Dei" (CXC-008): quem dá dois toques por hábito
+ * não desfaz o que acabou de marcar.
+ */
+export const UNDO_GUARD_MS = 1000;
+
+/** O estado da dose no instante `now`. Só passa do horário depois de 1 minuto cheio (o segundo da hora marcada ainda é o horário). */
+export function doseStateOf(slot: DoseSlot, now: ISODateTime): CgDoseState {
+  if (slot.given) {
+    return 'given';
+  }
+  const minutesToDose = minutesBetween(now, toIsoDateTime(slot.date, slot.time));
+  if (Math.ceil(minutesToDose) < 0) {
+    return 'late';
+  }
+  return minutesToDose <= DOSE_DUE_WINDOW_MIN ? 'due' : 'later';
+}
+
+/**
  * Marcação "dei o remédio" (UX A.2.12): uma linha por dose do dia, com o botão **Dei** (uma marcação por toque,
  * "dado agora" pelo relógio do sistema). Estados: a dar (botão secundário); no horário ou até 30 minutos antes
- * (primário); passou do horário (nota âmbar "Passou do horário (08:00)", que é só da pessoa idosa, nunca da saúde
- * emocional); dado (fundo verde, "Dado às 08:12" e o botão de texto "Desfazer"). A linha não muda de lugar ao
- * marcar. O componente só desenha e avisa: quem grava é a tela, com `DoseCheckService`. `size="large"` é a variante de
- * quem tem pouca familiaridade digital (hora em 22 px, **Dei** de 96 px).
+ * (primário); horário que passou sem marca (nota "Ainda não anotado", sem a palavra "passou", só da pessoa idosa,
+ * nunca da saúde emocional; âmbar suave só na primeira linha, as outras ficam neutras, `quietLate`); dado (fundo
+ * verde, "Dado às 08:12" e, **longe do lugar do Dei**, o link pequeno "Desfazer"). Um toque em "Desfazer" até 1 s
+ * depois do "Dei" é ignorado (CXC-008). A ordem das linhas é da tela (o que falta primeiro). O componente só
+ * desenha e avisa: quem grava é a tela, com `DoseCheckService`. `size="large"` é a variante de quem tem pouca
+ * familiaridade digital (hora em 22 px, **Dei** de 96 px).
  *
  * ```html
  * @for (slot of slots(); track slot.key) {
- *   <app-cg-dose [slot]="slot" [size]="ctx.doseSize()" (dei)="doses.mark($event.medicationId, $event.date, $event.time)"
+ *   <app-cg-dose [slot]="slot" [size]="ctx.doseSize()" [quietLate]="slot.key !== firstLateKey()"
+ *                (dei)="doses.mark($event.medicationId, $event.date, $event.time)"
  *                (undo)="doses.unmark($event.medicationId, $event.date, $event.time)" />
  * }
  * ```
@@ -40,7 +62,7 @@ export const DOSE_DUE_WINDOW_MIN = 30;
     <div
       class="cg-dose"
       [class.is-given]="state() === 'given'"
-      [class.is-late]="state() === 'late'"
+      [class.is-late]="state() === 'late' && !quietLate()"
       [class.cg-dose--large]="size() === 'large'"
     >
       <span class="cg-dose__icon"><svg appIcon="pill" size="lg"></svg></span>
@@ -51,29 +73,28 @@ export const DOSE_DUE_WINDOW_MIN = 30;
           <span class="cg-dose__state cg-dose__state--ok">
             <svg appIcon="circle-check" size="sm"></svg>Dado às {{ givenTime() }}
           </span>
+          <button
+            type="button"
+            class="cg-link-btn cg-dose__undo"
+            [attr.aria-label]="'Desfazer: ' + slot().medicationName + ' das ' + slot().time + ' dado às ' + givenTime()"
+            (click)="onUndo()"
+          >
+            Desfazer
+          </button>
         } @else if (state() === 'late') {
-          <span class="cg-dose__state cg-dose__state--late">
-            <svg appIcon="clock" size="sm"></svg>Passou do horário ({{ slot().time }})
+          <span class="cg-dose__state" [class.cg-dose__state--late]="!quietLate()">
+            <svg appIcon="clock" size="sm"></svg>Ainda não anotado
           </span>
         }
       </span>
       <span class="cg-dose__time">{{ slot().time }}</span>
-      @if (state() === 'given') {
-        <button
-          type="button"
-          class="cg-link-btn cg-dose__action"
-          [attr.aria-label]="'Desfazer: ' + slot().medicationName + ' das ' + slot().time + ' dado às ' + givenTime()"
-          (click)="undo.emit(slot())"
-        >
-          Desfazer
-        </button>
-      } @else {
+      @if (state() !== 'given') {
         <button
           type="button"
           class="btn cg-dose__action"
           [class.btn--primary]="state() !== 'later'"
           [attr.aria-label]="'Dei o ' + slot().medicationName + ' das ' + slot().time"
-          (click)="dei.emit(slot())"
+          (click)="onDei()"
         >
           Dei
         </button>
@@ -83,10 +104,14 @@ export const DOSE_DUE_WINDOW_MIN = 30;
 })
 export class CgDoseComponent {
   private readonly clock = inject(Clock);
+  /** Instante (tempo real, não o simulado) do último toque em "Dei" nesta linha. */
+  private lastDeiAt = Number.NEGATIVE_INFINITY;
 
   readonly slot = input.required<DoseSlot>();
   /** `large` para quem tem pouca familiaridade digital (UX C6, "por pessoa"). */
   readonly size = input<CgDoseSize>('default');
+  /** `true`: o horário que passou aparece neutro, sem o âmbar (a tela usa o âmbar uma vez só, na primeira linha). */
+  readonly quietLate = input(false);
   /** A pessoa tocou em "Dei". */
   readonly dei = output<DoseSlot>();
   /** A pessoa tocou em "Desfazer". */
@@ -97,16 +122,18 @@ export class CgDoseComponent {
     return at ? timeOf(at) : '';
   });
 
-  protected readonly state = computed<CgDoseState>(() => {
-    const slot = this.slot();
-    if (slot.given) {
-      return 'given';
+  protected readonly state = computed<CgDoseState>(() => doseStateOf(this.slot(), this.clock.now()));
+
+  protected onDei(): void {
+    this.lastDeiAt = this.clock.realNowMs();
+    this.dei.emit(this.slot());
+  }
+
+  /** Ignora o toque que chega até 1 s depois do "Dei": o segundo toque do hábito não desfaz o que acabou de ser marcado. */
+  protected onUndo(): void {
+    if (this.clock.realNowMs() - this.lastDeiAt < UNDO_GUARD_MS) {
+      return;
     }
-    const minutesToDose = minutesBetween(this.clock.now(), toIsoDateTime(slot.date, slot.time));
-    // Só passa do horário depois de 1 minuto cheio (o segundo da hora marcada ainda é o horário).
-    if (Math.ceil(minutesToDose) < 0) {
-      return 'late';
-    }
-    return minutesToDose <= DOSE_DUE_WINDOW_MIN ? 'due' : 'later';
-  });
+    this.undo.emit(this.slot());
+  }
 }

@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { AuditLogService } from '../audit/audit-log.service';
+import { CaregiverOwnership, NOT_OWNER_TEXT } from '../auth/caregiver-ownership';
 import { Clock } from '../clock/clock.service';
 import { compareDateTimes } from '../clock/date-utils';
 import { Database } from '../data/database';
@@ -42,6 +43,7 @@ export class CaregiverActivitiesService {
   private readonly clock = inject(Clock);
   private readonly audit = inject(AuditLogService);
   private readonly membership = inject(GroupMembershipService);
+  private readonly ownership = inject(CaregiverOwnership);
 
   // ===== Leitura =====
 
@@ -74,6 +76,9 @@ export class CaregiverActivitiesService {
 
   /** Inscrições ativas (inscrita ou em lista de espera) do cuidador, em atividades da programação. */
   myEnrollments(caregiverId: ID): { activity: Activity; enrollment: ActivityEnrollment }[] {
+    if (!this.ownership.ownsCaregiver(caregiverId)) {
+      return [];
+    }
     return this.db.activityEnrollments
       .query((e) => e.caregiverId === caregiverId && (e.status === 'enrolled' || e.status === 'waitlist'))
       .flatMap((enrollment) => {
@@ -114,6 +119,9 @@ export class CaregiverActivitiesService {
    * do contrato de sigilo foi marcada; sem ele vale agora. Lotada, entra na fila sem tirar ninguém (RN-GRP-13).
    */
   enroll(caregiverId: ID, activityId: ID, options: { contractAccepted: boolean; acceptedAt?: ISODateTime }): EnrollOutcome {
+    if (!this.ownership.ownsCaregiver(caregiverId)) {
+      return { ok: false, error: NOT_OWNER_TEXT };
+    }
     const activity = this.visible(activityId);
     const caregiver = this.db.caregivers.get(caregiverId);
     if (!activity || !caregiver || caregiver.status === 'closed') {
@@ -158,7 +166,7 @@ export class CaregiverActivitiesService {
   /** O cuidador sai da atividade ou da lista de espera; a vaga volta e o primeiro da fila é promovido (RN-GRP-13). */
   leave(caregiverId: ID, enrollmentId: ID): { ok: true; promoted: ActivityEnrollment[] } | { ok: false; error: string } {
     const enrollment = this.db.activityEnrollments.get(enrollmentId);
-    if (!enrollment || enrollment.caregiverId !== caregiverId) {
+    if (!enrollment || enrollment.caregiverId !== caregiverId || !this.ownership.ownsCaregiver(caregiverId)) {
       return { ok: false, error: 'Não encontramos esta inscrição.' };
     }
     if (enrollment.status !== 'enrolled' && enrollment.status !== 'waitlist') {

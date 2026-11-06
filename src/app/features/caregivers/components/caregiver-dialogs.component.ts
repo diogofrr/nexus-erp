@@ -10,7 +10,7 @@ import { DialogService, DrawerComponent, ToastService } from '@shared/ui/overlay
 import { CaregiverFieldsFormComponent } from './caregiver-fields-form.component';
 import { CAREGIVER_FIELD_META, Literacy, caregiverFieldsGroup, errorItems } from '../state/caregiver-form';
 import { CLOSURE_REASONS } from '../state/caregiver-labels';
-import { CaregiverService } from '../state/caregiver.service';
+import { CaregiverError, CaregiverService } from '../state/caregiver.service';
 
 /** Gaveta "Editar cadastro": os mesmos campos e regras do cadastro novo; o CPF fictício não muda. */
 @Component({
@@ -94,8 +94,13 @@ export class CaregiverEditDrawerComponent {
       });
       this.toasts.success('Cadastro salvo.');
       this.open.set(false);
-    } catch {
-      this.toasts.error('Não foi possível salvar. Tente de novo; se continuar, avise a equipe.');
+    } catch (error) {
+      // O cadastro recusa o que a regra não deixa (WhatsApp sem autorização, data que não existe): a frase vem pronta.
+      this.toasts.error(
+        error instanceof CaregiverError
+          ? error.message
+          : 'Não foi possível salvar. Tente de novo; se continuar, avise a equipe.',
+      );
     }
   }
 }

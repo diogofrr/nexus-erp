@@ -21,7 +21,7 @@ Legenda: **atendido** (coberto por teste), **parcial** (com o motivo), **não at
 | AC-CG-45 | atendido | Contato registrado pela equipe (alerta vira `contacted`): a nota some |
 | AC-CG-46 | atendido | **Dei** grava `doseCheck` (remédio, dia, horário previsto, `givenAt` do relógio), linha no mesmo lugar, faixa "Anotado às 12:05." com **Desfazer** por 8 s |
 | AC-CG-47 | atendido | **Desfazer** (faixa ou linha) remove a marcação, sem diálogo |
-| AC-CG-48 | atendido | "Passou do horário (08:00)" em âmbar suave com relógio, **Dei** segue ativo |
+| AC-CG-48 | atendido | "Ainda não anotado" (neutro; âmbar suave só na primeira linha em atraso), **Dei** segue ativo (docs/15, CXC-005) |
 | AC-CG-49 | atendido | Mais de 4 doses: 4 linhas e "Ver todos (6)" para Remédios; sem remédio, "Nenhum remédio cadastrado." com **Cadastrar um remédio**; conta nova sem nada: nota suave com os dois caminhos |
 | AC-CG-50 | atendido | Um registro por dia, **Mudar** substitui, nada pré-marcado, as 5 opções com o mesmo visual; "Muito mal" e "Mal" mostram "Dias difíceis acontecem..." (e "Ajuda agora" só no "Muito mal") |
 | AC-CG-51 | atendido | Sônia (saúde retirada): sem humor e sem nota. `WellbeingCheckService.record` também recusa sem a autorização (borda do serviço) |
@@ -45,7 +45,7 @@ Estados: sem conexão (`OnlineStatusService`) atendido. **Carregando e erro** ("
 | AC-CG-62 | atendido | "Lembrar de mim" vem ligado; desligar (no cadastro ou no detalhe) grava `reminder: false` sem confirmação |
 | AC-CG-63 | atendido | Conversa do próprio cuidador com o psicólogo aparece no dia com "Para você" e leva a `/cuidador/cuidar-de-mim/atendimento`; nunca entra no texto da família. No seed, Ana (seg, 09/11, on-line) e Lourdes (sex, 06/11, coworking) têm uma conversa futura desde a integração (`docs/12`, seção 1) |
 
-Estados: sem conexão atendido; "Passou do horário (HH:mm)" em compromisso de hoje atendido; vazio atendido. Carregando e erro: não atendido, pelo mesmo motivo de Hoje.
+Estados: sem conexão atendido; etiqueta "Já passou" em compromisso de hoje atendido (docs/15, CXC-001); vazio atendido. Carregando e erro: não atendido, pelo mesmo motivo de Hoje.
 
 ## Remédios (C6, `/cuidador/rotina/remedios`)
 

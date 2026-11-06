@@ -1,9 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { AuditLogService } from '../audit/audit-log.service';
+import { CaregiverOwnership } from '../auth/caregiver-ownership';
 import { SessionStore } from '../auth/session.store';
 import { Clock } from '../clock/clock.service';
 import { addMonths, compareDates, dateOf } from '../clock/date-utils';
 import { Database } from '../data/database';
+import { currentSubscriptionOf, planIdOfCaregiver } from '../data/plan-lookup';
 import { formatDate } from '../format/format';
 import { GroupMembershipService } from '../groups/group-membership.service';
 import {
@@ -23,6 +25,7 @@ import {
   classifyPlanChange,
   formatCardNumber,
   isPaidPlan,
+  nextBillingDate,
 } from '../rules/plans';
 
 /** Nomes curtos dos planos para frases ("Cuida para Essencial"). */
@@ -148,20 +151,18 @@ export class SubscriptionService {
   private readonly audit = inject(AuditLogService);
   private readonly session = inject(SessionStore);
   private readonly membership = inject(GroupMembershipService);
+  private readonly ownership = inject(CaregiverOwnership);
 
   // ===== Leitura =====
 
   /** A assinatura vigente do cuidador (a não cancelada mais recente; senão a mais recente). */
   current(caregiverId: ID): Subscription | undefined {
-    const all = this.db.subscriptions.query((s) => s.caregiverId === caregiverId);
-    const live = all.filter((s) => s.status !== 'cancelled');
-    const pool = live.length > 0 ? live : all;
-    return [...pool].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    return currentSubscriptionOf(this.db, caregiverId);
   }
 
+  /** O plano que vale hoje. É o mesmo cálculo de `planIdOfCaregiver` (preço da conversa, vaga prioritária, grupos): QAC-003. */
   planOf(caregiverId: ID): PlanId {
-    const sub = this.current(caregiverId);
-    return sub && sub.status !== 'cancelled' ? sub.planId : 'livre';
+    return planIdOfCaregiver(this.db, caregiverId);
   }
 
   /** O cartão do cuidador (o ativo, ou o último). */
@@ -210,7 +211,7 @@ export class SubscriptionService {
     const raw = classifyPlanChange(from, to);
     const kind: ChangeQuote['kind'] =
       raw === 'same' ? 'same' : raw === 'upgrade' ? 'upgrade' : to === 'livre' ? 'cancel' : 'downgrade';
-    const cycle = sub.nextCycleAt ?? addMonths(today, 1);
+    const cycle = this.cycleOf(sub, today);
     const base: ChangeQuote = {
       from,
       to,
@@ -270,6 +271,7 @@ export class SubscriptionService {
    */
   changePlan(subscriptionId: ID, to: PlanId, author?: ID): ChangeResult {
     const sub = this.db.subscriptions.require(subscriptionId);
+    this.ownership.assertCaregiver(sub.caregiverId);
     const quote = this.quote(sub, to);
     if (quote.timing === 'blocked') {
       throw new SubscriptionError(quote.blockedReason ?? 'Esta troca não é possível agora.');
@@ -283,7 +285,7 @@ export class SubscriptionService {
         planId: to,
         status: 'active',
         ...(wasFree ? { startedAt: today } : {}),
-        nextCycleAt: wasFree ? addMonths(today, 1) : (sub.nextCycleAt ?? addMonths(today, 1)),
+        nextCycleAt: wasFree ? addMonths(today, 1) : this.cycleOf(sub, today),
         scheduledChangeAt: undefined,
         scheduledPlanId: undefined,
       });
@@ -336,6 +338,7 @@ export class SubscriptionService {
   /** "Manter o plano atual": desiste da mudança ou do cancelamento agendado (reversível, sem diálogo). `author` como em `changePlan`. */
   keepPlan(subscriptionId: ID, author?: ID): Subscription {
     const sub = this.db.subscriptions.require(subscriptionId);
+    this.ownership.assertCaregiver(sub.caregiverId);
     if (sub.status !== 'cancel_scheduled') {
       throw new SubscriptionError('Não há mudança agendada para desfazer.');
     }
@@ -360,6 +363,7 @@ export class SubscriptionService {
   /** Reativar uma assinatura cancelada cria uma assinatura nova no Livre (escopo M04, estados). `author` como em `changePlan`. */
   reactivate(subscriptionId: ID, author?: ID): Subscription {
     const old = this.db.subscriptions.require(subscriptionId);
+    this.ownership.assertCaregiver(old.caregiverId);
     const caregiver = this.db.caregivers.require(old.caregiverId);
     if (old.status !== 'cancelled') {
       throw new SubscriptionError('Só uma assinatura cancelada pode ser reativada.');
@@ -388,6 +392,7 @@ export class SubscriptionService {
 
   /** Assinatura de um cadastro novo: Livre por padrão, ou plano pago com cartão emitido (F02, etapa 4). `author` como em `changePlan`. */
   startSubscription(caregiverId: ID, planId: PlanId = 'livre', author?: ID): Subscription {
+    this.ownership.assertCaregiver(caregiverId);
     const today = this.clock.today();
     const sub = this.db.subscriptions.create({
       caregiverId,
@@ -429,7 +434,7 @@ export class SubscriptionService {
           status: 'active',
           scheduledChangeAt: undefined,
           scheduledPlanId: undefined,
-          nextCycleAt: to === 'livre' ? undefined : this.rollForward(addMonths(at, 1), today),
+          nextCycleAt: to === 'livre' ? undefined : nextBillingDate(sub.startedAt, today),
         });
         if (to === 'livre') {
           this.db.benefitCards.updateWhere(
@@ -458,7 +463,7 @@ export class SubscriptionService {
       )
       .forEach((sub) => {
         this.db.subscriptions.update(sub.id, {
-          nextCycleAt: this.rollForward(sub.nextCycleAt as ISODate, today),
+          nextCycleAt: nextBillingDate(sub.startedAt, today),
         });
       });
     return applied;
@@ -549,14 +554,16 @@ export class SubscriptionService {
     return first ? dateOf(first.startAt) : null;
   }
 
-  private rollForward(date: ISODate, today: ISODate): ISODate {
-    let next = date;
-    let guard = 0;
-    while (compareDates(next, today) <= 0 && guard < 600) {
-      next = addMonths(next, 1);
-      guard += 1;
+  /**
+   * A próxima cobrança da assinatura. Vale a data guardada; sem ela (assinatura paga sem data, dado antigo), conta do início
+   * da assinatura e não de hoje, para o dia de cobrança não escorregar (RN-PLN-14, QAC-004). Plano Livre não cobra: um mês
+   * a partir de hoje, só para a frase "a cobrança começa em..." de um upgrade.
+   */
+  private cycleOf(sub: Subscription, today: ISODate): ISODate {
+    if (sub.nextCycleAt) {
+      return sub.nextCycleAt;
     }
-    return next;
+    return isPaidPlan(sub.planId) ? nextBillingDate(sub.startedAt, today) : addMonths(today, 1);
   }
 
   private removeFutureChanges(subscriptionId: ID): void {

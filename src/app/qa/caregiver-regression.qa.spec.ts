@@ -4,7 +4,9 @@
  * Convenções:
  * - Teste sem marca guarda um comportamento que o QA verificou e que não pode regredir.
  * - `it.fails(...)` com o comentário `QAC-NNN` guarda o comportamento CORRETO de um bug confirmado: a suíte continua
- *   verde e, quando o bug for corrigido, o teste passa a falhar (aí se tira o `.fails`).
+ *   verde e, quando o bug for corrigido, o teste passa a falhar (aí se tira o `.fails`). Os bugs de regra, serviço e dado
+ *   (QAC-001 a 008 e 013 a 015) foram corrigidos na rodada do Fix A (`docs/15-correcoes-cuidador-a.md`) e seus testes
+ *   perderam o `.fails`: agora validam o comportamento certo. Os de experiência (009, 010, 011) seguem com `.fails`.
  * - Só serviços e regras (sem tela). As varreduras de tela estão em `caregiver-ui.qa.spec.ts`.
  * - Dados 100% fictícios do seed. Nenhum teste toca em código de produção.
  */
@@ -135,7 +137,7 @@ describe('QAC: autorização no nível do objeto (serviços chamados direto)', (
 
   // QAC-001: os serviços de gravação do núcleo e das áreas confiam no id recebido. Com a sessão da Ana aberta, uma
   // chamada direta grava no registro de outra pessoa. O esperado é recusar (ou ler a sessão, não o parâmetro).
-  it.fails('QAC-001a: com a sessão da Ana, marcar dose de remédio da Maria é recusado', () => {
+  it('QAC-001a: com a sessão da Ana, marcar dose de remédio da Maria é recusado', () => {
     const { db } = boot(ANA);
     const med = db.medications.find((m) => m.elderId === db.elders.find((e) => e.caregiverId === MARIA)?.id);
     expect(med).toBeDefined();
@@ -150,7 +152,7 @@ describe('QAC: autorização no nível do objeto (serviços chamados direto)', (
     expect(db.doseChecks.count()).toBe(before);
   });
 
-  it.fails('QAC-001b: com a sessão da Ana, editar remédio e tirar compromisso da pessoa idosa da Maria é recusado', () => {
+  it('QAC-001b: com a sessão da Ana, editar remédio e tirar compromisso da pessoa idosa da Maria é recusado', () => {
     const { db } = boot(ANA);
     const mariaElder = db.elders.find((e) => e.caregiverId === MARIA)!;
     const med = db.medications.find((m) => m.elderId === mariaElder.id)!;
@@ -173,7 +175,7 @@ describe('QAC: autorização no nível do objeto (serviços chamados direto)', (
     expect(appointmentRemoved).toBe(false);
   });
 
-  it.fails('QAC-001c: com a sessão da Ana, cancelar a conversa da Lourdes pelo serviço da tela é recusado', () => {
+  it('QAC-001c: com a sessão da Ana, cancelar a conversa da Lourdes pelo serviço da tela é recusado', () => {
     const { db } = boot(ANA);
     const conversations = TestBed.inject(ConversationsService);
     const mine = conversations.next();
@@ -185,7 +187,7 @@ describe('QAC: autorização no nível do objeto (serviços chamados direto)', (
     expect(db.careSessions.require('ses_0062').status).toBe('confirmed');
   });
 
-  it.fails('QAC-001d: o serviço de agendar/cancelar do núcleo cancela sessão de outra pessoa quando chamado direto', () => {
+  it('QAC-001d: o serviço de agendar/cancelar do núcleo cancela sessão de outra pessoa quando chamado direto', () => {
     const { db } = boot(ANA);
     // Quem chama é "responsável pela permissão" (docs/11): aqui ninguém conferiu o dono.
     const result = TestBed.inject(SessionBookingService).cancel('ses_0062', 'user');
@@ -193,7 +195,7 @@ describe('QAC: autorização no nível do objeto (serviços chamados direto)', (
     expect(db.careSessions.require('ses_0062').status).toBe('confirmed');
   });
 
-  it.fails('QAC-001e: com a sessão da Ana, mandar mensagem como a Maria e pedir a eliminação da Maria é recusado', () => {
+  it('QAC-001e: com a sessão da Ana, mandar mensagem como a Maria e pedir a eliminação da Maria é recusado', () => {
     const { db } = boot(ANA);
     const messages = TestBed.inject(CaregiverMessagesService);
     const before = db.messages.count((m) => m.caregiverId === MARIA);
@@ -203,7 +205,7 @@ describe('QAC: autorização no nível do objeto (serviços chamados direto)', (
     expect(db.caregivers.require(MARIA).status).toBe('active');
   });
 
-  it.fails('QAC-001f: com a sessão da Ana, revogar a autorização de saúde da Maria é recusado', () => {
+  it('QAC-001f: com a sessão da Ana, revogar a autorização de saúde da Maria é recusado', () => {
     const { db } = boot(ANA);
     try {
       TestBed.inject(ConsentService).revoke(MARIA, 'health_data', { channel: 'app', registeredByUserId: ANA });
@@ -333,7 +335,7 @@ describe('QAC: autorização de saúde revogada (Sônia) na borda do serviço', 
 
   // QAC-002: só `record` confere a autorização. A leitura do humor e da linha do tempo não, então quem monta a tela
   // (ou outra tela futura) lê dado de saúde de quem retirou a autorização.
-  it.fails('QAC-002a: com a autorização retirada, a leitura do humor do dia devolve nada', () => {
+  it('QAC-002a: com a autorização retirada, a leitura do humor do dia devolve nada', () => {
     const { db } = boot(MARIA);
     const wellbeing = TestBed.inject(WellbeingCheckService);
     wellbeing.record(MARIA, 2);
@@ -343,7 +345,7 @@ describe('QAC: autorização de saúde revogada (Sônia) na borda do serviço', 
     expect(wellbeing.forDay(MARIA, '2026-11-04')).toBeUndefined();
   });
 
-  it.fails('QAC-002b: com a autorização retirada, o serviço de "Como estou" não devolve a linha do tempo da escala', () => {
+  it('QAC-002b: com a autorização retirada, o serviço de "Como estou" não devolve a linha do tempo da escala', () => {
     boot(SONIA);
     const view = TestBed.inject(WellbeingViewService);
     expect(TestBed.inject(CaregiverContextService).healthConsent()).toBe(false);
@@ -352,7 +354,7 @@ describe('QAC: autorização de saúde revogada (Sônia) na borda do serviço', 
     expect(view.nextText()).toBeNull();
   });
 
-  it.fails('QAC-002c: sem a autorização, registrar pedido de revisão de decisão da escala é recusado no serviço', () => {
+  it('QAC-002c: sem a autorização, registrar pedido de revisão de decisão da escala é recusado no serviço', () => {
     const { db } = boot(SONIA);
     const before = db.reviewRequests.count((r) => r.caregiverId === SONIA);
     const result = TestBed.inject(ReviewRequestService).register(SONIA, 'zarit_decision', 'Quero rever a decisão tomada.');
@@ -483,7 +485,7 @@ describe('QAC: plano', () => {
 
   // QAC-003: duas funções diferentes dizem "qual é o plano". A do núcleo usada para preço da conversa, vaga prioritária
   // e acesso a grupos cai na última assinatura mesmo cancelada; a do contexto (a que a tela mostra) diz Livre.
-  it.fails('QAC-003: com a única assinatura cancelada, o preço da conversa e o acesso a grupos seguem o plano Livre', () => {
+  it('QAC-003: com a única assinatura cancelada, o preço da conversa e o acesso a grupos seguem o plano Livre', () => {
     const { db } = boot(JOAO);
     const sub = db.subscriptions.find((s) => s.caregiverId === JOAO)!;
     db.subscriptions.update(sub.id, { planId: 'sustenta', status: 'cancelled' });
@@ -493,7 +495,7 @@ describe('QAC: plano', () => {
   });
 
   // QAC-004: o ciclo de cobrança vai "escorregando": quem assinou em 31/01 tem 28/02 e depois 28/03, 28/04...
-  it.fails('QAC-004: assinatura iniciada em 31/01 cobra em 28/02 e depois em 31/03 (não em 28/03)', () => {
+  it('QAC-004: assinatura iniciada em 31/01 cobra em 28/02 e depois em 31/03 (não em 28/03)', () => {
     const { db, clock } = boot(null, { today: '2026-01-31' });
     const subscriptions = TestBed.inject(SubscriptionService);
     const sub = subscriptions.startSubscription('cg_0010', 'essencial');
@@ -744,9 +746,9 @@ describe('QAC: integridade cruzada com a visão da equipe', () => {
     const privacy = TestBed.inject(PrivacyService);
     privacy.requestCopy();
     const text = () => privacy.requests().find((r) => r.type === 'access')!.statusText;
-    expect(text()).toBe('Faltam 15 dias');
+    expect(text()).toBe('Faltam 15 dias para a resposta');
     clock.setSimulated('2026-11-18', '12:00');
-    expect(text()).toBe('Falta 1 dia');
+    expect(text()).toBe('Falta 1 dia para a resposta');
     clock.setSimulated('2026-11-19', '12:00');
     expect(text()).toBe('O prazo termina hoje');
     clock.setSimulated('2026-11-20', '12:00');
@@ -831,7 +833,7 @@ describe('QAC: perfil e entradas', () => {
 
   // QAC-005: em "Seu dia a dia" o canal WhatsApp é aceito sem a autorização de contato por WhatsApp; no cadastro
   // (S-40) o mesmo caso vira "aplicativo". A tela de Mais deixa a pessoa se dizer "prefere WhatsApp" sem consentir.
-  it.fails('QAC-005: escolher WhatsApp como canal preferido sem a autorização de WhatsApp não grava o canal', () => {
+  it('QAC-005: escolher WhatsApp como canal preferido sem a autorização de WhatsApp não grava o canal', () => {
     const { db } = boot(ANA);
     TestBed.inject(PrivacyService).revoke('whatsapp_contact');
     expect(db.consents.find((c) => c.caregiverId === ANA && c.key === 'whatsapp_contact')?.status).toBe('revoked');
@@ -844,7 +846,7 @@ describe('QAC: perfil e entradas', () => {
   });
 
   // QAC-006: RN-ARBE-10 ("a correção gera nova avaliação ARBE"). Mudar as horas por dia só grava o número.
-  it.fails('QAC-006: corrigir as horas por dia gera nova avaliação da ARBE (sem avisar a pessoa)', () => {
+  it('QAC-006: corrigir as horas por dia gera nova avaliação da ARBE (sem avisar a pessoa)', () => {
     const { db } = boot(JOAO);
     // João: 8 horas (limite), Zarit abaixo do limite; 2 pedidos de apoio na janela + 24 horas bastam para "atenção"
     // quando a escala já passa do limite. Para isolar a regra: Ana tem Zarit 63 e 11 horas.
@@ -871,7 +873,7 @@ describe('QAC: datas e textos de horário', () => {
   });
 
   // QAC-007: AC-CG-39 e AC-CG-164 pedem "na segunda às 8h" quando o próximo dia útil não é amanhã.
-  it.fails('QAC-007: sexta à noite e fim de semana dizem "Abrimos na segunda às 8h" (e o dia da semana em feriado)', () => {
+  it('QAC-007: sexta à noite e fim de semana dizem "Abrimos na segunda às 8h" (e o dia da semana em feriado)', () => {
     expect(phoneClosedNote('2026-11-06T19:00:00-03:00')).toBe('Fechado agora. Abrimos na segunda às 8h.');
     expect(phoneClosedNote('2026-11-07T10:00:00-03:00')).toBe('Fechado agora. Abrimos na segunda às 8h.');
   });
@@ -898,7 +900,7 @@ describe('QAC: datas e textos de horário', () => {
 describe('QAC: eliminação do titular e o que o cuidador escreveu', () => {
   // QAC-008: a eliminação apaga mensagens, humor, remédios e agenda, mas deixa o texto livre do pedido de serviço, o
   // texto do pedido de revisão, o comentário da avaliação e o endereço de casa da conversa.
-  it.fails('QAC-008: depois da eliminação não sobra texto livre do titular (pedido, revisão, comentário, endereço)', () => {
+  it('QAC-008: depois da eliminação não sobra texto livre do titular (pedido, revisão, comentário, endereço)', () => {
     const { db } = boot(ANA);
     const network = TestBed.inject(CaregiverNetworkService);
     network.createRequest(ANA, { providerId: 'prv_01', need: 'MARCADOR-PEDIDO fisioterapia para a minha mãe', modality: 'home' });
@@ -976,10 +978,10 @@ describe('QAC: ida e volta com a visão da equipe', () => {
     expect(network.toEvaluateCount(ANA)).toBe(0);
   });
 
-  // Hoje o prazo de correção vai até D+7 inclusive (RN-ARP-16: "em até 7 dias"). O AC-CG-134 diz que "com 7 dias ou
-  // mais" o prazo encerra. Os dois textos divergem em um dia: decisão de produto pendente (QAC-012). Este teste guarda
-  // o comportamento atual para a mudança, qualquer que seja, aparecer.
-  it('prazo de correção da avaliação (hoje): editável até D+7 inclusive e encerrado em D+8', () => {
+  // QAC-012 (decidido): o prazo de correção vai até D+7 inclusive, como diz a RN-ARP-16 ("em até 7 dias"). O texto do
+  // AC-CG-134 foi corrigido em `docs/10-cuidador-ux.md` para o mesmo ("7 dias ou menos"; "mais de 7 dias" encerra).
+  // Este teste guarda o comportamento da regra.
+  it('prazo de correção da avaliação (RN-ARP-16): editável até D+7 inclusive e encerrado em D+8', () => {
     const { db, clock } = boot(RITA);
     const network = TestBed.inject(CaregiverNetworkService);
     expect(network.evaluate(RITA, 'srq_0126', { technical: 5, punctuality: 5 }).ok).toBe(true);
@@ -999,7 +1001,7 @@ describe('QAC: ida e volta com a visão da equipe', () => {
 describe('QAC: sala do coworking e arquivo do titular', () => {
   // QAC-013: a conversa em coworking sempre fica com "a primeira sala reservável" (ordem alfabética), sem olhar se a sala
   // já está em uso no mesmo horário por outra conversa. Duas pessoas, dois psicólogos, mesmo horário: mesma sala.
-  it.fails('QAC-013: duas conversas em coworking no mesmo horário não ficam na mesma sala', () => {
+  it('QAC-013: duas conversas em coworking no mesmo horário não ficam na mesma sala', () => {
     const { db } = boot(ANA);
     const make = (psychologistId: string) =>
       db.availabilitySlots.create({ psychologistId, date: '2026-11-12', start: '15:00', end: '16:00', status: 'open', priorityOnly: false });
@@ -1017,7 +1019,7 @@ describe('QAC: sala do coworking e arquivo do titular', () => {
   // QAC-014: o arquivo "Meus dados" entrega ao titular as marcas internas da equipe nas mensagens (sinalização de risco,
   // dúvida de risco e quem assumiu) e dados de tratamento do pedido. O titular tem direito aos dados dele, não às
   // marcas de triagem de risco do atendimento (POP-05 é restrito).
-  it.fails('QAC-014: o arquivo do titular não leva a marca interna de risco das mensagens nem quem as assumiu', () => {
+  it('QAC-014: o arquivo do titular não leva a marca interna de risco das mensagens nem quem as assumiu', () => {
     const { db } = boot(ANA);
     const message = db.messages.create({
       channel: 'app',
@@ -1043,7 +1045,7 @@ describe('QAC: sala do coworking e arquivo do titular', () => {
 describe('QAC: limites das entradas de texto e de data', () => {
   // QAC-015: o Começar limita o nome a 120 caracteres, mas o resto do app não limita nada: um compromisso, um remédio,
   // um pedido de serviço e uma mensagem de 10 mil caracteres são aceitos e gravados (e o armazenamento do navegador é pequeno).
-  it.fails('QAC-015a: textos livres de 10 mil caracteres são recusados (compromisso, remédio, pedido de serviço, mensagem)', () => {
+  it('QAC-015a: textos livres de 10 mil caracteres são recusados (compromisso, remédio, pedido de serviço, mensagem)', () => {
     const { db } = boot(ANA);
     const huge = 'x'.repeat(10_000);
     const elderId = db.elders.find((e) => e.caregiverId === ANA)!.id;
@@ -1063,7 +1065,7 @@ describe('QAC: limites das entradas de texto e de data', () => {
     expect(accepted).toBe(0);
   });
 
-  it.fails('QAC-015b: a data de nascimento da pessoa idosa precisa ser uma data que existe (30/02 é recusado)', () => {
+  it('QAC-015b: a data de nascimento da pessoa idosa precisa ser uma data que existe (30/02 é recusado)', () => {
     boot(ANA);
     let threw = false;
     try {

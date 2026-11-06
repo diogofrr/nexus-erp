@@ -3,8 +3,9 @@ import { CaregiverMessagesService } from '@core/care/caregiver-messages.service'
 import { ReviewRequestService } from '@core/care/review-request.service';
 import { addDays, dateOf } from '@core/clock';
 import { Database } from '@core/data';
-import { ConsentStatus, ID, ISODate, ReviewRequest, WellbeingCheck } from '@core/models';
+import { ConsentStatus, ID, ISODate, ReviewRequest, WellbeingCheck, ZaritBand } from '@core/models';
 import { ConsentService } from '@core/privacy';
+import { FREE_TEXT_MAX_CHARS, tooLongText } from '@core/rules/text-limits';
 import { ZARIT_BANDS, zaritBandInfo } from '@core/rules/zarit';
 import { MessagesService } from '../../../messages/state/messages.service';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
@@ -16,6 +17,7 @@ import { MoodValue, moodLabel } from '../../ui/cg-mood.component';
 import {
   ARRANGE_PERIODS,
   ARRANGE_SUBJECT,
+  BAND_MEANING,
   NEXT_UNKNOWN,
   REVIEW_EMPTY_ERROR,
   REVIEW_ERROR,
@@ -23,6 +25,12 @@ import {
 
 /** Quantos pontos a linha do tempo mostra de cara; o resto fica atrás de "Ver todas" (UX C9). */
 export const TIMELINE_VISIBLE = 4;
+
+/** A frase da faixa para a linha do tempo, sem o ponto final e com a inicial maiúscula ("O cuidado está pesando muito"). */
+function bandMeaningText(band: ZaritBand): string {
+  const phrase = BAND_MEANING[band].replace(/\.$/, '');
+  return phrase.charAt(0).toUpperCase() + phrase.slice(1);
+}
 
 export interface MoodWeekEntry {
   id: string;
@@ -74,10 +82,13 @@ export class WellbeingViewService {
 
   // ===== Conversas de acompanhamento =====
 
-  /** Aplicações concluídas, da mais recente para a mais antiga. */
+  /**
+   * Aplicações concluídas, da mais recente para a mais antiga. Sem a autorização de saúde vigente a leitura da escala cessa AQUI,
+   * na borda do serviço, e não só na tela (RN-LGPD-14, S-28; QAC-002). Reconceder religa.
+   */
   private readonly completed = computed(() => {
     const id = this.ctx.caregiverId();
-    if (!id) {
+    if (!id || !this.consents.isActive(id, 'health_data')) {
       return [];
     }
     return this.db.zaritAssessments
@@ -96,6 +107,7 @@ export class WellbeingViewService {
         id: a.id,
         dateLabel: this.dateLabel(a.appliedAt as ISODate),
         bandLabel: info.label,
+        meaning: bandMeaningText(info.band),
         band: (ZARIT_BANDS.findIndex((b) => b.band === info.band) + 1) as 1 | 2 | 3 | 4,
         scoreText: `${total} pontos`,
         latest: index === 0,
@@ -115,7 +127,7 @@ export class WellbeingViewService {
    */
   readonly nextText = computed(() => {
     const id = this.ctx.caregiverId();
-    if (!id) {
+    if (!id || !this.consents.isActive(id, 'health_data')) {
       return null;
     }
     const pending = this.db.zaritAssessments
@@ -173,9 +185,9 @@ export class WellbeingViewService {
     }
     const today = this.ctx.today();
     const first = addDays(today, -6);
-    return this.db.wellbeingChecks
-      .query((w) => w.caregiverId === id && w.date >= first && w.date <= today)
-      .sort((a, b) => b.date.localeCompare(a.date))
+    // A leitura do humor passa pelo serviço do núcleo, que a barra sem a autorização de saúde (QAC-002).
+    return this.moods
+      .range(id, first, today)
       .map((w) => ({ id: w.id, dateLabel: dayMonth(w.date), label: moodLabel(w.mood) }));
   });
 
@@ -205,7 +217,15 @@ export class WellbeingViewService {
     }
     const result = this.reviews.register(this.ctx.requireCaregiverId(), 'zarit_decision', text);
     if (!result.ok) {
-      return { ok: false, error: result.reason === 'text_too_short' ? REVIEW_EMPTY_ERROR : REVIEW_ERROR };
+      return {
+        ok: false,
+        error:
+          result.reason === 'text_too_short'
+            ? REVIEW_EMPTY_ERROR
+            : result.reason === 'text_too_long'
+              ? tooLongText(FREE_TEXT_MAX_CHARS)
+              : REVIEW_ERROR,
+      };
     }
     return { ok: true, text: `Pedido enviado. O psicólogo responde até ${this.dateLabel(result.request.dueAt)}.` };
   }

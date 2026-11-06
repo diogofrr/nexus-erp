@@ -11,13 +11,11 @@ export const WELLBEING_LEAD =
   'Aqui você vê como o seu cansaço tem andado. Quem faz as perguntas é a equipe de psicologia. Você não precisa preencher nada.';
 
 export const TIMELINE_INTRO =
-  'Cada ponto é uma conversa de acompanhamento com a equipe. A escala ajuda a equipe a escutar você. Não é um diagnóstico.';
+  'Cada ponto é uma conversa com a equipe. A escala ajuda a equipe a escutar você. Não é um diagnóstico.';
 
 export const PRIVACY_LINE = 'Só você e a equipe de psicologia que acompanha você veem estas informações.';
 
-export const CARE_TODAY = 'A equipe de psicologia vai falar com você hoje.';
-export const CARE_NOT_YET =
-  'A equipe ainda não conseguiu falar com você. A responsável técnica foi avisada e vai procurar você.';
+// A nota de cuidado ("vai falar com você hoje" e o convite "Queremos falar com você") vive em state/care-note.ts.
 
 export const EMPTY_TITLE = 'Ainda não houve uma conversa de acompanhamento';
 export const EMPTY_TEXT = 'A equipe de psicologia conversa com você e aplica a escala. Você não precisa preencher nada.';
@@ -37,7 +35,7 @@ export const BAND_MEANING: Readonly<Record<ZaritBand, string>> = {
 export const BANDS_CLOSING = 'Em qualquer faixa, a equipe está aqui para conversar com você.';
 
 export const REVIEW_SHEET_TEXT =
-  'Se você não concorda com alguma decisão tomada com base nos seus resultados, conte aqui. O psicólogo responde por escrito.';
+  'Se você não concorda com algo que a equipe decidiu a partir dos seus resultados, conte aqui. O psicólogo responde por escrito.';
 export const REVIEW_EMPTY_ERROR = 'Conte em uma frase o que você quer que a equipe reveja.';
 export const REVIEW_ERROR = 'Não foi possível enviar. Seu texto continua aqui. Tente de novo.';
 

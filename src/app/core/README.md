@@ -64,6 +64,18 @@ menuFor(role);                                              // itens do menu lat
 
 Níveis: `A` só agregado ou pseudonimizado, `P` registros próprios, `C` clínico do caso, `S` supervisão (exige justificativa e log). Rotas: `moduleGuard('finance')`, `permissionGuard('lgpd_audit_log')`, `roleGuard('partner', 'technical_lead')`. A rota negada vai a `/403` e grava `denied`. Todos os perfis são da equipe (o portal do prestador foi removido): o prestador é um cadastro da rede e só recebe dados do cuidador com solicitação aceita e cláusula assinada (`providerMaySeeCaregiverData`, RN-LGPD-13).
 
+### Posse no aplicativo do cuidador
+
+Quem está na sessão do cuidador só lê e grava o que é dele, mesmo chamando o serviço direto com o id de outra pessoa: a tela passa o id da sessão, mas o serviço nunca confia no parâmetro. Todo serviço do cuidador confere na borda com o `CaregiverOwnership` (`core/auth/caregiver-ownership.ts`), sem copiar `if`:
+
+```ts
+private readonly ownership = inject(CaregiverOwnership);
+this.ownership.assertMedication(medicationId);           // lança CaregiverOwnershipError
+if (!this.ownership.ownsCaregiver(caregiverId)) { return { ok: false, error: NOT_OWNER_TEXT }; }  // serviço que devolve resultado
+```
+
+Sem sessão de cuidador (a equipe, o Começar) o guardião deixa passar: a equipe segue com a checagem de perfil de sempre. Registro que não existe conta como "de outro" (a mesma frase). O humor, a linha do tempo da escala e o pedido de revisão de decisão também conferem a autorização de saúde na borda do serviço (RN-LGPD-14).
+
 ## 4. Log de auditoria
 
 ```ts

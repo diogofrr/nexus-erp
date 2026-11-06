@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   afterNextRender,
@@ -16,7 +17,8 @@ import { formatDate, formatTime } from '../../../../core/format';
 import type { Channel, ConsentKey, Dependency, Relationship } from '../../../../core/models';
 import { validateFictitiousPhone } from '../../../../core/rules/validators';
 import { StepItem, StepperComponent } from '../../../../shared/ui/display/stepper.component';
-import { CONSENT_COPY } from '../../../../shared/ui/forms/consent-copy';
+import type { ConsentCopy } from '../../../../shared/ui/forms/consent-copy';
+import { consentCopy } from '../../privacy/state/privacy-copy';
 import { CheckboxComponent } from '../../../../shared/ui/forms/checkbox.component';
 import { DraftRecord, DraftService } from '../../../../shared/ui/forms/draft.service';
 import { ErrorSummaryComponent, ErrorSummaryItem } from '../../../../shared/ui/forms/error-summary.component';
@@ -25,6 +27,7 @@ import { FormFieldComponent } from '../../../../shared/ui/forms/form-field.compo
 import { NxInputDirective } from '../../../../shared/ui/forms/input.directive';
 import { NxMaskDirective } from '../../../../shared/ui/forms/mask.directive';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
+import { HistoryLayersService } from '../../state/history-layers.service';
 import { firstNameOf } from '../../state/people-format';
 import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
@@ -67,7 +70,7 @@ const LAST_STEP = STEPS.length - 1;
 /** Nome curto de cada autorização, para a legenda da resposta e para o resumo. */
 const CONSENT_SHORT: Readonly<Partial<Record<ConsentKey, string>>> = {
   health_data: 'Dados de saúde',
-  people_analytics: 'Números somados',
+  people_analytics: 'Resultados sem o seu nome',
   family_sharing: 'Família',
   image_testimony: 'Imagem e depoimento',
   whatsapp_contact: 'WhatsApp',
@@ -85,7 +88,13 @@ const CHOICE_TEXT: Readonly<Record<ConsentChoice, string>> = {
 };
 
 const HEALTH_REFUSED_NOTE =
-  'Tudo bem. A agenda, os remédios e os conteúdos continuam. A conversa de acompanhamento só acontece com a sua autorização.';
+  'A agenda, os remédios e os conteúdos continuam. A conversa de acompanhamento só acontece com a sua autorização.';
+
+/** A autorização de saúde em duas frases; o texto inteiro fica atrás de "Ler mais" (CXC-015, RN-LGPD-04 e 05). */
+const HEALTH_SHORT =
+  'A equipe de psicologia usa as suas respostas à escala de cansaço para cuidar de você de perto. Só o psicólogo que acompanha você e o responsável técnico veem.';
+
+const OTHER_CONSENTS: readonly ConsentKey[] = SIGNUP_CONSENTS.filter((key) => key !== 'health_data');
 const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fale com a gente.';
 
 /** Escolha obrigatória (cartões e lista): a frase diz o que escolher. */
@@ -168,6 +177,44 @@ interface Draft {
     }
     .start-bar.cg-action-bar {
       bottom: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding-block: 0.5rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    }
+    .start-bar .btn {
+      flex: 1 1 auto;
+      width: auto;
+    }
+    .start-bar .cg-link-btn {
+      flex: 0 0 auto;
+    }
+    .start-others__toggle {
+      font-size: var(--cg-fs-lead);
+    }
+    .start-review {
+      list-style: none;
+    }
+    .start-review__row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.5rem 0.5rem 0.5rem 1rem;
+    }
+    .start-review__text {
+      min-width: 0;
+    }
+    .start-review__text p {
+      margin: 0;
+    }
+    .start-review__title {
+      font-weight: var(--fw-semibold);
+    }
+    .start-review__line {
+      color: var(--cg-text-soft);
+      font-size: var(--cg-fs-small);
+      overflow-wrap: anywhere;
     }
     .start-status {
       margin: 0;
@@ -184,11 +231,12 @@ interface Draft {
     }
     .start-hours {
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       gap: 0.75rem;
     }
-    .start-hours app-form-field {
-      flex: 1 1 8rem;
+    .start-hours input {
+      flex: 1 1 6rem;
+      min-width: 0;
     }
     .start-hours .btn {
       min-width: var(--cg-target-lg);
@@ -256,7 +304,7 @@ interface Draft {
 
         @case ('step') {
           <app-stepper label="Etapas do cadastro" [steps]="steps" [current]="step()" />
-          <app-error-summary [items]="errors()" />
+          <app-error-summary short [items]="errors()" />
           @if (failure(); as text) {
             <app-cg-note variant="error">{{ text }}</app-cg-note>
           }
@@ -273,7 +321,12 @@ interface Draft {
                 <app-form-field label="Data de nascimento" controlId="st-birth" [forceErrors]="submitted()">
                   <input appInput type="date" formControlName="birthDate" autocomplete="bday" />
                 </app-form-field>
-                <app-form-field label="CPF" hint="Protótipo: use um CPF fictício." controlId="st-cpf" [forceErrors]="submitted()">
+                <app-form-field
+                  label="CPF"
+                  hint="Serve para identificar a sua conta. No protótipo, use um CPF fictício."
+                  controlId="st-cpf"
+                  [forceErrors]="submitted()"
+                >
                   <input appInput appMask="cpf" formControlName="cpf" />
                 </app-form-field>
                 <div class="start-actions-inline">
@@ -329,18 +382,18 @@ interface Draft {
 
             @case (2) {
               <div class="start-fields" [formGroup]="daily">
-                <div class="start-hours">
-                  <button type="button" class="btn" aria-label="Menos uma hora por dia" (click)="stepHours(-1)">&minus;</button>
-                  <app-form-field
-                    label="Quantas horas por dia você dedica ao cuidado?"
-                    hint="Pode mudar depois."
-                    controlId="st-hours"
-                    [forceErrors]="submitted()"
-                  >
+                <app-form-field
+                  label="Quantas horas por dia você dedica ao cuidado?"
+                  hint="Pode mudar depois."
+                  controlId="st-hours"
+                  [forceErrors]="submitted()"
+                >
+                  <div class="start-hours">
+                    <button type="button" class="btn" aria-label="Menos uma hora por dia" (click)="stepHours(-1)">&minus;</button>
                     <input appInput type="number" inputmode="numeric" formControlName="hours" min="0" max="24" />
-                  </app-form-field>
-                  <button type="button" class="btn" aria-label="Mais uma hora por dia" (click)="stepHours(1)">+</button>
-                </div>
+                    <button type="button" class="btn" aria-label="Mais uma hora por dia" (click)="stepHours(1)">+</button>
+                  </div>
+                </app-form-field>
                 <div id="st-channel">
                   <app-cg-choice-group
                     legend="Como você prefere que a gente fale com você?"
@@ -369,107 +422,138 @@ interface Draft {
                 Você escolhe cada item separado. Pode mudar quando quiser, em Mais, Privacidade e meus dados. O plano Livre
                 continua em qualquer caso.
               </p>
-              @for (key of consentKeys; track key) {
-                <app-cg-card [title]="copy[key].question" [variant]="key === 'health_data' ? 'care' : 'default'" [attr.data-consent]="key">
-                  <div class="start-consent cg-stack cg-stack--tight">
-                    @if (key === 'health_data' || expanded().has(key)) {
-                      <dl class="start-dl">
-                        <dt>O que vamos fazer</dt>
-                        <dd>{{ copy[key].what }}</dd>
-                        <dt>Por quê</dt>
-                        <dd>{{ copy[key].why }}</dd>
-                        <dt>Quem vê</dt>
-                        <dd>{{ copy[key].who }}</dd>
-                        <dt>Se você disser não</dt>
-                        <dd>{{ copy[key].ifNo }}</dd>
-                        <dt>Se mudar de ideia</dt>
-                        <dd>{{ copy[key].change }}</dd>
-                      </dl>
-                    }
-                    @if (key === 'whatsapp_contact' && daily.controls.channel.value === 'whatsapp') {
-                      <p class="start-p">
-                        Você escolheu o WhatsApp como o jeito de falarmos com você. Sem esta autorização, falamos pelo aplicativo.
-                      </p>
-                    }
-                    <app-cg-choice-group
-                      [legend]="'Sua resposta: ' + short[key]"
-                      [options]="choiceOptions"
-                      [value]="choices()[key] ?? null"
-                      (valueChange)="setChoice(key, $event)"
-                    />
-                    @if (key !== 'health_data') {
-                      <div class="start-actions-inline">
-                        <button
-                          type="button"
-                          class="cg-link-btn"
-                          [attr.aria-expanded]="expanded().has(key)"
-                          (click)="toggleMore(key)"
-                        >
-                          {{ expanded().has(key) ? 'Ler menos' : 'Ler mais' }}
-                        </button>
-                      </div>
-                    }
+              <app-cg-card [title]="copy.health_data.question" variant="care" data-consent="health_data">
+                <div class="start-consent cg-stack cg-stack--tight">
+                  <p class="start-p">{{ healthShort }}</p>
+                  <div class="start-actions-inline">
+                    <button
+                      type="button"
+                      class="cg-link-btn"
+                      [attr.aria-expanded]="expanded().has('health_data')"
+                      (click)="toggleMore('health_data')"
+                    >
+                      {{ expanded().has('health_data') ? 'Ler menos' : 'Ler mais' }}
+                    </button>
                   </div>
-                </app-cg-card>
-                @if (key === 'health_data' && (choices().health_data === 'refused' || choices().health_data === 'pending')) {
-                  <app-cg-note variant="info">{{ healthNote }}</app-cg-note>
-                }
+                  @if (expanded().has('health_data')) {
+                    <dl class="start-dl">
+                      <dt>O que vamos fazer</dt>
+                      <dd>{{ copy.health_data.what }}</dd>
+                      <dt>Por quê</dt>
+                      <dd>{{ copy.health_data.why }}</dd>
+                      <dt>Quem vê</dt>
+                      <dd>{{ copy.health_data.who }}</dd>
+                      <dt>Se você disser não</dt>
+                      <dd>{{ copy.health_data.ifNo }}</dd>
+                      <dt>Se mudar de ideia</dt>
+                      <dd>{{ copy.health_data.change }}</dd>
+                    </dl>
+                  }
+                  <app-cg-choice-group
+                    [legend]="'Sua resposta: ' + short.health_data"
+                    [options]="choiceOptions"
+                    [value]="choices().health_data ?? null"
+                    (valueChange)="setChoice('health_data', $event)"
+                  />
+                </div>
+              </app-cg-card>
+              @if (choices().health_data === 'refused' || choices().health_data === 'pending') {
+                <app-cg-note variant="info">{{ healthNote }}</app-cg-note>
               }
+
+              <section class="start-others cg-stack cg-stack--tight" aria-labelledby="st-others-title">
+                <h2 class="cg-section__title" id="st-others-title">
+                  <button
+                    type="button"
+                    class="cg-link-btn start-others__toggle"
+                    data-role="others-toggle"
+                    [attr.aria-expanded]="othersOpen()"
+                    aria-controls="st-others"
+                    (click)="othersOpen.set(!othersOpen())"
+                  >
+                    Outras autorizações (opcional)
+                  </button>
+                </h2>
+                <p class="cg-muted">Se você não abrir esta parte, tudo fica em "Decidir depois". Você muda quando quiser.</p>
+                <div id="st-others" class="cg-stack" [hidden]="!othersOpen()">
+                  @if (othersOpen()) {
+                    @for (key of otherConsents; track key) {
+                      <app-cg-card [title]="copy[key].question" [attr.data-consent]="key">
+                        <div class="start-consent cg-stack cg-stack--tight">
+                          @if (expanded().has(key)) {
+                            <dl class="start-dl">
+                              <dt>O que vamos fazer</dt>
+                              <dd>{{ copy[key].what }}</dd>
+                              <dt>Por quê</dt>
+                              <dd>{{ copy[key].why }}</dd>
+                              <dt>Quem vê</dt>
+                              <dd>{{ copy[key].who }}</dd>
+                              <dt>Se você disser não</dt>
+                              <dd>{{ copy[key].ifNo }}</dd>
+                              <dt>Se mudar de ideia</dt>
+                              <dd>{{ copy[key].change }}</dd>
+                            </dl>
+                          }
+                          @if (key === 'whatsapp_contact' && daily.controls.channel.value === 'whatsapp') {
+                            <p class="start-p">
+                              Você escolheu o WhatsApp como o jeito de falarmos com você. Sem esta autorização, falamos pelo aplicativo.
+                            </p>
+                          }
+                          <app-cg-choice-group
+                            [legend]="'Sua resposta: ' + short[key]"
+                            [options]="choiceOptions"
+                            [value]="choices()[key] ?? null"
+                            (valueChange)="setChoice(key, $event)"
+                          />
+                          <div class="start-actions-inline">
+                            <button
+                              type="button"
+                              class="cg-link-btn"
+                              [attr.aria-expanded]="expanded().has(key)"
+                              (click)="toggleMore(key)"
+                            >
+                              {{ expanded().has(key) ? 'Ler menos' : 'Ler mais' }}
+                            </button>
+                          </div>
+                        </div>
+                      </app-cg-card>
+                    }
+                  }
+                </div>
+              </section>
             }
 
             @case (4) {
-              <app-cg-card title="Você">
-                <dl class="start-dl">
-                  <dt>Nome</dt>
-                  <dd>{{ you.controls.fullName.value }}</dd>
-                  <dt>Nascimento</dt>
-                  <dd>{{ date(you.controls.birthDate.value) }}</dd>
-                  <dt>CPF</dt>
-                  <dd>{{ you.controls.cpf.value }}</dd>
-                  <dt>Celular</dt>
-                  <dd>{{ you.controls.phone.value }}</dd>
-                  <dt>E-mail</dt>
-                  <dd>{{ you.controls.email.value }}</dd>
-                  <dt>Cidade</dt>
-                  <dd>{{ you.controls.city.value }}</dd>
-                </dl>
-                <button cgCardFooter type="button" class="cg-link-btn" (click)="goTo(0)">Editar<span class="sr-only"> os seus dados</span></button>
-              </app-cg-card>
-              <app-cg-card title="Quem você cuida">
-                <dl class="start-dl">
-                  <dt>Nome</dt>
-                  <dd>{{ elder.controls.fullName.value }}</dd>
-                  <dt>Nascimento</dt>
-                  <dd>{{ date(elder.controls.birthDate.value) }}</dd>
-                  <dt>Quem é para você</dt>
-                  <dd>{{ relationshipText() }}</dd>
-                  <dt>Rotina</dt>
-                  <dd>{{ dependencyText() }}</dd>
-                </dl>
-                <button cgCardFooter type="button" class="cg-link-btn" (click)="goTo(1)">Editar<span class="sr-only"> quem você cuida</span></button>
-              </app-cg-card>
-              <app-cg-card title="Seu dia a dia">
-                <dl class="start-dl">
-                  <dt>Horas por dia</dt>
-                  <dd>{{ daily.controls.hours.value }}</dd>
-                  <dt>Como falamos com você</dt>
-                  <dd>{{ channelText() }}</dd>
-                  @if (daily.controls.channel.value === 'whatsapp') {
-                    <dt>WhatsApp</dt>
-                    <dd>{{ daily.controls.whatsapp.value }}</dd>
-                  }
-                </dl>
-                <button cgCardFooter type="button" class="cg-link-btn" (click)="goTo(2)">Editar<span class="sr-only"> o seu dia a dia</span></button>
-              </app-cg-card>
-              <app-cg-card title="O que você autoriza">
-                <dl class="start-dl">
-                  @for (key of consentKeys; track key) {
-                    <dt>{{ short[key] }}</dt>
-                    <dd>{{ choiceText(key) }}</dd>
-                  }
-                </dl>
-                <button cgCardFooter type="button" class="cg-link-btn" (click)="goTo(3)">Editar<span class="sr-only"> o que você autoriza</span></button>
-              </app-cg-card>
+              <ul class="cg-list start-review" data-role="review">
+                <li class="start-review__row">
+                  <div class="start-review__text">
+                    <p class="start-review__title">Você</p>
+                    <p class="start-review__line">{{ you.controls.fullName.value }} · {{ you.controls.phone.value }}</p>
+                  </div>
+                  <button type="button" class="cg-link-btn" (click)="goTo(0)">Editar<span class="sr-only"> os seus dados</span></button>
+                </li>
+                <li class="start-review__row">
+                  <div class="start-review__text">
+                    <p class="start-review__title">Quem você cuida</p>
+                    <p class="start-review__line">{{ elder.controls.fullName.value }} · {{ relationshipText() }}</p>
+                  </div>
+                  <button type="button" class="cg-link-btn" (click)="goTo(1)">Editar<span class="sr-only"> quem você cuida</span></button>
+                </li>
+                <li class="start-review__row">
+                  <div class="start-review__text">
+                    <p class="start-review__title">Seu dia a dia</p>
+                    <p class="start-review__line">{{ daily.controls.hours.value }} h por dia · {{ channelText() }}</p>
+                  </div>
+                  <button type="button" class="cg-link-btn" (click)="goTo(2)">Editar<span class="sr-only"> o seu dia a dia</span></button>
+                </li>
+                <li class="start-review__row">
+                  <div class="start-review__text">
+                    <p class="start-review__title">O que você autoriza</p>
+                    <p class="start-review__line">Saúde: {{ choiceText('health_data') }}. {{ othersText() }}</p>
+                  </div>
+                  <button type="button" class="cg-link-btn" (click)="goTo(3)">Editar<span class="sr-only"> o que você autoriza</span></button>
+                </li>
+              </ul>
 
               <app-cg-emergency-note />
               <div id="st-notice">
@@ -483,17 +567,17 @@ interface Draft {
             }
           }
 
+          @if (savedAt(); as saved) {
+            <p class="start-status" role="status">Rascunho salvo às {{ time(saved) }}</p>
+          }
           <div class="cg-action-bar start-bar">
+            @if (step() > 0) {
+              <button type="button" class="cg-link-btn" (click)="back()">Voltar</button>
+            }
             @if (step() < lastStep) {
               <button type="button" class="btn btn--primary" (click)="next()">Continuar</button>
             } @else {
               <button type="button" class="btn btn--primary" (click)="create()">Criar minha conta</button>
-            }
-            @if (step() > 0) {
-              <button type="button" class="cg-link-btn" (click)="back()">Voltar</button>
-            }
-            @if (savedAt(); as saved) {
-              <p class="start-status" role="status">Rascunho salvo às {{ time(saved) }}</p>
             }
           </div>
         }
@@ -528,6 +612,10 @@ export class StartPage {
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly layers = inject(HistoryLayersService);
+  /** Ids das entradas de histórico dos passos (uma por avanço), para o voltar do aparelho desfazer um passo por vez (CXC-013). */
+  private stepLayerIds: string[] = [];
+  private stepLayerSeq = 0;
 
   protected readonly steps = STEPS;
   protected readonly lastStep = LAST_STEP;
@@ -536,9 +624,12 @@ export class StartPage {
   protected readonly channelChoices = CHANNEL_CHOICES;
   protected readonly choiceOptions = CHOICE_OPTIONS;
   protected readonly consentKeys = SIGNUP_CONSENTS;
-  protected readonly copy = CONSENT_COPY;
+  /** Os textos de cada autorização, em linguagem de todo dia (os mesmos de Privacidade e meus dados). */
+  protected readonly copy = Object.fromEntries(SIGNUP_CONSENTS.map((key) => [key, consentCopy(key)])) as Record<ConsentKey, ConsentCopy>;
   protected readonly short = CONSENT_SHORT as Readonly<Record<ConsentKey, string>>;
   protected readonly healthNote = HEALTH_REFUSED_NOTE;
+  protected readonly healthShort = HEALTH_SHORT;
+  protected readonly otherConsents = OTHER_CONSENTS;
   protected readonly prototypeNotice = PROTOTYPE_NOTICE;
 
   protected readonly phase = signal<Phase>('welcome');
@@ -548,6 +639,8 @@ export class StartPage {
   protected readonly failure = signal<string | null>(null);
   protected readonly choices = signal<Partial<Record<ConsentKey, ConsentChoice>>>({});
   protected readonly expanded = signal<ReadonlySet<ConsentKey>>(new Set());
+  /** O bloco "Outras autorizações (opcional)" começa recolhido (CXC-015). */
+  protected readonly othersOpen = signal(false);
   protected readonly noticeAccepted = signal(false);
   protected readonly noticeMissing = signal(false);
   protected readonly savedAt = signal<string | null>(null);
@@ -624,6 +717,7 @@ export class StartPage {
     if (this.ctx.isSignedIn()) {
       void this.router.navigateByUrl('/cuidador/hoje', { replaceUrl: true });
     }
+    inject(DestroyRef).onDestroy(() => this.stepLayerIds.forEach((id) => this.layers.forget(id)));
     // Ao escolher WhatsApp, o número já vem preenchido com o celular (editável).
     this.daily.controls.channel.valueChanges.subscribe((channel) => {
       if (channel === 'whatsapp' && this.daily.controls.whatsapp.value === '') {
@@ -655,6 +749,8 @@ export class StartPage {
   protected begin(): void {
     this.phase.set('step');
     this.step.set(0);
+    // Voltar do aparelho na etapa 1 leva às boas-vindas.
+    this.pushStepLayer(() => this.phase.set('welcome'));
     this.focusTitle();
   }
 
@@ -724,6 +820,13 @@ export class StartPage {
   protected chooseChannel(channel: Channel | null): void {
     this.daily.controls.channel.setValue(channel);
     this.daily.controls.channel.markAsDirty();
+    if (channel === 'whatsapp') {
+      // O campo do número aparece logo abaixo e a barra fixa de baixo o cobria (CXC-023): leva até ele.
+      afterNextRender(
+        () => this.host.nativeElement.querySelector<HTMLElement>('#st-whatsapp')?.scrollIntoView?.({ block: 'center' }),
+        { injector: this.injector },
+      );
+    }
   }
 
   protected setChoice(key: ConsentKey, choice: ConsentChoice | null): void {
@@ -790,17 +893,38 @@ export class StartPage {
     if (!this.validateStep(this.step())) {
       return;
     }
-    this.moveTo(this.step() + 1);
+    this.advanceTo(this.step() + 1);
   }
 
+  /** O botão "Voltar" e o voltar do aparelho seguem o mesmo caminho: desfazem o último passo. */
   protected back(): void {
-    this.failure.set(null);
-    this.moveTo(this.step() - 1);
+    this.layers.goBack(() => this.showStep(this.step() - 1));
   }
 
   protected goTo(step: number): void {
+    this.advanceTo(step);
+  }
+
+  /** Vai a um passo e registra a entrada de histórico que o desfaz (volta ao passo de onde veio). */
+  private advanceTo(target: number): void {
+    const from = this.step();
+    this.failure.set(null);
+    this.pushStepLayer(() => this.showStep(from));
+    this.moveTo(target);
+  }
+
+  private showStep(step: number): void {
     this.failure.set(null);
     this.moveTo(step);
+  }
+
+  private pushStepLayer(back: () => void): void {
+    const id = `start-step-${this.stepLayerSeq++}`;
+    this.stepLayerIds.push(id);
+    this.layers.open(id, () => {
+      this.stepLayerIds = this.stepLayerIds.filter((item) => item !== id);
+      back();
+    });
   }
 
   private moveTo(step: number): void {
@@ -834,6 +958,16 @@ export class StartPage {
     return CHOICE_TEXT[this.choices()[key] ?? 'pending'];
   }
 
+  /** As outras 4 autorizações numa frase: "Outras 4: Decidir depois." ou, se diferem, "Outras: 1 concordo, 3 decidir depois." */
+  protected othersText(): string {
+    const answers = OTHER_CONSENTS.map((key) => this.choices()[key] ?? 'pending');
+    if (answers.every((answer) => answer === answers[0])) {
+      return `Outras ${answers.length}: ${CHOICE_TEXT[answers[0] ?? 'pending']}.`;
+    }
+    const count = (choice: ConsentChoice): number => answers.filter((a) => a === choice).length;
+    return `Outras: ${count('granted')} concordo, ${count('refused')} não concordo, ${count('pending')} decidir depois.`;
+  }
+
   // ===== Criar a conta =====
 
   protected create(): void {
@@ -860,6 +994,9 @@ export class StartPage {
       this.drafts.clear(DRAFT_FORM, DRAFT_ID);
       this.savedAt.set(null);
       this.createdName.set(firstNameOf(caregiver.fullName));
+      // O fluxo acabou: as entradas de histórico dos passos saem juntas.
+      this.stepLayerIds = [];
+      this.layers.clear();
       this.phase.set('done');
       this.focusTitle();
     } catch (error) {

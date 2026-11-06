@@ -46,7 +46,7 @@ export interface RequestItem {
   id: string;
   protocol: string;
   name: string;
-  /** "Pedido DSR-0006 feito em 04/11." */
+  /** "Pedido feito em 04/11." (o código interno do pedido não aparece na tela, CXC-009). */
   madeText: string;
   /** "Faltam 12 dias", "Concluído em 19/11/2026", "Pedido retirado por você." ou o motivo da equipe. */
   statusText: string;
@@ -283,7 +283,7 @@ export class PrivacyService {
       id: request.id,
       protocol: request.protocol,
       name: REQUEST_NAMES[request.type],
-      madeText: `Pedido ${request.protocol} feito em ${dayMonth(request.openedAt)}.`,
+      madeText: `Pedido feito em ${dayMonth(request.openedAt)}.`,
       statusText,
       pending,
       canDownload: request.status === 'completed' && (request.type === 'access' || request.type === 'portability'),

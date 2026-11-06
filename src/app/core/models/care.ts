@@ -60,6 +60,11 @@ export interface CareSession extends Audited {
   homeAddress?: string;
   /** RN-ATD-19: psicoterapia ou orientação, sempre exibido ao usuário. */
   kind: 'psychotherapy' | 'guidance';
+  /**
+   * A pessoa escolheu "Não sei" (S-07): o caráter grava `guidance` e o psicólogo decide na conversa. O aplicativo do cuidador
+   * mostra "A definir na conversa" no lugar do caráter (CXC-007). Opcional: o seed e a equipe não precisam dele.
+   */
+  kindUndecided?: boolean;
   status: SessionStatus;
   /** RN-ATD-07: confirmação de pertinência do formato remoto. */
   remoteFormatConfirmedPertinent?: boolean;

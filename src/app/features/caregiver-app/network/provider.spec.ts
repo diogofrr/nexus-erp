@@ -187,8 +187,8 @@ describe('Profissional: a ficha e o pedido de serviço', () => {
         expect(norm(sent.querySelector('a')?.textContent)).toBe('Ver meus pedidos');
         expect(sent.querySelector('a')?.getAttribute('href')).toBe('/cuidador/rede/pedidos');
         expect(requestButton(app)).toBeNull();
-        const toast = TestBed.inject(ToastService).toasts().find((t) => t.message.startsWith('Pedido enviado.'));
-        expect(toast?.durationMs).toBe(8000);
+        // CXC-017: um aviso só (a faixa); o aviso rápido não repete.
+        expect(TestBed.inject(ToastService).toasts().find((t) => t.message.startsWith('Pedido enviado.'))).toBeUndefined();
         await app.router.navigateByUrl('/cuidador/rede/pedidos');
         await settleCaregiver(app.fixture);
         expect(mainText(app)).toContain('Dra. Renata Sampaio');

@@ -63,7 +63,7 @@ describe('Área privacy (Privacidade e meus dados)', () => {
       const titles = all('[data-role="consents"] .cg-row__title').map(text);
       expect(titles.slice(0, 5)).toEqual([
         'Dados de saúde para o acompanhamento',
-        'Números somados da Nexus',
+        'Resultados sem o seu nome',
         'Compartilhar com a família',
         'Imagem e depoimento',
         'Contato por WhatsApp',
@@ -151,11 +151,11 @@ describe('Área privacy (Privacidade e meus dados)', () => {
       expect(app.context.healthConsent()).toBe(true);
     });
 
-    it('AC-CG-175: retirar imagem, WhatsApp, números somados ou família não muda nenhuma outra autorização nem o plano', async () => {
+    it('AC-CG-175: retirar imagem, WhatsApp, resultados sem o seu nome ou família não muda nenhuma outra autorização nem o plano', async () => {
       const keys: [string, string][] = [
         ['Imagem e depoimento', 'image_testimony'],
         ['Contato por WhatsApp', 'whatsapp_contact'],
-        ['Números somados da Nexus', 'people_analytics'],
+        ['Resultados sem o seu nome', 'people_analytics'],
         ['Compartilhar com a família', 'family_sharing'],
       ];
       for (const [title, key] of keys) {
@@ -214,7 +214,7 @@ describe('Área privacy (Privacidade e meus dados)', () => {
       }
       const key = app.context.consents().find((c) => c.status === 'pending' && c.key !== 'pilot_tcle')?.key;
       expect(key).toBeDefined();
-      const title = { health_data: 'Dados de saúde para o acompanhamento', people_analytics: 'Números somados da Nexus', family_sharing: 'Compartilhar com a família', image_testimony: 'Imagem e depoimento', whatsapp_contact: 'Contato por WhatsApp', pilot_tcle: 'Piloto da Nexus' }[key!];
+      const title = { health_data: 'Dados de saúde para o acompanhamento', people_analytics: 'Resultados sem o seu nome', family_sharing: 'Compartilhar com a família', image_testimony: 'Imagem e depoimento', whatsapp_contact: 'Contato por WhatsApp', pilot_tcle: 'Piloto da Nexus' }[key!];
       await click(row(title));
       expect(text(q('[data-role="consent-state"]'))).toBe('Você ainda não decidiu');
       expect(sheetButton(title, 'Autorizar')).toBeDefined();
@@ -248,8 +248,10 @@ describe('Área privacy (Privacidade e meus dados)', () => {
       expect(created).toMatchObject({ caregiverId: 'cg_0004', type: 'access', status: 'open', openedAt: '2026-11-04', dueAt: '2026-11-19', channel: 'app' });
       const card = q('[data-role="request"]');
       expect(text(card)).toContain('Cópia dos meus dados');
-      expect(text(card)).toContain(`Pedido ${created.protocol} feito em 04/11.`);
-      expect(text(q('[data-role="request-status"]'))).toBe('Faltam 15 dias');
+      // CXC-009: o código interno do pedido não aparece na tela; "Faltam 15 dias" diz o que falta.
+      expect(text(card)).toContain('Pedido feito em 04/11.');
+      expect(text(card)).not.toContain(created.protocol);
+      expect(text(q('[data-role="request-status"]'))).toBe('Faltam 15 dias para a resposta');
       expect(all('.cg-note--error, .btn--danger-quiet, [class*="error"]').filter((e) => card?.contains(e))).toHaveLength(0);
       expect(Array.from(card?.querySelectorAll('button') ?? []).some((b) => text(b) === 'Baixar o arquivo')).toBe(false);
 
@@ -263,7 +265,7 @@ describe('Área privacy (Privacidade e meus dados)', () => {
       expect(TEST_DOWNLOADS.at(-1)?.fileName).toMatch(/^meus-dados-CUI-\d{4}-2026-11-04\.json$/);
     });
 
-    it('AC-CG-182: pedido repetido mostra "Você já tem um pedido de cópia em andamento (DSR-xxxx)." e não cria outro', async () => {
+    it('AC-CG-182: pedido repetido mostra "Você já tem um pedido de cópia em andamento." (sem o código) e não cria outro', async () => {
       await boot('cg_0004');
       await click(row('Pedir uma cópia dos meus dados'));
       await click(sheetButton('Pedir uma cópia dos meus dados', 'Pedir a cópia'));
@@ -271,7 +273,7 @@ describe('Área privacy (Privacidade e meus dados)', () => {
       const size = app.db.dataSubjectRequests.size();
       await click(row('Pedir uma cópia dos meus dados'));
       expect(text(sheet('Pedir uma cópia dos meus dados').querySelector('[data-role="duplicate"]'))).toBe(
-        `Você já tem um pedido de cópia em andamento (${protocol}).`,
+        'Você já tem um pedido de cópia em andamento.',
       );
       expect(sheetButton('Pedir uma cópia dos meus dados', 'Pedir a cópia')).toBeUndefined();
       expect(app.db.dataSubjectRequests.size()).toBe(size);
@@ -287,6 +289,9 @@ describe('Área privacy (Privacidade e meus dados)', () => {
       expect(text(s.querySelector('#priv-keep'))).toBe('Ficará guardado e sem uso');
       expect(text(s)).toContain('as respostas da escala e as anotações do atendimento, por 5 anos, como a norma do conselho pede. Depois disso, são apagados.');
       expect(text(s)).toContain('Você continua usando o app até a equipe concluir.');
+      // CXC-009: o prazo vem NA folha, antes de confirmar, e sem código interno.
+      expect(text(s.querySelector('[data-role="erasure-deadline"]'))).toBe('A equipe responde em até 15 dias.');
+      expect(text(s)).not.toMatch(/DSR-\d+/);
       expect(text(s)).toContain('Entendi o que será eliminado e o que ficará guardado');
       const confirm = sheetButton('Pedir eliminação dos meus dados', 'Pedir eliminação');
       expect(confirm?.disabled).toBe(true);
@@ -301,7 +306,7 @@ describe('Área privacy (Privacidade e meus dados)', () => {
       // Nada é eliminado antes de a equipe concluir; a pessoa segue dentro do app.
       expect(app.db.messages.query((m) => m.caregiverId === 'cg_0003')).toHaveLength(messages);
       expect(app.session.isSignedIn()).toBe(true);
-      expect(text(q('[data-role="request-status"]'))).toBe('Faltam 15 dias');
+      expect(text(q('[data-role="request-status"]'))).toBe('Faltam 15 dias para a resposta');
       expect(all<HTMLButtonElement>('button').some((b) => text(b) === 'Retirar o pedido')).toBe(true);
     });
 
@@ -325,13 +330,14 @@ describe('Área privacy (Privacidade e meus dados)', () => {
       expect(app.session.isSignedIn()).toBe(true);
       expect(text(q('[data-role="requests"] h2'))).toBe('Meus pedidos');
       expect(text(q('[data-role="request"]'))).toContain('Eliminação dos meus dados');
-      expect(text(q('[data-role="request-status"]'))).toMatch(/^(Faltam \d+ dias|Falta 1 dia|O prazo termina hoje|A equipe vai responder em breve)$/);
+      expect(text(q('[data-role="request-status"]'))).toMatch(/^(Faltam \d+ dias para a resposta|Falta 1 dia para a resposta|O prazo termina hoje|A equipe vai responder em breve)$/);
       expect(all<HTMLButtonElement>('button').some((b) => text(b) === 'Retirar o pedido')).toBe(true);
-      // O pedido repetido é recusado: a folha de eliminação diz o protocolo.
+      // O pedido repetido é recusado: a folha de eliminação diz que já há um pedido (sem o código).
       const pending = TestBed.inject(SubjectRightsService).pendingOf('cg_0018', 'erasure')!;
+      expect(pending).toBeDefined();
       await click(row('Pedir eliminação dos meus dados'));
       expect(text(sheet('Pedir eliminação dos meus dados').querySelector('[data-role="duplicate"]'))).toBe(
-        `Você já tem um pedido de eliminação em andamento (${pending.protocol}).`,
+        'Você já tem um pedido de eliminação em andamento.',
       );
     });
 
@@ -387,8 +393,8 @@ describe('Área privacy (Privacidade e meus dados)', () => {
   });
 
   it('daysLeftText: dias corridos, no singular, e sem "vencido" depois do prazo', () => {
-    expect(daysLeftText(12)).toBe('Faltam 12 dias');
-    expect(daysLeftText(1)).toBe('Falta 1 dia');
+    expect(daysLeftText(12)).toBe('Faltam 12 dias para a resposta');
+    expect(daysLeftText(1)).toBe('Falta 1 dia para a resposta');
     expect(daysLeftText(0)).toBe('O prazo termina hoje');
     expect(daysLeftText(-3)).toBe('A equipe vai responder em breve');
   });

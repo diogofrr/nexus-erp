@@ -238,7 +238,6 @@ export class ProviderPage {
     }
     this.sheetOpen.set(false);
     this.sentFor.set(providerId);
-    this.toast.show({ message: SENT_MESSAGE, durationMs: 8000 });
   }
 
   // ===== Falar direto =====

@@ -1,9 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { AuditLogService } from '../audit/audit-log.service';
+import { CaregiverOwnership } from '../auth/caregiver-ownership';
 import { SessionStore } from '../auth/session.store';
 import { Clock } from '../clock/clock.service';
 import { Database } from '../data/database';
-import { DataSubjectRequest, DsrType, ID, ISODate, ISODateTime } from '../models';
+import { DataSubjectRequest, DsrType, ID, ISODate, ISODateTime, Message } from '../models';
 import {
   DsrDeadlineState,
   canRejectRequest,
@@ -19,6 +20,24 @@ export class DataSubjectRequestError extends Error {
     super(message);
     this.name = 'DataSubjectRequestError';
   }
+}
+
+/**
+ * Campos que o titular não recebe na cópia dos próprios dados (RN-LGPD-18, RN-POP-05; QAC-014): a triagem de risco do
+ * atendimento (POP-05 é de acesso restrito) e quem da equipe assumiu a mensagem.
+ */
+const MESSAGE_INTERNAL_FIELDS: readonly (keyof Message)[] = ['riskFlag', 'riskDoubt', 'assignedToUserId'];
+/** Campos internos de tratamento do pedido do titular: quem tratou, quem concluiu e a nota interna da equipe. */
+const REQUEST_INTERNAL_FIELDS: readonly (keyof DataSubjectRequest)[] = [
+  'handledByUserId',
+  'completedByUserId',
+  'resolutionNote',
+];
+
+/** O registro sem os campos internos da equipe. */
+function withoutFields<T extends object>(record: T, fields: readonly (keyof T)[]): Partial<T> {
+  const hidden = new Set<PropertyKey>(fields);
+  return Object.fromEntries(Object.entries(record).filter(([key]) => !hidden.has(key))) as Partial<T>;
 }
 
 export interface DsrDeadline {
@@ -57,6 +76,7 @@ export class DataSubjectRequestService {
   private readonly audit = inject(AuditLogService);
   private readonly session = inject(SessionStore);
   private readonly retention = inject(RetentionService);
+  private readonly ownership = inject(CaregiverOwnership);
 
   // ===== Leitura =====
 
@@ -81,6 +101,7 @@ export class DataSubjectRequestService {
 
   /** Abre a solicitação: protocolo, prazo de 15 dias corridos e estado `open`. */
   open(input: { caregiverId: ID; type: DsrType; openedAt?: ISODate }): DataSubjectRequest {
+    this.ownership.assertCaregiver(input.caregiverId);
     if (!this.db.caregivers.exists(input.caregiverId)) {
       throw new DataSubjectRequestError('Titular não encontrado.');
     }
@@ -216,8 +237,13 @@ export class DataSubjectRequestService {
 
   // ===== Portabilidade e acesso =====
 
-  /** Dados do titular, e de mais ninguém. Gera log `export`. */
+  /**
+   * Dados do titular, e de mais ninguém. Gera log `export`. As mensagens e os pedidos saem sem as marcas internas da equipe
+   * (triagem de risco, quem assumiu, nota de tratamento): o titular recebe o que é dele, não o que o atendimento anotou
+   * para trabalhar (QAC-014).
+   */
   exportSubject(caregiverId: ID): SubjectExport {
+    this.ownership.assertCaregiver(caregiverId);
     const caregiver = this.db.caregivers.require(caregiverId);
     const elder = this.db.elders.find((e) => e.caregiverId === caregiverId);
     const card = this.db.benefitCards.query((c) => c.caregiverId === caregiverId);
@@ -234,10 +260,12 @@ export class DataSubjectRequestService {
         benefitCards: card,
         zaritAssessments: this.db.zaritAssessments.query((z) => z.caregiverId === caregiverId),
         serviceRequests: this.db.serviceRequests.query((r) => r.caregiverId === caregiverId),
-        messages: this.db.messages.query((m) => m.caregiverId === caregiverId),
-        dataSubjectRequests: this.db.dataSubjectRequests.query(
-          (r) => r.caregiverId === caregiverId,
-        ),
+        messages: this.db.messages
+          .query((m) => m.caregiverId === caregiverId)
+          .map((m) => withoutFields(m, MESSAGE_INTERNAL_FIELDS)),
+        dataSubjectRequests: this.db.dataSubjectRequests
+          .query((r) => r.caregiverId === caregiverId)
+          .map((r) => withoutFields(r, REQUEST_INTERNAL_FIELDS)),
       },
     };
     this.audit.exported('subject_portability', caregiverId, 'exportação do titular');

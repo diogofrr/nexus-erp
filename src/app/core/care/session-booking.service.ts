@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { AuditLogService } from '../audit/audit-log.service';
+import { CaregiverOwnership, NOT_OWNER_TEXT } from '../auth/caregiver-ownership';
 import { Clock } from '../clock/clock.service';
-import { compareDateTimes, minutesBetween, toIsoDateTime } from '../clock/date-utils';
+import { addMinutes, compareDateTimes, minutesBetween, toIsoDateTime } from '../clock/date-utils';
 import { Database, NewEntity } from '../data';
 import { planIdOfCaregiver } from '../data/plan-lookup';
 import {
@@ -14,7 +15,14 @@ import {
   SessionModality,
 } from '../models';
 import { canSeePrioritySlots, sessionPriceCents } from '../rules/plans';
-import { isRoomBookable, roomBlockReason } from '../rules/rooms';
+import { NAME_MAX_CHARS, isTooLong, tooLongText } from '../rules/text-limits';
+import {
+  RoomBooking,
+  firstFreeRoom,
+  isRoomBookable,
+  isRoomFreeAt,
+  roomBlockReason,
+} from '../rules/rooms';
 
 export interface BookingFieldError {
   field: string;
@@ -54,6 +62,9 @@ export interface BookingQuote {
   totalCents: number;
 }
 
+/** Duração da sessão (hoje sempre 1 hora). */
+const SESSION_MINUTES = 60;
+
 /** Sessões que ocupam a vaga (a cancelada libera). */
 const ACTIVE_STATUSES: readonly CareSession['status'][] = ['scheduled', 'confirmed', 'done', 'no_show'];
 
@@ -62,7 +73,8 @@ const ACTIVE_STATUSES: readonly CareSession['status'][] = ['scheduled', 'confirm
  * perfil. Existe no núcleo para que a equipe (`CareSessionsService`, que confere o perfil na borda e delega) e o
  * aplicativo do cuidador (que agenda a própria sessão) usem a MESMA regra, sem copiá-la.
  *
- * - Quem chama é responsável pela permissão: este serviço só confere a regra do domínio.
+ * - Quem chama é responsável pela permissão de PERFIL (a equipe confere na borda dela). Com a sessão de um cuidador aberta,
+ *   este serviço também confere a POSSE: o cuidador só agenda, cancela e remarca a própria conversa (QAC-001).
  * - Prazos usam o `Clock`; o desconto do plano vem do quadro de planos (RN-ATD-05); a vaga de prioridade só
  *   existe para quem tem direito (RN-ATD-12) e a tela não diz o motivo.
  * - O log de auditoria só grava quando há uma pessoa da equipe na sessão: o cuidador não gera linha própria.
@@ -72,6 +84,7 @@ export class SessionBookingService {
   private readonly db = inject(Database);
   private readonly clock = inject(Clock);
   private readonly audit = inject(AuditLogService);
+  private readonly ownership = inject(CaregiverOwnership);
 
   // ===== Leitura =====
 
@@ -99,6 +112,34 @@ export class SessionBookingService {
         (a) => a.caregiverId === caregiverId && a.level === 'yellow' && a.status !== 'closed',
       ) > 0
     );
+  }
+
+  // ===== Salas do coworking (RN-ATD-10) =====
+
+  /**
+   * As salas ocupadas: as conversas presenciais que ainda ocupam a vaga e os encontros de grupo que não foram cancelados nem
+   * encerrados. Serve para duas conversas nunca caírem na mesma sala ao mesmo tempo (QAC-013).
+   */
+  roomBookings(): RoomBooking[] {
+    const sessions = this.db.careSessions
+      .query((s) => !!s.roomId && ACTIVE_STATUSES.includes(s.status))
+      .map((s) => ({ roomId: s.roomId as ID, startAt: s.startAt, endAt: addMinutes(s.startAt, s.durationMin) }));
+    const meetings = this.db.activities
+      .query((a) => !!a.roomId && a.status !== 'cancelled' && a.status !== 'finished')
+      .flatMap((a) => a.meetings.map((m) => ({ roomId: a.roomId as ID, startAt: m.startAt, endAt: m.endAt })));
+    return [...sessions, ...meetings];
+  }
+
+  /** A sala está livre na vaga? (a vaga dura 1 hora, como a sessão). */
+  isRoomFreeForSlot(roomId: ID, slot: Pick<AvailabilitySlot, 'date' | 'start'>): boolean {
+    const startAt = this.startOf(slot);
+    return isRoomFreeAt(roomId, startAt, addMinutes(startAt, SESSION_MINUTES), this.roomBookings());
+  }
+
+  /** A primeira sala reservável e livre no horário da vaga; `undefined` se todas estão ocupadas (sem sala, sem coworking). */
+  freeRoomForSlot(slot: Pick<AvailabilitySlot, 'date' | 'start'>): Room | undefined {
+    const startAt = this.startOf(slot);
+    return firstFreeRoom(this.db.rooms.all(), startAt, addMinutes(startAt, SESSION_MINUTES), this.roomBookings());
   }
 
   /** Vagas prioritárias: Cuida e Sustenta, ou acompanhamento prioritário, inclusive no Livre (RN-ATD-12). */
@@ -155,6 +196,10 @@ export class SessionBookingService {
   // ===== Agendar =====
 
   schedule(input: BookingInput): BookingResult<CareSession> {
+    // Com a sessão de um cuidador aberta, só se agenda a própria conversa (QAC-001).
+    if (!this.ownership.ownsCaregiver(input.caregiverId)) {
+      return fail('caregiver', NOT_OWNER_TEXT);
+    }
     const errors: BookingFieldError[] = [];
     const caregiver = this.db.caregivers.get(input.caregiverId);
     if (!caregiver || caregiver.status === 'closed') {
@@ -190,11 +235,15 @@ export class SessionBookingService {
         errors.push({ field: 'room', message: 'Escolha a sala do coworking.' });
       } else if (!isRoomBookable(room)) {
         errors.push({ field: 'room', message: roomBlockReason(room) ?? 'Sala indisponível.' });
+      } else if (slot && slot.psychologistId === input.psychologistId && !this.isRoomFreeForSlot(room.id, slot)) {
+        errors.push({ field: 'room', message: 'Esta sala já está reservada nesse horário.' });
       }
     }
     if (input.modality === 'in_person_home') {
       if (!input.homeAddress?.trim()) {
         errors.push({ field: 'homeAddress', message: 'Informe o endereço do atendimento.' });
+      } else if (isTooLong(input.homeAddress, NAME_MAX_CHARS)) {
+        errors.push({ field: 'homeAddress', message: tooLongText(NAME_MAX_CHARS) });
       }
       if (!input.homeSafe && !input.homeSafetyPending) {
         errors.push({
@@ -243,6 +292,9 @@ export class SessionBookingService {
    * Pelo psicólogo é sempre `cancelled_by_psychologist` e a vaga volta a ficar aberta.
    */
   cancel(sessionId: ID, by: 'user' | 'psychologist'): BookingResult<CareSession> {
+    if (!this.ownership.ownsCareSession(sessionId)) {
+      return fail('session', NOT_OWNER_TEXT);
+    }
     const session = this.db.careSessions.require(sessionId);
     if (session.status !== 'scheduled' && session.status !== 'confirmed') {
       return fail('session', 'Só uma sessão agendada ou confirmada pode ser cancelada.');
@@ -276,6 +328,9 @@ export class SessionBookingService {
    * cancelamento (RN-ATD-16) e a antiga conta como falta; se foi o psicólogo, nunca é falta.
    */
   reschedule(sessionId: ID, input: BookingInput, by: 'user' | 'psychologist'): BookingResult<CareSession> {
+    if (!this.ownership.ownsCareSession(sessionId) || !this.ownership.ownsCaregiver(input.caregiverId)) {
+      return fail('session', NOT_OWNER_TEXT);
+    }
     const session = this.db.careSessions.get(sessionId);
     if (!session) {
       return fail('session', 'Não encontramos esta sessão.');

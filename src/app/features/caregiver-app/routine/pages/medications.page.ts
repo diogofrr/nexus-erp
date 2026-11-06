@@ -4,9 +4,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { DoseCheckError, DoseCheckService } from '../../../../core/care/dose-check.service';
+import { Clock } from '../../../../core/clock/clock.service';
 import { timeOf } from '../../../../core/clock/date-utils';
 import { ID, Medication } from '../../../../core/models';
 import { isTimeOfDay } from '../../../../core/rules/care-agenda';
+import { NAME_MAX_CHARS, tooLongText } from '../../../../core/rules/text-limits';
 import { DoseSlot, doseProgress } from '../../../../core/rules/medication-doses';
 import { EmptyStateComponent } from '../../../../shared/ui/display/empty-state.component';
 import { IconComponent } from '../../../../shared/ui/display/icon.component';
@@ -15,7 +17,9 @@ import { FormFieldComponent } from '../../../../shared/ui/forms/form-field.compo
 import { NxInputDirective } from '../../../../shared/ui/forms/input.directive';
 import { ToastService } from '../../../../shared/ui/overlay/toast.service';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
+import { firstLateKey, freezeDoseOrder } from '../../state/dose-order';
 import { OnlineStatusService } from '../../state/online-status.service';
+import { StorageStatusService, doseNotSavedText } from '../../state/storage-status.service';
 import { CgDoseComponent } from '../../ui/cg-dose.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
@@ -196,7 +200,13 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
             <ul class="cg-plain-list">
               @for (slot of slots(); track slot.key) {
                 <li class="routine-dose">
-                  <app-cg-dose [slot]="slot" [size]="ctx.doseSize()" (dei)="dei($event)" (undo)="undo($event)" />
+                  <app-cg-dose
+                    [slot]="slot"
+                    [size]="ctx.doseSize()"
+                    [quietLate]="slot.key !== lateKey()"
+                    (dei)="dei($event)"
+                    (undo)="undo($event)"
+                  />
                   @if (slot.given) {
                     <button type="button" class="cg-link-btn" (click)="openTime(slot)">
                       Dei em outro horário<span class="sr-only">: {{ slot.medicationName }} das {{ slot.time }}</span>
@@ -218,8 +228,21 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
       @if (hasAny()) {
         <section class="routine-block cg-stack cg-stack--tight" aria-labelledby="routine-all-title">
           <h2 class="cg-section__title" id="routine-all-title">Todos os remédios</h2>
-          @if (inUse().length > 0) {
-            <ul class="cg-list">
+          @if (repeatsToday()) {
+            <div>
+              <button
+                type="button"
+                class="cg-link-btn"
+                data-role="edit-toggle"
+                [attr.aria-expanded]="showAll()"
+                (click)="showAll.set(!showAll())"
+              >
+                {{ showAll() ? 'Esconder a lista' : 'Mudar ou pausar um remédio (' + inUse().length + ')' }}
+              </button>
+            </div>
+          }
+          @if (inUse().length > 0 && (showAll() || !repeatsToday())) {
+            <ul class="cg-list" data-role="all-meds">
               @for (med of inUse(); track med.id) {
                 <li>
                   <app-cg-row
@@ -231,7 +254,7 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
                 </li>
               }
             </ul>
-          } @else {
+          } @else if (inUse().length === 0) {
             <app-cg-note variant="soft" icon="pill">Nenhum remédio em uso agora.</app-cg-note>
           }
           <div class="cg-actions">
@@ -273,7 +296,7 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
 
     <app-cg-sheet [heading]="editingId() ? 'Editar remédio' : 'Novo remédio'" [(open)]="formOpen">
       <form class="routine-form" [formGroup]="form" novalidate (ngSubmit)="save()">
-        <app-error-summary [items]="errorItems()" />
+        <app-error-summary short [items]="errorItems()" />
 
         <app-form-field label="Nome do remédio" controlId="med-name" [error]="messageOf('name')">
           <input appInput formControlName="name" autocomplete="off" />
@@ -284,6 +307,7 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
           [optional]="true"
           hint="Como está na receita. Exemplo: 50 mg, 1 comprimido"
           controlId="med-dosage"
+          [error]="messageOf('dosage')"
         >
           <input appInput formControlName="dosage" autocomplete="off" />
         </app-form-field>
@@ -356,16 +380,23 @@ export class MedicationsPage {
   private readonly doses = inject(DoseCheckService);
   private readonly meds = inject(MedicationService);
   private readonly toasts = inject(ToastService);
+  private readonly storage = inject(StorageStatusService);
   private readonly location = inject(Location);
   private readonly injector = inject(Injector);
   protected readonly online = inject(OnlineStatusService);
 
   // ===== O dia e a lista =====
 
-  protected readonly slots = computed(() => {
+  private readonly clock = inject(Clock);
+  private readonly today = computed(() => {
     const elderId = this.ctx.elderId();
     return elderId ? this.doses.forElder(elderId, this.ctx.today()) : [];
   });
+  /** O que falta vem primeiro; a ordem fica fixa enquanto a tela está aberta (CXC-005). */
+  private readonly order = freezeDoseOrder(this.today());
+  protected readonly slots = computed(() => this.order(this.today()));
+  /** A primeira linha em atraso leva o âmbar; as outras ficam neutras (CXC-005). */
+  protected readonly lateKey = computed(() => firstLateKey(this.slots(), this.clock.now()));
   protected readonly progress = computed(() => doseProgress(this.slots()));
   private readonly all = computed(() => {
     const elderId = this.ctx.elderId();
@@ -375,6 +406,12 @@ export class MedicationsPage {
   protected readonly inUse = computed(() => this.all().filter((m) => m.active));
   protected readonly paused = computed(() => this.all().filter((m) => !m.active));
   protected readonly showPaused = signal(false);
+  protected readonly showAll = signal(false);
+  /** "Todos os remédios" repete a lista de hoje quando cada remédio em uso já aparece lá: então ela fica recolhida. */
+  protected readonly repeatsToday = computed(() => {
+    const inToday = new Set(this.slots().map((slot) => slot.medicationId));
+    return this.inUse().length > 0 && this.inUse().every((med) => inToday.has(med.id));
+  });
 
   protected describe(med: Medication): string {
     return [med.dosage, med.times.join(', ')].filter((part) => part !== '').join(' · ');
@@ -385,8 +422,11 @@ export class MedicationsPage {
   protected dei(slot: DoseSlot): void {
     try {
       const check = this.doses.mark(slot.medicationId, slot.date, slot.time);
+      // QAC-010: se o navegador não guardou, o aviso não diz só "anotado".
+      const notSaved = this.storage.failing();
       this.toasts.show({
-        message: `Anotado às ${timeOf(check.givenAt)}.`,
+        message: notSaved ? doseNotSavedText(timeOf(check.givenAt)) : `Anotado às ${timeOf(check.givenAt)}.`,
+        ...(notSaved ? { tone: 'attention' as const } : {}),
         durationMs: 8000,
         action: { label: 'Desfazer', run: () => this.undo(slot) },
       });
@@ -470,12 +510,17 @@ export class MedicationsPage {
     if (!this.submitted()) {
       return [] as { field: string; controlId: string; message: string }[];
     }
-    return medicationProblems({ name: this.form.getRawValue().name, times: this.times() }).map((p) =>
+    const raw = this.form.getRawValue();
+    return medicationProblems({ name: raw.name, dosage: raw.dosage, times: this.times() }).map((p) =>
       p === 'name_required'
         ? { field: 'name', controlId: 'med-name', message: 'Informe o nome do remédio.' }
-        : p === 'times_required'
-          ? { field: 'times', controlId: 'med-times', message: 'Escolha pelo menos um horário.' }
-          : { field: 'times', controlId: 'med-other', message: 'Informe uma hora no formato 08:00.' },
+        : p === 'name_too_long'
+          ? { field: 'name', controlId: 'med-name', message: tooLongText(NAME_MAX_CHARS) }
+          : p === 'dosage_too_long'
+            ? { field: 'dosage', controlId: 'med-dosage', message: tooLongText(NAME_MAX_CHARS) }
+            : p === 'times_required'
+              ? { field: 'times', controlId: 'med-times', message: 'Escolha pelo menos um horário.' }
+              : { field: 'times', controlId: 'med-other', message: 'Informe uma hora no formato 08:00.' },
     );
   });
   protected readonly errorItems = computed<ErrorSummaryItem[]>(() =>
@@ -542,7 +587,7 @@ export class MedicationsPage {
     this.submitted.set(true);
     this.failure.set(null);
     const raw = this.form.getRawValue();
-    if (medicationProblems({ name: raw.name, times: this.times() }).length > 0) {
+    if (medicationProblems({ name: raw.name, dosage: raw.dosage, times: this.times() }).length > 0) {
       return;
     }
     const input: MedicationInput = { name: raw.name, dosage: raw.dosage, times: this.times(), active: raw.active };

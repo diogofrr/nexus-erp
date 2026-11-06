@@ -54,18 +54,22 @@ function isFlaggedInvalid(element: Element): boolean {
     role: 'alert',
     '[attr.aria-live]': "announce() ? null : 'off'",
     tabindex: '-1',
-    '[hidden]': 'visibleItems().length === 0',
+    '[hidden]': 'visibleItems().length === 0 || (short() && visibleItems().length === 1)',
   },
   template: `
-    @if (visibleItems().length > 0) {
+    @if (visibleItems().length > 0 && !(short() && visibleItems().length === 1)) {
       <h2><svg appIcon="circle-alert"></svg>{{ title() }}</h2>
-      <ul>
-        @for (item of visibleItems(); track item.controlId) {
-          <li>
-            <a [attr.href]="'#' + item.controlId" (click)="goTo($event, item)">{{ item.message }}</a>
-          </li>
-        }
-      </ul>
+      @if (short()) {
+        <p class="error-summary__short">Eles estão marcados abaixo, junto de cada campo.</p>
+      } @else {
+        <ul>
+          @for (item of visibleItems(); track item.controlId) {
+            <li>
+              <a [attr.href]="'#' + item.controlId" (click)="goTo($event, item)">{{ item.message }}</a>
+            </li>
+          }
+        </ul>
+      }
     }
   `,
 })
@@ -77,6 +81,11 @@ export class ErrorSummaryComponent {
   readonly items = input<readonly ErrorSummaryItem[]>([]);
   /** Leva o foco ao resumo quando ele aparece. */
   readonly autoFocus = input(true, { transform: booleanAttribute });
+  /**
+   * Versão curta, para quem tem pouco tempo (aplicativo do cuidador, CXC-023 e CXC-024): o título diz quantos pontos, sem repetir a
+   * lista que já está junto dos campos; com um ponto só a caixa nem aparece e o foco vai direto ao campo.
+   */
+  readonly short = input(false, { transform: booleanAttribute });
 
   /** Ids dos itens já corrigidos pela pessoa (o campo deixou de estar inválido). */
   private readonly resolved = signal<ReadonlySet<string>>(new Set());
@@ -98,6 +107,10 @@ export class ErrorSummaryComponent {
       const count = this.items().length;
       if (count > 0 && previous === 0 && this.autoFocus()) {
         afterNextRender(() => this.focus(), { injector: this.injector });
+      }
+      // Versão curta com um ponto só: sem caixa, o foco vai ao campo (o texto do erro está nele).
+      if (count === 1 && this.short() && this.autoFocus()) {
+        afterNextRender(() => this.focusField(this.items()[0]), { injector: this.injector });
       }
       previous = count;
     });
@@ -144,6 +157,14 @@ export class ErrorSummaryComponent {
 
   protected goTo(event: Event, item: ErrorSummaryItem): void {
     event.preventDefault();
+    this.focusField(item);
+  }
+
+  /** Leva o foco ao campo do item. */
+  private focusField(item: ErrorSummaryItem | undefined): void {
+    if (!item) {
+      return;
+    }
     const target = this.doc.getElementById(item.controlId);
     // Um grupo (opção única, caixas) não é focável: leva o foco ao primeiro controle dentro dele.
     const focusable = target?.matches('input, select, textarea, button, a[href]')

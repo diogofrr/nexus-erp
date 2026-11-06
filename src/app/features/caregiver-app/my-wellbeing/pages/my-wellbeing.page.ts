@@ -3,9 +3,10 @@ import { RouterLink } from '@angular/router';
 import { ZARIT_BANDS } from '@core/rules/zarit';
 import { IconComponent } from '@shared/ui';
 import { ToastService } from '@shared/ui/overlay';
+import { Clock } from '@core/clock/clock.service';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
+import { CARE_INVITE, CARE_TODAY_TEXT, careTodayHeading } from '../../state/care-note';
 import { ContactDialogService } from '../../state/contact-dialog.service';
-import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
 import { CgMoodComponent, MoodValue, moodLabel } from '../../ui/cg-mood.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
@@ -16,8 +17,6 @@ import {
   ARRANGE_PERIODS,
   BANDS_CLOSING,
   BAND_MEANING,
-  CARE_NOT_YET,
-  CARE_TODAY,
   EMPTY_TEXT,
   EMPTY_TITLE,
   PAUSED_TITLE,
@@ -47,7 +46,6 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
     RouterLink,
     CgPageHeaderComponent,
     CgNoteComponent,
-    CgCardComponent,
     CgMoodComponent,
     CgTrendComponent,
     CgSheetComponent,
@@ -78,7 +76,7 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
       } @else {
         @if (contact() !== 'none') {
           <app-cg-note variant="care" icon="hand-heart">
-            <span data-role="care-note">{{ contact() === 'today' ? careToday : careNotYet }}</span>
+            <span data-role="care-note">{{ careNote() }}</span>
             <button cgNoteActions type="button" class="cg-link-btn" data-role="talk-now" (click)="contactDialog.open()">
               {{ contact() === 'today' ? 'Prefere falar agora?' : 'Falar com a gente agora' }}
             </button>
@@ -89,8 +87,9 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
           <app-cg-note variant="ok" icon="circle-check"><span data-role="arranged">{{ done }}</span></app-cg-note>
         }
 
-        <app-cg-card title="Como você está hoje?" icon="smile">
-          <div data-role="mood">
+        <section class="cg-stack cg-stack--tight" aria-labelledby="well-mood">
+          <h2 class="cg-section__title" id="well-mood">Como você está hoje?</h2>
+          <div class="cg-stack cg-stack--tight" data-role="mood">
             @if (todayMood(); as mood) {
               @if (changing()) {
                 <app-cg-mood [value]="mood.mood" (chosen)="chooseMood($event)" />
@@ -105,11 +104,13 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
               <app-cg-note variant="error"><span data-role="mood-error">{{ moodError() }}</span></app-cg-note>
             }
           </div>
-          <button cgCardFooter type="button" class="cg-link-btn" data-role="week" (click)="open('week')">Ver os últimos 7 dias</button>
-        </app-cg-card>
+          <div>
+            <button type="button" class="cg-link-btn" data-role="week" (click)="open('week')">Ver os últimos 7 dias</button>
+          </div>
+        </section>
 
         <section aria-labelledby="well-timeline" data-role="timeline">
-          <h2 class="cg-section__title" id="well-timeline">Suas conversas de acompanhamento</h2>
+          <h2 class="cg-section__title" id="well-timeline">Suas conversas com a equipe</h2>
           @if (!hasConversations()) {
             <app-cg-note variant="soft" icon="info" [heading]="emptyTitle">
               <span data-role="timeline-empty">{{ emptyText }}</span>
@@ -242,12 +243,11 @@ export class MyWellbeingPage {
   private readonly ctx = inject(CaregiverContextService);
   private readonly toast = inject(ToastService);
   protected readonly contactDialog = inject(ContactDialogService);
+  private readonly clock = inject(Clock);
 
   protected readonly lead = WELLBEING_LEAD;
   protected readonly intro = TIMELINE_INTRO;
   protected readonly privacyLine = PRIVACY_LINE;
-  protected readonly careToday = CARE_TODAY;
-  protected readonly careNotYet = CARE_NOT_YET;
   protected readonly emptyTitle = EMPTY_TITLE;
   protected readonly emptyText = EMPTY_TEXT;
   protected readonly pausedTitle = PAUSED_TITLE;
@@ -268,6 +268,10 @@ export class MyWellbeingPage {
     return `${copy} Você pode pedir uma cópia dos seus dados em Privacidade.`;
   });
   protected readonly contact = this.ctx.staffContact;
+  /** A nota de cuidado em uma frase: "hoje" só no horário comercial (CXC-003); contato que não aconteceu vira convite. */
+  protected readonly careNote = computed(() =>
+    this.contact() === 'today' ? `${careTodayHeading(this.clock.now())} ${CARE_TODAY_TEXT}` : CARE_INVITE,
+  );
   protected readonly hasConversations = this.view.hasConversations;
   protected readonly timeline = this.view.timeline;
   protected readonly lastText = this.view.lastText;
@@ -322,7 +326,6 @@ export class MyWellbeingPage {
     }
     this.moodError.set('');
     this.changing.set(false);
-    this.toast.show({ message: `Anotado para hoje: ${moodLabel(mood)}.`, durationMs: 8000 });
   }
 
   // ===== Autorização =====
@@ -358,7 +361,6 @@ export class MyWellbeingPage {
     this.draft.set('');
     this.close();
     this.reviewDone.set(result.text);
-    this.toast.show({ message: result.text, durationMs: 8000 });
   }
 
   // ===== Combinar um horário =====
@@ -378,6 +380,5 @@ export class MyWellbeingPage {
     this.period.set(null);
     this.close();
     this.arranged.set(result.text);
-    this.toast.show({ message: result.text, durationMs: 8000 });
   }
 }

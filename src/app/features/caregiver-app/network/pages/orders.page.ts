@@ -22,7 +22,6 @@ import { EmptyStateComponent } from '../../../../shared/ui/display/empty-state.c
 import { IconComponent } from '../../../../shared/ui/display/icon.component';
 import { FormFieldComponent } from '../../../../shared/ui/forms/form-field.component';
 import { NxInputDirective } from '../../../../shared/ui/forms/input.directive';
-import { ToastService } from '../../../../shared/ui/overlay/toast.service';
 import { PageChromeService } from '../../../../layout/state/page-chrome.service';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { dayMonth, formatDayShort, relativeDateTime } from '../../state/day-format';
@@ -251,7 +250,6 @@ export class OrdersPage {
   private readonly route = inject(ActivatedRoute);
   private readonly network = inject(CaregiverNetworkService);
   private readonly clock = inject(Clock);
-  private readonly toast = inject(ToastService);
   private readonly chrome = inject(PageChromeService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
@@ -441,7 +439,6 @@ export class OrdersPage {
     this.mode.set('details');
     const message = 'Pedido cancelado. Você pode pedir de novo quando quiser.';
     this.banner.set({ variant: 'soft', text: message });
-    this.toast.show({ message, durationMs: 8000 });
   }
 
   protected startEvaluate(o: OrderView): void {
@@ -481,7 +478,6 @@ export class OrdersPage {
     const until = dayMonth(result.value.editableUntil);
     const message = `${correcting ? 'Avaliação corrigida' : 'Avaliação enviada'}. Você pode corrigir até ${until}.`;
     this.banner.set({ variant: 'ok', text: message });
-    this.toast.show({ message, durationMs: 8000 });
     this.chrome.focusHeading();
   }
 

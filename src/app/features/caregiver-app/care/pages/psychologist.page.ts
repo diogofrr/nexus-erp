@@ -15,8 +15,8 @@ import { PageChromeService } from '@layout/state/page-chrome.service';
 import { ToastService } from '@shared/ui/overlay';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { ContactDialogService } from '../../state/contact-dialog.service';
+import { HistoryLayersService } from '../../state/history-layers.service';
 import { FORMAT_LABEL } from '../../state/format-labels';
-import { withArticle } from '../../state/people-format';
 import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
 import { CgEmergencyNoteComponent } from '../../ui/cg-emergency-note.component';
@@ -25,6 +25,7 @@ import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
 import { CgRowComponent } from '../../ui/cg-row.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import {
+  BOOKING_SENT,
   CANCEL_FREE,
   CANCEL_LATE,
   FORMAT_NOTICE,
@@ -102,14 +103,14 @@ type Mode = 'home' | 'format' | 'slots';
         @case ('home') {
           @if (confirmation(); as note) {
             <app-cg-note variant="ok" icon="circle-check">
-              <span data-role="confirmation">{{ note.text }}</span>
-              <span cgNoteActions class="conv__status" data-role="confirmation-status">{{ note.status }}</span>
+              <span data-role="confirmation">{{ note.text }}</span>&ngsp;
               <a cgNoteActions class="cg-link-btn" routerLink="/cuidador/rotina/agenda">Ver na agenda</a>
             </app-cg-note>
           }
 
           @if (conversations.all().length === 0) {
             <app-empty-state
+              [headingLevel]="2"
               title="Você ainda não marcou nenhuma conversa"
               text="Escolha o formato e o horário. Leva poucos minutos."
             >
@@ -169,7 +170,7 @@ type Mode = 'home' | 'format' | 'slots';
 
         @case ('format') {
           <div>
-            <button type="button" class="cg-link-btn" (click)="backToHome()">
+            <button type="button" class="cg-link-btn" (click)="goBack()">
               <svg appIcon="arrow-left" size="sm"></svg>Voltar
             </button>
           </div>
@@ -186,7 +187,7 @@ type Mode = 'home' | 'format' | 'slots';
 
         @case ('slots') {
           <div>
-            <button type="button" class="cg-link-btn" (click)="backFromSlots()">
+            <button type="button" class="cg-link-btn" (click)="goBack()">
               <svg appIcon="arrow-left" size="sm"></svg>Voltar
             </button>
           </div>
@@ -297,7 +298,9 @@ type Mode = 'home' | 'format' | 'slots';
         </div>
       }
       <ng-container cgSheetActions>
-        <button type="button" class="btn" data-role="reschedule-instead" (click)="startReschedule()">Remarcar em vez de cancelar</button>
+        @if (!detail()?.late) {
+          <button type="button" class="btn" data-role="reschedule-instead" (click)="startReschedule()">Remarcar em vez de cancelar</button>
+        }
         <button type="button" class="btn btn--danger-quiet" data-role="confirm-cancel" (click)="confirmCancel()">Cancelar a conversa</button>
         <button type="button" class="cg-link-btn" (click)="cancelOpen.set(false)">Voltar</button>
       </ng-container>
@@ -312,6 +315,7 @@ export class PsychologistPage {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
   private readonly chrome = inject(PageChromeService);
+  private readonly layers = inject(HistoryLayersService);
 
   protected readonly formats = FORMAT_OPTIONS;
   protected readonly kinds = KIND_OPTIONS;
@@ -336,7 +340,7 @@ export class PsychologistPage {
 
   /** A conversa que está sendo remarcada (o formato e o tipo ficam como estavam). */
   protected readonly reschedulingId = signal<string | null>(null);
-  protected readonly confirmation = signal<{ text: string; status: string } | null>(null);
+  protected readonly confirmation = signal<{ text: string } | null>(null);
 
   protected readonly price = this.conversations.price;
   protected readonly planName = this.ctx.planName;
@@ -362,7 +366,8 @@ export class PsychologistPage {
   });
   protected readonly placeText = computed(() => {
     if (this.format() === 'in_person_coworking') {
-      const room = this.conversations.room();
+      // A sala é a que está livre no horário escolhido (duas conversas nunca caem na mesma sala).
+      const room = this.conversations.roomForSlot(this.picked()?.slotId) ?? this.conversations.room();
       return room ? `Local: ${room.name}, ${room.address}.` : null;
     }
     if (this.format() === 'in_person_home') {
@@ -383,6 +388,8 @@ export class PsychologistPage {
     this.reschedulingId.set(null);
     this.format.set(null);
     this.mode.set('format');
+    // O voltar do aparelho desfaz cada passo, um por vez (CXC-013).
+    this.layers.open('conv-format', () => this.backToHome());
     this.focusStep();
   }
 
@@ -390,16 +397,25 @@ export class PsychologistPage {
     this.format.set(format);
     this.addressError.set(null);
     this.mode.set('slots');
+    this.layers.open('conv-slots', () => this.backFromSlots());
     this.focusStep();
+  }
+
+  /** O botão "Voltar" dos passos e o voltar do aparelho seguem o mesmo caminho. */
+  protected goBack(): void {
+    this.layers.goBack(() => (this.mode() === 'slots' ? this.backFromSlots() : this.backToHome()));
   }
 
   protected backToHome(): void {
     this.reschedulingId.set(null);
     this.mode.set('home');
+    this.layers.forget('conv-slots');
+    this.layers.forget('conv-format');
     this.focusTitle();
   }
 
   protected backFromSlots(): void {
+    this.layers.forget('conv-slots');
     if (this.reschedulingId()) {
       this.backToHome();
       return;
@@ -448,16 +464,13 @@ export class PsychologistPage {
     }
     this.sheetError.set('');
     this.summaryOpen.set(false);
-    const created = this.conversations.all().find((c) => c.id === result.session.id);
-    const when = created ? `${created.dayText}, às ${created.time}` : slot.time;
-    const text = current
-      ? `Conversa remarcada para ${when}, com ${withArticle(slot.psychologistShort)}.`
-      : `Conversa marcada: ${when}, com ${withArticle(slot.psychologistShort)}.`;
-    this.confirmation.set({ text, status: created?.statusText ?? 'Aguardando confirmação do psicólogo' });
-    this.toast.show({ message: text, durationMs: 8000 });
+    // Um aviso só, a faixa da tela (CXC-007 e CXC-017): o cartão "Sua próxima conversa" mostra o dia e a situação.
+    this.confirmation.set({ text: BOOKING_SENT });
     this.reschedulingId.set(null);
     this.picked.set(null);
     this.mode.set('home');
+    // O fluxo acabou: as entradas de histórico dos passos saem juntas.
+    this.layers.clear();
     this.focusTitle();
   }
 
@@ -482,6 +495,7 @@ export class PsychologistPage {
     this.address.set(current.session.homeAddress ?? '');
     this.addressError.set(null);
     this.mode.set('slots');
+    this.layers.open('conv-slots', () => this.backFromSlots());
     this.focusStep();
   }
 
@@ -505,7 +519,7 @@ export class PsychologistPage {
     this.confirmation.set(null);
     this.toast.show({
       message: current.late
-        ? 'Conversa cancelada. O horário ficou registrado como falta.'
+        ? 'Conversa cancelada. Ela conta como perdida. Não há cobrança.'
         : 'Conversa cancelada. O horário foi liberado.',
       durationMs: 8000,
     });

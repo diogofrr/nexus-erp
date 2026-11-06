@@ -19,6 +19,9 @@ import { caregiverCode } from './pseudonym';
 /** Data neutra no lugar do nascimento eliminado (o modelo exige uma data; a tela não a mostra). */
 export const ERASED_DATE: ISODate = '1900-01-01';
 
+/** Texto que ocupa o lugar de um texto livre eliminado (o registro fica, o texto sai: o modelo exige um texto). */
+export const ERASED_TEXT = 'Texto eliminado a pedido do titular.';
+
 /** Texto padrão do bloqueio por retenção (AC-M12-04). */
 export const RETENTION_BLOCK_NOTE = `Retido por registro documental por ${DOCUMENTARY_RETENTION_YEARS} anos; motivo: ${DOCUMENTARY_RETENTION_BASIS}.`;
 
@@ -91,8 +94,9 @@ export interface RetentionSimulation {
  * Retenção, anonimização e eliminação (RN-LGPD-20, 23, 24; M12; LP-19).
  *
  * - Eliminação: apaga o que não é registro documental (cadastro de contato, mensagens, medicamentos,
- *   compromissos, bem-estar) e BLOQUEIA o que é (aplicações e alertas da Zarit, ARBE, anotações de
- *   sessão, ocorrências) por 5 anos (a confirmar), informando motivo e prazo.
+ *   compromissos, bem-estar e o texto livre do titular: necessidade do pedido de serviço, texto do pedido de
+ *   revisão, comentário da avaliação e endereço de casa da conversa) e BLOQUEIA o que é (aplicações e alertas
+ *   da Zarit, ARBE, anotações de sessão, ocorrências) por 5 anos (a confirmar), informando motivo e prazo.
  * - Anonimização: substitui identificadores por código e mantém os agregados. Irreversível.
  */
 @Injectable({ providedIn: 'root' })
@@ -137,6 +141,10 @@ export class RetentionService {
       arbe: this.db.arbeAlerts.count((a) => a.caregiverId === caregiverId),
       notes: this.db.sessionNotes.count((n) => sessions.includes(n.sessionId)),
       occurrences: this.db.occurrences.count((o) => o.caregiverId === caregiverId),
+      requestTexts: this.db.serviceRequests.count((r) => r.caregiverId === caregiverId && r.need !== ERASED_TEXT),
+      reviewTexts: this.db.reviewRequests.count((r) => r.caregiverId === caregiverId && r.text !== ERASED_TEXT),
+      evaluationComments: this.db.providerEvaluations.count((e) => e.caregiverId === caregiverId && !!e.comment),
+      homeAddresses: this.db.careSessions.count((s) => s.caregiverId === caregiverId && !!s.homeAddress),
     };
     const willErase = [
       {
@@ -152,6 +160,11 @@ export class RetentionService {
       { key: 'medications', label: 'Medicamentos', count: count.medications },
       { key: 'appointments', label: 'Compromissos de cuidado', count: count.appointments },
       { key: 'doses', label: 'Marcações de remédios dados', count: count.doses },
+      // Texto livre que o titular escreveu: o registro do pedido, da avaliação e da conversa fica, o texto sai (QAC-008).
+      { key: 'requestTexts', label: 'Texto dos pedidos de serviço à rede', count: count.requestTexts },
+      { key: 'reviewTexts', label: 'Texto dos pedidos de revisão', count: count.reviewTexts },
+      { key: 'evaluationComments', label: 'Comentários das avaliações de profissionais', count: count.evaluationComments },
+      { key: 'homeAddresses', label: 'Endereço de casa das conversas com o psicólogo', count: count.homeAddresses },
       {
         key: 'pendingScale',
         label: 'Aplicações da escala ainda não feitas (agendadas)',
@@ -197,6 +210,22 @@ export class RetentionService {
       (z) => z.caregiverId === caregiverId && z.status !== 'completed',
     );
     erased += this.db.appUsage.removeWhere((u) => u.caregiverId === caregiverId);
+    // Texto livre do titular (RN-LGPD-24, QAC-008): o pedido, a avaliação e a conversa ficam como registro (quem pediu, a quem,
+    // quando, as notas), mas o que a pessoa escreveu e o endereço de casa saem.
+    erased += this.db.serviceRequests.updateWhere(
+      (r) => r.caregiverId === caregiverId && r.need !== ERASED_TEXT,
+      { need: ERASED_TEXT },
+    );
+    erased += this.db.reviewRequests.updateWhere(
+      (r) => r.caregiverId === caregiverId && r.text !== ERASED_TEXT,
+      { text: ERASED_TEXT },
+    );
+    erased += this.db.providerEvaluations.updateWhere((e) => e.caregiverId === caregiverId && !!e.comment, {
+      comment: undefined,
+    });
+    erased += this.db.careSessions.updateWhere((s) => s.caregiverId === caregiverId && !!s.homeAddress, {
+      homeAddress: undefined,
+    });
     if (elder) {
       const medicationIds = new Set(
         this.db.medications.query((m) => m.elderId === elder.id).map((m) => m.id),

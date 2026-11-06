@@ -2,9 +2,10 @@
  * Planos, benefícios, Cartão Nexus e valores (RN-PLN-01 a 22, RN-CRT-*, A.1, A.2).
  * Preços em centavos. Os benefícios são progressivos: cada plano pago inclui o do anterior.
  */
+import { addMonths, compareDates } from '../clock/date-utils';
 import { ActivityKind } from '../models/groups';
 import { BenefitKey, PaidPlanId, Plan, PlanId } from '../models/plans';
-import { Cents } from '../models/primitives';
+import { Cents, ISODate } from '../models/primitives';
 import { roundHalfUp } from './numbers';
 
 export const PLAN_ORDER: readonly PlanId[] = ['livre', 'essencial', 'cuida', 'sustenta'];
@@ -268,6 +269,23 @@ export function sessionPriceCents(baseCents: Cents, discountPercent: number): Ce
 /** Desconto do Cartão Nexus sobre um valor (R$ 100,00 a 10% = R$ 10,00, AC-M04-07). */
 export function cardDiscountCents(amountCents: Cents, discountPercent: number): Cents {
   return roundHalfUp((amountCents * discountPercent) / 100, 0);
+}
+
+/**
+ * Próxima data de cobrança de uma assinatura paga, SEMPRE depois de `after` (RN-PLN-14, QAC-004). O dia de cobrança é o
+ * do início, cortado só nos meses curtos: quem assinou em 31/01 paga em 28/02 e volta a pagar em 31/03, 30/04... O ciclo
+ * é calculado do início (`addMonths(startedAt, n)`) e nunca da data anterior já cortada, senão o dia escorrega para o 28
+ * e não volta mais.
+ */
+export function nextBillingDate(startedAt: ISODate, after: ISODate): ISODate {
+  let months = 1;
+  let next = addMonths(startedAt, months);
+  // O limite protege de um início absurdamente antigo; 1200 meses são 100 anos de assinatura.
+  while (compareDates(next, after) <= 0 && months < 1200) {
+    months += 1;
+    next = addMonths(startedAt, months);
+  }
+  return next;
 }
 
 /** Número do cartão fictício `NX-0000-0000` (RN-CRT-12) a partir de um sequencial. */

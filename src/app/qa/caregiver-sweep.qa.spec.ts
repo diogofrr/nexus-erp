@@ -270,7 +270,7 @@ describe('QAC varredura: acessibilidade por código', () => {
 
   // QAC-009: o cartão do kit (`app-cg-card`) e o bloqueio por plano desenham o título sempre como h3. Em oito telas não há
   // h2 antes, e quem navega por títulos (leitor de tela) escuta h1 e logo h3.
-  it.fails('QAC-009: a hierarquia de títulos não pula nível (h1 seguido de h3) em nenhuma tela', async () => {
+  it('QAC-009: a hierarquia de títulos não pula nível (h1 seguido de h3) em nenhuma tela', async () => {
     const found: string[] = [];
     await sweepAll((p) => {
       const levels = Array.from(p.root.querySelectorAll('main h1, main h2, main h3, main h4')).map((h) => Number(h.tagName[1]));

@@ -135,7 +135,7 @@ interface UsageRow {
               <p class="nx-line" data-role="grand-total">{{ total }}</p>
             }
             <ul class="cg-list" aria-label="Usos do cartão">
-              @for (u of usages(); track u.id) {
+              @for (u of shownUsages(); track u.id) {
                 <li>
                   <div class="cg-row" data-role="usage">
                     <span class="cg-row__icon"><svg appIcon="credit-card" size="lg"></svg></span>
@@ -147,6 +147,13 @@ interface UsageRow {
                 </li>
               }
             </ul>
+            @if (usages().length > recentUsages) {
+              <div>
+                <button type="button" class="cg-link-btn" data-role="all-usages" [attr.aria-expanded]="showAllUsages()" (click)="showAllUsages.set(!showAllUsages())">
+                  {{ showAllUsages() ? 'Ver menos' : 'Ver todas (' + usages().length + ')' }}
+                </button>
+              </div>
+            }
           }
         </section>
       </div>
@@ -217,6 +224,11 @@ export class CardPage {
       discount: formatMoney(u.discountCents),
     })),
   );
+
+  /** As 3 últimas compras e o total ficam à vista; o resto atrás de "Ver todas" (CXC-026). */
+  protected readonly recentUsages = 3;
+  protected readonly showAllUsages = signal(false);
+  protected readonly shownUsages = computed(() => (this.showAllUsages() ? this.usages() : this.usages().slice(0, this.recentUsages)));
 
   private readonly savings = computed(() => cardSavings(this.rawUsages(), this.clock.today()));
 

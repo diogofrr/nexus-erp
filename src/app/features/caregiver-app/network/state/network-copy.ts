@@ -47,6 +47,11 @@ export function ratingText(view: { average: number | null; evaluationCount: numb
     : `Nota ${formatNumber(view.average, 1)} (${view.evaluationCount} avaliações)`;
 }
 
+/** A nota em poucas palavras, para a tabela de comparação: "4,8 (12 avaliações)" ou "Ainda sem nota". */
+export function ratingShort(view: { average: number | null; evaluationCount: number }): string {
+  return view.average === null ? 'Ainda sem nota' : `${formatNumber(view.average, 1)} (${view.evaluationCount} avaliações)`;
+}
+
 export function modalityLabel(modality: ServiceRequest['modality']): string {
   return modality === 'home' ? 'Em casa' : 'No local do profissional';
 }

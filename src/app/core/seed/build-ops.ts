@@ -112,7 +112,7 @@ export function buildGroups(s: SeedState): void {
   activity(
     3,
     'group_therapy',
-    'Luto ambíguo, em grupo',
+    'Lidar com as perdas, em grupo',
     'emotional_health',
     psy('leticia'),
     'in_person',

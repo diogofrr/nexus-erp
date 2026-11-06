@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
+import { CaregiverSessionService } from '../auth/caregiver-session.service';
 import { ConsentService } from '../privacy/consent.service';
 import { configureCoreTest } from '../testing/test-helpers';
 import {
@@ -89,6 +90,27 @@ describe('Cadastro de cuidador, miolo do núcleo (RN-USR-02 a 04, 10, 14, 18)', 
     const draft = base();
     delete draft.registeredByUserId;
     expect(() => registration.register(draft)).toThrow('Informe quem está registrando o consentimento.');
+  });
+
+  it('datas que existem, nascimento fora do futuro e textos de até 120 caracteres: nada é gravado se falhar (QAC-015)', () => {
+    const { db, registration } = setup();
+    const before = db.caregivers.size();
+    expect(() => registration.register(base({ birthDate: '1982-02-30' }))).toThrow('Escolha uma data que exista.');
+    expect(() => registration.register(base({ elder: { fullName: 'Helena Exemplo', birthDate: '2026-02-30', dependency: 'partial' } }))).toThrow('Escolha uma data que exista.');
+    expect(() => registration.register(base({ birthDate: '2030-01-01' }))).toThrow('A data de nascimento não pode ser no futuro.');
+    expect(() => registration.register(base({ elder: { fullName: 'Helena Exemplo', birthDate: '2030-01-01', dependency: 'partial' } }))).toThrow('A data de nascimento não pode ser no futuro.');
+    expect(() => registration.register(base({ fullName: 'N'.repeat(121) }))).toThrow('Escreva até 120 caracteres.');
+    expect(() => registration.register(base({ city: 'C'.repeat(121) }))).toThrow('Escreva até 120 caracteres.');
+    expect(db.caregivers.size()).toBe(before);
+    expect(registration.register(base({ fullName: 'N'.repeat(120) })).caregiver.fullName).toHaveLength(120);
+  });
+
+  it('quem está dentro da conta de outro cuidador não cria um cadastro por baixo (QAC-001): o erro vem antes de gravar qualquer coisa', () => {
+    const { db, registration } = setup();
+    TestBed.inject(CaregiverSessionService).signIn('cg_0001');
+    const before = db.caregivers.size();
+    expect(() => registration.register(base())).toThrow('Saia da sua conta para criar outro cadastro.');
+    expect(db.caregivers.size()).toBe(before);
   });
 
   it('o plano Livre não cria Cartão Nexus', () => {

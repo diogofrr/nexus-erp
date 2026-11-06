@@ -81,6 +81,11 @@ const text = (el: Element | null | undefined): string =>
       As rodas de conversa abertas são para todos.
     </app-cg-plan-lock>
     <app-cg-plan-lock feature="agenda_reminders" description="não deve aparecer" />
+    <section data-role="nested">
+      <h2>Seção com título</h2>
+      <app-cg-card [headingLevel]="3" title="Cartão dentro da seção">Texto.</app-cg-card>
+      <app-cg-plan-lock [headingLevel]="3" feature="groups" description="Dentro da seção." />
+    </section>
     <app-cg-rating-pair [(quality)]="quality" [(punctuality)]="punctuality" />
     <app-cg-trend [items]="trend" />
     <app-cg-plan-tag plan="sustenta" />
@@ -156,17 +161,31 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
     expect(text(back)).toBe('Voltar para Hoje');
   });
 
-  it('cartão: seção com título h3 ligado por aria-labelledby; com link, o cartão inteiro é um único <a>', () => {
+  it('cartão: seção com título h2 (padrão) ligado por aria-labelledby; com link, o cartão inteiro é um único <a>', () => {
     const f = mountKit('cg_0001');
     const sections = all(f, 'section.cg-card');
     const care = sections.find((s) => text(s).includes('Próximo compromisso'));
     expect(care?.classList.contains('cg-card--care')).toBe(true);
     const titleId = care?.getAttribute('aria-labelledby') ?? '';
-    expect(root(f).querySelector(`#${titleId}`)?.tagName).toBe('H3');
+    expect(root(f).querySelector(`#${titleId}`)?.tagName).toBe('H2');
     const link = all(f, 'a.cg-card--link')[0];
     expect(link?.getAttribute('href')).toBe('/cuidador/cuidar-de-mim/como-estou');
     expect(link?.querySelectorAll('a, button')).toHaveLength(0);
     expect(text(link)).toContain('Anote como você está.');
+  });
+
+  it('QAC-009: dentro de uma seção com h2, o cartão e o bloqueio de plano usam h3 (headingLevel), sem pular de h1 para h3', () => {
+    const f = mountKit('cg_0002');
+    const nested = root(f).querySelector('[data-role="nested"]');
+    expect(nested?.querySelector('app-cg-card .cg-card__title')?.tagName).toBe('H3');
+    expect(nested?.querySelector('app-cg-plan-lock .cg-card__title')?.tagName).toBe('H3');
+    // Fora da seção o padrão é h2: nenhum h3 solto antes de um h2.
+    const levels = all(f, 'h1, h2, h3').map((h) => Number(h.tagName.slice(1)));
+    levels.forEach((level, index) => {
+      if (index > 0) {
+        expect(level - (levels[index - 1] as number)).toBeLessThanOrEqual(1);
+      }
+    });
   });
 
   it('aviso calmo: ícone e texto; só o erro é role=alert', () => {
@@ -243,7 +262,8 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
     expect(doses).toHaveLength(3);
     // 08:00 passou do horário.
     expect(doses[0]?.classList.contains('is-late')).toBe(true);
-    expect(text(doses[0]?.querySelector('.cg-dose__state--late'))).toBe('Passou do horário (08:00)');
+    expect(text(doses[0]?.querySelector('.cg-dose__state--late'))).toBe('Ainda não anotado');
+    expect(text(doses[0])).not.toMatch(/passou/i);
     expect(doses[0]?.querySelector('button')?.classList.contains('btn--primary')).toBe(true);
     expect(doses[0]?.querySelector('button')?.getAttribute('aria-label')).toBe('Dei o Losartana das 08:00');
     // 12:00 dada.
@@ -251,6 +271,10 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
     expect(text(doses[1]?.querySelector('.cg-dose__state--ok'))).toBe('Dado às 12:08');
     const undo = doses[1]?.querySelector('button');
     expect(text(undo)).toBe('Desfazer');
+    // CXC-008: o Desfazer é um link pequeno dentro do texto, longe do lugar do Dei (que é o botão da direita).
+    expect(undo?.classList.contains('cg-link-btn')).toBe(true);
+    expect(undo?.closest('.cg-dose__text')).not.toBeNull();
+    expect(doses[1]?.querySelector('.cg-dose__action')).toBeNull();
     expect(undo?.getAttribute('aria-label')).toBe('Desfazer: Losartana das 12:00 dado às 12:08');
     // 20:00 a dar: botão secundário.
     expect(doses[2]?.querySelector('button')?.classList.contains('btn--primary')).toBe(false);
@@ -262,6 +286,38 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
     expect(f.componentInstance.undone()).toEqual(['12:00']);
   });
 
+  it('CXC-008: um toque em Desfazer até 1 s depois do Dei é ignorado; depois disso, desfaz', () => {
+    const f = mountKit('cg_0001');
+    const host = f.componentInstance;
+    const slot = host.slots()[2] as DoseSlot;
+    // A dose das 20:00 ainda é "a dar"; a tela a marca como dada (o componente guarda o instante do toque).
+    const dose = all(f, '.cg-dose')[2];
+    click(dose?.querySelector('button'));
+    expect(host.dei()).toEqual(['20:00']);
+    host.slots.set(host.slots().map((item) => (item.key === slot.key ? { ...item, given: true, givenAt: '2026-11-04T12:01:00-03:00' } : item)));
+    f.detectChanges();
+    const undo = all(f, '.cg-dose')[2]?.querySelector('button.cg-dose__undo');
+    expect(undo).not.toBeNull();
+    click(undo);
+    expect(host.undone()).toEqual([]);
+    const realNow = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 1500);
+    click(undo);
+    realNow.mockRestore();
+    expect(host.undone()).toEqual(['20:00']);
+  });
+
+  it('CXC-005: com quietLate a dose que passou do horário fica neutra, sem o âmbar', () => {
+    const f = mountKit('cg_0001');
+    const quiet = TestBed.createComponent(CgDoseComponent);
+    quiet.componentRef.setInput('slot', f.componentInstance.slots()[0]);
+    quiet.componentRef.setInput('quietLate', true);
+    quiet.detectChanges();
+    const row = (quiet.nativeElement as HTMLElement).querySelector('.cg-dose');
+    expect(row?.classList.contains('is-late')).toBe(false);
+    expect((quiet.nativeElement as HTMLElement).querySelector('.cg-dose__state--late')).toBeNull();
+    expect(text(row?.querySelector('.cg-dose__state'))).toBe('Ainda não anotado');
+  });
+
   it('dose: até 30 minutos antes o Dei já é primário', () => {
     const f = mountKit('cg_0001', '19:40');
     const doses = all(f, '.cg-dose');
@@ -271,10 +327,10 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
 
   it('bloqueio por plano: só aparece quando o plano não libera, diz o plano e o plano atual, sem preço nem "assine"', () => {
     const essencial = mountKit('cg_0002');
-    const locks = all(essencial, '.cg-plan-lock');
+    const locks = all(essencial, '.cg-plan-lock').filter((el) => el.closest('[data-role="nested"]') === null);
     expect(locks).toHaveLength(1);
     const lock = locks[0];
-    expect(text(lock?.querySelector('h3'))).toBe('Disponível no plano Cuida');
+    expect(text(lock?.querySelector('h2'))).toBe('Disponível no plano Cuida');
     expect(text(lock)).toContain('Grupos e capacitações fazem parte do plano Cuida. Seu plano agora é o Essencial.');
     expect(text(lock)).toContain('As rodas de conversa abertas são para todos.');
     expect(lock?.querySelector('a.cg-link-btn')?.getAttribute('href')).toBe('/cuidador/mais/plano');
@@ -311,7 +367,7 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
   it('evolução: lista do mais recente ao mais antigo, faixa por extenso, pontos só em legenda e a etiqueta da última', () => {
     const f = mountKit('cg_0001');
     const items = all(f, '.cg-trend__item');
-    expect(root(f).querySelector('ol.cg-trend')?.getAttribute('aria-label')).toBe('Suas conversas de acompanhamento');
+    expect(root(f).querySelector('ol.cg-trend')?.getAttribute('aria-label')).toBe('Suas conversas com a equipe');
     expect(items).toHaveLength(2);
     expect(text(items[0]?.querySelector('.cg-trend__band'))).toBe('Sobrecarga severa');
     expect(text(items[0]?.querySelector('.cg-trend__score'))).toBe('63 pontos');
@@ -326,6 +382,17 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
     expect(items[0]?.getAttribute('aria-label')).toBe('04/11, sobrecarga severa, 63 pontos, última conversa');
     expect(items[1]?.getAttribute('aria-label')).toBe('10/08, sobrecarga moderada a severa, 48 pontos');
     expect(trendItemLabel({ id: 'x', dateLabel: '01/02', bandLabel: 'Sobrecarga moderada', band: 2 })).toBe('01/02, sobrecarga moderada');
+    // CXC-004: com a frase da faixa, ela vem primeiro e o nome técnico e os pontos seguem como legenda.
+    expect(
+      trendItemLabel({
+        id: 'y',
+        dateLabel: '01/02',
+        bandLabel: 'Sobrecarga severa',
+        meaning: 'O cuidado está pesando muito',
+        band: 4,
+        scoreText: '63 pontos',
+      }),
+    ).toBe('01/02, o cuidado está pesando muito, sobrecarga severa, 63 pontos');
   });
 
   it('etiqueta de plano: ponto e nome', () => {
@@ -382,6 +449,37 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
     trigger.remove();
   });
 
+  it('CXC-013: o voltar do aparelho fecha a folha (e não sai da tela); ao fechar pelo botão a entrada de histórico é retirada', async () => {
+    const f = mountKit('cg_0001');
+    const dialog = root(f).querySelector<HTMLDialogElement>('dialog.cg-sheet');
+    const push = vi.spyOn(window.history, 'pushState');
+    const go = vi.spyOn(window.history, 'go');
+    f.componentInstance.sheetOpen.set(true);
+    f.detectChanges();
+    await f.whenStable();
+    expect(dialog?.hasAttribute('open')).toBe(true);
+    // Uma entrada de histórico por folha aberta.
+    expect(push).toHaveBeenCalledTimes(1);
+    // O botão voltar do aparelho dispara o popstate: a folha fecha.
+    window.history.back();
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    f.detectChanges();
+    await f.whenStable();
+    expect(f.componentInstance.sheetOpen()).toBe(false);
+    expect(dialog?.hasAttribute('open')).toBe(false);
+    // Fechar pelo botão retira a entrada (o histórico não cresce) e não fecha nada duas vezes.
+    f.componentInstance.sheetOpen.set(true);
+    f.detectChanges();
+    await f.whenStable();
+    expect(push).toHaveBeenCalledTimes(2);
+    click(root(f).querySelector('[data-role="back"]'));
+    f.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    expect(go).toHaveBeenCalledWith(-1);
+    expect(f.componentInstance.sheetOpen()).toBe(false);
+    vi.restoreAllMocks();
+  });
+
   it('a barra de navegação tem os 5 destinos fixos, nesta ordem', () => {
     expect(CG_NAV_ITEMS.map((i) => `${i.label}:${i.path}`)).toEqual([
       'Hoje:/cuidador/hoje',
@@ -410,18 +508,27 @@ describe('Diálogo "Como falar com a gente" (UX A.2.16)', () => {
     Reflect.deleteProperty(window.navigator, 'clipboard');
   });
 
-  it('abre com 4 canais, o canal preferido primeiro e com a etiqueta (João prefere telefone)', async () => {
+  it('CXC-016: à vista só o canal preferido e o telefone; os outros atrás de "Mais jeitos" (João prefere telefone)', async () => {
     app = await bootCaregiverApp('cg_0003', { url: '/cuidador/hoje' });
     expect(q('dialog.cg-sheet')?.hasAttribute('open')).toBe(false);
     await open();
     expect(q('dialog.cg-sheet')?.hasAttribute('open')).toBe(true);
     expect(text(q('.cg-sheet__title'))).toBe('Como falar com a gente');
+    // O telefone é o canal preferido dele: só ele fica à vista; os outros três ficam atrás de "Mais jeitos".
+    expect(all('.cg-contact__name').map((n) => text(n).replace(' Seu canal preferido', ''))).toEqual(['Telefone']);
+    const more = q('[data-role="more-ways"]');
+    expect(text(more)).toBe('Mais jeitos');
+    expect(more?.getAttribute('aria-expanded')).toBe('false');
+    click(more);
+    await settleCaregiver(app.fixture);
     expect(all('.cg-contact__name').map((n) => text(n).replace(' Seu canal preferido', ''))).toEqual([
       'Telefone',
       'WhatsApp',
       'Mensagem no aplicativo',
       'E-mail',
     ]);
+    // O e-mail tem a classe que o deixa menor e sem quebrar no meio.
+    expect(q('[data-role="value-email"]')?.classList.contains('cg-contact__value--email')).toBe(true);
     expect(text(all('.cg-contact__name')[0])).toContain('Seu canal preferido');
     expect(all('.cg-contact__tag')).toHaveLength(1);
     expect(text(q('[data-role="value-phone"]'))).toBe('(34) 90000-0000');
@@ -451,6 +558,9 @@ describe('Diálogo "Como falar com a gente" (UX A.2.16)', () => {
     click(copy);
     await settleCaregiver(app.fixture);
     expect(text(q('.cg-contact__status'))).toBe('Não foi possível copiar. Segure sobre o número e escolha Copiar.');
+    // CXC-016: a falha fica ao lado do botão tocado, em cor de aviso; o sucesso, em verde.
+    expect(q('.cg-contact__status')?.classList.contains('cg-contact__status--warn')).toBe(true);
+    expect(q('.cg-contact__status')?.closest('.cg-contact__item')?.querySelector('.cg-contact__action')).toBe(copy);
     // O número fica selecionado para a pessoa segurar e copiar à mão (AC-CG-161).
     expect(window.getSelection()?.toString().trim()).toBe('(34) 90000-0000');
   });

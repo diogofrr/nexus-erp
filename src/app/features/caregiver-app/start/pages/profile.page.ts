@@ -90,11 +90,18 @@ const chosen =
     }
     .profile-hours {
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       gap: 0.75rem;
     }
-    .profile-hours app-form-field {
-      flex: 1 1 8rem;
+    .profile-hours input {
+      flex: 1 1 6rem;
+      min-width: 0;
+    }
+    .profile-cpf {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0 0.75rem;
     }
     .profile-hours .btn {
       min-width: var(--cg-target-lg);
@@ -123,7 +130,13 @@ const chosen =
           <dt>Nascimento</dt>
           <dd>{{ date(caregiver()?.birthDate) }}</dd>
           <dt>CPF</dt>
-          <dd>{{ caregiver()?.cpf }}</dd>
+          <dd class="profile-cpf">
+            <!-- O CPF fica recolhido: quem olha o perfil por cima do ombro não o vê (CXC-024). A pessoa o mostra com um toque. -->
+            <span data-role="cpf">{{ showCpf() ? caregiver()?.cpf : '•••.•••.•••-••' }}</span>
+            <button type="button" class="cg-link-btn" data-role="toggle-cpf" [attr.aria-expanded]="showCpf()" (click)="showCpf.set(!showCpf())">
+              {{ showCpf() ? 'Esconder' : 'Mostrar' }}<span class="sr-only"> o CPF</span>
+            </button>
+          </dd>
           <dt>Celular</dt>
           <dd>{{ caregiver()?.phone }}</dd>
           <dt>E-mail</dt>
@@ -176,7 +189,7 @@ const chosen =
     </div>
 
     <app-cg-sheet [heading]="sheetTitle()" [(open)]="sheetOpen">
-      <app-error-summary [items]="errors()" />
+      <app-error-summary short [items]="errors()" />
       @if (failure(); as text) {
         <app-cg-note variant="error">{{ text }}</app-cg-note>
       }
@@ -237,18 +250,19 @@ const chosen =
         }
         @case ('daily') {
           <div class="profile-fields" [formGroup]="daily">
-            <div class="profile-hours">
-              <button type="button" class="btn" aria-label="Menos uma hora por dia" (click)="stepHours(-1)">&minus;</button>
-              <app-form-field
-                label="Quantas horas por dia você dedica ao cuidado?"
-                hint="Pode mudar quando quiser."
-                controlId="pf-hours"
-                [forceErrors]="submitted()"
-              >
+            <!-- O rótulo fica em cima da linha toda (menos, número, mais), não ao lado do botão (CXC-024). -->
+            <app-form-field
+              label="Quantas horas por dia você dedica ao cuidado?"
+              hint="Pode mudar quando quiser."
+              controlId="pf-hours"
+              [forceErrors]="submitted()"
+            >
+              <div class="profile-hours">
+                <button type="button" class="btn" aria-label="Menos uma hora por dia" (click)="stepHours(-1)">&minus;</button>
                 <input appInput type="number" inputmode="numeric" formControlName="hours" min="0" max="24" />
-              </app-form-field>
-              <button type="button" class="btn" aria-label="Mais uma hora por dia" (click)="stepHours(1)">+</button>
-            </div>
+                <button type="button" class="btn" aria-label="Mais uma hora por dia" (click)="stepHours(1)">+</button>
+              </div>
+            </app-form-field>
             <div id="pf-channel">
               <app-cg-choice-group
                 legend="Como você prefere que a gente fale com você?"
@@ -266,7 +280,7 @@ const chosen =
               </app-form-field>
               @if (!ctx.hasConsent('whatsapp_contact')) {
                 <app-cg-note variant="info">
-                  Para falarmos pelo WhatsApp, precisamos da sua autorização em Privacidade e meus dados.
+                  Para falar pelo WhatsApp, precisamos da sua autorização. Você pode dar em Privacidade.
                 </app-cg-note>
               }
             }
@@ -295,6 +309,8 @@ export class ProfilePage {
   protected readonly elder = this.ctx.elder;
 
   protected readonly section = signal<Section>('you');
+  /** O CPF começa recolhido (CXC-024). */
+  protected readonly showCpf = signal(false);
   protected readonly sheetOpen = signal(false);
   protected readonly submitted = signal(false);
   protected readonly errors = signal<ErrorSummaryItem[]>([]);

@@ -17,6 +17,10 @@ import type {
   Sex,
 } from '@core/models';
 import { ConsentService } from '@core/privacy';
+import { whatsappChannelNeedsConsent } from '@core/rules/lgpd';
+import { INVALID_DATE_TEXT, NAME_MAX_CHARS, isTooLong, tooLongText } from '@core/rules/text-limits';
+import { isValidIsoDate } from '@core/clock';
+import { ArbeService } from '../../zarit/state/arbe.service';
 import { SubjectRightsService } from '@core/privacy/subject-rights.service';
 import { PilotEligibility, evaluatePilotEligibility } from '@core/rules/pilot-eligibility';
 import type { CaregiverRow } from './caregiver-directory.service';
@@ -61,6 +65,7 @@ export class CaregiverService {
   private readonly consent = inject(ConsentService);
   private readonly registration = inject(CaregiverRegistrationService);
   private readonly subjectRights = inject(SubjectRightsService);
+  private readonly arbe = inject(ArbeService);
 
   /** Cuidador que já usa este CPF fictício (para "Já existe um cuidador com este CPF"). */
   findByCpf(cpf: string, exceptId?: ID): Caregiver | undefined {
@@ -79,7 +84,27 @@ export class CaregiverService {
     return created;
   }
 
+  /**
+   * Edita o cadastro (M03). Mesmas regras do "Meu perfil" do cuidador: escolher o WhatsApp como canal preferido exige a
+   * autorização de contato por WhatsApp (RN-LGPD-05 e, QAC-005) e mudar as horas por dia gera a nova avaliação da ARBE
+   * (RN-ARBE-10, QAC-006), que respeita a autorização de saúde e não duplica alerta aberto (RN-ARBE-08 e 09).
+   */
   update(id: ID, fields: CaregiverFields): Caregiver {
+    const current = this.db.caregivers.require(id);
+    if (!isValidIsoDate(fields.birthDate)) {
+      throw new CaregiverError(INVALID_DATE_TEXT);
+    }
+    if ([fields.fullName, fields.city].some((text) => isTooLong(text, NAME_MAX_CHARS))) {
+      throw new CaregiverError(tooLongText(NAME_MAX_CHARS));
+    }
+    if (
+      current.preferredChannel !== 'whatsapp' &&
+      whatsappChannelNeedsConsent(fields.preferredChannel, this.consent.isActive(id, 'whatsapp_contact'))
+    ) {
+      throw new CaregiverError(
+        'Para usar o WhatsApp como canal preferido, o cuidador precisa autorizar o contato por WhatsApp.',
+      );
+    }
     const updated = this.db.caregivers.update(id, {
       ...fields,
       fullName: fields.fullName.trim(),
@@ -88,6 +113,9 @@ export class CaregiverService {
       whatsapp: fields.whatsapp || undefined,
     });
     this.audit.write('update', 'caregiver', id, id, 'cadastro editado');
+    if (current.dailyCareHours !== fields.dailyCareHours) {
+      this.arbe.evaluateCaregiver(id);
+    }
     return updated;
   }
 
@@ -95,6 +123,12 @@ export class CaregiverService {
     const elder = this.db.elders.find((e) => e.caregiverId === caregiverId);
     if (!elder) {
       throw new CaregiverError('A pessoa idosa não foi encontrada.');
+    }
+    if (!isValidIsoDate(fields.birthDate)) {
+      throw new CaregiverError(INVALID_DATE_TEXT);
+    }
+    if (isTooLong(fields.fullName, NAME_MAX_CHARS)) {
+      throw new CaregiverError(tooLongText(NAME_MAX_CHARS));
     }
     const updated = this.db.elders.update(elder.id, { ...fields, fullName: fields.fullName.trim() });
     this.audit.write('update', 'elder', elder.id, caregiverId, 'dados da pessoa idosa editados');

@@ -238,7 +238,7 @@ describe('Como falar com a gente (decisão 6, RN-CAN-02 e 03)', () => {
     expect(phoneClosedNote('2026-11-04T20:00:00-03:00')).toBe('Fechado agora. Abrimos amanhã às 8h.');
     expect(phoneClosedNote('2026-11-04T06:00:00-03:00')).toBe('Fechado agora. Abrimos hoje às 8h.');
     expect(phoneClosedNote('2026-11-06T19:00:00-03:00')).toBe(
-      'Fechado agora. Abrimos no próximo dia útil, às 8h.',
+      'Fechado agora. Abrimos na segunda às 8h.',
     );
     const phone = contactChannels('app', '2026-11-04T20:00:00-03:00').find((c) => c.channel === 'phone');
     expect(phone?.closedNote).toBe('Fechado agora. Abrimos amanhã às 8h.');

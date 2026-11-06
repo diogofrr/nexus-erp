@@ -34,7 +34,11 @@ const KIND_ICON: Record<Exclude<EmptyKind, 'empty'>, { icon: IconName }> = {
         <circle class="art-soft" cx="60" cy="38" r="12" stroke-dasharray="3 4" />
       </svg>
     }
-    <h3 class="empty__title">{{ title() }}</h3>
+    @if (headingLevel() === 2) {
+      <h2 class="empty__title">{{ title() }}</h2>
+    } @else {
+      <h3 class="empty__title">{{ title() }}</h3>
+    }
     @if (text()) {
       <p class="empty__text">{{ text() }}</p>
     }
@@ -45,6 +49,8 @@ export class EmptyStateComponent {
   readonly title = input.required<string>();
   readonly text = input<string>();
   readonly kind = input<EmptyKind>('empty');
+  /** Nível do título: 3 (padrão) ou 2, quando o vazio é o primeiro bloco da tela logo depois do h1 (QAC-009). */
+  readonly headingLevel = input<2 | 3>(3);
   /** Versão menor, para dentro de cartão e tabela. */
   readonly compact = input(false, { transform: booleanAttribute });
 

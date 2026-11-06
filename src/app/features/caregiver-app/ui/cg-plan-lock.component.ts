@@ -30,10 +30,17 @@ import { CaregiverContextService } from '../state/caregiver-context.service';
   template: `
     @if (blocked()) {
       <section class="cg-card cg-card--soft cg-plan-lock" [attr.aria-labelledby]="titleId">
-        <h3 class="cg-card__title" [id]="titleId">
-          <svg appIcon="lock" size="lg"></svg>
-          <span>Disponível no plano {{ minPlanName() }}</span>
-        </h3>
+        @if (headingLevel() === 3) {
+          <h3 class="cg-card__title" [id]="titleId">
+            <svg appIcon="lock" size="lg"></svg>
+            <span>Disponível no plano {{ minPlanName() }}</span>
+          </h3>
+        } @else {
+          <h2 class="cg-card__title" [id]="titleId">
+            <svg appIcon="lock" size="lg"></svg>
+            <span>Disponível no plano {{ minPlanName() }}</span>
+          </h2>
+        }
         <p class="cg-plan-lock__text">
           {{ description() }} Seu plano agora é o {{ ctx.planName() }}.
         </p>
@@ -47,6 +54,8 @@ export class CgPlanLockComponent {
   protected readonly ctx = inject(CaregiverContextService);
 
   readonly feature = input.required<CaregiverFeature>();
+  /** Nível do título: 2 (padrão) ou 3 quando o bloqueio fica dentro de uma seção com `h2` (QAC-009). */
+  readonly headingLevel = input<2 | 3>(2);
   /** O que é o recurso, em uma frase. Sem ela, "Este recurso faz parte do plano Cuida." */
   readonly descriptionText = input<string>('', { alias: 'description' });
 

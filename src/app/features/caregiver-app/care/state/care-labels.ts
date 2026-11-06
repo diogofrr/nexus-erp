@@ -37,8 +37,8 @@ export const FORMAT_NOTICE: Readonly<Record<SessionModality, string | null>> = {
 export type KindChoice = 'psychotherapy' | 'guidance' | 'unsure';
 
 export const KIND_OPTIONS: readonly { value: KindChoice; label: string; hint?: string }[] = [
-  { value: 'psychotherapy', label: 'Psicoterapia', hint: 'Acompanhamento regular, com objetivo clínico.' },
-  { value: 'guidance', label: 'Orientação psicológica', hint: 'Orientação pontual sobre o cuidado e o que você sente.' },
+  { value: 'psychotherapy', label: 'Psicoterapia', hint: 'Conversas toda semana ou a cada quinze dias, para tratar o que você sente.' },
+  { value: 'guidance', label: 'Orientação psicológica', hint: 'Uma conversa para tirar dúvidas sobre o cuidado e o que você sente.' },
   { value: 'unsure', label: 'Não sei', hint: 'O psicólogo ajuda a decidir na conversa.' },
 ];
 
@@ -58,7 +58,7 @@ export function statusText(session: Pick<CareSession, 'status' | 'rescheduledToI
     return 'Remarcada';
   }
   const text: Readonly<Record<SessionStatus, string>> = {
-    scheduled: 'Aguardando confirmação do psicólogo',
+    scheduled: 'A confirmar',
     confirmed: 'Confirmada',
     done: 'Realizada',
     cancelled_by_user: 'Cancelada por você',
@@ -69,10 +69,15 @@ export function statusText(session: Pick<CareSession, 'status' | 'rescheduledToI
 }
 
 export const CANCEL_FREE = 'Cancelar libera o horário. Não há custo.';
-export const CANCEL_LATE = 'Faltam menos de 24 horas. Se cancelar agora, o horário fica registrado como falta.';
+export const CANCEL_LATE = 'Faltam menos de 24 horas. Se cancelar agora, a conversa conta como perdida. Não há cobrança.';
 export const RESCHEDULE_LATE =
-  'Faltam menos de 24 horas. Se remarcar agora, o horário atual fica registrado como falta.';
+  'Faltam menos de 24 horas. Se remarcar agora, a conversa atual conta como perdida. Não há cobrança.';
 export const RESCHEDULE_FREE = 'O horário atual só é liberado depois que você marcar o novo.';
+
+/** A faixa depois de pedir a conversa: uma frase só e certa (CXC-007). RN-ATD-15: o psicólogo confirma até 24 horas antes. */
+export const BOOKING_SENT = 'Pedido enviado. O psicólogo confirma até 24 horas antes da conversa.';
+/** O caráter da conversa para quem escolheu "Não sei": o psicólogo decide na conversa (S-07). */
+export const KIND_TO_DEFINE = 'A definir na conversa';
 
 export const PAYMENT_NOTE = 'O pagamento é combinado direto no atendimento. No protótipo não há cobrança.';
 export const NO_SLOTS_TEXT = 'Sem horários nesse formato nos próximos 14 dias. Escolha outro formato ou fale com a gente.';

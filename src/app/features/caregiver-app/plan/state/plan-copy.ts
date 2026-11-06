@@ -39,6 +39,14 @@ export function ownBenefits(planId: PlanId, plans: readonly PlanDefinition[]): s
   return (plan?.benefits ?? []).filter((b) => !already.has(b)).map((b) => BENEFIT_LABELS[b]);
 }
 
+/** Tudo o que o plano inclui, inclusive o que vem dos planos anteriores (CXC-010): "Seu plano agora" não esconde o que continua valendo. */
+export function allBenefits(planId: PlanId, plans: readonly PlanDefinition[]): string[] {
+  return (plans.find((p) => p.id === planId)?.benefits ?? []).map((b) => BENEFIT_LABELS[b]);
+}
+
+/** Como voltar atrás, dito antes de confirmar uma troca (CXC-010). */
+export const CHANGE_BACK = 'Se mudar de ideia, é só mudar de plano de novo.';
+
 export interface ChangeCopy {
   /** O tipo de troca; o cancelamento usa o botão de perigo suave (UX A.2.7). */
   kind: ChangeQuote['kind'];
@@ -92,7 +100,7 @@ export function changeCopy(quote: ChangeQuote, priceOf: (plan: PlanId) => string
       kind: quote.kind,
       heading: `Mudar para o ${to}?`,
       actionLabel,
-      lines: [`Vale hoje.${card} A cobrança de ${priceOf(quote.to)} começa no próximo ciclo, em ${billing}.`],
+      lines: [`Vale hoje.${card} A cobrança de ${priceOf(quote.to)} começa no próximo ciclo, em ${billing}.`, CHANGE_BACK],
       showNotice: true,
     };
   }
@@ -116,6 +124,7 @@ export function changeCopy(quote: ChangeQuote, priceOf: (plan: PlanId) => string
     lines: [
       `Vale no fim do ciclo, em ${formatDate(quote.effectiveAt)}. Até lá, o ${from} continua${groups}.`,
       ...(quote.lostGroups.length > 0 ? [lostGroupsLine(quote.lostGroups)] : []),
+      CHANGE_BACK,
     ],
     showNotice: false,
   };

@@ -152,10 +152,10 @@ describe('Rotina (UX C5 e C6)', () => {
       expect(app.router.url).toBe('/cuidador/rotina/remedios');
     });
 
-    it('compromisso de hoje cuja hora já passou leva "Passou do horário", sem vermelho', async () => {
+    it('compromisso de hoje cuja hora já passou leva a etiqueta neutra "Já passou" (CXC-001), sem vermelho', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda', { time: '19:00' });
       const late = q('.routine-late');
-      expect(text(late)).toMatch(/^Passou do horário \(\d{2}:\d{2}\)$/);
+      expect(text(late)).toBe('Já passou');
       expect(late?.querySelector('svg')).not.toBeNull();
       expect(all('.cg-note--error')).toHaveLength(0);
     });
@@ -304,7 +304,12 @@ describe('Rotina (UX C5 e C6)', () => {
       await click(all('app-cg-row button').find((b) => text(b).includes(apt.title)));
       await click(sheetButton('Remarcar'));
       expect(text(sheet().querySelector('.cg-sheet__title'))).toBe('Remarcar compromisso');
-      expect(inSheet<HTMLInputElement>('#apt-title').value).toBe(apt.title);
+      // CXC-018: remarcar abre só o dia e a hora; o nome do compromisso aparece como texto e o resto não é pedido de novo.
+      expect(text(inSheet('[data-role="reschedule-what"]'))).toBe(apt.title);
+      expect(sheet().querySelector('#apt-title')).toBeNull();
+      expect(sheet().querySelector('#apt-kind')).toBeNull();
+      expect(sheet().querySelector('#apt-place')).toBeNull();
+      expect(sheet().querySelectorAll('app-form-field')).toHaveLength(2);
       await type(inSheet<HTMLInputElement>('#apt-date'), '2026-11-06');
       await type(inSheet<HTMLInputElement>('#apt-time'), '15:00');
       await click(sheetButton('Salvar novo horário'));
@@ -372,8 +377,15 @@ describe('Rotina (UX C5 e C6)', () => {
       expect(all('main h2').map(text)).toEqual(expect.arrayContaining(['Hoje', 'Todos os remédios']));
       const times = all('app-cg-dose .cg-dose__time').map(text);
       expect(times).toHaveLength(4);
-      expect([...times].sort()).toEqual(times);
+      // CXC-005: o que falta vem primeiro (cada grupo em ordem de horário), depois as doses dadas.
+      const given = all('app-cg-dose .cg-dose').map((d) => d.classList.contains('is-given'));
+      expect(given).toEqual([false, false, true, true]);
+      expect([...times.slice(0, 2)].sort()).toEqual(times.slice(0, 2));
+      expect([...times.slice(2)].sort()).toEqual(times.slice(2));
       expect(text(q('main'))).toContain('O app só ajuda você a lembrar. Dúvida sobre dose ou troca de remédio: fale com o médico ou a farmácia.');
+      // "Todos os remédios" repete a lista de hoje: fica recolhida atrás de um link (CXC-005).
+      expect(all('app-cg-row')).toHaveLength(0);
+      await click(q('[data-role="edit-toggle"]'));
       expect(all('app-cg-row')).toHaveLength(3);
       expect(buttonByText('Adicionar remédio')).toBeDefined();
     });
@@ -443,6 +455,7 @@ describe('Rotina (UX C5 e C6)', () => {
       expect(med?.dosage).toBe('2000 UI');
       expect(med?.active).toBe(true);
       expect(med?.elderId).toBe(app.context.elderId());
+      await click(q('[data-role="edit-toggle"]'));
       expect(all('app-cg-row').some((r) => text(r).includes('Vitamina D'))).toBe(true);
       expect(all('app-cg-dose').filter((d) => text(d).includes('Vitamina D'))).toHaveLength(2);
       expect(toastMessages()).toContain('Remédio salvo.');
@@ -469,6 +482,7 @@ describe('Rotina (UX C5 e C6)', () => {
       const med = app.db.medications.find((m) => m.elderId === app.context.elderId() && m.name === 'Omeprazol');
       const checksBefore = app.db.doseChecks.count((d) => d.medicationId === med?.id);
       expect(checksBefore).toBeGreaterThan(0);
+      await click(q('[data-role="edit-toggle"]'));
       await click(all('app-cg-row button').find((b) => text(b).includes('Omeprazol')));
       expect(text(sheet().querySelector('.cg-sheet__title'))).toBe('Editar remédio');
       expect(inSheet<HTMLInputElement>('#med-name').value).toBe('Omeprazol');
@@ -518,7 +532,8 @@ describe('Rotina (UX C5 e C6)', () => {
     it('a dose cujo horário passou fica em âmbar suave, com relógio, e "Dei" continua (AC-CG-71)', async () => {
       await open('cg_0003', '/cuidador/rotina/remedios', { time: '13:00' });
       const late = q('.cg-dose.is-late');
-      expect(text(late)).toContain('Passou do horário (08:00)');
+      expect(text(late)).toContain('Ainda não anotado');
+      expect(text(late)).not.toMatch(/passou/i);
       expect(late?.querySelector('button.btn')?.getAttribute('aria-label')).toContain('Dei o ');
       expect(all('.cg-note--error')).toHaveLength(0);
     });

@@ -55,9 +55,17 @@ describe('Área groups (Grupos e capacitações)', () => {
       const app = await bootCaregiverApp('cg_0001', { url: URL });
       expect(app.root.querySelector('main h1')?.textContent?.trim()).toBe('Grupos e capacitações');
       expect(mainText(app)).toContain('A programação do mês.');
+      // CXC-021: o que a pessoa já faz fica só em "Minhas inscrições" e não se repete na programação.
+      const listed = Array.from(app.root.querySelectorAll('[data-role="activity"] .cg-card__title')).map((t) => t.textContent?.trim());
+      expect(listed).toEqual(['Lidar com as perdas, em grupo', 'Organização da rotina', 'Roda de conversa: cuidar de quem cuida']);
+      expect(app.root.querySelector('#groups-all')?.textContent?.trim()).toBe('Outros grupos');
+      // Sem inscrições, a programação traz as cinco atividades, na ordem de sempre.
+      app.db.activityEnrollments.removeWhere((e) => e.caregiverId === 'cg_0001');
+      await settleCaregiver(app.fixture);
+      expect(app.root.querySelector('#groups-all')?.textContent?.trim()).toBe('Programação');
       const titles = Array.from(app.root.querySelectorAll('[data-role="activity"] .cg-card__title')).map((t) => t.textContent?.trim());
       expect(titles).toEqual([
-        'Luto ambíguo, em grupo',
+        'Lidar com as perdas, em grupo',
         'Sobrecarga e autocuidado',
         'Organização da rotina',
         'Prevenção de quedas',
@@ -65,14 +73,17 @@ describe('Área groups (Grupos e capacitações)', () => {
       ]);
       const text = (title: string) => (card(app, title)?.textContent ?? '').replace(/\s+/g, ' ');
       expect(text('Sobrecarga e autocuidado')).toContain('Grupo de apoio');
-      expect(text('Sobrecarga e autocuidado')).toContain('Orientação e psicoeducação');
+      expect(text('Sobrecarga e autocuidado')).toContain('Para aprender e trocar');
+      expect(text('Sobrecarga e autocuidado')).not.toMatch(/psicoeducação/i);
       expect(text('Sobrecarga e autocuidado')).toContain('Próximo encontro: sáb, 07/11, às 14:00');
       expect(text('Sobrecarga e autocuidado')).toContain('No espaço de coworking');
-      expect(text('Sobrecarga e autocuidado')).toContain('Lotado');
-      expect(text('Luto ambíguo, em grupo')).toContain('Terapia de grupo');
-      expect(text('Luto ambíguo, em grupo')).toContain('Psicoterapia');
-      expect(text('Luto ambíguo, em grupo')).toContain('Próximo encontro: hoje às 16:00');
-      expect(text('Luto ambíguo, em grupo')).toContain('Em andamento');
+      expect(text('Sobrecarga e autocuidado')).toMatch(/Lotado|\d+ vagas?/);
+      // CXC-019: linguagem comum, e a distinção entre psicoterapia e orientação continua à vista (RN-GRP-16).
+      expect(text('Lidar com as perdas, em grupo')).toContain('Grupo com psicólogo');
+      expect(text('Lidar com as perdas, em grupo')).toContain('Psicoterapia em grupo');
+      expect(text('Lidar com as perdas, em grupo')).not.toContain('Terapia de grupo');
+      expect(text('Lidar com as perdas, em grupo')).toContain('Próximo encontro: hoje às 16:00');
+      expect(text('Lidar com as perdas, em grupo')).toContain('Em andamento');
       expect(text('Organização da rotina')).toContain('On-line');
       expect(text('Organização da rotina')).toContain('Grupo de apoio');
       expect(text('Prevenção de quedas')).toContain('Capacitação');
@@ -111,6 +122,20 @@ describe('Área groups (Grupos e capacitações)', () => {
       expect(mine?.textContent).toContain('Você está na lista de espera, posição 1.');
     });
 
+    it('CXC-021: quem não tem acesso vê "Plano Cuida" na própria linha, sem pressão, e a roda aberta (que é para todos) vem primeiro', async () => {
+      const maria = await bootCaregiverApp('cg_0002', { url: URL });
+      const rows = Array.from(maria.root.querySelectorAll<HTMLElement>('[data-role="activity"]'));
+      const first = rows[0];
+      expect(first?.querySelector('.cg-card__title')?.textContent?.trim()).toBe('Roda de conversa: cuidar de quem cuida');
+      expect(first?.querySelector('[data-role="plan-tag"]')).toBeNull();
+      const tags = rows.slice(1).map((r) => r.querySelector('[data-role="plan-tag"]')?.textContent?.trim());
+      expect(tags.every((t) => t === 'Plano Cuida')).toBe(true);
+      expect(mainText(maria)).not.toMatch(/R\$|assine|desconto|upgrade/i);
+      TestBed.resetTestingModule();
+      const ana = await bootCaregiverApp('cg_0001', { url: URL });
+      expect(ana.root.querySelector('[data-role="plan-tag"]')).toBeNull();
+    });
+
     it('quem não está em nada não vê "Minhas inscrições"', async () => {
       const app = await bootCaregiverApp('cg_0002', { url: URL });
       expect(app.root.querySelector('section[aria-labelledby="groups-mine"]')).toBeNull();
@@ -142,9 +167,9 @@ describe('Área groups (Grupos e capacitações)', () => {
     it('mostra o que é, o caráter explicado, o tema, todos os encontros, quem conduz e as vagas', async () => {
       const app = await bootCaregiverApp('cg_0002', { url: detail('act_0001') });
       expect(app.root.querySelector('[data-role="kind"]')?.textContent?.trim()).toBe('Grupo de apoio');
-      expect(app.root.querySelector('[data-role="character"]')?.textContent?.trim()).toBe('Orientação e psicoeducação');
+      expect(app.root.querySelector('[data-role="character"]')?.textContent?.trim()).toBe('Para aprender e trocar');
       expect(app.root.querySelector('[data-role="character-text"]')?.textContent?.trim()).toBe(
-        'Orientação e psicoeducação: encontros para aprender e trocar. Não é psicoterapia.',
+        'Para aprender e trocar: encontros para conversar e aprender com outras pessoas. Não é psicoterapia.',
       );
       const meetings = Array.from(app.root.querySelectorAll('main dl li')).map((li) => li.textContent?.trim());
       expect(meetings).toEqual(['sáb, 07/11, às 14:00', 'sáb, 14/11, às 14:00', 'sáb, 21/11, às 14:00', 'sáb, 28/11, às 14:00']);
@@ -210,7 +235,7 @@ describe('Área groups (Grupos e capacitações)', () => {
       expect(saved).toMatchObject({ status: 'enrolled', confidentialityAcceptedAt: '2026-11-04T12:00:00-03:00' });
       const result = app.root.querySelector('[data-role="result"]')?.textContent?.replace(/\s+/g, ' ').trim();
       expect(result).toBe('Você está no grupo Organização da rotina. Primeiro encontro: ter, 10/11, às 19:00.');
-      expect(TestBed.inject(ToastService).toasts().find((t) => t.message === result)?.durationMs).toBe(8000);
+      expect(TestBed.inject(ToastService).toasts().find((t) => t.message === result)).toBeUndefined();
       expect(app.root.querySelector('[data-role="standing"]')?.textContent).toContain('Você está no grupo.');
       expect(app.root.querySelector('[data-role="join"]')).toBeNull();
       await click(app, app.root.querySelector('main a.cg-page-header__back'));
@@ -331,11 +356,12 @@ describe('Área groups (Grupos e capacitações)', () => {
       app.db.activities.update('act_0003', { status: 'open' });
       await app.router.navigateByUrl(detail('act_0003'));
       await settleCaregiver(app.fixture);
-      expect(app.root.querySelector('[data-role="kind"]')?.textContent?.trim()).toBe('Terapia de grupo');
-      expect(app.root.querySelector('[data-role="character"]')?.textContent?.trim()).toBe('Psicoterapia');
+      expect(app.root.querySelector('[data-role="kind"]')?.textContent?.trim()).toBe('Grupo com psicólogo');
+      expect(app.root.querySelector('[data-role="character"]')?.textContent?.trim()).toBe('Psicoterapia em grupo');
       expect(app.root.querySelector('[data-role="character-text"]')?.textContent?.trim()).toBe(
-        'Psicoterapia: terapia de grupo conduzida por psicólogo da Nexus, com objetivo clínico.',
+        'Psicoterapia em grupo: um psicólogo da Nexus conduz o grupo, para cuidar do que você sente.',
       );
+      expect(app.root.querySelector('main')?.textContent).not.toMatch(/objetivo clínico|psicoeducação/i);
       expect(app.root.querySelector('[data-role="leader"]')?.textContent?.trim()).toBe(
         'Conduzido por Dra. Letícia Amaral, psicóloga (CRP-04/00104, fictício).',
       );
@@ -374,7 +400,7 @@ describe('Área groups (Grupos e capacitações)', () => {
       expect(app.db.activityEnrollments.find((e) => e.activityId === 'act_0001' && e.caregiverId === 'cg_0001')?.status).toBe('cancelled');
       expect(app.db.activityEnrollments.find((e) => e.activityId === 'act_0001' && e.caregiverId === 'cg_0024')?.status).toBe('enrolled');
       expect(app.root.querySelector('[data-role="result"]')?.textContent).toContain('Você saiu do grupo. A sua vaga voltou para outra pessoa.');
-      expect(TestBed.inject(ToastService).toasts().some((t) => t.durationMs === 8000)).toBe(true);
+      expect(TestBed.inject(ToastService).toasts()).toHaveLength(0);
     });
 
     it('Voltar não tira ninguém; o botão seguro recebe o foco', async () => {

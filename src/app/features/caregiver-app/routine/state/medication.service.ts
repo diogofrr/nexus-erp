@@ -1,9 +1,11 @@
 import { Injectable, inject } from '@angular/core';
+import { CaregiverOwnership } from '../../../../core/auth/caregiver-ownership';
 import { Clock } from '../../../../core/clock/clock.service';
 import { dateOf, timeOf, toIsoDateTime } from '../../../../core/clock/date-utils';
 import { Database } from '../../../../core/data/database';
 import { DoseCheck, ID, Medication } from '../../../../core/models';
 import { isTimeOfDay } from '../../../../core/rules/care-agenda';
+import { NAME_MAX_CHARS, isTooLong } from '../../../../core/rules/text-limits';
 
 /** Os horários prontos do formulário (UX C6): Manhã, Tarde e Noite. */
 export const MEDICATION_PRESET_TIMES: readonly { time: string; label: string }[] = [
@@ -12,7 +14,12 @@ export const MEDICATION_PRESET_TIMES: readonly { time: string; label: string }[]
   { time: '20:00', label: 'Noite 20:00' },
 ];
 
-export type MedicationProblem = 'name_required' | 'times_required' | 'time_format';
+export type MedicationProblem =
+  | 'name_required'
+  | 'name_too_long'
+  | 'dosage_too_long'
+  | 'times_required'
+  | 'time_format';
 
 /** O que o formulário "Novo remédio" entrega. */
 export interface MedicationInput {
@@ -24,11 +31,21 @@ export interface MedicationInput {
   active: boolean;
 }
 
-/** O que está errado num remédio: sem nome, sem horário ou com hora fora do formato (UX C6, erros). */
-export function medicationProblems(input: Pick<MedicationInput, 'name' | 'times'>): MedicationProblem[] {
+/**
+ * O que está errado num remédio: sem nome, nome ou receita longos demais (120 caracteres), sem horário ou com hora fora
+ * do formato (UX C6, erros).
+ */
+export function medicationProblems(
+  input: Pick<MedicationInput, 'name' | 'times'> & Partial<Pick<MedicationInput, 'dosage'>>,
+): MedicationProblem[] {
   const problems: MedicationProblem[] = [];
   if (input.name.trim() === '') {
     problems.push('name_required');
+  } else if (isTooLong(input.name, NAME_MAX_CHARS)) {
+    problems.push('name_too_long');
+  }
+  if (isTooLong(input.dosage ?? '', NAME_MAX_CHARS)) {
+    problems.push('dosage_too_long');
   }
   if (input.times.length === 0) {
     problems.push('times_required');
@@ -63,15 +80,20 @@ export class MedicationError extends Error {
 export class MedicationService {
   private readonly db = inject(Database);
   private readonly clock = inject(Clock);
+  private readonly ownership = inject(CaregiverOwnership);
 
   /** Todos os remédios da pessoa idosa, em uso e em pausa (reativo). */
   medicationsOf(elderId: ID): Medication[] {
+    if (!this.ownership.ownsElder(elderId)) {
+      return [];
+    }
     return this.db.medications
       .query((m) => m.elderId === elderId)
       .sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name, 'pt-BR'));
   }
 
   add(elderId: ID, input: MedicationInput): Medication {
+    this.ownership.assertElder(elderId);
     this.assertValid(input);
     return this.db.medications.create({
       elderId,
@@ -83,6 +105,7 @@ export class MedicationService {
   }
 
   update(id: ID, input: MedicationInput): Medication {
+    this.ownership.assertMedication(id);
     this.db.medications.require(id);
     this.assertValid(input);
     return this.db.medications.update(id, {
@@ -98,6 +121,7 @@ export class MedicationService {
    * A dose continua a mesma (mesmo remédio, dia e horário previsto).
    */
   changeGivenTime(checkId: ID, time: string): DoseCheck {
+    this.ownership.assertDoseCheck(checkId);
     const check = this.db.doseChecks.require(checkId);
     if (!isTimeOfDay(time)) {
       throw new MedicationError('Informe uma hora no formato 08:00.', ['time_format']);

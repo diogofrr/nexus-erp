@@ -66,7 +66,17 @@ describe('Área plan (Meu plano)', () => {
       expect(norm(card.querySelector('.cg-plan-tag')?.textContent)).toBe('Plano Cuida');
       expect(norm(card.querySelector('[data-role="price"]')?.textContent)).toBe('R$ 119,90 por mês');
       expect(norm(card.querySelector('[data-role="situation"]')?.textContent)).toBe('Próxima cobrança em 06/11/2026');
+      // CXC-010: "Seu plano agora" lista TUDO o que o plano inclui, também o que vem dos planos anteriores.
       expect(Array.from(card.querySelectorAll('li')).map((li) => norm(li.textContent))).toEqual([
+        'Acesso ao aplicativo',
+        'Organização básica',
+        'Agenda e lembretes',
+        'Conteúdos',
+        'Acesso inicial à rede',
+        'Organização ampliada',
+        'Descontos exclusivos do Cartão Nexus',
+        'Conteúdos exclusivos',
+        'Condições especiais na rede',
         'Maior suporte à organização',
         'Grupos de apoio',
         'Capacitações',
@@ -105,7 +115,7 @@ describe('Área plan (Meu plano)', () => {
       expect(app.root.querySelector('main h1')?.textContent?.trim()).toBe('Planos');
       expect(document.activeElement?.tagName).toBe('H1');
       const plans = Array.from(app.root.querySelectorAll('[data-role="board-plan"]')).map((p) => ({
-        title: norm(p.querySelector('h3')?.textContent),
+        title: norm(p.querySelector('h2')?.textContent),
         price: norm(p.querySelector('.nx-price')?.textContent),
         more: norm(p.querySelector('.nx-plan__more')?.textContent),
         items: Array.from(p.querySelectorAll('.nx-items li')).map((li) => norm(li.textContent)),
@@ -156,20 +166,22 @@ describe('Área plan (Meu plano)', () => {
       await choose(app, 'cuida');
       expect(openSheet(app)?.querySelector('.cg-sheet__title')?.textContent?.trim()).toBe('Mudar para o Cuida?');
       expect(paragraphs(openSheet(app)?.querySelector('[data-role="effect"]'))).toBe(
-        'Vale hoje. O Cartão Nexus é emitido agora. A cobrança de R$ 119,90 começa no próximo ciclo, em 04/12/2026. A mensalidade não inclui serviços da rede nem atendimento psicológico.',
+        'Vale hoje. O Cartão Nexus é emitido agora. A cobrança de R$ 119,90 começa no próximo ciclo, em 04/12/2026. Se mudar de ideia, é só mudar de plano de novo. A mensalidade não inclui serviços da rede nem atendimento psicológico.',
       );
       expect(norm(confirmButton(app)?.textContent)).toBe('Mudar para o Cuida');
       expect(subOf(app, 'cg_0003').planId).toBe('livre');
     });
 
-    it('na primeira contratação paga pede o aceite do aviso de emergência; sem ele, não muda (AC-CG-155)', async () => {
+    it('na primeira contratação paga o aviso de emergência é UMA linha com a caixa "Li e entendi" na mesma folha (um passo só); sem o aceite, não muda (AC-CG-155, CXC-010)', async () => {
       const app = await bootCaregiverApp('cg_0003', { url: URL });
       await choose(app, 'cuida');
-      await click(app, confirmButton(app));
-      expect(openSheet(app)?.querySelector('.cg-sheet__title')?.textContent?.trim()).toBe('Antes de confirmar');
+      // Um passo só: o efeito, a linha do aviso e a caixa aparecem juntos, sem segunda folha "Antes de confirmar".
+      expect(openSheet(app)?.querySelector('.cg-sheet__title')?.textContent?.trim()).toBe('Mudar para o Cuida?');
       expect(sheetText(app)).toContain('Em emergência, ligue 192 (SAMU). Os canais da Nexus não substituem atendimento de saúde nem orientação sobre remédios.');
       expect(sheetText(app)).toContain('Li e entendi');
-      expect(norm(confirmButton(app)?.textContent)).toBe('Confirmar mudança de plano');
+      expect(sheetText(app)).not.toContain('Antes de confirmar');
+      expect(openSheet(app)?.querySelector('.cg-emergency')).toBeNull();
+      expect(norm(confirmButton(app)?.textContent)).toBe('Mudar para o Cuida');
       await click(app, confirmButton(app));
       expect(sheetText(app)).toContain('Marque que você leu o aviso para continuar.');
       expect(subOf(app, 'cg_0003').planId).toBe('livre');
@@ -179,7 +191,6 @@ describe('Área plan (Meu plano)', () => {
     it('com o aceite, o plano muda na hora, o cartão é emitido, o aceite fica com data e hora e a troca vai em nome do cuidador (AC-CG-151)', async () => {
       const app = await bootCaregiverApp('cg_0003', { url: URL });
       await choose(app, 'cuida');
-      await click(app, confirmButton(app));
       await click(app, openSheet(app)?.querySelector('input[type="checkbox"]'));
       await click(app, confirmButton(app));
       expect(openSheet(app)).toBeNull();
@@ -193,7 +204,8 @@ describe('Área plan (Meu plano)', () => {
       expect(change).toMatchObject({ kind: 'upgrade', from: 'livre', to: 'cuida', byUserId: 'cg_0003' });
       const message = `Plano alterado para o Cuida. Cartão ${card?.number} emitido.`;
       expect(norm(app.root.querySelector('[data-role="result"]')?.textContent)).toBe(message);
-      expect(TestBed.inject(ToastService).toasts().find((t) => t.message === message)?.durationMs).toBe(8000);
+      // CXC-017: um aviso só (a faixa da tela); o aviso rápido não repete.
+      expect(TestBed.inject(ToastService).toasts().find((t) => t.message === message)).toBeUndefined();
       expect(app.context.planId()).toBe('cuida');
       expect(app.router.url).toBe(URL);
       expect(norm(app.root.querySelector('[data-role="current-plan"] .cg-plan-tag')?.textContent)).toBe('Plano Cuida');
@@ -230,7 +242,7 @@ describe('Área plan (Meu plano)', () => {
       await choose(app, 'essencial');
       expect(openSheet(app)?.querySelector('.cg-sheet__title')?.textContent?.trim()).toBe('Mudar para o Essencial no fim do ciclo?');
       expect(paragraphs(openSheet(app)?.querySelector('[data-role="effect"]'))).toBe(
-        'Vale no fim do ciclo, em 06/11/2026. Até lá, o Cuida continua, inclusive os grupos. Você sai dos grupos que começam depois dessa data: Sobrecarga e autocuidado (07/11), Prevenção de quedas (14/11). Os grupos em andamento continuam até o fim do ciclo.',
+        'Vale no fim do ciclo, em 06/11/2026. Até lá, o Cuida continua, inclusive os grupos. Você sai dos grupos que começam depois dessa data: Sobrecarga e autocuidado (07/11), Prevenção de quedas (14/11). Os grupos em andamento continuam até o fim do ciclo. Se mudar de ideia, é só mudar de plano de novo.',
       );
       expect(norm(confirmButton(app)?.textContent)).toBe('Agendar mudança para o Essencial');
       await click(app, confirmButton(app));
@@ -286,8 +298,7 @@ describe('Área plan (Meu plano)', () => {
       expect(sub.scheduledChangeAt).toBeUndefined();
       expect(app.root.querySelector('[data-role="scheduled"]')).toBeNull();
       expect(norm(app.root.querySelector('[data-role="result"]')?.textContent)).toBe('Plano mantido.');
-      const toast = TestBed.inject(ToastService).toasts().find((t) => t.message === 'Plano mantido.');
-      expect(toast?.durationMs).toBe(8000);
+      expect(TestBed.inject(ToastService).toasts().find((t) => t.message === 'Plano mantido.')).toBeUndefined();
       expect(app.db.planChanges.query((p) => p.subscriptionId === sub.id && p.kind === 'reactivate')[0]?.byUserId).toBe('cg_0026');
       expect(byText(app, 'main button', 'Cancelar plano')).toBeDefined();
     });
@@ -362,7 +373,6 @@ describe('Área plan (Meu plano)', () => {
       expect(app.context.planId()).toBe('livre');
       expect(norm(app.root.querySelector('[data-role="price"]')?.textContent)).toBe('Sem custo, sem prazo');
       await choose(app, 'essencial');
-      await click(app, confirmButton(app));
       await click(app, openSheet(app)?.querySelector('input[type="checkbox"]'));
       await click(app, confirmButton(app));
       expect(app.context.planId()).toBe('essencial');

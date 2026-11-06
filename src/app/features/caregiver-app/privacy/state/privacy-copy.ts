@@ -9,7 +9,7 @@ import { CONSENT_COPY, ConsentCopy } from '@shared/ui';
 /** O nome de cada autorização, em linguagem simples (UX C21). */
 export const CONSENT_NAMES: Readonly<Record<ConsentKey, string>> = {
   health_data: 'Dados de saúde para o acompanhamento',
-  people_analytics: 'Números somados da Nexus',
+  people_analytics: 'Resultados sem o seu nome',
   family_sharing: 'Compartilhar com a família',
   image_testimony: 'Imagem e depoimento',
   whatsapp_contact: 'Contato por WhatsApp',
@@ -35,8 +35,18 @@ export function consentCopy(key: ConsentKey): ConsentCopy {
   if (key === 'health_data') {
     return {
       ...base,
+      // CXC-019: "escala de cansaço do cuidador" é jargão; a tela fala em "ajuda com o cansaço".
+      what: 'Guardar as suas respostas na ajuda com o cansaço, as anotações do acompanhamento psicológico e os avisos que surgirem.',
       change:
         'Você pode retirar a autorização quando quiser. O registro psicológico já feito é guardado por 5 anos, conforme a norma do conselho.',
+    };
+  }
+  if (key === 'people_analytics') {
+    // CXC-019: "números somados" vira "resultados sem o seu nome".
+    return {
+      ...base,
+      question: 'Podemos incluir você nos resultados sem o seu nome?',
+      change: 'Você pode retirar quando quiser. A partir daí, você sai desses resultados.',
     };
   }
   return base;
@@ -50,7 +60,7 @@ export const REVOKE_EFFECTS: Readonly<Record<ConsentKey, string>> = {
   health_data:
     'Ao retirar: a escala de cansaço e o acompanhamento ficam pausados. O que já foi registrado fica guardado por 5 anos, como a norma do conselho pede. O plano Livre, a agenda e os remédios continuam. Você pode autorizar de novo quando quiser.',
   people_analytics:
-    'Ao retirar: você sai dos números somados da Nexus a partir de hoje. O que você usa no aplicativo continua igual. Você pode autorizar de novo quando quiser.',
+    'Ao retirar: você deixa de entrar nos resultados sem o seu nome a partir de hoje. O que você usa no aplicativo continua igual. Você pode autorizar de novo quando quiser.',
   family_sharing:
     'Ao retirar: a Nexus deixa de compartilhar informações da pessoa idosa com a sua família. O texto que você já copiou e mandou não volta. O que você usa no aplicativo continua igual.',
   image_testimony:
@@ -95,11 +105,12 @@ export const REQUEST_NAMES: Readonly<Record<DsrType, string>> = {
  * Passado o prazo, uma frase neutra: nunca "vencido" nem "atrasado".
  */
 export function daysLeftText(daysRemaining: number): string {
+  // CXC-020: "Faltam 15 dias" não dizia o que falta: agora diz "para a resposta".
   if (daysRemaining > 1) {
-    return `Faltam ${daysRemaining} dias`;
+    return `Faltam ${daysRemaining} dias para a resposta`;
   }
   if (daysRemaining === 1) {
-    return 'Falta 1 dia';
+    return 'Falta 1 dia para a resposta';
   }
   if (daysRemaining === 0) {
     return 'O prazo termina hoje';
@@ -112,6 +123,8 @@ export const COPY_SHEET_TEXT = 'A equipe prepara o arquivo com os seus dados e a
 export const ERASURE_ERASED_TEXT = 'o seu cadastro de contato, mensagens, agenda e remédios.';
 export const ERASURE_KEPT_TEXT =
   'as respostas da escala e as anotações do atendimento, por 5 anos, como a norma do conselho pede. Depois disso, são apagados.';
+/** O prazo, dito NA folha antes de confirmar (CXC-009), como em "Pedir uma cópia dos meus dados". */
+export const ERASURE_DEADLINE = 'A equipe responde em até 15 dias.';
 export const ERASURE_CONTINUE_TEXT = 'Você continua usando o app até a equipe concluir.';
 
 export const REQUEST_ERROR = 'Não foi possível registrar o pedido. Tente de novo; se continuar, fale com a gente.';

@@ -109,7 +109,7 @@ describe('Meus pedidos', () => {
       expect(group(app, 'open')).toBeNull();
       const message = 'Pedido cancelado. Você pode pedir de novo quando quiser.';
       expect(norm(app.root.querySelector('[data-role="result"]')?.textContent)).toBe(message);
-      expect(TestBed.inject(ToastService).toasts().find((t) => t.message === message)?.durationMs).toBe(8000);
+      expect(TestBed.inject(ToastService).toasts().find((t) => t.message === message)).toBeUndefined();
     });
 
     it('também cancela o pedido aceito; Voltar não cancela nada', async () => {
@@ -178,7 +178,7 @@ describe('Meus pedidos', () => {
       expect(statusOf(app, 'srq_0126')).toBe('Avaliado');
       const message = 'Avaliação enviada. Você pode corrigir até 11/11.';
       expect(norm(app.root.querySelector('[data-role="result"]')?.textContent)).toBe(message);
-      expect(TestBed.inject(ToastService).toasts().find((t) => t.message === message)?.durationMs).toBe(8000);
+      expect(TestBed.inject(ToastService).toasts().find((t) => t.message === message)).toBeUndefined();
     });
 
     it('só existe uma avaliação por serviço concluído: depois de avaliar, não há mais Avaliar', async () => {

@@ -77,9 +77,9 @@ describe('QAC: persistência e robustez', () => {
     expect(session.isSignedIn()).toBe(false);
   });
 
-  // QAC-010: o aplicativo do cuidador não monta as faixas de sistema da equipe (cota cheia, armazenamento bloqueado).
-  // A dose aparece "dada" na tela, mas não foi guardada, e a pessoa não é avisada.
-  it.fails('QAC-010: com o armazenamento do navegador cheio, o cuidador é avisado de que o "Dei" não foi guardado', async () => {
+  // QAC-010 (corrigido no Fix B): o shell do cuidador mostra uma faixa calma quando o navegador não guarda (a mesma fonte da
+  // equipe, `StorageService.notices`), e o aviso do "Dei" não diz só "anotado". Antes era `it.fails`.
+  it('QAC-010: com o armazenamento do navegador cheio, o cuidador é avisado de que o "Dei" não foi guardado', async () => {
     const app = await bootCaregiverApp(ANA, { url: '/cuidador/rotina/remedios' });
     app.local.failOnSet = true;
     const dei = Array.from(app.root.querySelectorAll<HTMLElement>('main button')).find((b) => (b.textContent ?? '').trim() === 'Dei');
@@ -93,7 +93,20 @@ describe('QAC: persistência e robustez', () => {
     const stored = JSON.parse(key ? (app.local.data.get(key) ?? '[]') : '[]') as unknown[];
     expect(stored.length).toBeLessThan(app.db.doseChecks.count());
     // ...e a tela precisa dizer isso em algum lugar.
-    expect(text).toMatch(/espaço de armazenamento|não foi guardad|não ficou guardad|só ficam em memória/i);
+    expect(text).toMatch(/espaço de armazenamento|não foi guardad|não ficou guardad|só ficam em memória|não está guardando/i);
+    // A faixa calma do shell e o aviso rápido do "Dei" dizem o que fazer e que a marca não foi guardada.
+    expect((app.root.querySelector('[data-role="storage-note"]')?.textContent ?? '').trim()).toBe(
+      'O navegador não está guardando o que você faz. Libere espaço ou o armazenamento do site e recarregue.',
+    );
+    expect(text).toContain('mas não foi guardado');
+  });
+
+  it('QAC-010: com o armazenamento bloqueado desde o começo a faixa já está no alto; com o armazenamento normal ela não aparece', async () => {
+    const blocked = await bootCaregiverApp(ANA, { url: '/cuidador/hoje', noStorage: true });
+    expect(blocked.root.querySelector('[data-role="storage-note"]')).not.toBeNull();
+    TestBed.resetTestingModule();
+    const normal = await bootCaregiverApp(ANA, { url: '/cuidador/hoje' });
+    expect(normal.root.querySelector('[data-role="storage-note"]')).toBeNull();
   });
 
   it('armazenamento do navegador bloqueado desde o começo: o app do cuidador abre e funciona em memória', async () => {

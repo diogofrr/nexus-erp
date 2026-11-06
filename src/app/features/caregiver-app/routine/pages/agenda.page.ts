@@ -6,6 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Clock } from '../../../../core/clock/clock.service';
 import { addDays, dateOf, timeOf } from '../../../../core/clock/date-utils';
 import { Database } from '../../../../core/data/database';
+import { NAME_MAX_CHARS, tooLongText } from '../../../../core/rules/text-limits';
 import { CareAppointment, ID, ISODate, ISODateTime } from '../../../../core/models';
 import {
   APPOINTMENT_KINDS,
@@ -47,7 +48,7 @@ interface AgendaEntry {
   /** A conversa da própria pessoa: leva a "Conversar com um psicólogo" (S-27). */
   forYou: boolean;
   appointment: CareAppointment | null;
-  /** Compromisso de hoje cuja hora já passou: "Passou do horário (14:00)". */
+  /** Compromisso de hoje cuja hora já passou: a etiqueta neutra "Já passou" (a hora já está no título, CXC-001). */
   passed: boolean;
 }
 
@@ -65,6 +66,8 @@ const PAST_DAYS = 7;
 /** A frase de cada problema de formulário (UX C5, erros), junto do campo e no resumo. */
 const PROBLEM_TEXT: Readonly<Record<AppointmentProblem | 'kind_required', { field: string; message: string }>> = {
   title_required: { field: 'title', message: 'Informe o que é o compromisso.' },
+  title_too_long: { field: 'title', message: tooLongText(NAME_MAX_CHARS) },
+  place_too_long: { field: 'place', message: tooLongText(NAME_MAX_CHARS) },
   kind_required: { field: 'kind', message: 'Escolha o tipo do compromisso.' },
   date_required: { field: 'date', message: 'Informe o dia do compromisso.' },
   date_invalid: { field: 'date', message: 'Informe um dia que existe.' },
@@ -76,6 +79,7 @@ const PROBLEM_TEXT: Readonly<Record<AppointmentProblem | 'kind_required', { fiel
 
 const FIELD_ID: Readonly<Record<string, string>> = {
   title: 'apt-title',
+  place: 'apt-place',
   kind: 'apt-kind',
   date: 'apt-date',
   time: 'apt-time',
@@ -270,7 +274,7 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
                     (activated)="openDetail(entry.appointment?.id ?? '')"
                   >
                     @if (entry.passed) {
-                      <span cgRowEnd class="routine-late"><svg appIcon="clock" size="sm"></svg>Passou do horário ({{ entry.time }})</span>
+                      <span cgRowEnd class="routine-late"><svg appIcon="clock" size="sm"></svg>Já passou</span>
                     }
                   </app-cg-row>
                 }
@@ -313,8 +317,12 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
 
     <app-cg-sheet [heading]="editingId() ? 'Remarcar compromisso' : 'Novo compromisso'" [(open)]="formOpen">
       <form class="routine-form" [formGroup]="form" novalidate (ngSubmit)="save()">
-        <app-error-summary [items]="errorItems()" />
+        <app-error-summary short [items]="errorItems()" />
 
+        @if (editingId()) {
+          <!-- Remarcar muda só o dia e a hora (CXC-018): o resto fica como está. -->
+          <p class="routine-when" data-role="reschedule-what">{{ form.controls.title.value }}</p>
+        } @else {
         <app-form-field label="O que é?" hint="Exemplo: consulta com o cardiologista" controlId="apt-title" [error]="messageOf('title')">
           <input appInput formControlName="title" autocomplete="off" />
         </app-form-field>
@@ -336,6 +344,7 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
             <span class="field__error"><svg appIcon="circle-alert" size="sm"></svg><span><span class="sr-only">Erro: </span>{{ problem }}</span></span>
           }
         </fieldset>
+        }
 
         <app-form-field label="Dia" controlId="apt-date" [error]="messageOf('date')">
           <input appInput type="date" formControlName="date" [attr.min]="today()" />
@@ -345,16 +354,18 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
           <input appInput type="time" formControlName="time" />
         </app-form-field>
 
-        <app-form-field label="Onde ou com quem" [optional]="true" controlId="apt-place">
-          <input appInput formControlName="place" autocomplete="off" />
-        </app-form-field>
+        @if (!editingId()) {
+          <app-form-field label="Onde ou com quem" [optional]="true" controlId="apt-place" [error]="messageOf('place')">
+            <input appInput formControlName="place" autocomplete="off" />
+          </app-form-field>
 
-        <app-cg-switch
-          label="Lembrar de mim"
-          hint="Avisamos um dia antes e 1 hora antes. No protótipo, o aviso aparece só dentro do app."
-          [checked]="form.controls.reminder.value"
-          (checkedChange)="form.controls.reminder.setValue($event)"
-        />
+          <app-cg-switch
+            label="Lembrar de mim"
+            hint="Avisamos um dia antes e 1 hora antes. No protótipo, o aviso aparece só dentro do app."
+            [checked]="form.controls.reminder.value"
+            (checkedChange)="form.controls.reminder.setValue($event)"
+          />
+        }
         @if (failure(); as text) {
           <app-cg-note variant="error">{{ text }}</app-cg-note>
         }
@@ -420,7 +431,12 @@ export class AgendaPage {
     }
     const raw = this.form.getRawValue();
     const found = this.agenda
-      .problems({ title: raw.title, date: raw.date === '' ? null : raw.date, time: raw.time === '' ? null : raw.time })
+      .problems({
+        title: raw.title,
+        place: raw.place,
+        date: raw.date === '' ? null : raw.date,
+        time: raw.time === '' ? null : raw.time,
+      })
       .map((p) => PROBLEM_TEXT[p]);
     if (!raw.kind) {
       found.push(PROBLEM_TEXT.kind_required);

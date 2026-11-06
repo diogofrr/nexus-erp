@@ -23,11 +23,13 @@ import {
   dsrDeadlineLabel,
   dsrDeadlineState,
   dsrDueDate,
+  effectivePreferredChannel,
   eligibleForAggregates,
   isConsentActive,
   isConsentOutdated,
   isRetentionExpired,
   retentionBlockUntil,
+  whatsappChannelNeedsConsent,
 } from './lgpd';
 import { isIntegerInRange, mean, percentOf, roundHalfUp } from './numbers';
 
@@ -235,5 +237,21 @@ describe('Encaminhamentos (Quadro 12; RN-ENC-01 a 11; AC-M13-05, 09)', () => {
 
   it('nenhuma categoria tem campo de valor ou comissão (RN-ENC-10)', () => {
     expect(JSON.stringify(REFERRAL_TABLE).toLowerCase()).not.toMatch(/comiss|valor|repasse/);
+  });
+});
+
+describe('Canal preferido WhatsApp e a autorização (RN-LGPD-05 e, QAC-005)', () => {
+  it('só o WhatsApp precisa da autorização de contato por WhatsApp', () => {
+    expect(whatsappChannelNeedsConsent('whatsapp', false)).toBe(true);
+    expect(whatsappChannelNeedsConsent('whatsapp', true)).toBe(false);
+    (['app', 'phone', 'email'] as const).forEach((channel) => {
+      expect(whatsappChannelNeedsConsent(channel, false)).toBe(false);
+    });
+  });
+
+  it('sem a autorização o canal que vale é o aplicativo (como o cadastro, S-40)', () => {
+    expect(effectivePreferredChannel('whatsapp', false)).toBe('app');
+    expect(effectivePreferredChannel('whatsapp', true)).toBe('whatsapp');
+    expect(effectivePreferredChannel('phone', false)).toBe('phone');
   });
 });

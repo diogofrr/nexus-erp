@@ -3,9 +3,11 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signa
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { ViewportService } from '../../../layout/state/viewport.service';
 import { CaregiverContextService } from '../state/caregiver-context.service';
+import { STORAGE_NOT_SAVING_TEXT, StorageStatusService } from '../state/storage-status.service';
 import { CgContactDialogComponent } from '../ui/cg-contact-dialog.component';
 import { CgHeaderComponent } from '../ui/cg-header.component';
 import { CgNavComponent } from '../ui/cg-nav.component';
+import { CgNoteComponent } from '../ui/cg-note.component';
 import { CgProtoNoteComponent } from '../ui/cg-proto-note.component';
 import { CaregiverUserMenuComponent } from './caregiver-user-menu.component';
 
@@ -32,6 +34,7 @@ import { CaregiverUserMenuComponent } from './caregiver-user-menu.component';
     RouterOutlet,
     CgHeaderComponent,
     CgNavComponent,
+    CgNoteComponent,
     CgProtoNoteComponent,
     CgContactDialogComponent,
     CaregiverUserMenuComponent,
@@ -50,6 +53,12 @@ import { CaregiverUserMenuComponent } from './caregiver-user-menu.component';
     </app-cg-header>
 
     <main class="cg-main" id="conteudo" tabindex="-1">
+      @if (storage.failing()) {
+        <!-- QAC-010: o que a pessoa faz não está sendo guardado; a faixa é calma e diz o que fazer. -->
+        <div class="cg-col cg-system-note">
+          <app-cg-note variant="error" icon="circle-alert"><span data-role="storage-note">{{ storageText }}</span></app-cg-note>
+        </div>
+      }
       <div class="cg-col">
         <router-outlet />
       </div>
@@ -70,7 +79,13 @@ export class CaregiverShellComponent {
 
   /** 1024 px ou mais: a navegação vai para o cabeçalho e a barra inferior não existe. */
   protected readonly wide = computed(() => this.viewport.navLayout() !== 'drawer');
-  /** Teclado virtual aberto: a barra inferior some para não cobrir o campo (AC-CG-05). */
+  protected readonly storage = inject(StorageStatusService);
+  protected readonly storageText = STORAGE_NOT_SAVING_TEXT;
+  /**
+   * Teclado virtual aberto: a barra inferior some para não cobrir o campo (AC-CG-05). Só vale com um campo de texto com
+   * foco, a janela visual encolhida e SEM zoom de pinça (`visualViewport.scale <= 1`): o zoom de quem tem baixa visão
+   * não é teclado e não pode esconder a navegação (QAC-011).
+   */
   protected readonly keyboardOpen = signal(false);
 
   constructor() {
@@ -84,13 +99,19 @@ export class CaregiverShellComponent {
     const visual = view?.visualViewport ?? null;
     const onResize = (): void => {
       if (view && visual) {
-        this.keyboardOpen.set(visual.height < view.innerHeight * 0.75);
+        const shrunk = visual.height < view.innerHeight * 0.75;
+        this.keyboardOpen.set(shrunk && visual.scale <= 1 && isTextField(this.doc.activeElement));
       }
     };
     visual?.addEventListener('resize', onResize);
+    // O foco muda antes ou depois de a janela encolher (abrir e fechar o teclado): reconfere nos dois casos.
+    this.doc.addEventListener('focusin', onResize);
+    this.doc.addEventListener('focusout', onResize);
 
     inject(DestroyRef).onDestroy(() => {
       visual?.removeEventListener('resize', onResize);
+      this.doc.removeEventListener('focusin', onResize);
+      this.doc.removeEventListener('focusout', onResize);
       restoreAttribute(root, 'data-theme', previousTheme);
       restoreAttribute(root, 'data-app', previousApp);
     });
@@ -103,6 +124,20 @@ export class CaregiverShellComponent {
     main?.focus();
     main?.scrollIntoView?.({ block: 'start' });
   }
+}
+
+/** Campo em que se digita (texto, número, e-mail, área de texto, lista, editável)? Caixa, opção e botão não abrem o teclado. */
+function isTextField(element: Element | null): boolean {
+  if (!element) {
+    return false;
+  }
+  if (element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement) {
+    return true;
+  }
+  if (element instanceof HTMLInputElement) {
+    return !['checkbox', 'radio', 'button', 'submit', 'reset', 'file', 'range', 'color', 'image'].includes(element.type);
+  }
+  return element instanceof HTMLElement && element.isContentEditable;
 }
 
 function restoreAttribute(root: HTMLElement, name: string, previous: string | null): void {

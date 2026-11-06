@@ -71,7 +71,7 @@ describe('Área my-wellbeing (Como estou)', () => {
         expect(order[i]!.compareDocumentPosition(order[i + 1]!) & Node.DOCUMENT_POSITION_FOLLOWING, `posição ${i}`).toBeTruthy();
       }
       expect(text(q('[data-role="timeline-intro"]'))).toBe(
-        'Cada ponto é uma conversa de acompanhamento com a equipe. A escala ajuda a equipe a escutar você. Não é um diagnóstico.',
+        'Cada ponto é uma conversa com a equipe. A escala ajuda a equipe a escutar você. Não é um diagnóstico.',
       );
       expect(text(q('[data-role="review"]'))).toBe('Pedir revisão de uma decisão');
       expect(text(q('[data-role="privacy-line"]'))).toBe('Só você e a equipe de psicologia que acompanha você veem estas informações.');
@@ -79,11 +79,14 @@ describe('Área my-wellbeing (Como estou)', () => {
 
     it('AC-CG-88 e 90: cada ponto mostra a data, a faixa por extenso e a pontuação só como legenda; a rampa é de azul, sem alarme (Ana)', async () => {
       await boot('cg_0001');
-      expect(text(q('[data-role="care-note"]'))).toBe('A equipe de psicologia vai falar com você hoje.');
+      // CXC-003: "hoje" no horário comercial (o relógio do teste marca 12:00 de uma quarta-feira).
+      expect(text(q('[data-role="care-note"]'))).toBe('A equipe de psicologia vai falar com você hoje. Você não precisa fazer nada.');
       const lines = timelineLines();
       expect(lines).toHaveLength(2);
-      expect(lines[0]).toMatch(/^04\/11 Sobrecarga severa 63 pontos Última conversa$/);
-      expect(lines[1]).toMatch(/^04\/08 Sobrecarga moderada a severa 48 pontos$/);
+      // CXC-004: a frase da faixa vem primeiro; o nome técnico e os pontos são a legenda pequena.
+      expect(lines[0]).toMatch(/^04\/11 O cuidado está pesando muito Sobrecarga severa 63 pontos Última conversa$/);
+      expect(lines[1]).toMatch(/^04\/08 O cuidado pesa bastante Sobrecarga moderada a severa 48 pontos$/);
+      expect(text(all('.cg-trend__item')[0]?.querySelector('span:nth-child(3)'))).toBe('O cuidado está pesando muito');
       expect(all('.cg-trend__dot').map((d) => d.getAttribute('data-band'))).toEqual(['4', '3']);
       expect(all('.cg-trend__score').map(text)).toEqual(['63 pontos', '48 pontos']);
       // Sem vermelho, âmbar, octógono, triângulo, termômetro, gráfico.
@@ -116,8 +119,8 @@ describe('Área my-wellbeing (Como estou)', () => {
       await boot('cg_0003');
       expect(q('[data-role="care-note"]')).toBeNull();
       expect(timelineLines().map((l) => l.replace(/ Última conversa$/, ''))).toEqual([
-        '25/10 Sobrecarga moderada a severa 52 pontos',
-        '27/07 Sobrecarga severa 66 pontos',
+        '25/10 O cuidado pesa bastante Sobrecarga moderada a severa 52 pontos',
+        '27/07 O cuidado está pesando muito Sobrecarga severa 66 pontos',
       ]);
       TestBed.resetTestingModule();
       await boot('cg_0012');
@@ -198,9 +201,10 @@ describe('Área my-wellbeing (Como estou)', () => {
   describe('contato da equipe', () => {
     it('AC-CG-91: Maria lê que a equipe ainda não conseguiu falar com ela, tem "Falar com a gente agora" e "Combinar um horário", e o pedido de revisão com a Dra. Beatriz', async () => {
       await boot('cg_0002');
-      expect(text(q('[data-role="care-note"]'))).toBe(
-        'A equipe ainda não conseguiu falar com você. A responsável técnica foi avisada e vai procurar você.',
-      );
+      // CXC-003: um convite, sem "responsável técnica" e sem "ainda não conseguiu falar com você".
+      expect(text(q('[data-role="care-note"]'))).toBe('Queremos falar com você. Se quiser, fale com a gente agora.');
+      expect(pageText().toLowerCase()).not.toContain('responsável técnica');
+      expect(pageText().toLowerCase()).not.toContain('não conseguiu');
       expect(text(q('[data-role="talk-now"]'))).toBe('Falar com a gente agora');
       expect(text(q('[data-role="arrange"]'))).toBe('Combinar um horário');
       const card = text(all('[data-role="review-card"]')[0]);
@@ -256,7 +260,7 @@ describe('Área my-wellbeing (Como estou)', () => {
       await click(q('[data-role="review"]'));
       expect(isOpen('Pedir revisão')).toBe(true);
       expect(text(sheet('Pedir revisão'))).toContain(
-        'Se você não concorda com alguma decisão tomada com base nos seus resultados, conte aqui. O psicólogo responde por escrito.',
+        'Se você não concorda com algo que a equipe decidiu a partir dos seus resultados, conte aqui. O psicólogo responde por escrito.',
       );
       const field = q<HTMLTextAreaElement>('[data-role="review-field"]')!;
       field.value = 'Não concordo com a decisão de acompanhamento prioritário.';

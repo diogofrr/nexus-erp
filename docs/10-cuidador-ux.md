@@ -43,6 +43,29 @@ O dono disse: "tem MUITA informação, essa plataforma é para o CLIENTE". Cada 
 
 ---
 
+## 0.2 O que mudou depois da rodada de CS/CX (docs/14 e docs/15)
+
+Este quadro resume o que o CS/CX e o QA pediram e o que o desenho passou a dizer. O texto e os critérios de aceite das partes seguintes já estão atualizados onde mudaram; o detalhe (arquivos, conferência, o que ficou de fora) está em `docs/15-correcoes-cuidador-b.md`.
+
+| Achado | O que o desenho diz agora |
+|---|---|
+| CXC-001 | O item de lista (A.2.6) dá ao texto largura mínima (`10em`) e a etiqueta (`[cgRowEnd]`) **desce para baixo do título** quando não cabe ao lado; vale nos três tamanhos de letra. |
+| CXC-002 | Um só componente de humor (A.2.11) para Hoje e Como estou, sempre em largura total (5 rostos na letra Normal; lista vertical em Grande e Bem grande). |
+| QAC-009 | `app-cg-card`, `app-cg-plan-lock` e o estado vazio têm `headingLevel` (padrão 2; 3 dentro de seção com `h2`): nenhuma tela pula de h1 para h3. |
+| CXC-013 | O botão voltar do aparelho **fecha a folha** e **desfaz um passo** (marcar conversa, cadastro) com **uma entrada de histórico por camada** (mesmo endereço, sem parâmetro na URL). |
+| QAC-010 | O shell mostra uma **faixa calma** quando o navegador não guarda ("O navegador não está guardando o que você faz. Libere espaço ou o armazenamento do site e recarregue."); o aviso do Dei diz "mas não foi guardado". |
+| CXC-014 | A entrada tem **Ajuda agora** na faixa de marca e **Criar minha conta** logo abaixo do título da porta; a lista de pessoas de demonstração vem depois. |
+| CXC-016 | "Como falar com a gente" mostra só o canal preferido e o telefone; os outros ficam atrás de **Mais jeitos**. O e-mail não quebra no meio e o resultado de "Copiar" fica junto do botão (falha em cor de aviso). |
+| CXC-017 | **Um aviso só** por ação: ou a faixa da tela ou o aviso rápido (fica o aviso rápido onde há "Desfazer" e nenhuma faixa). Com aviso rápido na tela o conteúdo ganha folga embaixo. |
+| CXC-018 | **Remarcar** um compromisso abre só o dia e a hora. |
+| CXC-019 | Sem jargão na tela: "Para aprender e trocar" (e não "psicoeducação"), "Grupo com psicólogo" e "Psicoterapia em grupo", "Conversas regulares com o mesmo psicólogo" (e não "objetivo clínico"), "ajuda com o cansaço" (e não "escala de cansaço do cuidador"), "Resultados sem o seu nome" (e não "números somados"). O registro do conselho do profissional da rede só aparece na ficha dele. |
+| CXC-020 | A leitura do dia diz o tempo real do texto; "Para você" não se repete; "Faltam N dias para a resposta"; o assunto da mensagem à equipe diz "(opcional)". |
+| CXC-021 | Em Grupos, quem não tem acesso vê "Plano Cuida" na própria linha e a roda aberta primeiro; o que a pessoa já faz fica só em "Minhas inscrições". |
+| CXC-022 e CXC-023 | A entrada respeita a letra Grande e Bem grande; a palavra NEXUS não some do cabeçalho; o aviso de protótipo aparece **uma vez** por tela; o resumo de erros é **curto** (diz quantos pontos, sem repetir a lista; com um ponto só nem aparece e o foco vai ao campo). |
+| CXC-024 | Em Meu perfil o CPF começa recolhido ("Mostrar") e o rótulo das horas fica em cima da linha "menos, número, mais". |
+| CXC-026 | O Cartão mostra as 3 últimas compras e o total, com "Ver todas". |
+| CXC-028 | Hoje diz, em uma linha, que o humor está pausado quando a pessoa retirou a autorização de saúde. |
+
 # PARTE A. Visual e componentes
 
 ## A.1 Tema do cuidador: o que fica e o que muda
@@ -208,7 +231,7 @@ Alvos: **48 x 48 mínimo**, também para ícone sozinho (aumentar a área com pa
 | **Informação** (`info`) | Fato neutro, aviso de prazo | mesmas cores do cuidado | `info` | "Seu plano muda para o Livre em 14/11." |
 | **Aguardando** (`soft`) | Pedido enviado, esperando resposta; bloqueio por plano | `#F0EDE5` / `#D8D4C8` / `#3F4A56` / `#5A6673` | `clock`, `hourglass`, `lock` | "Pedido enviado. A equipe responde em até 24 horas úteis." |
 | **Feito** (`ok`) | Remédio dado, inscrição confirmada | `#E9F6EF` / `#CFEBDD` / `#17613D` / `#1F7A4D` | `circle-check` | "Dado às 08:12." |
-| **Passou do horário** (`late`) | Remédio ou compromisso **da pessoa idosa** fora do horário | `#FFF5DC` / `#FFE8B0` / `#6B3D00` / `#B87500` | `clock` | "Passou do horário (08:00)." |
+| **Passou do horário** (`late`) | Remédio ou compromisso **da pessoa idosa** fora do horário. No remédio o texto é neutro ("Ainda não anotado") e o âmbar entra **uma vez só** por tela | `#FFF5DC` / `#FFE8B0` / `#6B3D00` / `#B87500` | `clock` | "Ainda não anotado." |
 | **Problema** (`error`) | **Só** erro de formulário, falha do sistema e o botão de ato irreversível na folha de confirmação | `#FDEEEC` / `#F9D6D2` / `#7A1A12` / `#B42318` | `circle-alert` | "Informe a data de nascimento." |
 | **Emergência** | Só a tela Ajuda agora e o aviso de emergência cheio | fundo `#133350`, texto `#FFFFFF` (13:1) | `phone` | "Em emergência, ligue 192." |
 
@@ -304,8 +327,8 @@ Todos são standalone, `OnPush`, com signals (convenção do projeto) e vivem em
 ### A.2.12 Marcação "dei o remédio" (`app-cg-dose`)
 - **Serve para**: marcar que o remédio foi dado, **em um toque** (coleção `doseChecks`).
 - **Anatomia (linha de 72 a 88)**: ícone `pill` em círculo de 40; nome e dose (18/600 e 16 soft); horário (18, tabular) ; à direita, botão **Dei** (48 x 88).
-- **Estados**: **a dar** (botão "Dei" secundário); **no horário ou até 30 minutos antes** (botão "Dei" primário); **passou do horário** (nota `late`: "Passou do horário (08:00)", botão "Dei" primário); **dado** (fundo `--cg-ok-bg`, ícone `circle-check`, texto "Dado às 08:12", botão vira botão de texto "Desfazer"); **sem remédio hoje** (estado vazio).
-- **Regras**: o **toque único marca "dado agora"** (`givenAt` = agora do relógio simulado). Mudar o horário: tocar na linha dada abre a folha "Dei em outro horário" `[S-06]`. Desfazer: botão de texto, sem confirmação (é reversível). A linha **não muda de lugar** ao marcar (sem pulo de layout).
+- **Estados**: **a dar** (botão "Dei" secundário); **no horário ou até 30 minutos antes** (botão "Dei" primário); **passou do horário** (texto "Ainda não anotado", âmbar suave só na primeira linha em atraso e neutro nas outras, botão "Dei" primário); **dado** (fundo `--cg-ok-bg`, ícone `circle-check`, texto "Dado às 08:12" e, **embaixo do texto, longe do lugar do Dei**, o link pequeno "Desfazer"); **sem remédio hoje** (estado vazio).
+- **Regras**: o **toque único marca "dado agora"** (`givenAt` = agora do relógio simulado). Mudar o horário: tocar na linha dada abre a folha "Dei em outro horário" `[S-06]`. Desfazer: link pequeno, sem confirmação (é reversível); um toque até 1 s depois do Dei é ignorado (CXC-008). **O que falta aparece primeiro** e a ordem é **fixada ao abrir a tela**: a linha **não muda de lugar** ao marcar (sem pulo de layout, e o segundo toque de quem dá dois toques não cai no Dei de outro remédio).
 - **Acessibilidade**: nome do botão "Dei o Losartana das 08:00"; depois "Desfazer: Losartana das 08:00 dado às 08:12"; anúncio `aria-live="polite"` "Marcado: Losartana, 08:12".
 - **Texto**: "Dei", "Dado às 08:12", "Desfazer", toast "Anotado às 08:12. Desfazer".
 
@@ -423,7 +446,7 @@ O sprite Lucide (`public/icons/sprite.svg`, gerado por `node tools/build-icons.m
 - **AC-CG-02** Dado o seletor em "Bem grande", quando se abrem Hoje, Remédios, Meu plano e Como estou em 360 px, então o corpo é **22 px**, não há rolagem horizontal da página e nenhum texto é cortado, sobreposto ou terminado em reticências.
 - **AC-CG-03** Dada qualquer tela do app (inclusive `/cuidador/comecar`), quando a pessoa toca "Ajuda agora" no cabeçalho, então abre `/cuidador/ajuda-agora` em **1 toque**; o botão está visível sem rolar, tem texto visível e não muda de cor nem anima.
 - **AC-CG-04** Dado 360 a 1023 px, então a barra inferior tem **5 itens** na ordem Hoje, Rotina, Cuidar de mim, Rede, Mais; o item da seção atual tem `aria-current="page"` e destaque que não depende só de cor. Dado 1024 px ou mais, a mesma navegação está no cabeçalho e **não existe** barra inferior.
-- **AC-CG-05** Dado um campo de texto com foco e o teclado virtual aberto, então a barra inferior não cobre o campo (some) e nenhuma barra de ação fixa o cobre; ao tocar fora do campo, a barra volta.
+- **AC-CG-05** Dado um campo de texto com foco e o teclado virtual aberto, então a barra inferior não cobre o campo (some) e nenhuma barra de ação fixa o cobre; ao tocar fora do campo, a barra volta. A barra só some com **campo de texto com foco**, janela visual encolhida e **sem zoom de pinça** (`visualViewport.scale <= 1`, QAC-011): quem dá zoom não perde a navegação.
 - **AC-CG-06** Todo par de cores de texto do app tem contraste de **4,5:1 ou mais** e todo contorno, ícone de estado e anel de foco tem **3:1 ou mais** (script de verificação dos tokens `--cg-*` sobre `--cg-bg` e `--cg-surface`).
 - **AC-CG-07** Dado `prefers-reduced-motion: reduce`, quando se abre e fecha uma folha, então não há deslize nem fade (duração 0) e nada se move sozinho.
 - **AC-CG-08** Dado qualquer nota, etiqueta ou estado do app, então ele tem **ícone e texto**; nenhum estado depende só de cor (verificação em escala de cinza).
@@ -481,7 +504,7 @@ Cada fluxo traz **onde começa**, o **máximo de toques** (a partir de Hoje, sem
 **Onde pode errar e como se recupera**
 - **Tocou "Dei" sem querer**: "Desfazer" na faixa (8 s) ou, depois, "Desfazer" na própria linha, **a qualquer hora do dia**, sem confirmação (é reversível).
 - **Deu em outro horário**: tocar na linha dada abre "Dei em outro horário" (campo de hora, botão "Salvar horário").
-- **Esqueceu de marcar**: a linha passa a "Passou do horário (08:00)" em âmbar suave (sem vermelho); "Dei" continua disponível, com a opção de outro horário.
+- **Esqueceu de marcar**: a linha passa a "Ainda não anotado" (neutro; âmbar suave só na primeira linha em atraso, sem vermelho); "Dei" continua disponível, com a opção de outro horário.
 - **Remédio que não toma mais**: no detalhe do remédio, chave "Este remédio está em uso" desligada; ele sai de Hoje e fica em "Em pausa".
 - **Dúvida de dose**: o app **não orienta**. Texto fixo em Remédios: "O app só ajuda você a lembrar. Dúvida sobre dose ou troca de remédio: fale com o médico ou a farmácia."
 
@@ -673,9 +696,9 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-25** Dada a etapa 1 com data de nascimento que dá menos de 18 anos, quando se toca Continuar, então aparece "Você precisa ter 18 anos ou mais." junto do campo e no resumo, e nada digitado é apagado; com exatamente 18 anos hoje, passa.
 - **AC-CG-26** Dada a etapa 1 com CPF válido de verdade, então aparece "Parece um CPF real. Use um CPF fictício."; dado o toque em "Gerar CPF fictício", então o campo recebe um CPF fictício inválido e o erro some.
 - **AC-CG-27** Dada a etapa 3 com horas fora de 0 a 24, então aparece "As horas por dia devem ser de 0 a 24."; dado canal WhatsApp, então o campo de número aparece já preenchido com o celular.
-- **AC-CG-28** Dada a etapa 4, então os 5 consentimentos são cartões **independentes**, nenhuma opção vem marcada, "Concordo", "Não concordo" e "Decidir depois" têm o mesmo tamanho e peso, o piloto (TCLE) não aparece, e quem toca Continuar sem escolher fica "Decidir depois" (`pending`).
-- **AC-CG-29** Dado o consentimento de saúde recusado ou adiado, então o cadastro conclui normalmente no plano Livre e aparece a nota "Tudo bem. A agenda, os remédios e os conteúdos continuam. A conversa de acompanhamento só acontece com a sua autorização."
-- **AC-CG-30** Dada a etapa 5 sem o aceite do aviso de emergência, quando se toca **Criar minha conta**, então aparece "Marque que você leu o aviso para criar a conta." e a conta não é criada; com o aceite, grava a data e a hora.
+- **AC-CG-28** Dada a etapa 4, então a autorização de saúde aparece em **duas frases** com "Ler mais" e as outras 4 ficam num bloco **"Outras autorizações (opcional)"**, recolhido (CXC-015); os 5 consentimentos são cartões **independentes**, nenhuma opção vem marcada, "Concordo", "Não concordo" e "Decidir depois" têm o mesmo tamanho e peso, o piloto (TCLE) não aparece, e quem toca Continuar sem escolher fica "Decidir depois" (`pending`).
+- **AC-CG-29** Dado o consentimento de saúde recusado ou adiado, então o cadastro conclui normalmente no plano Livre e aparece a nota "A agenda, os remédios e os conteúdos continuam. A conversa de acompanhamento só acontece com a sua autorização." (sem "Tudo bem.", CXC-023)
+- **AC-CG-30** Dada a etapa 5 (uma linha por bloco, com "Editar", sem repetir o que a pessoa digitou) sem o aceite do aviso de emergência, quando se toca **Criar minha conta**, então aparece "Marque que você leu o aviso para criar a conta." e a conta não é criada; com o aceite, grava a data e a hora.
 - **AC-CG-31** Dado **Criar minha conta**, então nascem 1 cuidador `active`, 1 pessoa idosa vinculada, 1 assinatura Livre, 6 consentimentos com o estado escolhido (`granted`, `refused` ou `pending`) e eventos de consentimento com canal "aplicativo"; a pessoa é levada à tela "Tudo pronto".
 - **AC-CG-32** Dado que a pessoa sai no meio e volta, então aparece "Você tem um cadastro em andamento. Retomar ou começar de novo?" com os dois botões de mesmo peso, e "Retomar" restaura todos os campos.
 - **AC-CG-33** Dado todo o fluxo, então **não existe campo de número de cartão, validade nem pagamento**, e nenhuma etapa pede condição de saúde ou remédio.
@@ -778,10 +801,10 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 6. **Para você** (uma coisa só): ou **avaliar um serviço concluído**, ou **o convite do dia** `[S-11]`.
 7. **Falar com a gente** (botão de texto) e o aviso de protótipo.
 **Textos.**
-- Nota de cuidado, **contato pendente hoje**: título "A equipe de psicologia vai falar com você hoje." Texto: "Quer saber como você está e entra em contato pelo seu canal preferido. Você não precisa fazer nada." Ação: botão de texto "Prefere falar agora?" (abre o diálogo A.2.16).
-- Nota de cuidado, **contato que ainda não aconteceu** (já passou do dia): título "A equipe ainda não conseguiu falar com você." Texto: "A responsável técnica foi avisada e vai procurar você. Se preferir não esperar, fale com a gente agora." Ação: botão **Falar com a gente agora**.
+- Nota de cuidado, **contato pendente hoje**: título "A equipe de psicologia vai falar com você hoje." Texto: "Você não precisa fazer nada." (o título diz "hoje" só em horário comercial; fora dele, "amanhã de manhã" ou "na segunda de manhã", CXC-003). Ação: botão de texto "Prefere falar agora?" (abre o diálogo A.2.16).
+- Nota de cuidado, **contato que ainda não aconteceu** (já passou do dia): título "Queremos falar com você." Texto: "Se quiser, fale com a gente agora." (sem "responsável técnica" e sem "ainda não conseguiu falar com você", CXC-003). Ação: botão **Falar com a gente agora**.
 - **Nunca** aparecem: "alerta", "vermelho", "urgente", pontuação, faixa, prazo em horas, "vencido", "atrasado".
-- Compromisso: título "Próximo compromisso"; "Fisioterapia, hoje às 14:00"; apoio "Clínica Movimento Vital". Conversa da pessoa: "Sua conversa com a Dra. Beatriz, qui, 06/11, às 14:00" com a etiqueta "Para você". Vazio: "Nenhum compromisso nos próximos dias." e botão de texto "Adicionar compromisso".
+- Compromisso: título "Próximo compromisso"; "Fisioterapia, hoje às 14:00"; apoio "Clínica Movimento Vital". Conversa da pessoa: "Sua conversa com a Dra. Beatriz, qui, 06/11, às 14:00" (a etiqueta "Para você" fica na Agenda; em Hoje a frase já diz que é dela, CXC-020). Vazio: "Nenhum compromisso nos próximos dias." e botão de texto "Adicionar compromisso".
 - Remédios: "Remédios de hoje" e "2 de 4 dados". Linha: "Losartana 50 mg", "08:00", botão "Dei". Dado: "Dado às 08:12" e "Desfazer". Vazio sem cadastro: "Nenhum remédio cadastrado." e botão "Cadastrar um remédio". Sem remédio hoje: "Hoje não há remédios para dar."
 - Humor: pergunta "Como você está hoje?"; depois "Anotado para hoje: Bem." e "Mudar". Se "Muito mal" ou "Mal": nota `care` "Dias difíceis acontecem. Se quiser conversar, fale com a gente." com **Falar com a gente** (e, para "Muito mal", "Ajuda agora").
 - Convite do dia (rodízio fixo, **só itens abertos a todos os planos**): "Uma conversa só para você. Reserve um horário com um psicólogo da Nexus. Você escolhe o formato." (**Ver horários**)
@@ -806,18 +829,18 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 **Critérios de aceite.**
 - **AC-CG-41** Dada a rota `/cuidador/hoje`, então os blocos aparecem na ordem saudação, nota de cuidado (se houver), próximo compromisso, remédios, humor, "Para você", "Falar com a gente"; só um h1; e em 360 x 800 px, sem rolar, aparecem a nota, o compromisso e as 2 primeiras linhas de remédio quando há nota, ou o compromisso e as 3 primeiras linhas quando não há.
 - **AC-CG-42** Dada a hora simulada, então a saudação é "Bom dia" até 11:59, "Boa tarde" até 17:59 e "Boa noite" depois, com o primeiro nome.
-- **AC-CG-43** Dada Ana (contato pendente hoje), então Hoje mostra "A equipe de psicologia vai falar com você hoje." e **não** mostra "alerta", "vermelho", pontuação, faixa nem relógio; e o "Para você" mostra só o item de avaliação, se houver, **nunca** o convite do dia.
-- **AC-CG-44** Dada Maria (contato vencido), então Hoje mostra "A equipe ainda não conseguiu falar com você." com o botão "Falar com a gente agora", **sem** "vencido", "atrasado" nem prazo, em estilo `care` (azul), nunca vermelho.
+- **AC-CG-43** Dada Ana (contato pendente hoje), então Hoje mostra "A equipe de psicologia vai falar com você hoje." (**só em horário comercial**, segunda a sexta, 8h às 18h; fora dele, "amanhã de manhã" ou "na segunda de manhã", CXC-003) e **não** mostra "alerta", "vermelho", pontuação, faixa nem relógio; e o "Para você" mostra só o item de avaliação, se houver, **nunca** o convite do dia.
+- **AC-CG-44** Dada Maria (contato vencido), então Hoje mostra "Queremos falar com você. Se quiser, fale com a gente agora." (sem "responsável técnica" e sem "ainda não conseguiu", CXC-003) com o botão "Falar com a gente agora", **sem** "vencido", "atrasado" nem prazo, em estilo `care` (azul), nunca vermelho.
 - **AC-CG-45** Dado o contato da equipe registrado (Ana ou Maria), quando Hoje é aberto de novo, então a nota **não aparece mais**.
 - **AC-CG-46** Dada uma linha de remédio, quando se toca **Dei**, então em 1 toque a linha mostra "Dado às HH:mm" com `circle-check`, aparece a faixa "Anotado às HH:mm. Desfazer." por 8 s, existe um `doseCheck` (`medicationId`, `date`, `time`, `givenAt`), e a linha **não muda de posição**.
-- **AC-CG-47** Dada uma linha dada, quando se toca "Desfazer" (na faixa ou na linha), então o `doseCheck` é removido, a linha volta ao estado anterior e **não há** diálogo de confirmação.
-- **AC-CG-48** Dado um remédio cujo horário passou sem "Dei", então a linha mostra "Passou do horário (08:00)" em âmbar suave com ícone de relógio, **sem vermelho**, e o botão "Dei" segue ativo.
+- **AC-CG-47** Dada uma linha dada, quando se toca "Desfazer" (na faixa ou no link pequeno da linha, **longe do lugar do Dei**; um toque até 1 s depois do Dei é ignorado, CXC-008), então o `doseCheck` é removido, a linha volta ao estado anterior e **não há** diálogo de confirmação.
+- **AC-CG-48** Dado um remédio cujo horário passou sem "Dei", então a linha mostra "Ainda não anotado" (texto neutro, sem a palavra "passou"; o âmbar suave com relógio só na **primeira** linha em atraso, as outras neutras, CXC-005), **sem vermelho**, e o botão "Dei" segue ativo. As doses que faltam aparecem **primeiro**.
 - **AC-CG-49** Dados mais de 4 remédios no dia, então aparecem 4 linhas e "Ver todos (N)" que abre a aba Remédios; dado nenhum cadastrado, então aparece o vazio com "Cadastrar um remédio".
 - **AC-CG-50** Dado o humor, quando se toca uma das 5 opções, então grava **um registro por dia** (tocar de novo em "Mudar" substitui), nada vem pré-marcado e as 5 opções têm o mesmo visual (sem cor de semáforo); dado "Muito mal" ou "Mal", então aparece a nota "Dias difíceis acontecem..." com "Falar com a gente".
 - **AC-CG-51** Dado consentimento de saúde retirado (Sônia), então o bloco de humor **não aparece** em Hoje e a nota de cuidado também não.
 - **AC-CG-52** Dado o convite do dia, então ele é sempre de item **aberto a todos os planos** (conversa com psicólogo, roda aberta ou conteúdo livre), muda por regra de calendário, **nunca** depende de pontuação, faixa, alerta ou ARBE, e **nunca** mostra preço, plano nem bloqueio.
 - **AC-CG-53** Dado um serviço da rede concluído e ainda sem avaliação, então "Para você" mostra "Como foi o atendimento de {nome}?" com **Avaliar**, que leva a `/cuidador/rede/pedidos?avaliar=<id do pedido>`, onde abre a folha de A.2.22 (a folha é de Meus pedidos, não de Hoje).
-- **AC-CG-54** Dada a pessoa com canal preferido telefone ou familiaridade digital baixa (João), então o fechamento de Hoje é o cartão "Prefere falar com a gente?" com o telefone `(34) 90000-0000` em destaque; para os demais é o botão de texto.
+- **AC-CG-54** Dada a pessoa com canal preferido telefone ou familiaridade digital baixa (João), então o cartão "Prefere falar com a gente?" com o telefone `(34) 90000-0000` em destaque **sobe para logo depois da saudação** quando o canal preferido é telefone ou WhatsApp (CXC-025; "No protótipo, a ligação não é feita." só aparece ao tocar); para os demais o fechamento é o botão de texto "Como falar com a gente".
 - **AC-CG-55** Dado Hoje em 1280 px, então os blocos ficam em duas colunas (compromisso e remédios à esquerda; humor e convite à direita) e a nota de cuidado ocupa a largura toda acima.
 - **AC-CG-56** Dado Hoje, então não aparece plano, preço, desconto, pontuação, faixa, ARBE nem a palavra "alerta" para nenhuma pessoa de demonstração.
 
@@ -855,7 +878,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - Vazio: título "Nenhum compromisso por aqui", texto "Quando você adicionar uma consulta ou uma sessão, ela aparece nesta lista.", botão **Adicionar compromisso**.
 **Estados.**
 - Carregando (esqueleto de 3 itens), erro com "Tentar de novo", sem conexão (nota `soft`).
-- Compromisso de hoje cuja hora já passou: etiqueta `late` "Passou do horário (14:00)".
+- Compromisso de hoje cuja hora já passou: etiqueta `late` "Já passou" (a hora já está no título; em tela estreita a etiqueta desce para baixo do título, CXC-001).
 - **Sem pessoa idosa cadastrada** não ocorre (o cadastro exige).
 **Por pessoa.**
 - Igual para todos; muda o conteúdo. Quem tem conversa marcada (Ana, Lourdes) vê o item "Para você".
@@ -892,7 +915,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
   - "Informe uma hora no formato 08:00."
 **Estados.**
 - Remédio no horário ou até 30 minutos antes: botão **Dei** primário; fora disso, secundário.
-- Passou do horário: nota `late`.
+- Passou do horário: texto neutro "Ainda não anotado" (âmbar suave só na primeira linha; docs/15).
 - Carregando e erro como em Agenda.
 - O app **nunca apaga** um remédio: só pausa (`active: false`) e mantém os `doseChecks` do passado.
 **Por pessoa.** Igual para todos; muda o conteúdo. João (pouca familiaridade): a linha mostra a hora em 22 px e o botão **Dei** ocupa 96 px de largura (letra Grande é a sugestão do cadastro, não automática).
@@ -905,7 +928,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-68** Dada a chave "Este remédio está em uso" desligada, então o remédio sai de Hoje e vai a "Em pausa", os `doseChecks` antigos continuam, e **não existe** ação de apagar remédio.
 - **AC-CG-69** Dado um remédio sem cadastro nenhum, então o vazio mostra "Você ainda não cadastrou remédios" e o botão **Cadastrar um remédio**; dado nenhum remédio no dia, mostra "Hoje não há remédios para dar."
 - **AC-CG-70** Dado qualquer campo ou texto desta tela, então **não há** campo de diagnóstico, de motivo do remédio nem de orientação de dose, e a tela não sugere trocar, parar ou aumentar remédio.
-- **AC-CG-71** Dada uma dose cujo horário passou, então a linha mostra "Passou do horário (08:00)" em âmbar suave com ícone de relógio (sem vermelho) e **Dei** continua disponível.
+- **AC-CG-71** Dada uma dose cujo horário passou, então a linha mostra "Ainda não anotado" (neutro; âmbar suave só na primeira linha em atraso, sem vermelho) e **Dei** continua disponível; a etiqueta do compromisso de hoje que já passou é "Já passou".
 
 ## C7. `/cuidador/cuidar-de-mim`: Cuidar de mim, a porta (P2, `care`, `[P-02]`)
 **Propósito.** Levar a pessoa a um dos quatro cuidados com ela mesma, sem dado e sem pressão.
@@ -995,9 +1018,9 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-77** Dado **Marcar uma conversa**, então o passo 1 mostra 3 formatos e o passo 2 só lista horários **abertos** de psicólogos com registro ativo; em coworking, só salas com os 4 itens de acessibilidade; um toque no formato leva ao passo 2.
 - **AC-CG-78** Dado um horário escolhido, então a folha de resumo mostra quando, com quem, como, valor, desconto (quando há) e total **antes** de gravar; **O que você procura?** vem sem nada marcado e não deixa gravar sem escolher uma das 3 opções.
 - **AC-CG-79** Dada a pessoa no plano Livre, então o resumo mostra só "Total: R$ 120,00", **sem** linha de desconto, sem comparação com outro plano e sem convite; dado Cuida, mostra o desconto de 15% e o total R$ 102,00.
-- **AC-CG-80** Dado **Marcar conversa**, então grava a sessão com o formato, o horário, o caráter escolhido e o preço do plano, o horário sai da lista, e a tela mostra "Conversa marcada: {dia}, às {hora}, com {nome}." com a situação "Aguardando confirmação do psicólogo".
+- **AC-CG-80** Dado **Marcar conversa**, então grava a sessão com o formato, o horário, o caráter escolhido e o preço do plano, o horário sai da lista, e a tela mostra **uma faixa só**: "Pedido enviado. O psicólogo confirma até 24 horas antes da conversa." (RN-ATD-15), com "Ver na agenda"; o cartão "Sua próxima conversa" traz o dia e a situação "A confirmar". Quem escolheu "Não sei" vê "A definir na conversa" no lugar do caráter (CXC-007).
 - **AC-CG-81** Dado que o horário foi tomado por outra pessoa no instante de gravar, então aparece "Esse horário acabou de ser reservado. Escolha outro." e o formato e o resumo continuam.
-- **AC-CG-82** Dada uma conversa a 24 horas ou mais, quando se toca **Cancelar conversa**, então a folha diz "Cancelar libera o horário. Não há custo."; a menos de 24 horas, diz que ficará registrado como falta; em ambos, **Remarcar em vez de cancelar** e **Voltar** estão na folha.
+- **AC-CG-82** Dada uma conversa a 24 horas ou mais, quando se toca **Cancelar conversa**, então a folha diz "Cancelar libera o horário. Não há custo."; a menos de 24 horas, diz "Faltam menos de 24 horas. Se cancelar agora, a conversa conta como perdida. Não há cobrança." (CXC-006); com 24 horas ou mais, **Remarcar em vez de cancelar** e **Voltar** estão na folha; com menos, **Remarcar em vez de cancelar** sai (o efeito é o mesmo) e ficam **Cancelar a conversa** e **Voltar**.
 - **AC-CG-83** Dado cancelar ou remarcar, então o horário antigo volta a ficar aberto, e a situação passa a "Cancelada por você" (cancelar) ou a conversa muda de horário (remarcar).
 - **AC-CG-84** Dado formato "Em casa", então o resumo pede o endereço e mostra "O psicólogo confirma se o local é adequado e seguro antes de confirmar a conversa."; dado "On-line", mostra o aviso de pertinência do formato.
 - **AC-CG-85** Dada qualquer conversa, então mostra o caráter "Psicoterapia" ou "Orientação psicológica", e os horários de prioridade não têm etiqueta nem texto que explique por que existem.
@@ -1071,8 +1094,8 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-87** Dada a rota, então os blocos aparecem na ordem `h1` com apoio, nota de cuidado (se houver), humor, linha do tempo, e o botão de texto "Pedir revisão de uma decisão"; a frase "Não é um diagnóstico." está visível junto da linha do tempo.
 - **AC-CG-88** Dada a linha do tempo, então cada ponto mostra a **data**, a **faixa por extenso** (nome oficial) e a pontuação **só como legenda de 14 px**; os pontos usam a rampa de azul (`--cg-band-1` a `4`); **não há** vermelho, âmbar, octógono, triângulo, termômetro, gráfico de linha nem número com mais de 18 px na tela.
 - **AC-CG-89** Dada a tela inteira, então **não aparecem** as palavras "alerta", "eficácia", "melhorou", "piorou", nem percentual de evolução; o texto é só factual (datas e faixas).
-- **AC-CG-90** Dada Ana, então a nota diz "A equipe de psicologia vai falar com você hoje." e a linha do tempo mostra as duas conversas (48 e 63) com as faixas por extenso, **sem** destaque de cor de risco.
-- **AC-CG-91** Dada Maria, então a nota diz "A equipe ainda não conseguiu falar com você.", aparece "Combinar um horário" (que cria uma mensagem de aplicativo para a equipe) e o cartão "Seu pedido de revisão está com a Dra. Beatriz. Resposta até {data}."
+- **AC-CG-90** Dada Ana, então a nota diz "A equipe de psicologia vai falar com você hoje." (em horário comercial) e a linha do tempo mostra as duas conversas (48 e 63) com a **frase da faixa primeiro** ("O cuidado está pesando muito") e o nome técnico e os pontos em legenda pequena (CXC-004), **sem** destaque de cor de risco.
+- **AC-CG-91** Dada Maria, então a nota diz "Queremos falar com você. Se quiser, fale com a gente agora.", aparece "Combinar um horário" (que cria uma mensagem de aplicativo para a equipe) e o cartão "Seu pedido de revisão está com a Dra. Beatriz. Resposta até {data}."
 - **AC-CG-92** Dado **Pedir revisão de uma decisão**, quando se escreve e se toca **Enviar pedido**, então grava um pedido de revisão com o prazo e a tela mostra "Pedido enviado. O psicólogo responde até {data}."; texto vazio mostra "Conte em uma frase o que você quer que a equipe reveja."
 - **AC-CG-93** Dado qualquer momento, então a pessoa **nunca preenche a escala**: não há campo, pergunta nem botão para responder os 22 itens.
 - **AC-CG-94** Dada Sônia (consentimento de saúde retirado), então não aparecem humor nem linha do tempo, aparece "O acompanhamento está pausado" com **Autorizar de novo**, e Hoje não mostra nenhum bloco de saúde.
@@ -1108,13 +1131,13 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **Sônia**: igual ao plano dela (Essencial).
 **RN.** RN-GRP-01 a 03, 09, 13, 14, 16, 17, RN-PLN-10, 19, RN-ATD-19, RN-ETICA-04, 07, RN-USR-11.
 **Critérios de aceite.**
-- **AC-CG-99** Dada a rota, então aparece a lista da programação com, em cada atividade, o tipo, o caráter ("Orientação e psicoeducação" ou "Psicoterapia"), o próximo encontro, o formato e as vagas; atividades em rascunho, canceladas e finalizadas não aparecem.
+- **AC-CG-99** Dada a rota, então aparece a lista da programação com, em cada atividade, o tipo ("Grupo de apoio", "Capacitação", "Grupo com psicólogo" ou "Roda de conversa aberta"), o caráter ("Para aprender e trocar" ou "Psicoterapia em grupo", RN-GRP-16; sem jargão, CXC-019), o próximo encontro, o formato e as vagas; atividades em rascunho, canceladas e finalizadas não aparecem.
 - **AC-CG-100** Dada uma pessoa do plano Cuida ou Sustenta, quando abre uma atividade com vaga e toca **Quero participar**, então a folha do sigilo mostra o texto do grupo e a caixa de aceite; sem marcar, mostra "Marque que você leu o contrato de sigilo para entrar." e não inscreve.
 - **AC-CG-101** Dado o aceite do sigilo, então a inscrição grava a data e a hora do aceite, mostra o carimbo na folha, e a atividade aparece em "Minhas inscrições" com o primeiro encontro.
 - **AC-CG-102** Dada uma atividade lotada, então o botão é **Entrar na lista de espera**, a folha diz a posição ("Você entra na posição 3."), e a pessoa aparece como "Você está na lista de espera, posição N." depois de entrar.
 - **AC-CG-103** Dada uma pessoa do plano Essencial ou Livre, então grupos de apoio e capacitações mostram "Disponível no plano Cuida" **no lugar do botão**, as rodas abertas mostram **Quero participar**, e o bloqueio **não é vermelho** nem tem preço em destaque.
 - **AC-CG-104** Dado o bloqueio por plano, então ele aparece **idêntico** para toda pessoa do mesmo plano, **sem relação** com pontuação, faixa, alerta ou ARBE (a mesma tela para Maria e para uma pessoa sem nenhum alerta).
-- **AC-CG-105** Dada uma atividade de terapia de grupo, então a página diz "Psicoterapia" e que é conduzida por psicólogo da Nexus com o registro profissional; sem indicação do psicólogo, mostra "Esta atividade começa com a indicação do seu psicólogo. Fale com a gente." e **não** mostra o motivo.
+- **AC-CG-105** Dada uma atividade de terapia de grupo, então a página diz "Psicoterapia em grupo" e que é conduzida por psicólogo da Nexus com o registro profissional; sem indicação do psicólogo, mostra "Esta atividade começa com a indicação do seu psicólogo. Fale com a gente." e **não** mostra o motivo.
 - **AC-CG-106** Dado **Sair do grupo**, então a folha diz "Você deixa de participar. A sua vaga volta para outra pessoa."; ao confirmar, a inscrição é cancelada e, se havia lista de espera, o primeiro da fila é promovido.
 - **AC-CG-107** Dada uma sala presencial, então o detalhe mostra o endereço e que a sala tem acesso sem degraus, sanitário adaptado, boa iluminação e assentos com apoio de braços.
 - **AC-CG-108** Dada a tela inteira, então **não aparece** nenhum convite derivado de pontuação, faixa ou alerta, e nenhum texto promete resultado ("vai melhorar", "vai aliviar").
@@ -1228,7 +1251,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-120** Dado um profissional com 5 avaliações ou mais, então o cartão mostra "Nota 4,8 (12 avaliações)"; com menos de 5, mostra "Ainda sem nota (menos de 5 avaliações)".
 - **AC-CG-121** Dadas 2 ou 3 caixas "Comparar" marcadas, então aparece a barra "Comparar escolhidos (N)" e a folha lado a lado; com 1 caixa, a barra não aparece; com 3 marcadas, as outras caixas ficam sem uso com o motivo escrito.
 - **AC-CG-122** Dado o filtro "Só quem atende em casa" ligado, então a lista mostra só quem atende em casa, `aria-pressed="true"`, e a contagem acompanha; o texto da busca **não** vai para a URL.
-- **AC-CG-123** Dada a pessoa do plano Livre, então ela vê a lista e compara, mas a linha de condições mostra "Condições especiais: a partir do plano Essencial." em vez das condições.
+- **AC-CG-123** Dada a pessoa do plano Livre, então ela vê a lista e compara, mas a frase "Condições especiais: a partir do plano Essencial." aparece uma vez, em vez das condições. A comparação é uma **tabela curta** (nota, atende em casa, condições) que só mostra o que **muda**; o que é igual vem em "Igual nas duas opções" (CXC-012). Escolher uma necessidade leva a tela até os resultados (CXC-011).
 
 ## C14. `/cuidador/rede/profissional/:id`: Profissional (P3, `network`)
 **Propósito.** Conhecer um profissional e, se a pessoa quiser, pedir o serviço.
@@ -1287,7 +1310,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-131** Dada a rota, então os pedidos aparecem em **Precisa da sua avaliação**, **Em andamento** e **Anteriores** (recolhido), cada um com a situação em texto e ícone (nunca só cor).
 - **AC-CG-132** Dado um pedido "Enviado" ou "Aceito", quando se toca **Cancelar pedido** e se confirma na folha, então o pedido vai a "Cancelado por você" e a folha tinha dito o efeito antes.
 - **AC-CG-133** Dado um serviço concluído sem avaliação, quando se escolhem as **duas notas** de 1 a 5 e se toca **Enviar avaliação**, então grava a avaliação (nota = média das duas) e o pedido vai a "Avaliado"; sem as duas notas, o texto "Falta escolher a nota do serviço" (ou da pontualidade) fica escrito acima do botão.
-- **AC-CG-134** Dada uma avaliação enviada há menos de 7 dias, então **Corrigir minha avaliação** está disponível e mostra o prazo; com 7 dias ou mais, mostra "Prazo de correção encerrado."
+- **AC-CG-134** Dada uma avaliação enviada há 7 dias ou menos (o último dia para corrigir é o sétimo, inclusive, RN-ARP-16: "em até 7 dias"), então **Corrigir minha avaliação** está disponível e mostra o prazo; com mais de 7 dias, mostra "Prazo de correção encerrado." (Texto corrigido em 06/11/2026: a versão anterior dizia "com 7 dias ou mais", um dia a menos que a regra; decisão do líder, QAC-012.)
 - **AC-CG-135** Dado o pedido recusado pelo profissional, então a situação é "O profissional não pôde atender" (sem culpa) e aparece "Ver outras opções de {categoria}".
 - **AC-CG-136** Dado um pedido, então **só existe uma** avaliação por serviço concluído e a pessoa **não** vê o nome de outros avaliadores nem comentários de outros.
 - **AC-CG-137** Dado nenhum pedido, então aparece o vazio "Você ainda não fez pedidos" com **Buscar profissionais**.
@@ -1317,7 +1340,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 **Critérios de aceite.**
 - **AC-CG-139** Dado um assinante pago, então a tela mostra o cartão com o número no formato `NX-0000-0000`, **Copiar número** (que mostra "Número copiado." ou o plano B de seleção) e "Mostre o número no balcão do parceiro."
 - **AC-CG-140** Dada a lista **Onde usar**, então só aparecem parceiros ativos, cada um com o seu percentual, e parceiros suspensos ou encerrados não aparecem.
-- **AC-CG-141** Dado um assinante com usos, então "O que você já economizou" mostra o total do mês (calculado dos usos registrados) e a lista de usos (data, parceiro, desconto); Elza vê 8 usos.
+- **AC-CG-141** Dado um assinante com usos, então "O que você já economizou" mostra o total do mês (calculado dos usos registrados) e as **3 últimas compras**, com "Ver todas (N)" para a lista inteira (data, parceiro, desconto, CXC-026); Elza vê 8 usos ao tocar "Ver todas".
 - **AC-CG-142** Dada a pessoa do plano Livre (João), então a tela mostra só o convite calmo, **sem** percentual, sem nome de parceiro, sem preço e sem número de cartão.
 - **AC-CG-143** Dado um cancelamento de plano agendado (Marcos), então o cartão mostra "Seu cartão vale até 13/11, quando o plano muda para o Livre."; no dia em que a assinatura deixa de valer, o cartão some e vira o convite do Livre.
 - **AC-CG-144** Dada a tela inteira, então nenhum dado de pontuação, alerta ou ARBE influencia o que aparece (RN-PLN-19).
@@ -1406,7 +1429,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-152** Dado **descer** de plano, então a folha diz que vale no fim do ciclo (com a data) e lista as turmas futuras das quais a pessoa sai; ao confirmar, a assinatura fica `cancel_scheduled` com a data e o plano de destino, e o plano atual continua até lá.
 - **AC-CG-153** Dado **cancelar**, então a folha diz o efeito (cartão deixa de valer, plano vira Livre, na data do fim do ciclo); ao confirmar, aparece a nota "Mudança agendada" e **Manter meu plano**.
 - **AC-CG-154** Dado **Manter meu plano**, então desfaz a mudança agendada em **um toque**, sem folha, com a faixa "Plano mantido."
-- **AC-CG-155** Dada a primeira contratação paga, então a folha pede o aceite do aviso de emergência ("Li e entendi") e grava a data e a hora; sem o aceite, **Confirmar mudança de plano** mostra "Marque que você leu o aviso para continuar."
+- **AC-CG-155** Dada a primeira contratação paga, então **a mesma folha do efeito** (um passo só, CXC-010) traz o aviso de emergência numa linha e a caixa "Li e entendi", e grava a data e a hora; sem o aceite, o botão da ação ("Mudar para o Cuida") mostra "Marque que você leu o aviso para continuar." "Seu plano agora" lista tudo o que o plano inclui, também o que vem dos planos anteriores, e a folha diz "Se mudar de ideia, é só mudar de plano de novo."
 - **AC-CG-156** Dado todo o fluxo de troca, então **não existe** campo de número de cartão, validade ou código de segurança.
 - **AC-CG-157** Dado um plano pago pela empresa, então não há botões de troca nem de cancelamento e a nota explica que a mudança é pelo contrato da empresa.
 - **AC-CG-158** Dada qualquer pessoa, então **nenhuma** oferta, convite de upgrade ou selo de plano aparece em Hoje, Como estou ou Ajuda agora, e nenhum texto de plano cita pontuação, faixa, alerta ou ARBE (RN-PLN-19).
@@ -1513,11 +1536,11 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-175** Dada a retirada de **imagem, WhatsApp, números somados ou família**, então **não muda** nenhuma outra autorização nem o acesso ao plano Livre.
 - **AC-CG-176** Dado **Autorizar de novo**, então grava o evento `granted`, retoma o acompanhamento e a linha do tempo de Como estou volta.
 - **AC-CG-177** Dado "Ver histórico", então a linha do tempo mostra quando autorizou, retirou e autorizou de novo, com a versão do termo, e **não há** botão de editar nem de apagar.
-- **AC-CG-178** Dado **Pedir a cópia**, então grava a solicitação com protocolo e prazo de 15 dias corridos, mostra "Faltam N dias" (sem relógio nem vermelho), e quando a equipe conclui aparece **Baixar o arquivo**.
-- **AC-CG-179** Dado **Pedir eliminação**, então a folha mostra duas colunas de texto "Será eliminado" e "Ficará guardado e sem uso" com o **motivo e o prazo** (RN-LGPD-24), exige a caixa de entendimento, e só então liga o botão; ao confirmar, o cadastro vai a `closure_requested`, a pessoa continua usando o app e vê **Retirar o pedido**.
+- **AC-CG-178** Dado **Pedir a cópia**, então grava a solicitação com protocolo e prazo de 15 dias corridos, mostra "Faltam N dias para a resposta" (sem relógio nem vermelho; o código interno do pedido não aparece), e quando a equipe conclui aparece **Baixar o arquivo**.
+- **AC-CG-179** Dado **Pedir eliminação**, então a folha mostra duas colunas de texto "Será eliminado" e "Ficará guardado e sem uso" com o **motivo e o prazo** ("A equipe responde em até 15 dias." **na folha, antes de confirmar**, RN-LGPD-24, CXC-009), exige a caixa de entendimento, e só então liga o botão; ao confirmar, o cadastro vai a `closure_requested`, a pessoa continua usando o app e vê **Retirar o pedido**.
 - **AC-CG-180** Dado um pedido aberto, quando se toca **Retirar o pedido**, então o pedido volta a `open` sem efeito e o cadastro volta a `active`; **nada é eliminado** antes de a equipe concluir.
 - **AC-CG-181** Dado "Com quem os meus dados foram compartilhados", então lista os profissionais que receberam pedido (nome, data, o que foi enviado) e diz "Nada mais é compartilhado."
-- **AC-CG-182** Dado um pedido repetido do mesmo tipo, então aparece "Você já tem um pedido de cópia em andamento (DSR-0006)." e não cria outro.
+- **AC-CG-182** Dado um pedido repetido do mesmo tipo, então aparece "Você já tem um pedido de cópia em andamento." (sem o código DSR) e não cria outro.
 - **AC-CG-183** Dado o botão vermelho, então ele aparece **só** na folha de eliminação (ato irreversível); nenhum outro item da tela usa vermelho.
 - **AC-CG-184** Dada a política de privacidade, então abre com o nome e o e-mail do encarregado e linguagem acessível, e o aviso de protótipo está visível.
 

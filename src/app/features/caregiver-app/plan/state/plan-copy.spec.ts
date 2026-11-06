@@ -42,10 +42,16 @@ describe('textos de Meu plano (UX C18 e B9)', () => {
   it('subir vale hoje; o cartão só é dito quando é emitido; a cobrança começa no próximo ciclo e o aviso de mensalidade vem junto', () => {
     const first = changeCopy(quote({ from: 'livre', to: 'cuida', kind: 'upgrade', issuesCard: true, billingFrom: '2026-12-04' }), price);
     expect(first.heading).toBe('Mudar para o Cuida?');
-    expect(first.lines).toEqual(['Vale hoje. O Cartão Nexus é emitido agora. A cobrança de R$ 119,90 começa no próximo ciclo, em 04/12/2026.']);
+    expect(first.lines).toEqual([
+      'Vale hoje. O Cartão Nexus é emitido agora. A cobrança de R$ 119,90 começa no próximo ciclo, em 04/12/2026.',
+      'Se mudar de ideia, é só mudar de plano de novo.',
+    ]);
     expect(first.showNotice).toBe(true);
     const next = changeCopy(quote({ from: 'cuida', to: 'sustenta', kind: 'upgrade', billingFrom: '2026-11-18' }), price);
-    expect(next.lines).toEqual(['Vale hoje. A cobrança de R$ 149,90 começa no próximo ciclo, em 18/11/2026.']);
+    expect(next.lines).toEqual([
+      'Vale hoje. A cobrança de R$ 149,90 começa no próximo ciclo, em 18/11/2026.',
+      'Se mudar de ideia, é só mudar de plano de novo.',
+    ]);
   });
 
   it('descer vale no fim do ciclo e diz as turmas que a pessoa deixa', () => {
@@ -57,6 +63,7 @@ describe('textos de Meu plano (UX C18 e B9)', () => {
     expect(copy.lines).toEqual([
       'Vale no fim do ciclo, em 18/11/2026. Até lá, o Cuida continua, inclusive os grupos.',
       'Você sai dos grupos que começam depois dessa data: Sobrecarga e autocuidado (03/12). Os grupos em andamento continuam até o fim do ciclo.',
+      'Se mudar de ideia, é só mudar de plano de novo.',
     ]);
     expect(copy.showNotice).toBe(false);
     expect(changeCopy(quote({ from: 'essencial', to: 'livre', kind: 'cancel' }), price).lines[0]).toContain('O cancelamento fica agendado para 18/11/2026.');

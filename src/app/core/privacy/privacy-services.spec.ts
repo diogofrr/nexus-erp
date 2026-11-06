@@ -13,7 +13,7 @@ import {
 } from './browser-data.service';
 import { ConsentError, ConsentService } from './consent.service';
 import { DataSubjectRequestError, DataSubjectRequestService } from './data-subject-request.service';
-import { RETENTION_BLOCK_NOTE, RetentionService } from './retention.service';
+import { ERASED_TEXT, RETENTION_BLOCK_NOTE, RetentionService } from './retention.service';
 
 function setup(): {
   db: Database;
@@ -289,6 +289,33 @@ describe('RetentionService: eliminação, bloqueio e anonimização (RN-LGPD-23,
     });
   });
 
+  it('o texto livre do titular (pedido, revisão, comentário e endereço) entra no "será eliminado" e sai na eliminação (RN-LGPD-24, QAC-008)', () => {
+    const { db, retention } = setup();
+    const id = 'cg_0018';
+    const request = db.serviceRequests.create({ caregiverId: id, providerId: 'prv_01', specialty: 'physiotherapy', need: 'MARCADOR-PEDIDO', modality: 'home', status: 'requested', requestedAt: '2026-11-03T10:00:00-03:00' });
+    const review = db.reviewRequests.create({ caregiverId: id, psychologistId: 'psy_0001', about: 'zarit_decision', text: 'MARCADOR-REVISAO', dueAt: '2026-11-19' });
+    const answered = db.reviewRequests.update(review.id, { answer: 'Resposta da psicóloga', answeredAt: '2026-11-04T09:00:00-03:00' });
+    const evaluation = db.providerEvaluations.create({ serviceRequestId: request.id, providerId: 'prv_01', caregiverId: id, technicalQuality: 4, punctualityCourtesy: 5, comment: 'MARCADOR-COMENTARIO', score: 4.5, editableUntil: '2026-11-10' });
+    const session = db.careSessions.create({ caregiverId: id, psychologistId: 'psy_0001', slotId: 'slt_9999', startAt: '2026-11-12T15:00:00-03:00', durationMin: 60, modality: 'in_person_home', homeAddress: 'MARCADOR-ENDERECO', kind: 'guidance', status: 'scheduled', priceCents: 12000, discountPercent: 0 });
+    const labels = () => retention.plan(id).willErase.map((i) => i.key);
+    expect(labels()).toEqual(expect.arrayContaining(['requestTexts', 'reviewTexts', 'evaluationComments', 'homeAddresses']));
+    const count = (key: string) => retention.plan(id).willErase.find((i) => i.key === key)?.count;
+    expect(count('requestTexts')).toBeGreaterThanOrEqual(1);
+    expect(count('reviewTexts')).toBeGreaterThanOrEqual(1);
+    expect(count('evaluationComments')).toBe(1);
+    expect(count('homeAddresses')).toBe(1);
+
+    retention.erase(id);
+    // O registro fica (quem pediu, a quem, quando, as notas e a resposta da equipe); o texto sai.
+    expect(db.serviceRequests.require(request.id)).toMatchObject({ need: ERASED_TEXT, providerId: 'prv_01', status: 'requested' });
+    expect(db.reviewRequests.require(review.id)).toMatchObject({ text: ERASED_TEXT, answer: answered.answer });
+    expect(db.providerEvaluations.require(evaluation.id).comment).toBeUndefined();
+    expect(db.providerEvaluations.require(evaluation.id).technicalQuality).toBe(4);
+    expect(db.careSessions.require(session.id).homeAddress).toBeUndefined();
+    expect(JSON.stringify([db.serviceRequests.list(), db.reviewRequests.list(), db.providerEvaluations.list(), db.careSessions.list()])).not.toContain('MARCADOR-');
+    expect(ERASED_TEXT).not.toMatch(/[\u2014\u2013!]/);
+  });
+
   it('anonimizar troca identificadores pelo código e mantém os agregados', () => {
     const { db, retention } = setup();
     const zaritBefore = db.zaritAssessments.count((z) => z.caregiverId === 'cg_0019');
@@ -433,6 +460,24 @@ describe('DataSubjectRequestService: direitos do titular (RN-LGPD-20, 21; LP-17,
       entity: 'subject_portability',
       subjectCaregiverId: 'cg_0019',
     });
+  });
+
+  it('a cópia do titular não leva a triagem de risco, quem assumiu a mensagem nem a nota interna do pedido (RN-LGPD-18, RN-POP-05, QAC-014)', () => {
+    const { dsr, db } = setup();
+    db.messages.create({ channel: 'app', direction: 'in', caregiverId: 'cg_0019', body: 'Preciso conversar', receivedAt: '2026-11-03T09:00:00-03:00', dueAt: '2026-11-04T09:00:00-03:00', status: 'in_progress', isSupportRequest: true, riskFlag: true, riskDoubt: true, assignedToUserId: 'u7' });
+    const request = db.dataSubjectRequests.find((r) => r.caregiverId === 'cg_0019')!;
+    db.dataSubjectRequests.update(request.id, { handledByUserId: 'u7', completedByUserId: 'u7', resolutionNote: 'Nota interna da equipe' });
+    const data = dsr.exportSubject('cg_0019');
+    const messages = data.subject.messages as { body: string; isSupportRequest?: boolean }[];
+    const mine = messages.find((m) => m.body === 'Preciso conversar')!;
+    // O que é do titular fica: o texto, o canal, a data e o próprio pedido de apoio.
+    expect(mine.isSupportRequest).toBe(true);
+    const json = dsr.exportSubjectJson('cg_0019');
+    ['riskFlag', 'riskDoubt', 'assignedToUserId', 'handledByUserId', 'completedByUserId', 'resolutionNote', 'Nota interna da equipe'].forEach((field) => {
+      expect(json, field).not.toContain(field);
+    });
+    const requests = data.subject.dataSubjectRequests as { protocol: string; type: string; status: string }[];
+    expect(requests[0]).toMatchObject({ protocol: request.protocol, type: request.type, status: request.status });
   });
 });
 

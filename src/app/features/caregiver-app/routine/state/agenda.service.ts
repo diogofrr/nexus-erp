@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { CaregiverOwnership } from '../../../../core/auth/caregiver-ownership';
 import { Clock } from '../../../../core/clock/clock.service';
 import { Database } from '../../../../core/data/database';
 import { CareAppointment, ID, ISODate } from '../../../../core/models';
@@ -47,9 +48,13 @@ export interface AppointmentInput {
 export class AgendaService {
   private readonly db = inject(Database);
   private readonly clock = inject(Clock);
+  private readonly ownership = inject(CaregiverOwnership);
 
   /** Os compromissos da pessoa idosa (reativo). */
   appointmentsOf(elderId: ID): CareAppointment[] {
+    if (!this.ownership.ownsElder(elderId)) {
+      return [];
+    }
     return this.db.careAppointments.query((a) => a.elderId === elderId);
   }
 
@@ -59,6 +64,7 @@ export class AgendaService {
   }
 
   add(elderId: ID, input: AppointmentInput): CareAppointment {
+    this.ownership.assertElder(elderId);
     this.assertValid(input);
     const place = input.place.trim();
     return this.db.careAppointments.create({
@@ -73,6 +79,7 @@ export class AgendaService {
 
   /** Remarca (e corrige o resto). Devolve o registro de antes, para o "Desfazer". */
   update(id: ID, input: AppointmentInput): { before: CareAppointment; after: CareAppointment } {
+    this.ownership.assertAppointment(id);
     const before = this.db.careAppointments.require(id);
     this.assertValid(input);
     const place = input.place.trim();
@@ -88,11 +95,13 @@ export class AgendaService {
 
   /** "Lembrar de mim" ligado ou desligado, sem confirmação (é reversível). */
   setReminder(id: ID, reminder: boolean): CareAppointment {
+    this.ownership.assertAppointment(id);
     return this.db.careAppointments.update(id, { reminder });
   }
 
   /** Tira da agenda. Devolve o registro removido para o "Desfazer". */
   remove(id: ID): CareAppointment {
+    this.ownership.assertAppointment(id);
     const removed = this.db.careAppointments.require(id);
     this.db.careAppointments.remove(id);
     return removed;
@@ -100,8 +109,14 @@ export class AgendaService {
 
   /** Volta o que foi tirado (ou o horário de antes de uma remarcação), com o mesmo id. */
   restore(record: CareAppointment): CareAppointment {
-    const { createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = record;
+    // O registro tirado da agenda já não existe: o "Desfazer" só confere a pessoa idosa. Se ele existe (remarcação
+    // desfeita), tem de ser de quem está na sessão também.
     const existing = this.db.careAppointments.get(record.id);
+    this.ownership.assertElder(record.elderId);
+    if (existing) {
+      this.ownership.assertAppointment(record.id);
+    }
+    const { createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = record;
     if (existing) {
       const { id: _id, ...patch } = rest;
       return this.db.careAppointments.update(record.id, { ...patch, place: record.place });

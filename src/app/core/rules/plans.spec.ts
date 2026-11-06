@@ -15,6 +15,7 @@ import {
   hasBenefitCard,
   isPaidPlan,
   minimumPlanFor,
+  nextBillingDate,
   paidOnlyBenefits,
   planBenefits,
   planChangeTiming,
@@ -168,5 +169,23 @@ describe('Valores (Quadro 4, RN-FIN-08, 09)', () => {
     expect(formatCardNumber(1)).toBe('NX-0000-0001');
     expect(formatCardNumber(12345678)).toBe('NX-1234-5678');
     expect(formatCardNumber(1007)).toMatch(/^NX-\d{4}-\d{4}$/);
+  });
+});
+
+describe('data de cobrança (RN-PLN-14, QAC-004)', () => {
+  it('o dia de cobrança é o do início, cortado só nos meses curtos, e volta ao dia certo depois', () => {
+    // Início em 31/01: 28/02, 31/03, 30/04, 31/05 (nunca "escorrega" para o 28).
+    expect(nextBillingDate('2026-01-31', '2026-01-31')).toBe('2026-02-28');
+    expect(nextBillingDate('2026-01-31', '2026-02-28')).toBe('2026-03-31');
+    expect(nextBillingDate('2026-01-31', '2026-03-31')).toBe('2026-04-30');
+    expect(nextBillingDate('2026-01-31', '2026-04-30')).toBe('2026-05-31');
+  });
+
+  it('é sempre depois da data de referência, mesmo com meses de atraso, e conta o ano bissexto', () => {
+    expect(nextBillingDate('2026-01-31', '2026-03-01')).toBe('2026-03-31');
+    expect(nextBillingDate('2026-01-31', '2026-06-15')).toBe('2026-06-30');
+    expect(nextBillingDate('2027-01-31', '2028-01-31')).toBe('2028-02-29');
+    expect(nextBillingDate('2026-11-04', '2026-11-04')).toBe('2026-12-04');
+    expect(nextBillingDate('2026-11-04', '2026-12-03')).toBe('2026-12-04');
   });
 });

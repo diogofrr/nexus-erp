@@ -11,7 +11,6 @@ import { PageChromeService } from '../../../../layout/state/page-chrome.service'
 import { EmptyStateComponent } from '../../../../shared/ui/display/empty-state.component';
 import { IconComponent } from '../../../../shared/ui/display/icon.component';
 import { CheckboxComponent } from '../../../../shared/ui/forms/checkbox.component';
-import { ToastService } from '../../../../shared/ui/overlay/toast.service';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { ContactDialogService } from '../../state/contact-dialog.service';
 import { relativeDateTime } from '../../state/day-format';
@@ -37,6 +36,8 @@ interface ActivityCard {
   id: string;
   title: string;
   kind: string;
+  /** Do plano Cuida em diante, e a pessoa ainda não tem acesso: a linha diz o plano, sem pressão (CXC-021). */
+  planTag: string | null;
   character: string;
   next: string;
   format: string;
@@ -267,7 +268,7 @@ interface Banner {
         }
 
         <section class="cg-section" aria-labelledby="groups-all">
-          <h2 class="cg-section__title" id="groups-all">Programação</h2>
+          <h2 class="cg-section__title" id="groups-all">{{ mine().length > 0 ? 'Outros grupos' : 'Programação' }}</h2>
           <ul class="nx-cards">
             @for (card of cards(); track card.id) {
               <li>
@@ -278,6 +279,9 @@ interface Banner {
                       <p class="cg-tags">
                         <span class="nx-tag">{{ card.kind }}</span>
                         <span class="nx-tag nx-tag--soft">{{ card.character }}</span>
+                        @if (card.planTag; as plan) {
+                          <span class="nx-tag nx-tag--soft" data-role="plan-tag"><svg appIcon="lock" size="sm"></svg>{{ plan }}</span>
+                        }
                       </p>
                       <p class="cg-meta">{{ card.next }}</p>
                       <p class="cg-meta">{{ card.format }} · {{ card.seats }}</p>
@@ -299,7 +303,6 @@ export class GroupsPage {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly chrome = inject(PageChromeService);
-  private readonly toast = inject(ToastService);
   private readonly contact = inject(ContactDialogService);
   private readonly activities = inject(CaregiverActivitiesService);
   protected readonly ctx = inject(CaregiverContextService);
@@ -311,18 +314,33 @@ export class GroupsPage {
 
   protected readonly cards = computed<ActivityCard[]>(() => {
     const today = this.clock.today();
-    return this.activities.programme().map((a) => {
+    const mineIds = new Set(this.mine().map((row) => row.id));
+    const locked = !this.ctx.canUse('groups');
+    const planTag = locked ? `Plano ${this.neededPlan()}` : null;
+    const listed = this.activities.programme().filter((a) => !mineIds.has(a.id));
+    // Sem acesso aos grupos do plano, a roda aberta (que é para todos) vem primeiro (CXC-021).
+    const ordered = locked
+      ? [...listed.filter((a) => a.kind === 'open_conversation_circle'), ...listed.filter((a) => a.kind !== 'open_conversation_circle')]
+      : listed;
+    return ordered.map((a) => {
       const next = this.activities.nextMeeting(a);
       return {
         id: a.id,
         title: a.title,
         kind: KIND_LABELS[a.kind],
+        planTag: a.kind === 'open_conversation_circle' ? null : planTag,
         character: CHARACTER_LABELS[a.character],
         next: next ? `Próximo encontro: ${relativeDateTime(next.startAt, today)}` : 'Sem encontros marcados',
         format: activityFormatLabel(a.mode),
         seats: a.status === 'in_progress' ? 'Em andamento' : seatsText(this.activities.seatsFree(a)),
       };
     });
+  });
+
+  /** O menor plano que libera grupos e capacitações ("Cuida"). */
+  private readonly neededPlan = computed(() => {
+    const min = this.ctx.access('groups').minPlan;
+    return this.ctx.plans().find((p) => p.id === min)?.name.replace(/^Nexus\s+/, '') ?? 'Cuida';
   });
 
   protected readonly mine = computed<MineRow[]>(() => {
@@ -480,7 +498,6 @@ export class GroupsPage {
     this.joinOpen.set(false);
     this.resetJoin();
     this.banner.set({ variant: 'ok', text: message });
-    this.toast.show({ message, durationMs: 8000 });
     this.chrome.focusHeading();
   }
 
@@ -504,7 +521,6 @@ export class GroupsPage {
       ? 'Você saiu da lista de espera.'
       : `Você ${placeOf(activity.kind).left}. A sua vaga voltou para outra pessoa.`;
     this.banner.set({ variant: 'soft', text: message });
-    this.toast.show({ message, durationMs: 8000 });
     this.chrome.focusHeading();
   }
 }

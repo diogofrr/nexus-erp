@@ -143,7 +143,8 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
       await click(buttonByText('Começar'));
       expect(all('app-form-field label').map(text)).toEqual(['Nome completo', 'Data de nascimento', 'CPF', 'Celular', 'E-mail', 'Cidade']);
       expect(q<HTMLInputElement>('#st-city')?.value).toBe('Uberlândia');
-      expect(text(q('main'))).toContain('Protótipo: use um CPF fictício.');
+      // CXC-015: uma frase antes do CPF diz para que ele serve.
+      expect(text(q('main'))).toContain('Serve para identificar a sua conta. No protótipo, use um CPF fictício.');
       expect(text(q('main'))).toContain('Exemplo: (34) 90000-0000');
       expect(text(q('main'))).toContain('Use um e-mail que termine em @exemplo.com.br');
       expect(buttonByText('Gerar CPF fictício')).toBeDefined();
@@ -157,8 +158,9 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
       await click(buttonByText('Continuar'));
       expect(text(q('main h1'))).toBe('Sobre você');
       expect(text(q('app-form-field .field__error'))).toContain('Você precisa ter 18 anos ou mais.');
-      expect(text(q('app-error-summary'))).toContain('Há 1 ponto para corrigir');
-      expect(text(q('app-error-summary'))).toContain('Você precisa ter 18 anos ou mais.');
+      // CXC-024: com um ponto só a caixa grande nem aparece; a frase está junto do campo e o foco vai a ele.
+      expect(text(q('app-error-summary'))).toBe('');
+      expect(document.activeElement?.id).toBe('st-birth');
       expect(q<HTMLInputElement>('#st-name')?.value).toBe('Marta Exemplo Teste');
       expect(q<HTMLInputElement>('#st-cpf')?.value).toBe('000.123.456-00');
       // Hoje é 04/11/2026: nascer em 04/11/2008 dá exatamente 18 anos.
@@ -181,13 +183,16 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
       expect(text(q('main h1'))).toBe('Quem você cuida');
     });
 
-    it('campos em branco: erro junto de cada campo e no resumo, e o foco vai ao resumo', async () => {
+    it('campos em branco: erro junto de cada campo e um resumo curto (só quantos pontos, sem repetir a lista), com o foco no resumo (CXC-023)', async () => {
       await openGuest();
       await click(buttonByText('Começar'));
       await click(buttonByText('Continuar'));
       expect(text(q('app-error-summary'))).toContain('Há 5 pontos para corrigir');
-      expect(text(q('app-error-summary'))).toContain('Informe o nome completo.');
+      expect(text(q('app-error-summary'))).toContain('Eles estão marcados abaixo, junto de cada campo.');
+      expect(q('app-error-summary a')).toBeNull();
+      expect(text(q('app-error-summary'))).not.toContain('Informe o nome completo.');
       expect(all('app-form-field .field__error')).toHaveLength(5);
+      expect(text(q('app-form-field .field__error'))).toContain('Informe o nome completo.');
     });
 
     it('um CPF fictício que já tem conta é recusado', async () => {
@@ -268,11 +273,25 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
   });
 
   describe('etapa 4, O que você autoriza (AC-CG-28 e 29)', () => {
-    it('cinco cartões independentes, nenhuma opção marcada, três opções de mesmo peso e nada de piloto', async () => {
+    it('CXC-015: a saúde em duas frases com "Ler mais"; as outras quatro recolhidas em "Outras autorizações (opcional)"; cinco cartões independentes, nada marcado, nada de piloto', async () => {
       await openGuest();
       await toStep(3);
       expect(text(q('main h1'))).toBe('O que você autoriza');
       expect(text(q('main'))).toContain('Você escolhe cada item separado.');
+      // Só a saúde aparece de cara, curta; as outras quatro estão atrás do bloco opcional, que começa fechado.
+      expect(all('app-cg-card[data-consent]').map((c) => c.getAttribute('data-consent'))).toEqual(['health_data']);
+      const toggle = q('[data-role="others-toggle"]');
+      expect(text(toggle)).toBe('Outras autorizações (opcional)');
+      expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+      expect(text(q('main'))).toContain('Se você não abrir esta parte, tudo fica em "Decidir depois".');
+      const health = q('app-cg-card[data-consent="health_data"]');
+      expect(text(health?.querySelector('.start-p')).split(/(?<=\.)\s/)).toHaveLength(2);
+      expect(text(health)).not.toContain('O que vamos fazer');
+      await click(health?.querySelector('button.cg-link-btn'));
+      expect(text(health)).toContain('O que vamos fazer');
+      expect(text(health)).toContain('Se você disser não');
+      await click(toggle);
+      expect(toggle?.getAttribute('aria-expanded')).toBe('true');
       const cards = all('app-cg-card[data-consent]');
       expect(cards.map((c) => c.getAttribute('data-consent'))).toEqual([
         'health_data',
@@ -288,8 +307,7 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
         expect(new Set(classes).size).toBe(1);
       });
       expect(text(q('main'))).not.toMatch(/piloto|TCLE/i);
-      // A saúde vem aberta, com o texto; os outros ficam recolhidos até "Ler mais".
-      expect(text(cards[0])).toContain('O que vamos fazer');
+      // As outras ficam recolhidas até "Ler mais".
       expect(text(cards[1])).not.toContain('O que vamos fazer');
       await click(cards[1]?.querySelector('button.cg-link-btn'));
       expect(text(cards[1])).toContain('O que vamos fazer');
@@ -299,7 +317,9 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
       await openGuest();
       await toStep(4);
       expect(text(q('main h1'))).toBe('Confira e termine');
-      expect(all('app-cg-card dl dd').map(text)).toContain('Decidir depois');
+      // CXC-015: a etapa 5 é uma linha por bloco, sem repetir tudo.
+      expect(all('[data-role="review"] li')).toHaveLength(4);
+      expect(text(q('[data-role="review"]'))).toContain('Saúde: Decidir depois. Outras 4: Decidir depois.');
       await click(q<HTMLInputElement>('app-checkbox input'));
       await click(buttonByText('Criar minha conta'));
       const created = app.db.caregivers.find((c) => c.fullName === 'Marta Exemplo Teste');
@@ -307,15 +327,16 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
       const consent = TestBed.inject(ConsentService);
       expect(consent.list(created?.id ?? '').map((c) => c.status)).toEqual(['pending', 'pending', 'pending', 'pending', 'pending', 'pending']);
       expect(app.db.subscriptions.find((s) => s.caregiverId === created?.id)?.planId).toBe('livre');
-      expect(text(q('main'))).toContain('Tudo bem. A agenda, os remédios e os conteúdos continuam. A conversa de acompanhamento só acontece com a sua autorização.');
+      expect(text(q('main'))).toContain('A agenda, os remédios e os conteúdos continuam. A conversa de acompanhamento só acontece com a sua autorização.');
+      expect(text(q('main'))).not.toContain('Tudo bem.');
     });
 
-    it('saúde recusada: a nota "Tudo bem" aparece na hora e a conta é criada no plano Livre', async () => {
+    it('saúde recusada: a nota (sem "Tudo bem") aparece na hora e a conta é criada no plano Livre', async () => {
       await openGuest();
       await toStep(3);
       const health = q('app-cg-card[data-consent="health_data"]');
       await click(health?.querySelectorAll<HTMLInputElement>('.cg-choice__input')[1]);
-      expect(text(q('main'))).toContain('Tudo bem. A agenda, os remédios e os conteúdos continuam.');
+      expect(text(q('main'))).toContain('A agenda, os remédios e os conteúdos continuam.');
       await click(buttonByText('Continuar'));
       await click(q<HTMLInputElement>('app-checkbox input'));
       await click(buttonByText('Criar minha conta'));
@@ -327,6 +348,9 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
 
   describe('etapa 5 e a conta nova (AC-CG-30 e 31)', () => {
     const answer = async (key: string, index: number): Promise<void> => {
+      if (!q(`app-cg-card[data-consent="${key}"]`)) {
+        await click(q('[data-role="others-toggle"]'));
+      }
       await click(q(`app-cg-card[data-consent="${key}"]`)?.querySelectorAll<HTMLInputElement>('.cg-choice__input')[index]);
     };
 
@@ -338,7 +362,7 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
       expect(app.db.caregivers.size()).toBe(before);
       expect(text(q('#st-notice'))).toContain('Marque que você leu o aviso para criar a conta.');
       expect(text(q('main'))).toContain('Em emergência, ligue 192 (SAMU).');
-      expect(text(q('app-error-summary'))).toContain('Marque que você leu o aviso para criar a conta.');
+      expect(text(q('#st-notice'))).toContain('Marque que você leu o aviso para criar a conta.');
       await click(q<HTMLInputElement>('app-checkbox input'));
       await click(buttonByText('Criar minha conta'));
       expect(app.db.caregivers.size()).toBe(before + 1);
@@ -362,9 +386,9 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
       await answer('family_sharing', 0);
       await answer('whatsapp_contact', 0);
       await click(buttonByText('Continuar'));
-      expect(all('app-cg-card dl dd').map(text)).toEqual(
-        expect.arrayContaining(['Concordo', 'Não concordo', 'Decidir depois', 'Pelo WhatsApp', '(34) 90000-0777']),
-      );
+      const review = text(q('[data-role="review"]'));
+      expect(review).toContain('6 h por dia · Pelo WhatsApp');
+      expect(review).toContain('Saúde: Concordo. Outras: 2 concordo, 1 não concordo, 1 decidir depois.');
       const caregiversBefore = app.db.caregivers.size();
       const eldersBefore = app.db.elders.size();
       const subsBefore = app.db.subscriptions.size();
@@ -432,6 +456,7 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
       await type('#st-hours', '2');
       await click(all<HTMLInputElement>('.cg-choice__input')[1]);
       await click(buttonByText('Continuar'));
+      await click(q('[data-role="others-toggle"]'));
       expect(text(q('main'))).toContain('Sem esta autorização, falamos pelo aplicativo.');
       await click(buttonByText('Continuar'));
       await click(q<HTMLInputElement>('app-checkbox input'));
@@ -441,15 +466,37 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
       expect(created?.whatsapp).toBe('(34) 90000-0555');
     });
 
+    it('CXC-013: o voltar do aparelho volta um passo do cadastro, e da etapa 1 às boas-vindas', async () => {
+      await openGuest();
+      await click(buttonByText('Começar'));
+      await fillYou();
+      await click(buttonByText('Continuar'));
+      expect(text(q('main h1'))).toBe('Quem você cuida');
+      const back = async (): Promise<void> => {
+        window.history.back();
+        await new Promise((resolve) => setTimeout(resolve, 40));
+        await flush();
+      };
+      await back();
+      expect(text(q('main h1'))).toBe('Sobre você');
+      expect(q<HTMLInputElement>('#st-name')?.value).toBe('Marta Exemplo Teste');
+      await back();
+      expect(text(q('main h1'))).toBe('Vamos começar');
+      expect(app.router.url).toBe('/cuidador/comecar');
+    });
+
     it('"Editar" no resumo volta à etapa e mantém os dados; "Voltar" também', async () => {
       await openGuest();
       await toStep(4);
-      await click(all('app-cg-card button.cg-link-btn').find((b) => text(b).startsWith('Editar')));
+      await click(all('[data-role="review"] button').find((b) => text(b).startsWith('Editar')));
       expect(text(q('main h1'))).toBe('Sobre você');
       expect(q<HTMLInputElement>('#st-name')?.value).toBe('Marta Exemplo Teste');
       await click(buttonByText('Continuar'));
       expect(text(q('main h1'))).toBe('Quem você cuida');
       await click(buttonByText('Voltar'));
+      // O "Voltar" segue o voltar do aparelho (CXC-013): o histórico responde um instante depois.
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      await flush();
       expect(text(q('main h1'))).toBe('Sobre você');
       expect(q<HTMLInputElement>('#st-birth')?.value).toBe('1980-05-20');
     });
@@ -518,9 +565,13 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
       const ana = app.db.caregivers.get('cg_0001');
       const elder = app.db.elders.find((e) => e.caregiverId === 'cg_0001');
       expect(text(q('main h1'))).toBe('Meu perfil');
-      expect(all('app-cg-card h3').map(text)).toEqual(['Você', 'Quem você cuida', 'Seu dia a dia']);
+      expect(all('app-cg-card h2').map(text)).toEqual(['Você', 'Quem você cuida', 'Seu dia a dia']);
       const cards = all('app-cg-card');
       expect(text(cards[0])).toContain(ana?.fullName ?? '??');
+      // CXC-024: o CPF começa recolhido e a pessoa o mostra com um toque (é o dado dela, sem máscara quando pedido).
+      expect(text(cards[0])).not.toContain(ana?.cpf ?? '??');
+      expect(text(cards[0].querySelector('[data-role="cpf"]'))).toBe('•••.•••.•••-••');
+      await click(cards[0].querySelector('[data-role="toggle-cpf"]'));
       expect(text(cards[0])).toContain(ana?.cpf ?? '??');
       expect(ana?.cpf).toMatch(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/);
       expect(text(cards[0])).toContain(ana?.phone ?? '??');
@@ -552,7 +603,7 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
       return found[0] as HTMLElement;
     };
     const editButton = (card: number): HTMLElement | undefined =>
-      all('app-cg-card')[card]?.querySelector<HTMLElement>('button.cg-link-btn') ?? undefined;
+      Array.from(all('app-cg-card')[card]?.querySelectorAll<HTMLElement>('button.cg-link-btn') ?? []).find((b) => text(b).startsWith('Editar'));
     const saveButton = (): HTMLElement | undefined =>
       Array.from(sheet().querySelectorAll<HTMLElement>('button')).find((b) => text(b) === 'Salvar alterações');
 

@@ -152,6 +152,43 @@ describe('SessionBookingService (o miolo de agendar do núcleo, RN-ATD-02 a 05, 
     expect(db.availabilitySlots.get(first.id)?.status).toBe('open');
   });
 
+  it('duas conversas no coworking no mesmo horário nunca ficam na mesma sala; sem sala livre, a vaga não oferece o coworking (RN-ATD-10, QAC-013)', () => {
+    const { booking, db } = setup();
+    const make = (psychologistId: string) =>
+      db.availabilitySlots.create({ psychologistId, date: '2026-11-12', start: '15:00', end: '16:00', status: 'open', priorityOnly: false });
+    const a = make('psy_0001');
+    const b = make('psy_0002');
+    const c = make('psy_0003');
+    expect(booking.freeRoomForSlot(a)?.id).toBe('room_0001'); // Girassol: a primeira reservável por nome
+    const first = booking.schedule(input(a, 'cg_0003', { modality: 'in_person_coworking', roomId: 'room_0001' }));
+    expect(first.ok).toBe(true);
+    // A mesma sala no mesmo horário é recusada com o campo da sala; a Ipê é a que está livre.
+    const clash = booking.schedule(input(b, 'cg_0004', { modality: 'in_person_coworking', roomId: 'room_0001' }));
+    expect(clash.ok ? '' : clash.errors[0]).toMatchObject({ field: 'room', message: 'Esta sala já está reservada nesse horário.' });
+    expect(booking.freeRoomForSlot(b)?.id).toBe('room_0002');
+    expect(booking.schedule(input(b, 'cg_0004', { modality: 'in_person_coworking', roomId: 'room_0002' })).ok).toBe(true);
+    // Girassol e Ipê ocupadas: a Jacarandá não tem os 4 itens de acessibilidade, então não há sala para o terceiro.
+    expect(booking.freeRoomForSlot(c)).toBeUndefined();
+    // Em outro horário a Girassol volta a ficar livre; a conversa cancelada também libera a sala.
+    expect(booking.freeRoomForSlot({ date: '2026-11-12', start: '16:00' })?.id).toBe('room_0001');
+    if (first.ok) {
+      booking.cancel(first.value.id, 'user');
+      expect(booking.freeRoomForSlot(c)?.id).toBe('room_0001');
+    }
+  });
+
+  it('o encontro de grupo presencial também ocupa a sala no horário dele', () => {
+    const { booking, db } = setup();
+    const meeting = db.activities.all().flatMap((a) => (a.roomId && a.status !== 'cancelled' && a.status !== 'finished' ? a.meetings.map((m) => ({ roomId: a.roomId as string, m })) : []))[0];
+    expect(meeting).toBeDefined();
+    if (!meeting) {
+      return;
+    }
+    const start = meeting.m.startAt;
+    const slot = { date: start.slice(0, 10), start: start.slice(11, 16) };
+    expect(booking.isRoomFreeForSlot(meeting.roomId, slot)).toBe(false);
+  });
+
   it('a vaga de prioridade só existe para quem tem direito: o Livre sem acompanhamento prioritário não a vê nem agenda (RN-ATD-12)', () => {
     const { booking, db } = setup();
     // Marlene (Livre, sem acompanhamento prioritário) não tem o direito; Ana (Cuida) tem.

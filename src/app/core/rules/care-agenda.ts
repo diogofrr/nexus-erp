@@ -15,6 +15,7 @@ import {
 } from '../clock/date-utils';
 import { CareAppointment } from '../models/caregivers';
 import { ISODate, ISODateTime } from '../models/primitives';
+import { NAME_MAX_CHARS, isTooLong } from './text-limits';
 
 export type AppointmentKind = CareAppointment['kind'];
 
@@ -41,6 +42,8 @@ export function isTimeOfDay(value: string): boolean {
 
 export type AppointmentProblem =
   | 'title_required'
+  | 'title_too_long'
+  | 'place_too_long'
   | 'date_required'
   | 'date_invalid'
   | 'date_past'
@@ -50,18 +53,25 @@ export type AppointmentProblem =
 
 export interface AppointmentDraft {
   title: string;
+  /** Onde ou com quem (opcional); só o tamanho é conferido. */
+  place?: string;
   date: ISODate | null;
   time: string | null;
 }
 
 /**
- * O que está errado num compromisso novo ou remarcado: título vazio, dia que não existe ou já passou, hora fora do
- * formato ou de hoje que já passou. Lista vazia = pode salvar.
+ * O que está errado num compromisso novo ou remarcado: título vazio ou longo demais (120 caracteres), dia que não existe
+ * ou já passou, hora fora do formato ou de hoje que já passou. Lista vazia = pode salvar.
  */
 export function appointmentProblems(draft: AppointmentDraft, now: ISODateTime): AppointmentProblem[] {
   const problems: AppointmentProblem[] = [];
   if (draft.title.trim() === '') {
     problems.push('title_required');
+  } else if (isTooLong(draft.title, NAME_MAX_CHARS)) {
+    problems.push('title_too_long');
+  }
+  if (isTooLong(draft.place ?? '', NAME_MAX_CHARS)) {
+    problems.push('place_too_long');
   }
   const today = dateOf(now);
   let dateOk = false;

@@ -51,7 +51,7 @@ describe('M07 programação (SCR-M07-01, AC-M07-11, AC-M07-04)', () => {
     expect(g1).toContain('Lotada');
     expect(g1).toContain('Lotado: 8 de 8, 2 na lista de espera');
     expect(g1).toContain('Orientação e psicoeducação');
-    const g3 = content.find((c) => c.includes('Luto ambíguo')) ?? '';
+    const g3 = content.find((c) => c.includes('Lidar com as perdas')) ?? '';
     expect(g3).toContain('Psicoterapia');
     expect(g3).toContain('Em andamento');
     expect(text(app)).not.toMatch(FORBIDDEN_WORDS);
@@ -72,7 +72,7 @@ describe('M07 programação (SCR-M07-01, AC-M07-11, AC-M07-04)', () => {
   it('o psicólogo vê por padrão os grupos que conduz; o atendimento não cria nem abre os indicadores', async () => {
     const rafael = await bootApp({ userId: 'u3', url: '/app/grupos' });
     expect(text(rafael, 'app-data-table')).toContain('Sobrecarga e autocuidado');
-    expect(text(rafael, 'app-data-table')).not.toContain('Luto ambíguo');
+    expect(text(rafael, 'app-data-table')).not.toContain('Lidar com as perdas');
     expect(q(rafael, '[data-role="new-activity"]')).toBeTruthy();
     TestBed.resetTestingModule();
     const support = await bootApp({ userId: 'u7', url: '/app/grupos' });

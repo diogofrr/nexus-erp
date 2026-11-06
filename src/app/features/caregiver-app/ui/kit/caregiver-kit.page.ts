@@ -54,7 +54,7 @@ import { CgTrendComponent, CgTrendItem } from '../cg-trend.component';
         <app-cg-note variant="info">Seu plano muda para o Livre em 14/11.</app-cg-note>
         <app-cg-note variant="soft" icon="hourglass">Pedido enviado. A equipe responde em até 24 horas úteis.</app-cg-note>
         <app-cg-note variant="ok">Dado às 08:12.</app-cg-note>
-        <app-cg-note variant="late">Passou do horário (08:00).</app-cg-note>
+        <app-cg-note variant="late">Ainda não anotado.</app-cg-note>
         <app-cg-note variant="error">Informe a data de nascimento.</app-cg-note>
       </div>
     </section>

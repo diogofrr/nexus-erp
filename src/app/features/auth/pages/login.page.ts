@@ -27,6 +27,7 @@ import { IconComponent } from '../../../shared/ui/display/icon.component';
 import { BannerComponent } from '../../../shared/ui/overlay/banner.component';
 import { initialsOf, roleLabel } from '../../../shared/ui/overlay/user-display';
 import { DEMO_CAREGIVERS } from '../../caregiver-app/state/demo-caregivers';
+import { FontScaleService } from '../../caregiver-app/state/font-scale.service';
 import { destinationAfterCaregiverLogin, destinationAfterLogin } from '../return-url';
 
 /** Texto da faixa de armazenamento bloqueado (F01, estados de erro). */
@@ -60,7 +61,8 @@ interface DemoPerson {
  * demonstração em cartões simples (nome, plano e uma frase em linguagem comum; 6 de cara e mais 4 em "Ver mais
  * exemplos") e o botão "Criar minha conta". O cuidador NÃO tem senha nem segundo fator. **Sou da equipe Nexus** é
  * a lista de sempre, mais discreta (recolhida; abre sozinha quando a pessoa volta de uma sessão da equipe), com o
- * segundo fator de 6 dígitos. Mostra o aviso de protótipo (AC-GL-05, RN-LGPD-25) e, quando é o caso, a faixa do
+ * segundo fator de 6 dígitos. O botão "Ajuda agora" fica no cabeçalho da entrada, como nas outras telas, e "Criar minha
+ * conta" logo abaixo do título da porta, antes da lista de pessoas de exemplo (CXC-014). Mostra o aviso de protótipo (AC-GL-05, RN-LGPD-25) e, quando é o caso, a faixa do
  * motivo de a pessoa estar de volta aqui (3 códigos errados, inatividade, armazenamento bloqueado).
  *
  * As frases das pessoas vêm de `features/caregiver-app/state/demo-caregivers.ts`, não do seed da equipe.
@@ -77,6 +79,10 @@ interface DemoPerson {
             <use href="icons/sprite.svg#nx-symbol" />
           </svg>
           <span class="wordmark">Nexus</span>
+          <a class="login__help" routerLink="/cuidador/ajuda-agora" data-role="help-now">
+            <svg appIcon="life-buoy" size="lg"></svg>
+            <span>Ajuda agora</span>
+          </a>
         </div>
         <svg class="login__art" viewBox="-18 3 156 98" aria-hidden="true">
           <use href="icons/sprite.svg#nx-hands" />
@@ -109,10 +115,15 @@ interface DemoPerson {
           <p class="page-header__desc">Escolha como você quer entrar.</p>
         </div>
 
-        <section class="cg-door" aria-labelledby="nx-door-caregiver">
+        <section class="cg-door" aria-labelledby="nx-door-caregiver" [attr.data-text]="fontScale()">
           <h2 class="cg-door__title" id="nx-door-caregiver">Sou cuidador(a)</h2>
           <p class="cg-door__lead">Para quem cuida de uma pessoa idosa.</p>
-          <p class="cg-door__lead">Neste protótipo não há senha. Escolha uma pessoa de exemplo.</p>
+
+          <div class="cg-door__actions">
+            <a class="btn btn--primary" routerLink="/cuidador/comecar" data-role="create-account">Criar minha conta</a>
+          </div>
+
+          <p class="cg-door__lead">Para entrar, escolha uma pessoa de exemplo. Neste protótipo não há senha.</p>
 
           @if (caregiverError(); as text) {
             <app-banner variant="attention" liveRole="alert">{{ text }}</app-banner>
@@ -154,13 +165,7 @@ interface DemoPerson {
             </button>
           }
 
-          <div class="cg-door__actions">
-            <a class="btn" routerLink="/cuidador/comecar" data-role="create-account">Criar minha conta</a>
-          </div>
-          <p class="cg-door__emergency">
-            Em emergência, ligue 192 (SAMU).
-            <a class="cg-link-btn" routerLink="/cuidador/ajuda-agora" data-role="help-now">Ajuda agora</a>
-          </p>
+          <p class="cg-door__emergency">Em emergência, ligue 192 (SAMU).</p>
         </section>
 
         <section class="cg-door cg-door--staff" aria-labelledby="nx-door-staff">
@@ -235,6 +240,8 @@ export class LoginPageComponent {
   private readonly subscriptions = inject(SubscriptionService);
   private readonly router = inject(Router);
   private readonly storage = inject(StorageService);
+  /** A entrada também respeita o tamanho da letra que a pessoa escolheu no aplicativo (CXC-022). */
+  protected readonly fontScale = inject(FontScaleService).scale;
 
   protected readonly notice = PROTOTYPE_NOTICE;
   protected readonly blockedText = STORAGE_BLOCKED_TEXT;

@@ -5,9 +5,9 @@
  * hora em horário comercial, e-mail 48 h úteis). Expediente: RN-CAN-03 (segunda a sexta, 8h às 18h, sem feriado
  * nacional). Funções puras: recebem o instante, nunca leem o relógio.
  */
-import { addDays, dateOf, timeOf } from '../../../core/clock/date-utils';
+import { addDays, dateOf, timeOf, weekday } from '../../../core/clock/date-utils';
 import { Channel, ISODateTime } from '../../../core/models';
-import { isBusinessDay } from '../../../core/rules/sla';
+import { isBusinessDay, nextBusinessDay } from '../../../core/rules/sla';
 
 export const NEXUS_PHONE = '(34) 90000-0000';
 export const NEXUS_WHATSAPP = '(34) 90000-0000';
@@ -47,7 +47,10 @@ export function isWithinBusinessHours(now: ISODateTime): boolean {
   return time >= BUSINESS_OPEN && time < BUSINESS_CLOSE;
 }
 
-/** "Fechado agora. Abrimos amanhã às 8h." (ou o dia da semana, quando não é amanhã). */
+/** Os dias úteis depois de "na": "Abrimos na segunda às 8h" (0 = domingo). Fim de semana e feriado nunca chegam aqui. */
+const WEEKDAY_NAME: readonly string[] = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+
+/** "Fechado agora. Abrimos amanhã às 8h." (ou "Abrimos na segunda às 8h", com o dia da semana, quando não é amanhã). */
 export function phoneClosedNote(now: ISODateTime): string | undefined {
   if (isWithinBusinessHours(now)) {
     return undefined;
@@ -57,15 +60,11 @@ export function phoneClosedNote(now: ISODateTime): string | undefined {
   if (isBusinessDay(today) && timeOf(now) < BUSINESS_OPEN) {
     return 'Fechado agora. Abrimos hoje às 8h.';
   }
-  let next = addDays(today, 1);
-  let days = 1;
-  while (!isBusinessDay(next)) {
-    next = addDays(next, 1);
-    days += 1;
-  }
-  return days === 1
+  // Sexta à noite, sábado e domingo: a próxima abertura é na segunda (ou no dia útil seguinte ao feriado). AC-CG-39 e 164.
+  const next = nextBusinessDay(today);
+  return next === addDays(today, 1)
     ? 'Fechado agora. Abrimos amanhã às 8h.'
-    : 'Fechado agora. Abrimos no próximo dia útil, às 8h.';
+    : `Fechado agora. Abrimos na ${WEEKDAY_NAME[weekday(next)]} às 8h.`;
 }
 
 /** Os 4 canais, o preferido da pessoa primeiro (os outros seguem a ordem fixa: telefone, WhatsApp, aplicativo, e-mail). */

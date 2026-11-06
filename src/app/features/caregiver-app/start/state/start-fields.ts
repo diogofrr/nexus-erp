@@ -4,8 +4,10 @@
  * horas de 0 a 24) é a do núcleo (`core/rules/validators.ts`); aqui só se escolhe a frase.
  */
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { isValidIsoDate } from '../../../../core/clock/date-utils';
 import { ISODate } from '../../../../core/models';
 import type { Channel, Dependency, Relationship } from '../../../../core/models';
+import { INVALID_DATE_TEXT, NAME_MAX_CHARS, isTooLong, tooLongText } from '../../../../core/rules/text-limits';
 import { validateAdult, validateFictitiousPhone } from '../../../../core/rules/validators';
 import { NxValidators, fieldErrorMessage } from '../../../../shared/ui/forms/form-errors';
 import type { ErrorSummaryItem } from '../../../../shared/ui/forms/error-summary.component';
@@ -68,7 +70,12 @@ export function adultYou(today: () => ISODate): ValidatorFn {
     }
     return {
       minor: {
-        message: result.code === 'minor' ? 'Você precisa ter 18 anos ou mais.' : result.message,
+        message:
+          result.code === 'minor'
+            ? 'Você precisa ter 18 anos ou mais.'
+            : result.code === 'birth_invalid'
+              ? INVALID_DATE_TEXT
+              : result.message,
       },
     };
   };
@@ -81,7 +88,18 @@ export function notFuture(today: () => ISODate, what: string): ValidatorFn {
     if (typeof value !== 'string' || value === '') {
       return null;
     }
+    if (!isValidIsoDate(value)) {
+      return { invalidDate: { message: INVALID_DATE_TEXT } };
+    }
     return value > today() ? { future: { message: `A data de nascimento ${what} não pode ser no futuro.` } } : null;
+  };
+}
+
+/** Texto de no máximo `max` caracteres (QAC-015): "Escreva até 120 caracteres." junto do campo. */
+export function maxChars(max: number): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const value = control.value as unknown;
+    return typeof value === 'string' && isTooLong(value, max) ? { tooLong: { message: tooLongText(max) } } : null;
   };
 }
 
@@ -102,7 +120,7 @@ export const YOU_VALIDATORS = {
   birthDate: (today: () => ISODate): ValidatorFn[] => [NxValidators.required('a data de nascimento'), adultYou(today)],
   phone: [NxValidators.required('o celular'), phoneYou],
   email: [NxValidators.required('o e-mail'), NxValidators.fictitiousEmail],
-  city: [NxValidators.required('a cidade')],
+  city: [NxValidators.required('a cidade'), maxChars(NAME_MAX_CHARS)],
 };
 
 export const ELDER_VALIDATORS = {

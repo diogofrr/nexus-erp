@@ -5,6 +5,24 @@
 import { addDays, addYears, compareDates, daysBetween } from '../clock/date-utils';
 import { ISODate } from '../models/primitives';
 import { ConsentKey, ConsentStatus, DataSubjectRequest, DsrType } from '../models/lgpd';
+import { Channel } from '../models/primitives';
+
+// ===== Canal preferido e autorização de WhatsApp =====
+
+/**
+ * RN-LGPD-05 (e), RN-CAN-01: o canal preferido WhatsApp só vale com a autorização de contato por WhatsApp. Sem ela a equipe
+ * não pode procurar a pessoa por esse canal (QAC-005). O cadastro (S-40) grava o aplicativo no lugar; o perfil e a edição
+ * pela equipe recusam QUEM ESCOLHE o WhatsApp e dizem o que falta (cadastro antigo que já estava com o WhatsApp não trava
+ * outras correções).
+ */
+export function whatsappChannelNeedsConsent(channel: Channel, whatsappConsentActive: boolean): boolean {
+  return channel === 'whatsapp' && !whatsappConsentActive;
+}
+
+/** O canal que vale: o escolhido, ou o aplicativo quando o WhatsApp foi escolhido sem a autorização (S-40). */
+export function effectivePreferredChannel(channel: Channel, whatsappConsentActive: boolean): Channel {
+  return whatsappChannelNeedsConsent(channel, whatsappConsentActive) ? 'app' : channel;
+}
 
 // ===== Prazo da solicitação do titular =====
 

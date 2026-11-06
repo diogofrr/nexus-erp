@@ -80,7 +80,7 @@ import { MESSAGE_SENT_NOTE, MESSAGE_SUBJECTS, NexusMessagesService } from '../st
       @if (showCompose()) {
         <section class="cg-stack cg-stack--tight cg-reading" aria-labelledby="talk-compose" data-role="compose">
           <h2 class="cg-section__title" id="talk-compose">Escrever uma mensagem</h2>
-          <app-cg-choice-group legend="Sobre o que é?" [options]="subjects" [(value)]="subject" />
+          <app-cg-choice-group legend="Sobre o que é? (opcional)" [options]="subjects" [(value)]="subject" />
           <app-form-field label="Escreva a sua mensagem" controlId="talk-body" [error]="error()" [forceErrors]="true">
             <textarea appInput rows="5" [formControl]="body" #bodyField></textarea>
           </app-form-field>
@@ -128,7 +128,6 @@ export class TalkToNexusPage {
   private readonly clock = inject(Clock);
   private readonly contact = inject(ContactDialogService);
   private readonly messages = inject(NexusMessagesService);
-  private readonly toast = inject(ToastService);
   private readonly injector = inject(Injector);
   private readonly bodyField = viewChild<ElementRef<HTMLTextAreaElement>>('bodyField');
 
@@ -173,6 +172,5 @@ export class TalkToNexusPage {
     this.body.reset('');
     this.subject.set(null);
     this.sentNote.set(MESSAGE_SENT_NOTE);
-    this.toast.show({ message: MESSAGE_SENT_NOTE, durationMs: 8000 });
   }
 }

@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { AuditLogService } from '../audit/audit-log.service';
+import { CaregiverOwnership } from '../auth/caregiver-ownership';
 import { Clock } from '../clock/clock.service';
 import { Database } from '../data/database';
 import { Channel, DataSubjectRequest, DsrType, ID } from '../models';
@@ -45,9 +46,13 @@ export class SubjectRightsService {
   private readonly clock = inject(Clock);
   private readonly dsr = inject(DataSubjectRequestService);
   private readonly audit = inject(AuditLogService);
+  private readonly ownership = inject(CaregiverOwnership);
 
   /** Todos os pedidos do titular, o mais recente primeiro. */
   requestsOf(caregiverId: ID): DataSubjectRequest[] {
+    if (!this.ownership.ownsCaregiver(caregiverId)) {
+      return [];
+    }
     return this.dsr
       .forCaregiver(caregiverId)
       .sort((a, b) => b.openedAt.localeCompare(a.openedAt) || b.protocol.localeCompare(a.protocol));
@@ -96,6 +101,9 @@ export class SubjectRightsService {
    * nenhum nos dados, e o cadastro volta ao estado de antes se era só este pedido que o mantinha em encerramento.
    */
   withdraw(caregiverId: ID, requestId: ID): SelfRequestResult {
+    if (!this.ownership.ownsCaregiver(caregiverId)) {
+      return { ok: false, reason: 'not_allowed' };
+    }
     const request = this.db.dataSubjectRequests.get(requestId);
     if (
       !request ||
@@ -130,7 +138,14 @@ export class SubjectRightsService {
     channel: Channel | 'in_person',
   ): SelfRequestResult {
     const caregiver = this.db.caregivers.get(caregiverId);
-    if (!caregiver || caregiver.status === 'closed' || caregiver.erasedAt || caregiver.anonymizedAt) {
+    // Só se pede cópia ou eliminação dos dados da própria pessoa (QAC-001).
+    if (
+      !this.ownership.ownsCaregiver(caregiverId) ||
+      !caregiver ||
+      caregiver.status === 'closed' ||
+      caregiver.erasedAt ||
+      caregiver.anonymizedAt
+    ) {
       return { ok: false, reason: 'not_allowed' };
     }
     const existing = this.pendingOf(caregiverId, type);

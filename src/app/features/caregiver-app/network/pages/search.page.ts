@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProviderCategory } from '../../../../core/models';
@@ -13,10 +24,17 @@ import { ContactDialogService } from '../../state/contact-dialog.service';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
-import { CATEGORIES, CONDITIONS_FROM_ESSENCIAL, categoryLabel, parseCategory, ratingText } from '../state/network-copy';
+import { CATEGORIES, CONDITIONS_FROM_ESSENCIAL, categoryLabel, parseCategory, ratingShort, ratingText } from '../state/network-copy';
 
 /** No máximo 3 profissionais lado a lado (UX C13). */
 const MAX_COMPARE = 3;
+
+/** Uma linha da comparação: o que é e o que cada profissional tem (na ordem das colunas). */
+interface CompareRow {
+  key: 'rating' | 'home' | 'conditions';
+  label: string;
+  cells: string[];
+}
 
 /**
  * Buscar profissionais e serviços (UX C13, `/cuidador/rede/buscar`). O campo "Buscar pelo nome" (o texto NUNCA vai para a URL,
@@ -26,7 +44,9 @@ const MAX_COMPARE = 3;
  * nunca tira ninguém da lista e nenhum texto diz "recomendado" (RN-REDE-19, RN-ATD-13). A nota só aparece com 5 avaliações ou
  * mais. NUNCA aparecem suspenso, descredenciado ou candidato, nem faixa de monitoramento, "risco de saída", taxa de recusa ou
  * comissão (RN-REDE-18 e 30): o núcleo só entrega a ficha pública. "Só quem atende em casa" filtra; "Comparar" põe 2 ou 3 lado a
- * lado, e no Livre a linha de condições diz "a partir do plano Essencial".
+ * lado numa tabela curta (nota, atende em casa, condições) que só mostra o que MUDA entre eles; o que é igual vem numa linha
+ * "Igual nas duas opções". No Livre a linha de condições diz "a partir do plano Essencial". Escolher uma necessidade leva a tela
+ * até os resultados (CXC-011).
  */
 @Component({
   selector: 'app-cg-search-page',
@@ -58,11 +78,23 @@ const MAX_COMPARE = 3;
       .nx-result__link:focus-visible { outline: none; }
       .nx-result__link:focus-visible::after { outline: 3px solid var(--cg-focus); outline-offset: 3px; }
       .nx-result .check { position: relative; z-index: 1; width: fit-content; min-height: var(--cg-target); }
-      .nx-compare-cols { display: grid; gap: var(--cg-gap-block); grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
-      .nx-compare-col { display: grid; gap: 0.5rem; align-content: start; padding: var(--cg-pad-card); border: 1px solid var(--cg-border); border-radius: var(--cg-radius-control); }
-      .nx-compare-col h3, .nx-compare-col p { margin: 0; overflow-wrap: anywhere; }
-      .nx-compare-col dt { font-weight: var(--fw-semibold); color: var(--cg-heading); }
-      .nx-compare-col dd { margin: 0 0 0.5rem; }
+      #search-results { scroll-margin-top: calc(var(--cg-header-h) + 0.75rem); outline: none; }
+      .nx-compare { width: 100%; border-collapse: collapse; table-layout: fixed; }
+      .nx-compare th, .nx-compare td { padding: 0.5rem; border-bottom: 1px solid var(--cg-border-subtle); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+      .nx-compare thead th { color: var(--cg-heading); font-weight: var(--fw-semibold); }
+      .nx-compare tbody th { color: var(--cg-text-soft); font-size: var(--cg-fs-small); font-weight: var(--fw-semibold); width: 28%; }
+      .nx-compare-same { display: grid; gap: 0.25rem; }
+      .nx-compare-same h3, .nx-compare-same p, .nx-compare-same ul { margin: 0; }
+      .nx-compare-same ul { padding-left: 1.25rem; }
+      /* No celular a tabela vira blocos: o que muda, e embaixo o valor de cada profissional, com o nome. */
+      @media (max-width: 40rem) {
+        .nx-compare, .nx-compare tbody, .nx-compare tr, .nx-compare th, .nx-compare td { display: block; width: auto; }
+        .nx-compare thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+        .nx-compare tbody th { padding-bottom: 0; border-bottom: 0; }
+        .nx-compare td::before { content: attr(data-label) ': '; font-weight: var(--fw-semibold); color: var(--cg-heading); }
+        .nx-compare td { padding-block: 0.125rem; border-bottom: 0; }
+        .nx-compare tr { padding-bottom: 0.5rem; border-bottom: 1px solid var(--cg-border-subtle); }
+      }
     `,
   ],
   template: `
@@ -90,7 +122,7 @@ const MAX_COMPARE = 3;
 
       @if (category() || trimmedName()) {
         <section aria-labelledby="search-results" class="cg-stack cg-stack--tight">
-          <h2 class="cg-section__title" id="search-results" data-role="count">{{ countText() }}</h2>
+          <h2 class="cg-section__title" id="search-results" data-role="count" tabindex="-1">{{ countText() }}</h2>
 
           @if (category()) {
             <button type="button" class="nx-cat nx-toggle" data-role="home-filter" [attr.aria-pressed]="homeOnly()" (click)="toggleHome()">
@@ -167,22 +199,43 @@ const MAX_COMPARE = 3;
     </div>
 
     <app-cg-sheet heading="Lado a lado" [(open)]="compareOpen">
-      <div class="nx-compare-cols" data-role="compare-cols">
-        @for (p of compared(); track p.id) {
-          <section class="nx-compare-col" data-role="compare-col">
-            <h3 class="cg-card__title">{{ p.name }}</h3>
-            <dl>
-              <dt>Nota</dt>
-              <dd>{{ rating(p) }}</dd>
-              <dt>Atende em casa</dt>
-              <dd>{{ p.homeCare ? 'Sim' : 'Não' }}</dd>
-              <dt>Condições</dt>
-              <dd>{{ conditionsFor(p) }}</dd>
-            </dl>
-            <a class="cg-link-btn" [routerLink]="['/cuidador/rede/profissional', p.id]">Ver ficha</a>
-          </section>
-        }
-      </div>
+      <table class="nx-compare" data-role="compare-table">
+        <caption class="sr-only">Comparação das opções escolhidas</caption>
+        <thead>
+          <tr>
+            <th scope="col"><span class="sr-only">O que muda</span></th>
+            @for (p of compared(); track p.id) {
+              <th scope="col" data-role="compare-name">{{ p.name }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of changingRows(); track row.key) {
+            <tr data-role="compare-row">
+              <th scope="row">{{ row.label }}</th>
+              @for (cell of row.cells; track $index) {
+                <td [attr.data-label]="compared()[$index]?.name">{{ cell }}</td>
+              }
+            </tr>
+          }
+          <tr data-role="compare-links">
+            <th scope="row">Ficha</th>
+            @for (p of compared(); track p.id) {
+              <td [attr.data-label]="p.name"><a class="cg-link-btn" [routerLink]="['/cuidador/rede/profissional', p.id]">Ver ficha<span class="sr-only"> de {{ p.name }}</span></a></td>
+            }
+          </tr>
+        </tbody>
+      </table>
+      @if (sameLines().length > 0) {
+        <section class="nx-compare-same" data-role="compare-same" aria-labelledby="compare-same-title">
+          <h3 class="cg-card__title" id="compare-same-title">Igual {{ compared().length === 2 ? 'nas duas' : 'nas ' + compared().length }} opções</h3>
+          <ul>
+            @for (line of sameLines(); track line) {
+              <li>{{ line }}</li>
+            }
+          </ul>
+        </section>
+      }
       <ng-container cgSheetActions>
         <button type="button" class="cg-link-btn" (click)="compareOpen.set(false)">Voltar</button>
       </ng-container>
@@ -194,6 +247,8 @@ export class SearchPage {
   private readonly route = inject(ActivatedRoute);
   private readonly network = inject(CaregiverNetworkService);
   private readonly contact = inject(ContactDialogService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   protected readonly ctx = inject(CaregiverContextService);
 
   protected readonly categories = CATEGORIES;
@@ -234,6 +289,50 @@ export class SearchPage {
     return this.network.searchable().filter((p) => ids.has(p.id));
   });
 
+  /** As linhas da comparação: nota, atende em casa e condições, uma célula por profissional. */
+  private readonly compareRows = computed<CompareRow[]>(() => {
+    const list = this.compared();
+    return [
+      { key: 'rating', label: 'Nota', cells: list.map((p) => ratingShort(p)) },
+      { key: 'home', label: 'Atende em casa', cells: list.map((p) => (p.homeCare ? 'Sim' : 'Não')) },
+      { key: 'conditions', label: 'Condições', cells: list.map((p) => this.conditionsFor(p)) },
+    ];
+  });
+  private static allEqual(cells: readonly string[]): boolean {
+    return cells.every((cell) => cell === cells[0]);
+  }
+  /** Só as linhas em que as opções são diferentes (CXC-012): a linha igual para todas não é repetida. */
+  protected readonly changingRows = computed(() => this.compareRows().filter((row) => !SearchPage.allEqual(row.cells)));
+  /** O que é igual para todas as opções, uma vez só, em frases curtas. */
+  protected readonly sameLines = computed(() =>
+    this.compareRows()
+      .filter((row) => this.compared().length > 0 && SearchPage.allEqual(row.cells))
+      .map((row) =>
+        row.key === 'conditions' && !this.ctx.canUse('network_conditions') ? CONDITIONS_FROM_ESSENCIAL : `${row.label}: ${row.cells[0]}`,
+      ),
+  );
+
+  private scrollToResults = false;
+
+  constructor() {
+    // Escolher uma necessidade leva a tela até os resultados (CXC-011): "toquei e nada aconteceu" não acontece mais.
+    effect(() => {
+      const category = this.category();
+      untracked(() => {
+        if (category && this.scrollToResults) {
+          this.scrollToResults = false;
+          afterNextRender(() => this.revealResults(), { injector: this.injector });
+        }
+      });
+    });
+  }
+
+  private revealResults(): void {
+    const heading = this.host.nativeElement.querySelector<HTMLElement>('#search-results');
+    heading?.scrollIntoView?.({ block: 'start' });
+    heading?.focus({ preventScroll: true });
+  }
+
   protected label(category: ProviderCategory): string {
     return categoryLabel(category);
   }
@@ -253,6 +352,11 @@ export class SearchPage {
 
   protected chooseCategory(value: string): void {
     this.selected.set([]);
+    if (value === this.category()) {
+      this.revealResults();
+      return;
+    }
+    this.scrollToResults = true;
     void this.router.navigate([], { relativeTo: this.route, queryParams: { categoria: value }, queryParamsHandling: 'merge' });
   }
 

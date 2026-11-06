@@ -5,11 +5,12 @@ import { Database } from '@core/data';
 import { formatMoney } from '@core/format';
 import { CareSession, ID, ISODate, PsychologistProfile, Room, SessionModality } from '@core/models';
 import { isRoomBookable } from '@core/rules/rooms';
+import { NAME_MAX_CHARS, isTooLong, tooLongText } from '@core/rules/text-limits';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { formatDayShort, relativeDateTime } from '../../state/day-format';
 import { psychologistRole, shortName } from '../../state/people-format';
 import { FORMAT_LABEL } from '../../state/format-labels';
-import { KIND_LABEL, KindChoice, SLOT_TAKEN, kindFromChoice, statusText } from './care-labels';
+import { KIND_LABEL, KIND_TO_DEFINE, KindChoice, SLOT_TAKEN, kindFromChoice, statusText } from './care-labels';
 
 /** Quantos dias à frente a pessoa vê horários (UX B4: "próximos 14 dias"). */
 export const WINDOW_DAYS = 14;
@@ -164,13 +165,22 @@ export class ConversationsService {
     };
   });
 
-  /** A sala do coworking que a pessoa usa: a primeira reservável (4 itens de acessibilidade, RN-ATD-10). */
+  /** A primeira sala reservável (4 itens de acessibilidade, RN-ATD-10): a que a tela cita antes de a pessoa escolher o horário. */
   readonly room = computed<Room | null>(() => {
     const rooms = this.db.rooms
       .query((r) => isRoomBookable(r))
       .sort((a, b) => a.name.localeCompare(b.name));
     return rooms[0] ?? null;
   });
+
+  /**
+   * A sala do coworking livre no horário da vaga: a primeira reservável que nenhuma outra conversa nem encontro de grupo usa
+   * nessa hora (RN-ATD-10, QAC-013). `null` quando todas estão ocupadas: nesse horário o coworking não é oferecido.
+   */
+  roomForSlot(slotId: ID | null | undefined): Room | null {
+    const slot = slotId ? this.db.availabilitySlots.get(slotId) : undefined;
+    return (slot ? this.booking.freeRoomForSlot(slot) : undefined) ?? null;
+  }
 
   /**
    * Horários abertos nos próximos 14 dias para o formato, agrupados por dia. Só psicólogos com registro ativo; no
@@ -190,6 +200,8 @@ export class ConversationsService {
       this.booking
         .freeSlots(psy.id, priority)
         .filter((slot) => slot.date <= last)
+        // No coworking só entram os horários em que há sala livre (duas conversas nunca caem na mesma sala).
+        .filter((slot) => format !== 'in_person_coworking' || this.roomForSlot(slot.id) !== null)
         .forEach((slot) => {
           const option: SlotOption = {
             slotId: slot.id,
@@ -242,13 +254,21 @@ export class ConversationsService {
 
   /** Marca a conversa. A confirmação (a folha de resumo) vem sempre antes. */
   book(request: BookRequest): ConversationResult {
+    if (isTooLong(request.address, NAME_MAX_CHARS)) {
+      return { ok: false, field: 'homeAddress', error: tooLongText(NAME_MAX_CHARS) };
+    }
     const result = this.booking.schedule(this.toInput(request));
-    return result.ok ? { ok: true, session: result.value } : { ok: false, ...bookingErrorText(result.errors) };
+    if (!result.ok) {
+      return { ok: false, ...bookingErrorText(result.errors) };
+    }
+    // "Não sei" grava orientação; o aplicativo guarda que a pessoa não escolheu, para mostrar "A definir na conversa" (CXC-007).
+    const session = request.kind === 'unsure' ? this.db.careSessions.update(result.value.id, { kindUndecided: true }) : result.value;
+    return { ok: true, session };
   }
 
   /** Cancela a conversa da própria pessoa: com 24 horas ou mais libera o horário; com menos, vira falta. */
   cancel(conversation: Conversation): ConversationResult {
-    if (!this.isMine(conversation.session)) {
+    if (!this.isMine({ id: conversation.id })) {
       return { ok: false, field: 'session', error: 'Não encontramos esta conversa.' };
     }
     const result = this.booking.cancel(conversation.id, 'user');
@@ -257,23 +277,35 @@ export class ConversationsService {
 
   /** Remarca: escolhe o horário novo e só então libera o antigo. */
   reschedule(conversation: Conversation, request: BookRequest): ConversationResult {
-    if (!this.isMine(conversation.session)) {
+    if (!this.isMine({ id: conversation.id })) {
       return { ok: false, field: 'session', error: 'Não encontramos esta conversa.' };
     }
+    if (isTooLong(request.address, NAME_MAX_CHARS)) {
+      return { ok: false, field: 'homeAddress', error: tooLongText(NAME_MAX_CHARS) };
+    }
     const result = this.booking.reschedule(conversation.id, this.toInput(request), 'user');
-    return result.ok ? { ok: true, session: result.value } : { ok: false, ...bookingErrorText(result.errors) };
+    if (!result.ok) {
+      return { ok: false, ...bookingErrorText(result.errors) };
+    }
+    // A conversa nova herda o "A definir na conversa" da antiga.
+    const session = conversation.session.kindUndecided ? this.db.careSessions.update(result.value.id, { kindUndecided: true }) : result.value;
+    return { ok: true, session };
   }
 
-  /** A pessoa tem direito a esta conversa? Só as dela. */
-  isMine(session: Pick<CareSession, 'caregiverId'>): boolean {
-    return session.caregiverId === this.ctx.caregiverId();
+  /**
+   * A pessoa tem direito a esta conversa? Só as dela. Confere o registro guardado pelo id, nunca o objeto recebido (quem
+   * chama o serviço direto pode montar um objeto com o dono certo e o id de outra pessoa: QAC-001).
+   */
+  isMine(session: Pick<CareSession, 'id'>): boolean {
+    const stored = this.db.careSessions.get(session.id);
+    return !!stored && stored.caregiverId === this.ctx.caregiverId();
   }
 
   // ===== Internos =====
 
   private toInput(request: BookRequest): BookingInput {
     const caregiverId = this.ctx.requireCaregiverId();
-    const room = request.format === 'in_person_coworking' ? this.room() : null;
+    const room = request.format === 'in_person_coworking' ? this.roomForSlot(request.slotId) : null;
     return {
       caregiverId,
       psychologistId: request.psychologistId,
@@ -306,7 +338,7 @@ export class ConversationsService {
       crp: psy?.crp ?? '',
       format: session.modality,
       formatLabel: FORMAT_LABEL[session.modality],
-      kindLabel: KIND_LABEL[session.kind],
+      kindLabel: session.kindUndecided ? KIND_TO_DEFINE : KIND_LABEL[session.kind],
       statusText: statusText(session),
       place:
         session.modality === 'in_person_coworking' && room

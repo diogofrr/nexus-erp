@@ -4,21 +4,36 @@
  * caráter e de tema vêm do módulo de grupos da equipe, para a equipe e o cuidador falarem do mesmo jeito.
  */
 import { Activity, ActivityKind, ActivityLeader, Room } from '../../../../core/models';
-import { CHARACTER_LABELS, KIND_LABELS, THEME_LABELS } from '../../../groups/state/groups-labels';
+import { KIND_LABELS as TEAM_KIND_LABELS, THEME_LABELS } from '../../../groups/state/groups-labels';
 
-export { CHARACTER_LABELS, KIND_LABELS, THEME_LABELS };
+export { THEME_LABELS };
 
-/** Explicação do caráter (RN-GRP-16, RN-ATD-19): o cuidador sabe se é orientação ou psicoterapia. */
+/** O tipo da atividade em linguagem de todo dia (CXC-019): a equipe diz "Terapia de grupo"; o cuidador lê "Grupo com psicólogo". */
+export const KIND_LABELS: Readonly<Record<ActivityKind, string>> = {
+  ...TEAM_KIND_LABELS,
+  group_therapy: 'Grupo com psicólogo',
+};
+
+/**
+ * O caráter da atividade, sempre à vista (RN-GRP-16, RN-ATD-19): o cuidador sabe se é para aprender e trocar ou se é
+ * psicoterapia. Sem "psicoeducação" nem "objetivo clínico" (CXC-019).
+ */
+export const CHARACTER_LABELS: Readonly<Record<Activity['character'], string>> = {
+  guidance: 'Para aprender e trocar',
+  psychotherapy: 'Psicoterapia em grupo',
+};
+
+/** Explicação do caráter, em uma frase (RN-GRP-16, RN-ATD-19). */
 export const CHARACTER_TEXT: Readonly<Record<Activity['character'], string>> = {
-  guidance: 'Orientação e psicoeducação: encontros para aprender e trocar. Não é psicoterapia.',
-  psychotherapy: 'Psicoterapia: terapia de grupo conduzida por psicólogo da Nexus, com objetivo clínico.',
+  guidance: 'Para aprender e trocar: encontros para conversar e aprender com outras pessoas. Não é psicoterapia.',
+  psychotherapy: 'Psicoterapia em grupo: um psicólogo da Nexus conduz o grupo, para cuidar do que você sente.',
 };
 
 /** O que é, em uma frase, sem prometer resultado (RN-GRP-15, RN-ETICA-05). */
 export const KIND_TEXT: Readonly<Record<ActivityKind, string>> = {
   support_group: 'Um grupo para conversar e trocar com outras pessoas que cuidam de uma pessoa idosa.',
   training: 'Uma capacitação para aprender a cuidar com mais segurança.',
-  group_therapy: 'Um grupo de terapia, com acompanhamento de psicólogo da Nexus.',
+  group_therapy: 'Um grupo com psicólogo da Nexus, para conversar sobre o que você sente.',
   open_conversation_circle: 'Uma roda de conversa aberta: qualquer pessoa pode participar.',
 };
 

@@ -472,21 +472,23 @@ describe('QAC UI: Hoje, doses e contato da equipe', () => {
     expect(mainText(app)).toContain('Para você');
     TestBed.resetTestingModule();
     const maria = await bootCaregiverApp(MARIA, { url: '/cuidador/hoje' });
-    expect(mainText(maria)).toContain('A equipe ainda não conseguiu falar com você.');
+    // CXC-003: o contato que não aconteceu é um convite, sem "responsável técnica" e sem "não conseguiu".
+    expect(mainText(maria)).toContain('Queremos falar com você.');
     expect(mainText(maria)).toContain('Falar com a gente agora');
     expect(mainText(maria)).not.toMatch(/vencid|atrasad|prazo/i);
     const mariaAlert = maria.db.zaritAlerts.find((a) => a.caregiverId === MARIA && a.level === 'red' && a.status === 'open')!;
     maria.db.zaritAlerts.update(mariaAlert.id, { status: 'contacted', contact: { at: '2026-11-04T12:30:00-03:00', byUserId: 'u4', channel: 'phone' } });
     await settleCaregiver(maria.fixture);
-    expect(mainText(maria)).not.toContain('A equipe ainda não conseguiu falar com você.');
+    expect(mainText(maria)).not.toContain('Queremos falar com você.');
   });
 
   it('o contato da equipe vira "ainda não" depois das 23h59', async () => {
     const app = await bootCaregiverApp(ANA, { time: '23:59', url: '/cuidador/hoje' });
-    expect(mainText(app)).toContain('A equipe de psicologia vai falar com você hoje.');
+    // CXC-003: fora do horário comercial a nota não promete "hoje".
+    expect(mainText(app)).toContain('A equipe de psicologia vai falar com você amanhã de manhã.');
     app.clock.setSimulated('2026-11-05', '00:00');
     await settleCaregiver(app.fixture);
-    expect(mainText(app)).toContain('A equipe ainda não conseguiu falar com você.');
+    expect(mainText(app)).toContain('Queremos falar com você.');
   });
 
   it('"Dei" grava a marcação sem mudar a linha de lugar, a faixa traz "Desfazer" e desfazer não pede confirmação', async () => {
@@ -528,8 +530,12 @@ describe('QAC UI: Hoje, doses e contato da equipe', () => {
   it('teclado virtual aberto (janela encolhida): a barra inferior some e volta ao fechar', async () => {
     const fake = fakeViewport();
     try {
-      const app = await bootCaregiverApp(ANA, { url: '/cuidador/mais/ajuda', layout: 'drawer' });
+      const app = await bootCaregiverApp(ANA, { url: '/cuidador/rede/buscar', layout: 'drawer' });
       expect(app.root.querySelector('app-cg-nav')).not.toBeNull();
+      // QAC-011: só é teclado quando há um campo de texto com foco (e a janela encolhe, sem zoom).
+      const field = app.root.querySelector<HTMLElement>('main input[type="search"]');
+      expect(field).not.toBeNull();
+      field?.focus();
       fake.viewport.height = Math.round(window.innerHeight * 0.5);
       fake.fire();
       await settleCaregiver(app.fixture);
@@ -538,17 +544,42 @@ describe('QAC UI: Hoje, doses e contato da equipe', () => {
       fake.fire();
       await settleCaregiver(app.fixture);
       expect(app.root.querySelector('app-cg-nav')).not.toBeNull();
+      // Tocar fora do campo (o foco sai) com a janela ainda encolhida: a barra volta (AC-CG-05).
+      field?.focus();
+      fake.viewport.height = Math.round(window.innerHeight * 0.5);
+      fake.fire();
+      await settleCaregiver(app.fixture);
+      expect(app.root.querySelector('app-cg-nav')).toBeNull();
+      field?.blur();
+      await settleCaregiver(app.fixture);
+      expect(app.root.querySelector('app-cg-nav')).not.toBeNull();
     } finally {
       Reflect.deleteProperty(window, 'visualViewport');
     }
   });
 
-  it.fails('QAC-011: zoom de pinça (escala 2, nenhum campo com foco) não esconde a barra de navegação', async () => {
+  // QAC-011 (corrigido no Fix B): antes era `it.fails`.
+  it('QAC-011: zoom de pinça (escala 2, nenhum campo com foco) não esconde a barra de navegação', async () => {
     const fake = fakeViewport();
     try {
       const app = await bootCaregiverApp(ANA, { url: '/cuidador/hoje', layout: 'drawer' });
       expect(app.root.querySelector('app-cg-nav')).not.toBeNull();
       (document.activeElement as HTMLElement | null)?.blur();
+      fake.viewport.scale = 2;
+      fake.viewport.height = Math.round(window.innerHeight / 2);
+      fake.fire();
+      await settleCaregiver(app.fixture);
+      expect(app.root.querySelector('app-cg-nav')).not.toBeNull();
+    } finally {
+      Reflect.deleteProperty(window, 'visualViewport');
+    }
+  });
+
+  it('QAC-011: com zoom de pinça (escala 2) a barra fica mesmo com um campo de texto com foco', async () => {
+    const fake = fakeViewport();
+    try {
+      const app = await bootCaregiverApp(ANA, { url: '/cuidador/rede/buscar', layout: 'drawer' });
+      app.root.querySelector<HTMLElement>('main input[type="search"]')?.focus();
       fake.viewport.scale = 2;
       fake.viewport.height = Math.round(window.innerHeight / 2);
       fake.fire();

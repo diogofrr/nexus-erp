@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { AuditLogService } from '../audit/audit-log.service';
+import { CaregiverOwnership } from '../auth/caregiver-ownership';
 import { SessionStore } from '../auth/session.store';
 import { Clock } from '../clock/clock.service';
 import { dateOf } from '../clock/date-utils';
@@ -44,6 +45,7 @@ export class ConsentService {
   private readonly clock = inject(Clock);
   private readonly audit = inject(AuditLogService);
   private readonly session = inject(SessionStore);
+  private readonly ownership = inject(CaregiverOwnership);
 
   // ===== Leitura =====
 
@@ -151,6 +153,8 @@ export class ConsentService {
     status: ConsentEvent['status'],
     options: ConsentChangeOptions,
   ): ConsentChangeResult {
+    // Com a sessão de um cuidador aberta, só se decide sobre a própria autorização (QAC-001).
+    this.ownership.assertCaregiver(caregiverId);
     const caregiver = this.db.caregivers.get(caregiverId);
     if (!caregiver) {
       throw new ConsentError('Titular não encontrado.');

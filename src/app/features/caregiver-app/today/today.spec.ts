@@ -110,17 +110,27 @@ describe('Hoje (UX C4)', () => {
       expect(text(q('main'))).not.toContain('Uma conversa só para você');
     });
 
+    it('CXC-003: fora do horário comercial a nota não promete "hoje": diz "amanhã de manhã" (e "na segunda de manhã" na sexta à noite)', async () => {
+      await open('cg_0001', { time: '21:00' });
+      expect(text(q('app-cg-note.cg-note--care'))).toContain('A equipe de psicologia vai falar com você amanhã de manhã.');
+      expect(text(q('main'))).not.toContain('vai falar com você hoje');
+      TestBed.resetTestingModule();
+      app = await bootCaregiverApp('cg_0001', { url: '/cuidador/hoje', time: '19:00', today: '2026-11-06' });
+      expect(text(q('app-cg-note.cg-note--care'))).toContain('A equipe de psicologia vai falar com você na segunda de manhã.');
+    });
+
     it('"Prefere falar agora?" abre o diálogo "Como falar com a gente"', async () => {
       await open('cg_0001');
       await click(buttonByText('Prefere falar agora?'));
       expect(TestBed.inject(ContactDialogService).isOpen()).toBe(true);
     });
 
-    it('Maria: "ainda não conseguiu falar com você" com o botão, em azul de cuidado e nunca vencido ou atrasado', async () => {
+    it('Maria: um convite ("Queremos falar com você") com o botão, em azul de cuidado, sem "responsável técnica" nem "não conseguiu falar com você" (CXC-003)', async () => {
       await open('cg_0002');
       const note = q('app-cg-note.cg-note--care');
-      expect(text(note)).toContain('A equipe ainda não conseguiu falar com você.');
-      expect(text(note)).toContain('A responsável técnica foi avisada e vai procurar você.');
+      expect(text(note)).toContain('Queremos falar com você.');
+      expect(text(note)).toContain('Se quiser, fale com a gente agora.');
+      expect(text(note)).not.toMatch(/responsável técnica|não conseguiu|ainda não/i);
       expect(buttonByText('Falar com a gente agora')).toBeDefined();
       expect(all('.cg-note--error, .cg-note--late')).toHaveLength(0);
       expect(text(q('main'))).not.toMatch(NEVER_IN_TODAY);
@@ -164,7 +174,7 @@ describe('Hoje (UX C4)', () => {
       expect(text(card)).toMatch(/, hoje às \d{2}:\d{2}/);
     });
 
-    it('a conversa da própria pessoa com o psicólogo vem com "Para você" quando é a mais próxima', async () => {
+    it('a conversa da própria pessoa com o psicólogo aparece como "Sua conversa com..." quando é a mais próxima', async () => {
       await open('cg_0001');
       const ana = app.context.caregiverId() as string;
       // Tira os compromissos da pessoa idosa de hoje e dos próximos dias e marca uma conversa de amanhã.
@@ -186,7 +196,8 @@ describe('Hoje (UX C4)', () => {
       const card = q('app-cg-card a.cg-card--link');
       expect(text(card)).toContain('Sua conversa com');
       expect(text(card)).toContain('amanhã às 14:00');
-      expect(text(card)).toContain('Para você');
+      // A frase já diz que a conversa é da pessoa; a etiqueta "Para você" ficou só na Agenda (CXC-020).
+      expect(text(card)).not.toContain('Para você');
     });
 
     it('sem compromisso nenhum, mostra o vazio com "Adicionar compromisso"', async () => {
@@ -250,10 +261,32 @@ describe('Hoje (UX C4)', () => {
       await open('cg_0001', { time: '12:10' });
       const late = q('.cg-dose.is-late');
       expect(late).not.toBeNull();
-      expect(text(late)).toContain('Passou do horário (12:00)');
+      // CXC-005: texto neutro, sem a palavra "passou".
+      expect(text(late)).toContain('Ainda não anotado');
+      expect(text(late)).not.toMatch(/passou/i);
       expect(late?.querySelector('svg')).not.toBeNull();
       expect(late?.querySelector('button.btn')).not.toBeNull();
       expect(all('.cg-dose.is-late .cg-dose__state--late')).toHaveLength(1);
+    });
+
+    it('CXC-005: o que falta aparece primeiro, e a ordem não muda ao marcar "Dei" (sem pulo)', async () => {
+      await open('cg_0001', { time: '12:05' });
+      const rows = (): string[] => all('app-cg-dose .cg-dose').map((d) => (d.classList.contains('is-given') ? 'dado' : 'falta'));
+      expect(rows()).toEqual(['falta', 'falta', 'dado', 'dado']);
+      const names = all('app-cg-dose').map((d) => text(d.querySelector('.cg-dose__name')));
+      await click(all<HTMLButtonElement>('app-cg-dose button').find((b) => b.getAttribute('aria-label')?.startsWith('Dei o ')));
+      // A primeira linha agora está dada, mas continua no mesmo lugar.
+      expect(rows()).toEqual(['dado', 'falta', 'dado', 'dado']);
+      expect(all('app-cg-dose').map((d) => text(d.querySelector('.cg-dose__name')))).toEqual(names);
+    });
+
+    it('CXC-005: com várias doses atrasadas o âmbar aparece uma vez só; as outras ficam neutras', async () => {
+      await open('cg_0001', { time: '21:00' });
+      const pending = all('app-cg-dose .cg-dose:not(.is-given)');
+      expect(pending).toHaveLength(2);
+      pending.forEach((row) => expect(text(row)).toContain('Ainda não anotado'));
+      expect(all('.cg-dose.is-late')).toHaveLength(1);
+      expect(all('.cg-dose__state--late')).toHaveLength(1);
     });
 
     it('mais de 4 doses: quatro linhas e "Ver todos (N)" que leva a Remédios', async () => {
@@ -420,19 +453,24 @@ describe('Hoje (UX C4)', () => {
   describe('AC-CG-54: "Falar com a gente"', () => {
     it('João (telefone): o cartão "Prefere falar com a gente?" com o número em destaque', async () => {
       await open('cg_0003');
-      const card = all('h3').find((h) => text(h) === 'Prefere falar com a gente?')?.closest('app-cg-card');
+      const card = all('h2').find((h) => text(h) === 'Prefere falar com a gente?')?.closest('app-cg-card');
       expect(card).toBeDefined();
       expect(text(card?.querySelector('.today-phone'))).toBe('(34) 90000-0000');
-      expect(text(card)).toContain('No protótipo, a ligação não é feita.');
+      // CXC-025: o cartão sobe para o alto (antes do compromisso) e a frase do protótipo só aparece no toque.
+      expect(card?.compareDocumentPosition(q('.today-cols') as Node) ?? 0).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(text(card)).not.toContain('No protótipo');
+      await click(card?.querySelector('button'));
+      expect(TestBed.inject(ContactDialogService).isOpen()).toBe(true);
+      expect(text(q('app-cg-contact-dialog'))).toContain('No protótipo, a ligação não é feita.');
       // Nenhum link tel: nem wa.me.
       expect(app.root.innerHTML).not.toMatch(/href="(tel:|https?:\/\/wa\.me)/);
     });
 
     it('os demais: botão de texto "Falar com a gente" que abre o diálogo', async () => {
       await open('cg_0012');
-      expect(all('h3').map(text)).not.toContain('Prefere falar com a gente?');
-      expect(text(q('main'))).toContain('Precisa de ajuda com o app ou com a sua conta?');
-      await click(buttonByText('Falar com a gente'));
+      expect(all('h2').map(text)).not.toContain('Prefere falar com a gente?');
+      expect(text(q('main'))).toContain('Quer falar com a gente?');
+      await click(buttonByText('Como falar com a gente'));
       expect(TestBed.inject(ContactDialogService).isOpen()).toBe(true);
     });
   });
@@ -450,6 +488,18 @@ describe('Hoje (UX C4)', () => {
       const note = q('app-cg-note.cg-note--care');
       expect(note?.closest('.today-cols')).toBeNull();
     });
+  });
+
+  it('CXC-028: quem retirou a autorização de saúde lê, em uma linha, que o humor está pausado; quem autorizou não vê a linha', async () => {
+    await open('cg_0016');
+    expect(app.context.consentStatus('health_data')).toBe('revoked');
+    expect(text(q('[data-role="mood-paused"]'))).toContain('O humor do dia está pausado');
+    expect(q('app-cg-mood')).toBeNull();
+    expect(q('[data-role="mood-paused"] a[href="/cuidador/cuidar-de-mim/como-estou"]')).not.toBeNull();
+    TestBed.resetTestingModule();
+    await open('cg_0001');
+    expect(q('[data-role="mood-paused"]')).toBeNull();
+    expect(q('app-cg-mood')).not.toBeNull();
   });
 
   it('sem conexão, uma nota suave diz que os dados continuam neste navegador; com a conexão de volta, ela some', async () => {

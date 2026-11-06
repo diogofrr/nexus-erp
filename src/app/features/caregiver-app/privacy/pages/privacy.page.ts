@@ -11,6 +11,7 @@ import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import {
   COPY_SHEET_TEXT,
   ERASURE_CONTINUE_TEXT,
+  ERASURE_DEADLINE,
   ERASURE_ERASED_TEXT,
   ERASURE_KEPT_TEXT,
   PILOT_COME_BACK,
@@ -220,7 +221,7 @@ const CONSENT_ICONS: Readonly<Record<ConsentKey, IconName>> = {
     <app-cg-sheet heading="Pedir uma cópia dos meus dados" [open]="is('copy')" (openChange)="onOpenChange('copy', $event)">
       <div class="priv__sheet cg-stack cg-stack--tight">
         @if (pendingCopy(); as pending) {
-          <app-cg-note variant="info"><span data-role="duplicate">Você já tem um pedido de cópia em andamento ({{ pending.protocol }}).</span></app-cg-note>
+          <app-cg-note variant="info"><span data-role="duplicate">Você já tem um pedido de cópia em andamento.</span></app-cg-note>
         } @else {
           <p data-role="copy-text">{{ copyText }}</p>
         }
@@ -240,7 +241,7 @@ const CONSENT_ICONS: Readonly<Record<ConsentKey, IconName>> = {
     <app-cg-sheet heading="Pedir eliminação dos meus dados" initialFocus="safe-action" [open]="is('erasure')" (openChange)="onOpenChange('erasure', $event)">
       <div class="priv__sheet cg-stack cg-stack--tight">
         @if (pendingErasure(); as pending) {
-          <app-cg-note variant="info"><span data-role="duplicate">Você já tem um pedido de eliminação em andamento ({{ pending.protocol }}).</span></app-cg-note>
+          <app-cg-note variant="info"><span data-role="duplicate">Você já tem um pedido de eliminação em andamento.</span></app-cg-note>
         } @else {
           <div class="priv__effects" data-role="erasure-effects">
             <section aria-labelledby="priv-erase">
@@ -252,6 +253,7 @@ const CONSENT_ICONS: Readonly<Record<ConsentKey, IconName>> = {
               <p>{{ keptText }}</p>
             </section>
           </div>
+          <p data-role="erasure-deadline">{{ deadlineText }}</p>
           <p data-role="erasure-continue">{{ continueText }}</p>
           <app-checkbox [(checked)]="understood">Entendi o que será eliminado e o que ficará guardado</app-checkbox>
           @if (!understood()) {
@@ -327,6 +329,7 @@ export class PrivacyPage {
   protected readonly erasedText = ERASURE_ERASED_TEXT;
   protected readonly keptText = ERASURE_KEPT_TEXT;
   protected readonly continueText = ERASURE_CONTINUE_TEXT;
+  protected readonly deadlineText = ERASURE_DEADLINE;
   protected readonly sharingNote = SHARING_NOTE;
   protected readonly protoNotice = PROTOTYPE_NOTICE;
 

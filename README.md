@@ -11,7 +11,7 @@ Requisitos: Node 22 ou mais novo e pnpm.
 ```bash
 pnpm install
 pnpm start          # http://localhost:4200
-pnpm test:ci        # 1882 testes em 144 arquivos (Vitest)
+pnpm test:ci        # 2120 testes em 156 arquivos (Vitest)
 pnpm typecheck      # app e testes
 pnpm check:core     # regras de código e de texto (sem any, sem travessão, sem Date direto...)
 pnpm check:a11y     # contraste e alvos de toque do aplicativo do cuidador
@@ -138,11 +138,14 @@ docs/         regras, escopo, design, UX, arquitetura, QA, CS/CX e o aplicativo 
 | `docs/10-cuidador-ux.md` | Aplicativo do cuidador: UX e UI (kit visual, fluxos, as 22 telas, 190 critérios de aceite `AC-CG`, suposições) |
 | `docs/11-cuidador-arquitetura.md` | Aplicativo do cuidador: contrato da Base (sessão, rotas, contexto, kit, seed) e os arquivos compartilhados |
 | `docs/12-cuidador-integracao.md` | Aplicativo do cuidador: o que a integração fez (seed, núcleo, consistência, acessibilidade, produção) |
+| `docs/13-qa-cuidador.md` | Aplicativo do cuidador: relatório de QA (15 bugs, nenhum grave) e testes de regressão em `src/app/qa` |
+| `docs/14-cs-cx-cuidador.md` | Aplicativo do cuidador: CS/CX com nove cuidadores no celular (nota média 7,2 antes das correções, 28 achados) |
+| `docs/15-correcoes-cuidador-a.md` e `docs/15-correcoes-cuidador-b.md` | Aplicativo do cuidador: o que foi corrigido depois do QA e do CS/CX |
 | `docs/ac-status/` | Situação de cada critério de aceite por módulo; `caregiver-p1.md`, `caregiver-p2.md` e `caregiver-p3.md` são as do aplicativo do cuidador |
 
 ## Como foi feito
 
-Time de agentes: PM (regras e escopo), UI (design system), UX (fluxos e auditoria), Dev (núcleo, componentes e módulos), QA (testes e bugs) e CS/CX (simulação de uso pela equipe da Nexus), seguidos de uma rodada de correções. O aplicativo do cuidador veio depois: UX e UI, a Base (sessão, shell e kit), três devs de página em paralelo (P1, P2 e P3) e uma integração final.
+Time de agentes: PM (regras e escopo), UI (design system), UX (fluxos e auditoria), Dev (núcleo, componentes e módulos), QA (testes e bugs) e CS/CX (simulação de uso pela equipe da Nexus), seguidos de uma rodada de correções. O aplicativo do cuidador veio depois: UX e UI, a Base (sessão, shell e kit), três devs de página em paralelo (P1, P2 e P3) e uma integração final, seguidos de QA, CS/CX com os cuidadores e uma rodada de correções.
 
 ## Limites do protótipo
 

@@ -281,8 +281,11 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(created.startAt.startsWith(slot.date)).toBe(true);
       expect(app.db.availabilitySlots.get(created.slotId)?.status).toBe('booked');
       expect(isOpen('Confirme a conversa')).toBe(false);
-      expect(text(q('[data-role="confirmation"]'))).toMatch(/^Conversa marcada: .+, às \d{2}:\d{2}, com (a Dra\.|o Dr\.) \S+\.$/);
-      expect(text(q('[data-role="confirmation-status"]'))).toBe('Aguardando confirmação do psicólogo');
+      // CXC-007: UMA faixa só e certa (sem "Conversa marcada" junto de "Aguardando confirmação"); o cartão traz o dia e "A confirmar".
+      expect(text(q('[data-role="confirmation"]'))).toBe('Pedido enviado. O psicólogo confirma até 24 horas antes da conversa.');
+      expect(q('[data-role="confirmation-status"]')).toBeNull();
+      expect(text(q('[data-role="next-status"]'))).toBe('A confirmar');
+      expect(text(q('app-cg-note'))).toBe('Pedido enviado. O psicólogo confirma até 24 horas antes da conversa. Ver na agenda');
       expect(q('a[href="/cuidador/rotina/agenda"]')).not.toBeNull();
       // A conversa nova é a próxima e o horário saiu da lista.
       expect(text(q('[data-role="next-conversation"]'))).toContain('Psicoterapia');
@@ -291,13 +294,34 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(all('[data-role="slot"]')).toHaveLength(slotsBefore - 1);
     });
 
-    it('"Não sei" grava orientação psicológica (S-07) e a conversa mostra o caráter', async () => {
+    it('CXC-013: o voltar do aparelho desfaz um passo por vez (horário, formato, início) em vez de sair da tela', async () => {
+      await boot('cg_0001');
+      await click(q('[data-role="start-booking"]'));
+      expect(text(q('[data-step-heading]'))).toBe('Como você prefere?');
+      await click(all('[data-role="formats"] .cg-row')[0]);
+      expect(text(q('[data-step-heading]'))).toBe('Qual horário?');
+      const back = async (): Promise<void> => {
+        window.history.back();
+        await new Promise((resolve) => setTimeout(resolve, 40));
+        await flush();
+      };
+      await back();
+      expect(text(q('[data-step-heading]'))).toBe('Como você prefere?');
+      await back();
+      expect(q('[data-step-heading]')).toBeNull();
+      expect(q('[data-role="start-booking"]')).not.toBeNull();
+      expect(app.router.url).toBe('/cuidador/cuidar-de-mim/atendimento');
+    });
+
+    it('"Não sei" grava orientação psicológica (S-07) e a conversa mostra "A definir na conversa" (CXC-007)', async () => {
       await boot('cg_0001');
       await goToSummary();
       await chooseKind('Não sei');
       await click(q('[data-role="confirm-booking"]'));
       expect(app.db.careSessions.all().at(-1)?.kind).toBe('guidance');
-      expect(text(q('[data-role="next-conversation"]'))).toContain('Orientação psicológica');
+      expect(app.db.careSessions.all().at(-1)?.kindUndecided).toBe(true);
+      expect(text(q('[data-role="next-conversation"]'))).toContain('A definir na conversa');
+      expect(text(q('[data-role="next-conversation"]'))).not.toContain('Orientação psicológica');
     });
 
     it('AC-CG-81: horário tomado por outra pessoa no instante de gravar mostra "Esse horário acabou de ser reservado. Escolha outro." e o resumo continua', async () => {
@@ -310,7 +334,20 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
         .activePsychologists()
         .flatMap((p) => booking.freeSlots(p.id, true))
         .sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start))[0]!;
-      expect(booking.schedule({ caregiverId: 'cg_0008', psychologistId: target.psychologistId, slotId: target.id, modality: 'online', kind: 'guidance' }).ok).toBe(true);
+      // O serviço do núcleo só agenda para quem está na sessão (QAC-001): a outra pessoa é simulada direto no banco.
+      app.db.careSessions.create({
+        caregiverId: 'cg_0008',
+        psychologistId: target.psychologistId,
+        slotId: target.id,
+        startAt: booking.startOf(target),
+        durationMin: 60,
+        modality: 'online',
+        kind: 'guidance',
+        status: 'scheduled',
+        priceCents: 10200,
+        discountPercent: 15,
+      });
+      app.db.availabilitySlots.update(target.id, { status: 'booked' });
       const sessions = app.db.careSessions.size();
       await click(q('[data-role="confirm-booking"]'));
       expect(text(q('[data-role="summary-error"]'))).toBe('Esse horário acabou de ser reservado. Escolha outro.');
@@ -372,15 +409,17 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(text(q('[data-role="previous"]'))).toContain('Cancelada por você');
     });
 
-    it('AC-CG-82: a menos de 24 horas a folha diz que o horário fica registrado como falta, e a conversa vira falta', async () => {
+    it('AC-CG-82 e CXC-006: a menos de 24 horas a folha diz o efeito (a conversa conta como perdida, sem cobrança), sem "Remarcar em vez de cancelar"', async () => {
       await boot('cg_0018');
       app.clock.setSimulated('2026-11-06', '08:00');
       await flush();
       const session = app.db.careSessions.find((s) => s.caregiverId === 'cg_0018' && s.status === 'confirmed')!;
       await click(q('[data-role="next-conversation"]')?.closest('app-cg-card')?.querySelector('button'));
       await click(q('[data-role="cancel"]'));
-      expect(text(q('[data-role="cancel-effect"]'))).toBe('Faltam menos de 24 horas. Se cancelar agora, o horário fica registrado como falta.');
-      expect(button('Remarcar em vez de cancelar')).toBeDefined();
+      expect(text(q('[data-role="cancel-effect"]'))).toBe('Faltam menos de 24 horas. Se cancelar agora, a conversa conta como perdida. Não há cobrança.');
+      // O efeito é o mesmo de remarcar: a falsa saída "em vez de cancelar" não aparece.
+      expect(button('Remarcar em vez de cancelar')).toBeUndefined();
+      expect(sheet('Cancelar a conversa?').querySelector('[data-role="reschedule-instead"]')).toBeNull();
       expect(button('Voltar', sheet('Cancelar a conversa?'))).toBeDefined();
       await click(q('[data-role="confirm-cancel"]'));
       expect(app.db.careSessions.require(session.id).status).toBe('no_show');
@@ -414,10 +453,10 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(created).toMatchObject({ caregiverId: 'cg_0018', status: 'scheduled', kind: 'guidance', modality: 'in_person_coworking' });
       expect(app.db.careSessions.require(old.id)).toMatchObject({ status: 'cancelled_by_user', rescheduledToId: created.id });
       expect(app.db.availabilitySlots.get(old.slotId)?.status).toBe('open');
-      expect(text(q('[data-role="confirmation"]'))).toMatch(/^Conversa remarcada para .+, com (a Dra\.|o Dr\.) \S+\.$/);
+      expect(text(q('[data-role="confirmation"]'))).toBe('Pedido enviado. O psicólogo confirma até 24 horas antes da conversa.');
     });
 
-    it('remarcar a menos de 24 horas avisa antes que o horário atual fica registrado como falta', async () => {
+    it('remarcar a menos de 24 horas avisa antes que a conversa atual conta como perdida (CXC-006)', async () => {
       await boot('cg_0018');
       app.clock.setSimulated('2026-11-06', '09:00');
       await flush();
@@ -427,7 +466,7 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       const slot = all('[data-role="slot"]')[0];
       expect(slot).toBeDefined();
       await click(slot);
-      expect(text(q('[data-role="summary-effect"]'))).toBe('Faltam menos de 24 horas. Se remarcar agora, o horário atual fica registrado como falta.');
+      expect(text(q('[data-role="summary-effect"]'))).toBe('Faltam menos de 24 horas. Se remarcar agora, a conversa atual conta como perdida. Não há cobrança.');
     });
 
     it('AC-CG-85: cada conversa mostra o caráter e os horários de prioridade aparecem sem etiqueta nem explicação (Rita, Cuida)', async () => {
