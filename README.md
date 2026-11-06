@@ -2,6 +2,8 @@
 
 Protótipo de front-end da **Nexus**, a empresa que cuida de quem cuida: atendimento psicológico, grupos de apoio e capacitações para o cuidador familiar de pessoas idosas, mais uma rede credenciada de profissionais e o Cartão Nexus. O projeto tem duas visões sobre os mesmos dados: o **ERP interno** da equipe (`/app/**`) e o **aplicativo do cuidador**, o cliente (`/cuidador/**`).
 
+**Demonstração no ar:** https://diogofrr.github.io/nexus-erp/. Abra no celular e, na entrada, escolha "Sou cuidador(a)" para ver o aplicativo do cliente, ou "Sou da equipe Nexus" para ver o ERP.
+
 As regras de negócio vêm do plano de negócios da Nexus e foram seguidas sem alteração (planos, escala de Zarit, ponto de equilíbrio, ocupação da agenda, ARP, POPs, LGPD). **Todos os dados são fictícios** e ficam só no navegador (`localStorage`); a sessão fica em `sessionStorage`. Não há servidor.
 
 ## Rodar
