@@ -390,7 +390,7 @@ describe('QAC UI: plano nas telas', () => {
     expect(mainText(app)).toContain('Manter meu plano'.slice(0, 0));
     await go(app, '/cuidador/mais/plano');
     expect(mainText(app)).toContain('Manter meu plano');
-    expect(mainText(app)).toContain('Cancelamento agendado para 13/11/2026.');
+    expect(mainText(app)).toContain('Seu plano volta a ser o Livre em 13/11/2026.');
   });
 
   it('empresa (Gisele): sem botões de troca nem de cancelamento, com a nota da empresa', async () => {
@@ -406,7 +406,7 @@ describe('QAC UI: plano nas telas', () => {
     const text = mainText(app);
     ['R$ 0,00', 'R$ 49,90', 'R$ 119,90', 'R$ 149,90'].forEach((price) => expect(text).toContain(price));
     expect(text).toContain('A mensalidade não inclui serviços da rede nem atendimento psicológico.');
-    expect(text).toContain('Seu plano agora');
+    expect(text).toContain('Seu plano');
   });
 });
 

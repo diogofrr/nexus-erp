@@ -10,7 +10,8 @@ import { ContactChannel, contactChannels, phoneClosedNote } from '../../state/ne
 import { CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
 import { CgEmergencyNoteComponent } from '../../ui/cg-emergency-note.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
+import { CgEmptyComponent } from '../../ui/cg-empty.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
 import { CgRowComponent } from '../../ui/cg-row.component';
 import { MESSAGE_SENT_NOTE, MESSAGE_SUBJECTS, NexusMessagesService } from '../state/nexus-messages.service';
 
@@ -26,7 +27,8 @@ import { MESSAGE_SENT_NOTE, MESSAGE_SUBJECTS, NexusMessagesService } from '../st
   imports: [
     ReactiveFormsModule,
     RouterLink,
-    CgPageHeaderComponent,
+    CgEmptyComponent,
+    CgHeroComponent,
     CgRowComponent,
     CgNoteComponent,
     CgChoiceGroupComponent,
@@ -44,13 +46,10 @@ import { MESSAGE_SENT_NOTE, MESSAGE_SUBJECTS, NexusMessagesService } from '../st
       .talk__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
       .talk__meta svg { vertical-align: -0.2em; margin-inline-end: 0.25rem; }
       .talk__status { font-weight: 600; color: var(--cg-heading); }
-      .talk__empty { display: grid; gap: 0.25rem; padding: 1rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-card); background: var(--cg-surface); }
-      .talk__empty h3 { margin: 0; font-size: var(--cg-fs-lead); }
-      .talk__empty p { margin: 0; color: var(--cg-text-soft); }
     `,
   ],
   template: `
-    <app-cg-page-header title="Falar com a Nexus" description="Escolha o jeito mais fácil para você." backLink="/cuidador/mais" backLabel="Mais" />
+    <app-cg-hero title="Falar com a Nexus" description="Escolha o jeito mais fácil para você." illustration="chat" backLink="/cuidador/mais" backLabel="Mais" />
 
     <div class="cg-stack">
       @if (closedNote(); as note) {
@@ -99,10 +98,12 @@ import { MESSAGE_SENT_NOTE, MESSAGE_SUBJECTS, NexusMessagesService } from '../st
       <section aria-labelledby="talk-history" data-role="history">
         <h2 class="cg-section__title" id="talk-history">Suas mensagens</h2>
         @if (entries().length === 0) {
-          <div class="talk__empty" data-role="messages-empty">
-            <h3>Você ainda não mandou nenhuma mensagem</h3>
-            <p>Quando você escrever para a equipe, a conversa aparece aqui.</p>
-          </div>
+          <app-cg-empty
+            data-role="messages-empty"
+            illustration="chat"
+            title="Você ainda não mandou nenhuma mensagem"
+            text="Quando você escrever para a equipe, a conversa aparece aqui."
+          />
         } @else {
           <ul class="cg-list">
             @for (entry of entries(); track entry.id) {

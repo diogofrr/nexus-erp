@@ -3,9 +3,9 @@
  * núcleo já calculou (`ChangeQuote`: quando vale, quando a cobrança começa, que turmas a pessoa deixa) e só
  * escrevem a frase. Nada daqui fala de pontuação, faixa, alerta ou ARBE (RN-PLN-19).
  */
-import { ChangeQuote, LostGroup, PLAN_SHORT_NAMES } from '../../../../core/commerce/subscription.service';
+import { ChangeQuote, LostGroup, PLAN_SHORT_NAMES, ScheduledChange } from '../../../../core/commerce/subscription.service';
 import { formatDate, formatMoney } from '../../../../core/format/format';
-import { PlanId } from '../../../../core/models';
+import { BenefitKey, PlanId } from '../../../../core/models';
 import {
   BENEFIT_LABELS,
   PLAN_NOT_INCLUDED_NOTICE,
@@ -13,6 +13,7 @@ import {
   PlanDefinition,
   canAccessGroupsAndTrainings,
 } from '../../../../core/rules/plans';
+import { IconName } from '../../../../shared/ui/display/icon.component';
 import { dayMonth } from '../../state/day-format';
 
 /** Aviso fixo na contratação (RN-PLN-22): a mensalidade não inclui serviços da rede nem atendimento psicológico. */
@@ -42,6 +43,67 @@ export function ownBenefits(planId: PlanId, plans: readonly PlanDefinition[]): s
 /** Tudo o que o plano inclui, inclusive o que vem dos planos anteriores (CXC-010): "Seu plano agora" não esconde o que continua valendo. */
 export function allBenefits(planId: PlanId, plans: readonly PlanDefinition[]): string[] {
   return (plans.find((p) => p.id === planId)?.benefits ?? []).map((b) => BENEFIT_LABELS[b]);
+}
+
+/** Ícone de cada benefício (um por linha, só para dar o que olhar; o texto é quem diz). */
+export const BENEFIT_ICONS: Readonly<Record<BenefitKey, IconName>> = {
+  app_access: 'house',
+  basic_organization: 'clipboard-check',
+  agenda_reminders: 'calendar-days',
+  content: 'book-open',
+  network_initial_access: 'handshake',
+  extended_organization: 'layout-list',
+  card_discounts: 'credit-card',
+  exclusive_content: 'star',
+  network_special_conditions: 'handshake',
+  greater_organization_support: 'life-buoy',
+  support_groups: 'users-round',
+  trainings: 'award',
+  close_organizational_follow_up: 'heart-handshake',
+  higher_support_level: 'hand-heart',
+  network_differentiated_benefits: 'badge-check',
+};
+
+/**
+ * Os destaques de cada plano, na ordem em que aparecem: os três primeiros são os que o quadro mostra (o que é DO plano),
+ * o quarto é o que o cartão do plano atual acrescenta (no Cuida, o Cartão Nexus). A lista completa fica atrás de
+ * "Ver tudo que inclui".
+ */
+const HIGHLIGHT_ORDER: Readonly<Record<PlanId, readonly BenefitKey[]>> = {
+  livre: ['agenda_reminders', 'basic_organization', 'content', 'network_initial_access'],
+  essencial: ['extended_organization', 'card_discounts', 'exclusive_content', 'network_special_conditions'],
+  cuida: ['support_groups', 'trainings', 'greater_organization_support', 'card_discounts'],
+  sustenta: ['close_organizational_follow_up', 'higher_support_level', 'network_differentiated_benefits', 'support_groups'],
+};
+
+export interface Perk {
+  key: BenefitKey;
+  icon: IconName;
+  label: string;
+}
+
+/**
+ * Os `count` destaques do plano, com ícone. Só entra o que o plano de fato inclui (o catálogo é editável): se faltar algum
+ * dos escolhidos, completa com os outros benefícios do plano.
+ */
+export function planPerks(planId: PlanId, plans: readonly PlanDefinition[], count: number): Perk[] {
+  const has = plans.find((p) => p.id === planId)?.benefits ?? [];
+  const chosen = HIGHLIGHT_ORDER[planId].filter((key) => has.includes(key));
+  const rest = has.filter((key) => !chosen.includes(key));
+  return [...chosen, ...rest].slice(0, count).map((key) => ({ key, icon: BENEFIT_ICONS[key], label: BENEFIT_LABELS[key] }));
+}
+
+/** O preço em duas partes ("R$ 119,90" e "por mês"), para dar peso ao valor e deixar a unidade pequena. */
+export function priceParts(plan: Pick<PlanDefinition, 'monthlyPriceCents'>): { amount: string; unit: string } {
+  return { amount: formatMoney(plan.monthlyPriceCents), unit: 'por mês' };
+}
+
+/** A faixa de uma troca ou de um cancelamento já pedido: o que muda e quando (Manter meu plano desfaz). */
+export function scheduledNote(change: Pick<ScheduledChange, 'kind' | 'to' | 'at'>): { title: string; text: string } {
+  const when = formatDate(change.at);
+  return change.kind === 'cancel'
+    ? { title: 'Cancelamento agendado', text: `Seu plano volta a ser o Livre em ${when}.` }
+    : { title: 'Mudança agendada', text: `Seu plano muda para o ${PLAN_SHORT_NAMES[change.to]} em ${when}.` };
 }
 
 /** Como voltar atrás, dito antes de confirmar uma troca (CXC-010). */

@@ -6,7 +6,7 @@ import { ContactDialogService } from '../../state/contact-dialog.service';
 import { CHANNELS_NOTICE, NEXUS_EMAIL, NEXUS_PHONE, NEXUS_WHATSAPP, phoneClosedNote } from '../../state/nexus-contact';
 import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
 import { HELP_NUMBERS, HelpNumber } from '../state/help-numbers';
 import { CallNumberSheetComponent } from '../ui/call-number-sheet.component';
 
@@ -16,32 +16,46 @@ import { CallNumberSheetComponent } from '../ui/call-number-sheet.component';
  * da Nexus. Abre SEM sessão e SEM consentimento, funciona offline (conteúdo fixo) e nada nela é medido, contado,
  * cobrado nem usado em oferta (RN-PLN-19). Nenhum `tel:`: o toque abre o diálogo com o número e "Copiar número".
  * Sem vermelho, sem sirene, sem animação.
+ * Vida (docs/17-vida-v1.md): o herói com a boia, o bloco de emergência em azul escuro com o número em serifa grande e
+ * emblema, e os três caminhos lado a lado em tela larga. Tudo parado e calmo.
  */
 @Component({
   selector: 'app-help-now-page',
-  imports: [CgPageHeaderComponent, CgCardComponent, CgNoteComponent, CallNumberSheetComponent, IconComponent],
+  imports: [CgHeroComponent, CgCardComponent, CgNoteComponent, CallNumberSheetComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Sem animação nesta tela (regra dela): o `cg-still` desliga a entrada em cascata das outras telas.
+  host: { class: 'cg-still' },
   styles: [
     `
+      .help__grid { display: grid; gap: var(--cg-gap-block); grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+      @media (min-width: 64rem) { .help__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+      .help__grid > * { min-width: 0; }
       .help__emergency {
+        position: relative;
+        overflow: hidden;
         display: grid;
+        align-content: start;
         gap: 0.75rem;
         padding: var(--cg-pad-card);
         border-radius: var(--cg-radius-card);
-        background: var(--cg-emergency-bg);
+        background-color: var(--cg-emergency-bg);
+        background-image: radial-gradient(90% 70% at 100% 0%, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0) 70%);
+        box-shadow: var(--cg-shadow-2);
         color: #ffffff;
       }
       .help__emergency h2 { margin: 0; font-size: var(--cg-fs-h2); color: #ffffff; }
       .help__emergency p { margin: 0; }
       .help__emergency .btn { background: #ffffff; color: var(--cg-emergency-bg); border-color: #ffffff; }
+      .help__badge { display: inline-grid; place-items: center; width: 3rem; height: 3rem; border-radius: 50%; background: rgb(255 255 255 / 0.16); color: #ffffff; }
       .help__number {
-        font-size: 2.5rem;
-        line-height: 1.1;
-        font-weight: 600;
-        letter-spacing: 0.04em;
+        font-family: var(--font-serif);
+        font-size: 3.5rem;
+        line-height: 1;
+        font-weight: 400;
+        letter-spacing: 0.02em;
         font-variant-numeric: tabular-nums;
       }
-      .help__number--dark { color: var(--cg-heading); }
+      .help__number--dark { color: var(--cg-acc-ink); }
       .help__channel { display: grid; gap: 0.25rem; padding: 0.75rem 1rem; border-radius: var(--cg-radius-control); background: var(--cg-surface-sunken); }
       .help__channel p { margin: 0; }
       .help__channel-value { font-size: var(--cg-fs-lead); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--cg-heading); }
@@ -52,10 +66,12 @@ import { CallNumberSheetComponent } from '../ui/call-number-sheet.component';
     `,
   ],
   template: `
-    <app-cg-page-header title="Ajuda agora" description="Escolha o que combina com o que está acontecendo." />
+    <app-cg-hero title="Ajuda agora" description="Escolha o que combina com o que está acontecendo." illustration="help" />
 
     <div class="cg-stack">
+      <div class="help__grid cg-equal">
       <section class="help__emergency" aria-labelledby="help-samu" data-role="help-samu">
+        <span class="help__badge" aria-hidden="true"><svg appIcon="ambulance" size="lg"></svg></span>
         <h2 id="help-samu">Emergência de saúde</h2>
         <p>A pessoa idosa ou você precisa de atendimento de saúde agora.</p>
         <p class="help__number">192</p>
@@ -93,6 +109,7 @@ import { CallNumberSheetComponent } from '../ui/call-number-sheet.component';
           Como falar com a gente
         </button>
       </app-cg-card>
+      </div>
 
       <details class="help__more" data-role="help-more">
         <summary>Mais contatos</summary>

@@ -22,6 +22,9 @@ export const ICON_NAMES = [
   'clock', 'timer', 'hourglass', 'map-pin', 'gauge', 'thermometer', 'siren',
   // aplicativo do cuidador
   'house', 'life-buoy', 'pill', 'video', 'frown', 'annoyed', 'meh', 'smile', 'laugh',
+  // vida visual (docs/17-vida-kit.md)
+  'sunrise', 'sparkles', 'sprout', 'heart', 'syringe', 'brain', 'apple', 'accessibility', 'leaf', 'house-heart', 'heart-plus',
+  'phone-call', 'ambulance', 'calendar-check', 'hand-helping',
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];

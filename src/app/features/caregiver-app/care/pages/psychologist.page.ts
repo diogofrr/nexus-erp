@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SessionModality } from '@core/models';
-import { EmptyStateComponent, FormFieldComponent, IconComponent, NxInputDirective } from '@shared/ui';
+import { FormFieldComponent, IconComponent, IconName, NxInputDirective } from '@shared/ui';
 import { PageChromeService } from '@layout/state/page-chrome.service';
 import { ToastService } from '@shared/ui/overlay';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
@@ -20,6 +20,9 @@ import { FORMAT_LABEL } from '../../state/format-labels';
 import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
 import { CgEmergencyNoteComponent } from '../../ui/cg-emergency-note.component';
+import { CgEmptyComponent } from '../../ui/cg-empty.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
+import { CgIllustrationComponent } from '../../ui/cg-illustration.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
 import { CgRowComponent } from '../../ui/cg-row.component';
@@ -41,6 +44,8 @@ import { Conversation, ConversationsService, SlotOption } from '../state/convers
 
 type Mode = 'home' | 'format' | 'slots';
 
+const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
 /**
  * Conversar com um psicólogo (UX C8, B4; RN-ATD-02 a 05, 07, 09 a 12, 15, 16, 19, 20, RN-PLN-12 e 19). Marcar, ver, remarcar e
  * cancelar as conversas com os psicólogos da Nexus, em 2 passos mais a folha de resumo: o formato e o horário.
@@ -57,6 +62,7 @@ type Mode = 'home' | 'format' | 'slots';
   selector: 'app-psychologist-page',
   imports: [
     RouterLink,
+    CgHeroComponent,
     CgPageHeaderComponent,
     CgCardComponent,
     CgRowComponent,
@@ -64,7 +70,8 @@ type Mode = 'home' | 'format' | 'slots';
     CgSheetComponent,
     CgChoiceGroupComponent,
     CgEmergencyNoteComponent,
-    EmptyStateComponent,
+    CgEmptyComponent,
+    CgIllustrationComponent,
     FormFieldComponent,
     NxInputDirective,
     IconComponent,
@@ -72,7 +79,23 @@ type Mode = 'home' | 'format' | 'slots';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
+      .conv__stephead { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
       .conv__step { margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: var(--cg-fs-h2); outline: none; }
+      .conv__progress { display: grid; gap: 0.375rem; margin: 0; }
+      .conv__bar { display: grid; grid-template-columns: 1fr 1fr; gap: 0.375rem; }
+      .conv__bar span { block-size: 0.375rem; border-radius: var(--cg-radius-pill); background: var(--cg-acc-strong); }
+      .conv__bar span.is-on { background: var(--cg-acc-solid); }
+      .conv__count { margin: 0; color: var(--cg-text-soft); font-size: var(--cg-fs-small); font-weight: var(--fw-semibold); }
+      .conv__next { display: flex; align-items: flex-start; gap: 1rem; }
+      .conv__next > div:last-child { min-inline-size: 0; display: grid; gap: 0.25rem; }
+      .conv__date { display: grid; grid-template-rows: auto 1fr; flex: none; inline-size: 4rem; border-radius: 1rem; overflow: hidden; text-align: center; background: var(--cg-surface); box-shadow: inset 0 0 0 1px var(--cg-acc-strong), var(--cg-shadow-1); }
+      .conv__mon { padding: 0.125rem 0; background: var(--cg-acc-solid); color: #ffffff; font-size: var(--cg-fs-caption); font-weight: var(--fw-semibold); text-transform: uppercase; letter-spacing: 0.08em; }
+      .conv__dom { padding: 0.25rem 0 0.375rem; color: var(--cg-acc-ink); font-family: var(--font-serif); font-size: calc(1.875rem * min(var(--cg-zoom), 1.15)); line-height: 1.1; font-variant-numeric: tabular-nums; }
+      .conv__fact { display: flex; align-items: flex-start; gap: 0.75rem; }
+      .conv__fact .conv__ficon { display: grid; place-items: center; flex: none; inline-size: 2rem; block-size: 2rem; border-radius: 50%; background: var(--cg-acc-strong); color: var(--cg-acc-ink); }
+      .conv__fact span:last-child { padding-top: 0.25rem; }
+      .conv__dayhead { display: flex; align-items: center; gap: 0.5rem; }
+      .conv__dayhead .conv__ficon { display: grid; place-items: center; flex: none; inline-size: 2rem; block-size: 2rem; border-radius: 50%; background: var(--cg-acc-strong); color: var(--cg-acc-ink); }
       .conv__when { margin: 0; font-size: var(--cg-fs-lead); font-weight: 600; color: var(--cg-heading); }
       .conv__line { margin: 0; overflow-wrap: anywhere; }
       .conv__status { margin: 0; font-weight: 600; color: var(--cg-heading); }
@@ -91,12 +114,18 @@ type Mode = 'home' | 'format' | 'slots';
     `,
   ],
   template: `
-    <app-cg-page-header
-      title="Conversar com um psicólogo"
-      description="As conversas são com psicólogos da Nexus, com registro no conselho de Psicologia."
-      backLink="/cuidador/cuidar-de-mim"
-      backLabel="Cuidar de mim"
-    />
+    @if (mode() === 'home') {
+      <app-cg-hero
+        title="Conversar com um psicólogo"
+        description="As conversas são com psicólogos da Nexus, com registro no conselho de Psicologia."
+        illustration="chat"
+        backLink="/cuidador/cuidar-de-mim"
+        backLabel="Cuidar de mim"
+      />
+    } @else {
+      <!-- Nos passos o título fica pequeno: o desenho e o texto de apoio já foram vistos, e o "Voltar" é o do passo. -->
+      <app-cg-page-header title="Conversar com um psicólogo" />
+    }
 
     <div class="cg-stack">
       @switch (mode()) {
@@ -109,21 +138,28 @@ type Mode = 'home' | 'format' | 'slots';
           }
 
           @if (conversations.all().length === 0) {
-            <app-empty-state
+            <app-cg-empty
+              illustration="chat"
               [headingLevel]="2"
               title="Você ainda não marcou nenhuma conversa"
               text="Escolha o formato e o horário. Leva poucos minutos."
             >
               <button type="button" class="btn btn--primary" data-role="start-booking" (click)="start()">Marcar uma conversa</button>
-            </app-empty-state>
+            </app-cg-empty>
           } @else {
             @if (conversations.next(); as next) {
-              <app-cg-card title="Sua próxima conversa" icon="calendar-days">
-                <div data-role="next-conversation">
-                  <p class="conv__when">{{ next.whenText }}</p>
-                  <p class="conv__line">Com {{ next.psychologistName }}</p>
-                  <p class="conv__line">{{ next.formatLabel }} · {{ next.kindLabel }}</p>
-                  <p class="conv__status" data-role="next-status">{{ next.statusText }}</p>
+              <app-cg-card title="Sua próxima conversa">
+                <div class="conv__next" data-role="next-conversation">
+                  <span class="conv__date" aria-hidden="true">
+                    <span class="conv__mon">{{ tile(next.startAt).month }}</span>
+                    <span class="conv__dom">{{ tile(next.startAt).day }}</span>
+                  </span>
+                  <div>
+                    <p class="conv__when">{{ next.whenText }}</p>
+                    <p class="conv__line">Com {{ next.psychologistName }}</p>
+                    <p class="conv__line">{{ next.formatLabel }} · {{ next.kindLabel }}</p>
+                    <p class="conv__status" data-role="next-status">{{ next.statusText }}</p>
+                  </div>
                 </div>
                 <button cgCardFooter type="button" class="cg-link-btn" (click)="openDetail(next)">Ver ou mudar esta conversa</button>
               </app-cg-card>
@@ -174,7 +210,14 @@ type Mode = 'home' | 'format' | 'slots';
               <svg appIcon="arrow-left" size="sm"></svg>Voltar
             </button>
           </div>
-          <h2 class="conv__step" tabindex="-1" data-step-heading>Como você prefere?</h2>
+          <div class="conv__progress">
+            <div class="conv__bar" aria-hidden="true"><span class="is-on"></span><span></span></div>
+            <p class="conv__count">Passo 1 de 2</p>
+          </div>
+          <div class="conv__stephead">
+            <h2 class="conv__step" tabindex="-1" data-step-heading>Como você prefere?</h2>
+            <app-cg-illustration name="chat" size="sm" tone="accent" />
+          </div>
           <ul class="cg-list" data-role="formats">
             @for (option of formats; track option.value) {
               <li>
@@ -191,7 +234,14 @@ type Mode = 'home' | 'format' | 'slots';
               <svg appIcon="arrow-left" size="sm"></svg>Voltar
             </button>
           </div>
-          <h2 class="conv__step" tabindex="-1" data-step-heading>Qual horário?</h2>
+          <div class="conv__progress">
+            <div class="conv__bar" aria-hidden="true"><span class="is-on"></span><span class="is-on"></span></div>
+            <p class="conv__count">{{ rescheduling() ? 'Escolha o novo horário' : 'Passo 2 de 2' }}</p>
+          </div>
+          <div class="conv__stephead">
+            <h2 class="conv__step" tabindex="-1" data-step-heading>Qual horário?</h2>
+            <app-cg-illustration name="calendar" size="sm" tone="accent" />
+          </div>
           @if (format() === 'in_person_coworking' && conversations.room(); as room) {
             <app-cg-note variant="soft" icon="building-2"><span data-role="room">{{ room.name }}, {{ room.address }}</span></app-cg-note>
           }
@@ -201,17 +251,19 @@ type Mode = 'home' | 'format' | 'slots';
             </app-form-field>
           }
           @if (days().length === 0) {
-            <app-empty-state title="Sem horários nesse formato" [text]="noSlots">
+            <app-cg-empty illustration="calendar" title="Sem horários nesse formato" [text]="noSlots">
               @if (!rescheduling()) {
                 <button type="button" class="btn btn--primary" (click)="mode.set('format')">Escolher outro formato</button>
               }
               <button type="button" class="btn" (click)="contact.open()">Falar com a gente</button>
-            </app-empty-state>
+            </app-cg-empty>
           } @else {
             <div class="conv__days" data-role="days">
               @for (day of days(); track day.date) {
                 <section class="conv__day" [attr.aria-labelledby]="'conv-day-' + day.date">
-                  <h3 [id]="'conv-day-' + day.date">{{ day.label }}</h3>
+                  <h3 class="conv__dayhead" [id]="'conv-day-' + day.date">
+                    <span class="conv__ficon" aria-hidden="true"><svg appIcon="calendar-days" size="sm"></svg></span>{{ day.label }}
+                  </h3>
                   <div class="conv__slots">
                     @for (slot of day.slots; track slot.slotId) {
                       <button type="button" class="btn" data-role="slot" (click)="pick(slot)">{{ slot.label }}</button>
@@ -229,11 +281,23 @@ type Mode = 'home' | 'format' | 'slots';
     <app-cg-sheet [heading]="rescheduling() ? 'Confirme o novo horário' : 'Confirme a conversa'" [(open)]="summaryOpen">
       @if (picked(); as slot) {
         <div class="conv__sheet cg-stack cg-stack--tight" data-role="summary">
-          <p data-role="summary-when">Quando: {{ pickedDay() }}, às {{ slot.time }} (1 hora).</p>
-          <p data-role="summary-who">Com quem: {{ psychologistLine() }}.</p>
-          <p data-role="summary-how">Como: {{ formatLabel() }}.</p>
+          <p class="conv__fact" data-role="summary-when">
+            <span class="conv__ficon" aria-hidden="true"><svg appIcon="calendar-days" size="sm"></svg></span>
+            <span>Quando: {{ pickedDay() }}, às {{ slot.time }} (1 hora).</span>
+          </p>
+          <p class="conv__fact" data-role="summary-who">
+            <span class="conv__ficon" aria-hidden="true"><svg appIcon="user-round" size="sm"></svg></span>
+            <span>Com quem: {{ psychologistLine() }}.</span>
+          </p>
+          <p class="conv__fact" data-role="summary-how">
+            <span class="conv__ficon" aria-hidden="true"><svg [appIcon]="formatIcon()" size="sm"></svg></span>
+            <span>Como: {{ formatLabel() }}.</span>
+          </p>
           @if (placeText(); as place) {
-            <p data-role="summary-place">{{ place }}</p>
+            <p class="conv__fact" data-role="summary-place">
+              <span class="conv__ficon" aria-hidden="true"><svg appIcon="map-pin" size="sm"></svg></span>
+              <span>{{ place }}</span>
+            </p>
           }
           <div class="conv__prices" data-role="summary-price">
             @if (price().discountText; as discount) {
@@ -353,6 +417,13 @@ export class PsychologistPage {
     () => this.conversations.all().find((c) => c.id === this.reschedulingId()) ?? null,
   );
   protected readonly formatLabel = computed(() => (this.format() ? FORMAT_LABEL[this.format() as SessionModality] : ''));
+  protected readonly formatIcon = computed<IconName>(() => FORMAT_OPTIONS.find((o) => o.value === this.format())?.icon ?? 'video');
+
+  /** O dia e o mês curto do bloco de data ("nov", "06"), tirados do próprio horário (sem fuso: o texto já vem no horário local). */
+  protected tile(startAt: string): { day: string; month: string } {
+    const month = Number(startAt.slice(5, 7));
+    return { day: startAt.slice(8, 10), month: MONTHS[month - 1] ?? '' };
+  }
   protected readonly formatNotice = computed(() => (this.format() ? FORMAT_NOTICE[this.format() as SessionModality] : null));
   protected readonly pickedDay = computed(() => {
     const slot = this.picked();

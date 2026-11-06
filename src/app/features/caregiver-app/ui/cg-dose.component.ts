@@ -8,6 +8,7 @@ import {
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 import { Clock } from '../../../core/clock/clock.service';
 import { minutesBetween, timeOf, toIsoDateTime } from '../../../core/clock/date-utils';
@@ -75,7 +76,16 @@ export function doseStateOf(slot: DoseSlot, now: ISODateTime): CgDoseState {
       [class.is-late]="state() === 'late' && !quietLate()"
       [class.cg-dose--large]="size() === 'large'"
     >
-      <span class="cg-dose__icon"><svg appIcon="pill" size="lg"></svg></span>
+      <span class="cg-dose__icon" [class.is-popping]="popped()">
+        @if (state() === 'given') {
+          <!-- O check desenha o traço (pathLength 1) e o emblema "pula" só quando a pessoa acaba de marcar; ao abrir a tela ele já vem pronto. -->
+          <svg class="cg-dose__check" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M5.5 12.8l4.2 4.2L18.5 7.8" pathLength="1" />
+          </svg>
+        } @else {
+          <svg appIcon="pill" size="lg"></svg>
+        }
+      </span>
       <span class="cg-dose__text">
         <span class="cg-dose__name">{{ slot().medicationName }}</span>
         <span class="cg-dose__dosage">{{ slot().dosage }}</span>
@@ -135,8 +145,11 @@ export class CgDoseComponent {
   });
 
   protected readonly state = computed<CgDoseState>(() => doseStateOf(this.slot(), this.clock.now()));
+  /** A pessoa acabou de tocar em "Dei" nesta linha: o check anima (só então). */
+  protected readonly popped = signal(false);
 
   protected onDei(): void {
+    this.popped.set(true);
     this.lastDeiAt = this.clock.realNowMs();
     const hadFocus = this.hasFocus();
     this.dei.emit(this.slot());
@@ -152,6 +165,7 @@ export class CgDoseComponent {
       return;
     }
     const hadFocus = this.hasFocus();
+    this.popped.set(false);
     this.undo.emit(this.slot());
     // O Desfazer some quando a marca sai: o foco volta ao Dei da mesma linha.
     if (hadFocus) {

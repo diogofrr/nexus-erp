@@ -18,17 +18,18 @@ import { dateOf } from '../../../../core/clock/date-utils';
 import { ID } from '../../../../core/models';
 import { CaregiverNetworkService, OrderView } from '../../../../core/network/caregiver-network.service';
 import { BadgeComponent } from '../../../../shared/ui/display/badge.component';
-import { EmptyStateComponent } from '../../../../shared/ui/display/empty-state.component';
 import { IconComponent } from '../../../../shared/ui/display/icon.component';
 import { FormFieldComponent } from '../../../../shared/ui/forms/form-field.component';
 import { NxInputDirective } from '../../../../shared/ui/forms/input.directive';
 import { PageChromeService } from '../../../../layout/state/page-chrome.service';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { dayMonth, formatDayShort, relativeDateTime } from '../../state/day-format';
+import { CgEmptyComponent } from '../../ui/cg-empty.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
 import { CgNoteComponent, CgNoteVariant } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
 import { CgRatingPairComponent, ratingPairMissingText } from '../../ui/cg-rating-pair.component';
 import { CgRatingValue } from '../../ui/cg-rating.component';
+import { CgSealComponent, CgSealTone } from '../../ui/cg-seal.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import {
   OrderGroup,
@@ -38,12 +39,22 @@ import {
   orderGroupOf,
   requestStatusView,
 } from '../state/network-copy';
+import { ProviderAvatarComponent } from '../ui/provider-avatar.component';
 
 type SheetMode = 'details' | 'cancel' | 'evaluate' | 'correct';
+
+/** A cor do selo da situação: nunca só cor (o ícone e o texto vêm juntos); "Concluído: avalie" ganha o dourado. */
+function sealToneOf(status: StatusView): CgSealTone {
+  if (status.icon === 'star') {
+    return 'gold';
+  }
+  return status.variant === 'success' ? 'ok' : status.variant === 'info' ? 'care' : 'neutral';
+}
 
 interface OrderRow {
   id: ID;
   providerName: string;
+  tone: CgSealTone;
   need: string;
   meta: string;
   status: StatusView;
@@ -70,14 +81,16 @@ interface Banner {
     NgTemplateOutlet,
     RouterLink,
     BadgeComponent,
-    EmptyStateComponent,
     IconComponent,
     FormFieldComponent,
     NxInputDirective,
+    CgEmptyComponent,
+    CgHeroComponent,
     CgNoteComponent,
-    CgPageHeaderComponent,
     CgRatingPairComponent,
+    CgSealComponent,
     CgSheetComponent,
+    ProviderAvatarComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
@@ -91,16 +104,16 @@ interface Banner {
     `,
   ],
   template: `
-    <app-cg-page-header title="Meus pedidos" backLink="/cuidador/rede" backLabel="Rede" />
+    <app-cg-hero title="Meus pedidos" illustration="network" backLink="/cuidador/rede" backLabel="Rede" />
     <div class="cg-stack">
       @if (banner(); as b) {
         <app-cg-note [variant]="b.variant" data-role="result">{{ b.text }}</app-cg-note>
       }
 
       @if (rows().length === 0) {
-        <app-empty-state title="Você ainda não fez pedidos" text="Quando você pedir um serviço a um profissional da rede, ele aparece aqui.">
+        <app-cg-empty illustration="network" [headingLevel]="2" title="Você ainda não fez pedidos" text="Quando você pedir um serviço a um profissional da rede, ele aparece aqui.">
           <a class="btn" routerLink="/cuidador/rede/buscar">Buscar profissionais</a>
-        </app-empty-state>
+        </app-cg-empty>
       } @else {
         @if (toEvaluate().length > 0) {
           <section aria-labelledby="orders-evaluate" data-role="group-evaluate">
@@ -145,12 +158,12 @@ interface Banner {
 
     <ng-template #orderRow let-row="row">
       <button type="button" class="cg-row" data-role="order" [attr.data-order]="row.id" (click)="openRow(row)">
-        <span class="cg-row__icon"><svg appIcon="clipboard-list" size="lg"></svg></span>
+        <app-cg-provider-avatar [name]="row.providerName" size="lg" />
         <span class="cg-row__text nx-order">
           <span class="cg-row__title">{{ row.providerName }}</span>
           <span class="cg-row__desc">{{ row.need }}</span>
           <span class="cg-meta">{{ row.meta }}</span>
-          <app-badge [variant]="row.status.variant" [icon]="row.status.icon" data-role="status">{{ row.status.label }}</app-badge>
+          <app-cg-seal [tone]="row.tone" [icon]="row.status.icon" data-role="status">{{ row.status.label }}</app-cg-seal>
         </span>
         <span class="cg-row__end"><svg appIcon="chevron-right"></svg></span>
       </button>
@@ -270,6 +283,7 @@ export class OrdersPage {
       need: o.request.need,
       meta: `Pedido em ${formatDayShort(dateOf(o.request.requestedAt), today)} · ${categoryLabel(o.request.specialty)}`,
       status: requestStatusView(o.request),
+      tone: sealToneOf(requestStatusView(o.request)),
       group: orderGroupOf(o.request),
     }));
   });

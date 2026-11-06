@@ -3,33 +3,35 @@ import { CaregiverNetworkService } from '../../../../core/network/caregiver-netw
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
 import { NETWORK_NOTICE } from '../state/network-copy';
 
 /**
  * Rede, a porta (UX C12, `/cuidador/rede`): três cartões, na ordem Buscar profissionais e serviços, Meus pedidos e Cartão
  * Nexus, e o aviso "A Nexus organiza a rede. O serviço é feito e pago direto com o profissional." Os 3 aparecem para TODOS os
- * planos, sem cadeado e sem preço. As frases mudam com fatos da pessoa (quantos pedidos esperam resposta; se ela tem o
+ * planos, sem cadeado e sem preço. Vida (docs/17-vida-v1.md): o herói e os ladrilhos no azul profundo da Rede, cada ladrilho
+ * com o seu desenho (pessoas, calendário, cartão); de 1024 px em diante os três ficam lado a lado. As frases mudam com fatos da pessoa (quantos pedidos esperam resposta; se ela tem o
  * Cartão), nunca com pontuação, faixa, alerta ou ARBE (RN-PLN-19).
  */
 @Component({
   selector: 'app-cg-network-door-page',
-  imports: [CgPageHeaderComponent, CgCardComponent, CgNoteComponent],
+  imports: [CgHeroComponent, CgCardComponent, CgNoteComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-cg-page-header
+    <app-cg-hero
       title="Rede"
       description="Profissionais e serviços para o cuidado da pessoa idosa. A Nexus organiza e você escolhe."
+      illustration="network"
     />
     <div class="cg-stack">
-      <div class="cg-grid">
-        <app-cg-card title="Buscar profissionais e serviços" icon="search" link="/cuidador/rede/buscar">
+      <div class="cg-grid cg-tiles cg-tiles--3 cg-enter">
+        <app-cg-card layout="tile" illustration="group" title="Buscar profissionais e serviços" icon="search" link="/cuidador/rede/buscar">
           Compare as opções por necessidade.
         </app-cg-card>
-        <app-cg-card title="Meus pedidos" icon="clipboard-list" link="/cuidador/rede/pedidos">
+        <app-cg-card layout="tile" illustration="calendar" title="Meus pedidos" icon="clipboard-list" link="/cuidador/rede/pedidos">
           <span data-role="orders-line">{{ ordersLine() }}</span>
         </app-cg-card>
-        <app-cg-card title="Cartão Nexus" icon="credit-card" link="/cuidador/rede/cartao">
+        <app-cg-card layout="tile" illustration="card" title="Cartão Nexus" icon="credit-card" link="/cuidador/rede/cartao">
           <span data-role="card-line">{{ cardLine() }}</span>
         </app-cg-card>
       </div>

@@ -20,7 +20,6 @@ import {
   sortByTime,
   windowEnd,
 } from '../../../../core/rules/care-agenda';
-import { EmptyStateComponent } from '../../../../shared/ui/display/empty-state.component';
 import { IconComponent, IconName } from '../../../../shared/ui/display/icon.component';
 import { ErrorSummaryComponent, ErrorSummaryItem } from '../../../../shared/ui/forms/error-summary.component';
 import { FormFieldComponent } from '../../../../shared/ui/forms/form-field.component';
@@ -30,8 +29,9 @@ import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { OnlineStatusService } from '../../state/online-status.service';
 import { withArticle } from '../../state/people-format';
 import { CgCalendarComponent, CgCalendarEvent } from '../../ui/cg-calendar.component';
+import { CgEmptyComponent } from '../../ui/cg-empty.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import { CgSwitchComponent } from '../../ui/cg-switch.component';
 import { AgendaEntryComponent } from '../components/agenda-entry.component';
@@ -93,11 +93,11 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
   imports: [
     AgendaEntryComponent,
     CgCalendarComponent,
+    CgEmptyComponent,
+    CgHeroComponent,
     CgNoteComponent,
-    CgPageHeaderComponent,
     CgSheetComponent,
     CgSwitchComponent,
-    EmptyStateComponent,
     ErrorSummaryComponent,
     FormFieldComponent,
     IconComponent,
@@ -144,7 +144,7 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
       cursor: pointer;
     }
     .routine-view__btn[aria-pressed='true'] {
-      background: var(--cg-action);
+      background: var(--cg-acc-solid);
       color: var(--cg-surface);
     }
     .routine-cal {
@@ -229,7 +229,7 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
     }
   `,
   template: `
-    <app-cg-page-header title="Rotina" />
+    <app-cg-hero title="Rotina" illustration="calendar" />
     <app-routine-tabs current="agenda" panelId="routine-panel" />
 
     <div class="routine-panel" id="routine-panel" role="tabpanel" aria-labelledby="routine-tab-agenda">
@@ -279,12 +279,13 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
         </div>
       } @else {
         @if (isEmpty()) {
-          <app-empty-state
+          <app-cg-empty
+            illustration="calendar"
             title="Nenhum compromisso por aqui"
             text="Quando você adicionar uma consulta ou uma sessão, ela aparece nesta lista."
           >
             <button type="button" class="btn btn--primary" (click)="openNew()">Adicionar compromisso</button>
-          </app-empty-state>
+          </app-cg-empty>
         } @else {
           <div class="cg-actions">
             <button type="button" class="btn btn--primary" (click)="openNew()">

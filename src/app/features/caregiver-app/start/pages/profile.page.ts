@@ -14,7 +14,7 @@ import { ContactDialogService } from '../../state/contact-dialog.service';
 import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import { CgTextSizeComponent } from '../../ui/cg-text-size.component';
 import { ProfileError, ProfileService } from '../state/profile.service';
@@ -54,7 +54,7 @@ const chosen =
     CgCardComponent,
     CgChoiceGroupComponent,
     CgNoteComponent,
-    CgPageHeaderComponent,
+    CgHeroComponent,
     CgSheetComponent,
     CgTextSizeComponent,
     ErrorSummaryComponent,
@@ -120,7 +120,7 @@ const chosen =
     }
   `,
   template: `
-    <app-cg-page-header title="Meu perfil" backLink="/cuidador/mais" backLabel="Mais" />
+    <app-cg-hero title="Meu perfil" illustration="welcome" backLink="/cuidador/mais" backLabel="Mais" />
 
     <div class="cg-stack cg-reading">
       <app-cg-card title="Você" icon="user-round">

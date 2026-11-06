@@ -383,4 +383,19 @@ describe('Área my-wellbeing (Como estou)', () => {
     expect(/[\u2014\u2013!]/.test(body)).toBe(false);
     ['paciente', 'idoso ', 'alerta', 'eficácia', 'guerreira'].forEach((w) => expect(body.includes(w)).toBe(false));
   });
+
+  describe('vida de Como estou (V2)', () => {
+    it('a trilha de pontos mostra uma conversa por ponto, na rampa de azul, só como desenho e sem número', async () => {
+      const app = await bootCaregiverApp('cg_0001', { url: '/cuidador/cuidar-de-mim/como-estou' });
+      const path = app.root.querySelector('.cg-trend__trail');
+      expect(path?.getAttribute('aria-hidden')).toBe('true');
+      const dots = Array.from(app.root.querySelectorAll('.cg-trend__trail .cg-trend__trail-dot'));
+      expect(dots.length).toBe(app.root.querySelectorAll('.cg-trend__item').length);
+      // Do mais antigo ao mais novo: a última conversa leva o anel, e é a última da trilha.
+      expect(dots.at(-1)?.classList.contains('is-latest')).toBe(true);
+      expect(path?.textContent?.trim()).toBe('');
+      expect(dots.every((d) => ['1', '2', '3', '4'].includes(d.getAttribute('data-band') ?? ''))).toBe(true);
+    });
+  });
+
 });

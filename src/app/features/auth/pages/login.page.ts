@@ -28,6 +28,7 @@ import { BannerComponent } from '../../../shared/ui/overlay/banner.component';
 import { initialsOf, roleLabel } from '../../../shared/ui/overlay/user-display';
 import { DEMO_CAREGIVERS } from '../../caregiver-app/state/demo-caregivers';
 import { FontScaleService } from '../../caregiver-app/state/font-scale.service';
+import { CgIllustrationComponent } from '../../caregiver-app/ui/cg-illustration.component';
 import { destinationAfterCaregiverLogin, destinationAfterLogin } from '../return-url';
 
 /** Texto da faixa de armazenamento bloqueado (F01, estados de erro). */
@@ -69,7 +70,7 @@ interface DemoPerson {
  */
 @Component({
   selector: 'app-login-page',
-  imports: [BannerComponent, IconComponent, NgTemplateOutlet, PlanBadgeComponent, RouterLink],
+  imports: [BannerComponent, CgIllustrationComponent, IconComponent, NgTemplateOutlet, PlanBadgeComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="login">
@@ -80,9 +81,8 @@ interface DemoPerson {
           </svg>
           <span class="wordmark">Nexus</span>
         </div>
-        <svg class="login__art" viewBox="-18 3 156 98" aria-hidden="true">
-          <use href="icons/sprite.svg#nx-hands" />
-        </svg>
+        <app-cg-illustration class="login__scene" name="welcome" size="fill" tone="light" />
+        <app-cg-illustration class="login__mini-art" name="welcome" size="sm" tone="light" />
         <div class="stack stack--3">
           <p class="login__tagline">Quem cuida também precisa de sustentação.</p>
           <p class="login__note">
@@ -143,7 +143,7 @@ interface DemoPerson {
                   "
                   (click)="chooseCaregiver(person.id)"
                 >
-                  <span class="avatar" aria-hidden="true">{{ initials(person.name) }}</span>
+                  <span class="avatar" aria-hidden="true" [attr.data-tone]="tone(person.id)">{{ initials(person.name) }}</span>
                   <span class="cg-door__text">
                     <span class="cg-door__name">{{ person.name }}, {{ person.age }} anos</span>
                     <app-plan-badge class="cg-door__plan" [plan]="person.planId" />
@@ -357,6 +357,12 @@ export class LoginPageComponent {
 
   protected initials(name: string): string {
     return initialsOf(name);
+  }
+
+  /** A cor suave do avatar de cada pessoa de exemplo (1 a 5), sempre a mesma para a mesma pessoa. */
+  protected tone(caregiverId: string): number {
+    const index = DEMO_CAREGIVERS.findIndex((d) => d.id === caregiverId);
+    return (Math.max(index, 0) % 5) + 1;
   }
 
   protected role(user: AppUser): string {

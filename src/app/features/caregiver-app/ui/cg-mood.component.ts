@@ -28,6 +28,8 @@ export function moodLabel(value: number | null | undefined): string {
  * mostra se o consentimento de saúde estiver vigente. Nada vem marcado e as 5 opções têm o MESMO visual (sem
  * semáforo, sem comemoração). Letra Normal e largura de 328 px ou mais: 5 colunas; senão, lista vertical de 5
  * linhas de 56 px (o CSS decide). `value` é o que a pessoa tocou; quem grava é a tela, ao receber `chosen`.
+ * Vida: cada carinha tem uma cor suave própria (frias para quentes, sem vermelho nem laranja; `--cg-mood-N-*`), sem
+ * dizer "bom" ou "ruim": o rótulo é a informação. Ao escolher, a carinha cresce um pouco (sem movimento com "reduzir movimento").
  *
  * ```html
  * <app-cg-mood [value]="today()" (chosen)="save($event)" />
@@ -41,7 +43,7 @@ export function moodLabel(value: number | null | undefined): string {
   template: `
     <div class="cg-mood" role="radiogroup" [attr.aria-label]="label()">
       @for (option of options; track option.value) {
-        <label class="cg-mood__option" [class.is-selected]="value() === option.value">
+        <label class="cg-mood__option" [attr.data-value]="option.value" [class.is-selected]="value() === option.value">
           <input
             class="cg-mood__input"
             type="radio"

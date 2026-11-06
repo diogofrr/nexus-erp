@@ -6,6 +6,7 @@ import { ROUTES } from './card.routes';
 
 const URL = '/cuidador/rede/cartao';
 
+const norm = (t: string | null | undefined): string => (t ?? '').replace(/\s+/g, ' ').trim();
 const text = (app: BootedCaregiverApp): string => (app.root.querySelector('main')?.textContent ?? '').replace(/\s+/g, ' ');
 
 /** Título e apoio de uma linha de lista, separados por " | " (os dois spans ficam sem espaço entre eles no DOM). */
@@ -160,7 +161,7 @@ describe('Área card (Cartão Nexus)', () => {
     expect(usages[0]).toBe('Drogaria Cuidar | sáb, 31/10 · desconto de R$ 9,36');
     // Hoje é 04/11 e o último uso foi em 31/10: o mês ainda não tem compras, e o total aparece.
     expect(app.root.querySelector('[data-role="month-total"]')?.textContent?.trim()).toBe('Neste mês: ainda sem compras com o cartão.');
-    expect(app.root.querySelector('[data-role="grand-total"]')?.textContent?.trim()).toBe('Ao todo: R$ 169,99 em 8 compras.');
+    expect(norm(app.root.querySelector('[data-role="grand-total"]')?.textContent)).toBe('R$ 169,99 economizados ao todo, em 8 compras');
   });
 
   it('AC-CG-141: o total do mês soma o desconto dos usos do mês de hoje', async () => {
@@ -169,7 +170,7 @@ describe('Área card (Cartão Nexus)', () => {
     app.clock.setSimulated('2026-10-31', '12:00');
     await app.router.navigateByUrl(URL);
     await settleCaregiver(app.fixture);
-    expect(app.root.querySelector('[data-role="month-total"]')?.textContent?.trim()).toBe('Neste mês: R$ 76,83 em 4 compras.');
+    expect(norm(app.root.querySelector('[data-role="month-total"]')?.textContent)).toBe('R$ 76,83 economizados neste mês, em 4 compras');
     expect(app.root.querySelector('[data-role="grand-total"]')?.textContent?.trim()).toBe('Ao todo: R$ 169,99 em 8 compras.');
   });
 
@@ -200,7 +201,7 @@ describe('Área card (Cartão Nexus)', () => {
       ['Farmácia Bem-Estar', 'Drogaria Cuidar', 'Ótica Visão Clara', 'Onde usar', 'Copiar número'].forEach((t) => expect(body).not.toContain(t));
       const link = Array.from(app.root.querySelectorAll('main a')).find((a) => a.textContent?.trim() === 'Ver os planos');
       expect(link?.getAttribute('href')).toBe('/cuidador/mais/plano');
-      expect(app.root.querySelector('main .cg-note--soft')).not.toBeNull();
+      expect(app.root.querySelector('main [data-role="invite"]')).not.toBeNull();
       expect(app.root.querySelector('main [data-role="card-number"]')).toBeNull();
       TestBed.resetTestingModule();
     }
@@ -248,4 +249,37 @@ describe('Área card (Cartão Nexus)', () => {
       TestBed.resetTestingModule();
     }
   });
+
+  it('o cartão parece um cartão: tem a cor do plano, o símbolo, o chip e o número (Cuida, Essencial e Sustenta)', async () => {
+    for (const [id, tone] of [['cg_0001', 'cuida'], ['cg_0002', 'essencial'], ['cg_0027', 'sustenta']] as const) {
+      const app = await bootCaregiverApp(id, { url: URL });
+      const card = app.root.querySelector('section.nx-card') as HTMLElement;
+      expect(card.classList.contains(`cg-tone--${tone}`)).toBe(true);
+      expect(card.querySelector('.nx-card__gold')).not.toBeNull();
+      expect(card.querySelector('use')?.getAttribute('href')).toContain('nx-symbol');
+      expect(norm(card.querySelector('[data-role="card-number"]')?.textContent)).toMatch(/^NX-\d{4}-\d{4}$/);
+      expect(norm(card.querySelector('.cg-plan-tag')?.textContent)).toMatch(/^Plano /);
+      TestBed.resetTestingModule();
+    }
+  });
+
+  it('cada parceiro tem o ícone do seu tipo (farmácia, laboratório, mercado, ótica)', async () => {
+    const app = await bootCaregiverApp('cg_0001', { url: URL });
+    const icons = Array.from(app.root.querySelectorAll('section[aria-labelledby="card-where"] button.cg-row')).map((row) => ({
+      name: row.querySelector('.cg-row__title')?.textContent?.trim(),
+      icon: row.querySelector('.cg-row__icon use')?.getAttribute('href')?.split('#i-')[1],
+    }));
+    expect(icons.find((i) => i.name === 'Drogaria Cuidar')?.icon).toBe('pill');
+    expect(icons.find((i) => i.name === 'Mercado Vida Saudável')?.icon).toBe('store');
+    expect(icons.find((i) => i.name === 'Ótica Visão Clara')?.icon).toBe('eye');
+  });
+
+  it('o Livre vê o cartão desenhado e vazio: sem número, e o desenho não é lido pelo leitor de tela', async () => {
+    const app = await bootCaregiverApp('cg_0003', { url: URL });
+    const invite = app.root.querySelector('[data-role="invite"]') as HTMLElement;
+    expect(invite.querySelector('.nx-ghost')?.getAttribute('aria-hidden')).toBe('true');
+    expect(norm(invite.querySelector('.nx-ghost')?.textContent)).toBe('NEXUS');
+    expect(invite.querySelector('a.btn')?.classList.contains('btn--primary')).toBe(false);
+  });
+
 });

@@ -8,6 +8,7 @@ import { IconComponent, IconName } from '../../../shared/ui/display/icon.compone
  * círculo, título (até 3 linhas), apoio (até 2) e, no fim, uma seta. O que você projetar em `[cgRowEnd]` (etiqueta)
  * fica à direita do título quando há espaço e **desce para baixo do título em tela estreita**, para o texto nunca
  * ficar espremido em uma coluna de letras (CXC-001).
+ * `[cgRowLead]` troca o emblema de ícone por algo seu (o avatar do profissional, por exemplo): use um OU outro.
  * A linha INTEIRA é o alvo: com `link` é um `<a>`, sem `link` é um `<button>` que emite `activated`. Use dentro de
  * `<ul class="cg-list"><li>...</li></ul>`.
  *
@@ -43,6 +44,7 @@ import { IconComponent, IconName } from '../../../shared/ui/display/icon.compone
       @if (icon(); as name) {
         <span class="cg-row__icon"><svg [appIcon]="name" size="lg"></svg></span>
       }
+      <ng-content select="[cgRowLead]" />
       <span class="cg-row__body">
         <span class="cg-row__text">
           <span class="cg-row__title">{{ title() }}</span>

@@ -8,7 +8,7 @@ import { COPY_TEXT_FAILED } from '../../state/copy-feedback';
 import { firstNameOf } from '../../state/people-format';
 import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
 import { CgSwitchComponent } from '../../ui/cg-switch.component';
 import { FamilyShareService } from '../state/family-share.service';
 import { FamilyShareChoices, NO_FAMILY_CHOICES, anyChosen } from '../state/family-text';
@@ -25,7 +25,7 @@ const COPIED = 'Texto copiado. Cole na conversa da sua família.';
  */
 @Component({
   selector: 'app-family-page',
-  imports: [CgCardComponent, CgNoteComponent, CgPageHeaderComponent, CgSwitchComponent],
+  imports: [CgCardComponent, CgHeroComponent, CgNoteComponent, CgSwitchComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .family-box {
@@ -75,7 +75,7 @@ const COPIED = 'Texto copiado. Cole na conversa da sua família.';
     }
   `,
   template: `
-    <app-cg-page-header title="Família" [description]="description()" backLink="/cuidador/mais" backLabel="Mais" />
+    <app-cg-hero title="Família" [description]="description()" illustration="group" backLink="/cuidador/mais" backLabel="Mais" />
 
     <div class="cg-stack cg-reading">
       @if (!service.authorized()) {

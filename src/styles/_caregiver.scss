@@ -8,6 +8,104 @@
 @use 'tokens' as *;
 
 // ---------------------------------------------------------------------------
+// Vida visual (docs/17-vida-kit.md): tintas calmas por seção, cores do humor, sombras em camadas e movimento de entrada.
+// Ficam em `:root` porque a Entrada (sem shell) também usa. A seção atual troca o acento (`--cg-acc-*`) para tudo o que
+// está dentro dela: o shell marca `data-section` na raiz do aplicativo e qualquer bloco pode forçar um acento com
+// `.cg-sec--hoje`, `--rotina`, `--cuidar`, `--rede` ou `--mais`. Todos os pares conferidos em scripts/check-caregiver-a11y.mjs.
+// ---------------------------------------------------------------------------
+:root {
+  // tint: fundo muito claro do cartão; strong: emblema, faixa e fundo do herói; ink: texto e ícone sobre os dois; solid: anel e marca cheia.
+  --cg-sec-base-tint: var(--nx-blue-50);
+  --cg-sec-base-strong: var(--nx-blue-100);
+  --cg-sec-base-ink: var(--nx-blue-800);
+  --cg-sec-base-solid: var(--nx-blue-600);
+  // Hoje: azul-céu
+  --cg-sec-hoje-tint: #eaf3fa;
+  --cg-sec-hoje-strong: #d2e6f5;
+  --cg-sec-hoje-ink: #1b4669;
+  --cg-sec-hoje-solid: #2d6ea3;
+  // Rotina: verde-sálvia suave
+  --cg-sec-rotina-tint: #ecf4ef;
+  --cg-sec-rotina-strong: #d3e7db;
+  --cg-sec-rotina-ink: #1f5a3f;
+  --cg-sec-rotina-solid: #2f7a57;
+  // Cuidar de mim: areia dourada
+  --cg-sec-cuidar-tint: #fbf5e4;
+  --cg-sec-cuidar-strong: #f3e5bc;
+  --cg-sec-cuidar-ink: #6e520f;
+  --cg-sec-cuidar-solid: #8a6812;
+  // Rede: azul profundo
+  --cg-sec-rede-tint: #e8ecf5;
+  --cg-sec-rede-strong: #cfd8ea;
+  --cg-sec-rede-ink: #1f3560;
+  --cg-sec-rede-solid: #2f4e8c;
+  // Mais: neutro
+  --cg-sec-mais-tint: #f1eee6;
+  --cg-sec-mais-strong: #e4e0d3;
+  --cg-sec-mais-ink: #3f4a56;
+  --cg-sec-mais-solid: #5a6673;
+
+  // Humor: cinco cores suaves e frias a quentes, sem vermelho nem laranja (nenhuma é "bom" ou "ruim", o rótulo é a informação).
+  --cg-mood-1-tint: #e8edf5;
+  --cg-mood-1-ink: #44577f;
+  --cg-mood-2-tint: #e3eff9;
+  --cg-mood-2-ink: #2d6ea3;
+  --cg-mood-3-tint: #f6efd9;
+  --cg-mood-3-ink: #7a5c0f;
+  --cg-mood-4-tint: #e4f2ea;
+  --cg-mood-4-ink: #2a7050;
+  --cg-mood-5-tint: #ddf0e3;
+  --cg-mood-5-ink: #1b6f44;
+
+  // Acento corrente (o padrão é o azul da marca; a seção ou `.cg-sec--*` troca)
+  --cg-acc-tint: var(--cg-sec-base-tint);
+  --cg-acc-strong: var(--cg-sec-base-strong);
+  --cg-acc-ink: var(--cg-sec-base-ink);
+  --cg-acc-solid: var(--cg-sec-base-solid);
+
+  // Sombras em camadas, sempre suaves e azuladas (profundidade sem peso)
+  --cg-shadow-1: 0 1px 2px rgb(19 51 80 / 0.05), 0 2px 8px -2px rgb(19 51 80 / 0.07);
+  --cg-shadow-2: 0 2px 4px rgb(19 51 80 / 0.05), 0 8px 20px -6px rgb(19 51 80 / 0.12);
+  --cg-shadow-3: 0 4px 8px rgb(19 51 80 / 0.06), 0 16px 32px -10px rgb(19 51 80 / 0.18);
+}
+
+.cg-sec--hoje,
+.cg-app[data-section='hoje'] {
+  --cg-acc-tint: var(--cg-sec-hoje-tint);
+  --cg-acc-strong: var(--cg-sec-hoje-strong);
+  --cg-acc-ink: var(--cg-sec-hoje-ink);
+  --cg-acc-solid: var(--cg-sec-hoje-solid);
+}
+.cg-sec--rotina,
+.cg-app[data-section='rotina'] {
+  --cg-acc-tint: var(--cg-sec-rotina-tint);
+  --cg-acc-strong: var(--cg-sec-rotina-strong);
+  --cg-acc-ink: var(--cg-sec-rotina-ink);
+  --cg-acc-solid: var(--cg-sec-rotina-solid);
+}
+.cg-sec--cuidar,
+.cg-app[data-section='cuidar'] {
+  --cg-acc-tint: var(--cg-sec-cuidar-tint);
+  --cg-acc-strong: var(--cg-sec-cuidar-strong);
+  --cg-acc-ink: var(--cg-sec-cuidar-ink);
+  --cg-acc-solid: var(--cg-sec-cuidar-solid);
+}
+.cg-sec--rede,
+.cg-app[data-section='rede'] {
+  --cg-acc-tint: var(--cg-sec-rede-tint);
+  --cg-acc-strong: var(--cg-sec-rede-strong);
+  --cg-acc-ink: var(--cg-sec-rede-ink);
+  --cg-acc-solid: var(--cg-sec-rede-solid);
+}
+.cg-sec--mais,
+.cg-app[data-section='mais'] {
+  --cg-acc-tint: var(--cg-sec-mais-tint);
+  --cg-acc-strong: var(--cg-sec-mais-strong);
+  --cg-acc-ink: var(--cg-sec-mais-ink);
+  --cg-acc-solid: var(--cg-sec-mais-solid);
+}
+
+// ---------------------------------------------------------------------------
 // Tokens (UX A.1.1). O seletor de letra troca `data-text` no host.
 // ---------------------------------------------------------------------------
 .cg-app {
@@ -43,6 +141,8 @@
   --cg-nav-h: 4rem;
   --cg-col: 45rem;
   --cg-col-wide: 60rem;
+  // Em tela larga (1280 px ou mais) a coluna abre para aproveitar a largura: duas colunas, ilustração ao lado.
+  @include up(xl) { --cg-col-wide: 72rem; }
   --cg-reading: 40rem;
   --cg-gutter: 1rem;
   --cg-gap-block: 1.5rem;
@@ -52,8 +152,8 @@
   @include up(lg) { --cg-gutter: 2rem; --cg-header-h: 4.5rem; }
 
   // Raios e sombras
-  --cg-radius-card: 1rem;
-  --cg-radius-control: 0.75rem;
+  --cg-radius-card: 1.25rem;
+  --cg-radius-control: 0.875rem;
   --cg-radius-sheet: 1.5rem 1.5rem 0 0;
   --cg-radius-pill: 62.5rem;
   --cg-shadow-nav: 0 -4px 16px rgb(19 51 80 / 0.08);
@@ -137,6 +237,8 @@
   z-index: var(--z-sticky);
   background: var(--cg-surface);
   border-bottom: 1px solid var(--cg-border);
+  // Um fio da cor da seção na base do cabeçalho: diz onde a pessoa está sem escrever nada.
+  box-shadow: 0 1px 0 var(--cg-acc-strong), 0 6px 16px -12px rgb(19 51 80 / 0.22);
 }
 
 .cg-app .cg-header__bar {
@@ -191,16 +293,28 @@
   align-items: center;
   gap: 0.5rem;
   min-height: var(--cg-target);
-  padding: 0 1rem;
+  padding: 0 1rem 0 0.375rem;
   border: 2px solid var(--nx-blue-800);
-  border-radius: var(--cg-radius-control);
+  border-radius: var(--cg-radius-pill);
   background: var(--cg-surface);
   color: var(--nx-blue-800);
   font-size: calc(1rem * min(var(--cg-zoom), 1.15));
   font-weight: var(--fw-semibold);
   line-height: 1.1;
   text-decoration: none;
-  &:active { background: var(--brand-soft); }
+  transition: background var(--cg-dur) var(--ease), transform var(--cg-dur) var(--ease);
+  // O ícone da boia em um círculo azul cheio: o botão se acha de longe, sem piscar, sem vermelho e sem alarme.
+  .icon {
+    box-sizing: content-box;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0.3125rem;
+    border-radius: 50%;
+    background: var(--nx-blue-800);
+    color: #ffffff;
+  }
+  &:hover { background: var(--brand-soft); }
+  &:active { background: var(--brand-soft); transform: scale(0.97); }
 }
 
 .cg-app .cg-header__login { min-height: var(--cg-target); }
@@ -268,13 +382,21 @@
   &:active { background: var(--cg-surface-sunken); }
   .icon { stroke-width: 1.75; }
 }
-.cg-app .cg-nav__icon { display: grid; place-items: center; width: 3.5rem; height: 2rem; border-radius: var(--cg-radius-pill); }
+.cg-app .cg-nav__icon { display: grid; place-items: center; width: 3.5rem; height: 2rem; border-radius: var(--cg-radius-pill); transition: background var(--cg-dur-sheet) var(--ease), transform var(--cg-dur) var(--ease); }
+// Cada destino leva a cor da sua seção: o item atual enche o ícone com a tinta dela e a linha dourada marca o lugar.
+.cg-app .cg-nav__link[data-sec='hoje'] { --nav-tint: var(--cg-sec-hoje-strong); --nav-ink: var(--cg-sec-hoje-ink); }
+.cg-app .cg-nav__link[data-sec='rotina'] { --nav-tint: var(--cg-sec-rotina-strong); --nav-ink: var(--cg-sec-rotina-ink); }
+.cg-app .cg-nav__link[data-sec='cuidar'] { --nav-tint: var(--cg-sec-cuidar-strong); --nav-ink: var(--cg-sec-cuidar-ink); }
+.cg-app .cg-nav__link[data-sec='rede'] { --nav-tint: var(--cg-sec-rede-strong); --nav-ink: var(--cg-sec-rede-ink); }
+.cg-app .cg-nav__link[data-sec='mais'] { --nav-tint: var(--cg-sec-mais-strong); --nav-ink: var(--cg-sec-mais-ink); }
 .cg-app .cg-nav__link.is-current {
-  color: var(--cg-heading);
+  color: var(--nav-ink, var(--cg-heading));
   font-weight: 700;
-  .cg-nav__icon { background: var(--brand-soft); }
+  .cg-nav__icon { background: var(--nav-tint, var(--brand-soft)); }
+  .icon { stroke-width: 2.1; }
   &::before { content: ''; position: absolute; inset: 0 auto auto 50%; width: 1.5rem; height: 3px; margin-left: -0.75rem; background: var(--cg-gold-line); border-radius: 0 0 2px 2px; }
 }
+.cg-app .cg-nav__link:active .cg-nav__icon { transform: scale(0.92); }
 
 .cg-app .cg-nav--bottom {
   position: fixed;
@@ -304,7 +426,10 @@
   }
   .cg-nav__icon { width: auto; height: auto; background: none; }
   .cg-nav__icon .icon { width: 1.25rem; height: 1.25rem; }
+  // Em tela larga o item atual vira uma pílula com a tinta da seção.
+  .cg-nav__link:hover { background: var(--cg-surface-sunken); }
   .cg-nav__link.is-current {
+    background: var(--nav-tint, var(--brand-soft));
     .cg-nav__icon { background: none; }
     &::before { inset: auto 0.75rem 0 0.75rem; width: auto; height: 3px; margin: 0; border-radius: 2px 2px 0 0; }
   }
@@ -334,8 +459,8 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
-  background: var(--brand-soft);
-  color: var(--cg-heading);
+  background: var(--cg-acc-strong);
+  color: var(--cg-acc-ink);
   font-size: 1rem;
   font-weight: var(--fw-semibold);
 }
@@ -434,6 +559,7 @@
   border: 1px solid var(--cg-border);
   border-radius: var(--cg-radius-card);
   background: var(--cg-surface);
+  box-shadow: var(--cg-shadow-1);
   overflow: hidden;
   > li + li { border-top: 1px solid var(--cg-border-subtle); }
 }
@@ -485,7 +611,8 @@
   --btn-fg: var(--cg-heading);
   --btn-bg-hover: var(--brand-soft);
   --btn-bg-active: var(--brand-soft-hover);
-  &:active { transform: none; }
+  // Estado de pressionar: o botão encolhe um pouco (a transição de `transform` já é do design system).
+  &:active { transform: scale(0.98); }
 }
 .cg-app .btn--primary {
   --btn-bg: var(--cg-action);
@@ -560,37 +687,76 @@
 // ---------------------------------------------------------------------------
 .cg-app .cg-card-host { display: block; min-width: 0; }
 .cg-app .cg-card {
-  display: block;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
   padding: var(--cg-pad-card);
   border: 1px solid var(--cg-border);
   border-radius: var(--cg-radius-card);
   background: var(--cg-surface);
+  box-shadow: var(--cg-shadow-1);
   color: var(--cg-text);
+}
+// Cartão com ícone: um véu da tinta da seção no fundo e um fio fino no alto (acento sem peso).
+.cg-app .cg-card:not(.cg-card--care, .cg-card--soft):has(> .cg-card__badge) {
+  border-color: var(--cg-acc-strong);
+  background: linear-gradient(160deg, var(--cg-surface) 45%, var(--cg-acc-tint) 130%);
+  box-shadow: inset 0 3px 0 var(--cg-acc-strong), var(--cg-shadow-1);
 }
 .cg-app .cg-card--care { background: var(--cg-care-bg); border-color: var(--cg-care-border); color: var(--cg-care-fg); }
 .cg-app .cg-card--soft { background: var(--cg-soft-bg); border-color: var(--cg-soft-border); color: var(--cg-soft-fg); }
 .cg-app .cg-card--link {
-  display: flex;
   align-items: center;
-  gap: 0.75rem;
   min-height: 4.5rem;
   text-decoration: none;
-  transition: background var(--cg-dur) var(--ease);
-  &:active { background: var(--cg-surface-sunken); }
-  .cg-card__chevron { color: var(--cg-text-soft); }
+  transition: transform var(--cg-dur) var(--ease), box-shadow var(--cg-dur-sheet) var(--ease), background var(--cg-dur) var(--ease);
+  &:hover { box-shadow: var(--cg-shadow-2); }
+  &:active { transform: scale(0.985); background: var(--cg-surface-sunken); }
+  .cg-card__go {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--cg-acc-tint);
+    color: var(--cg-acc-ink);
+    transition: transform var(--cg-dur-sheet) var(--ease);
+  }
+  &:hover .cg-card__go { transform: translateX(0.125rem); }
 }
+.cg-app .cg-card__badge { align-self: flex-start; }
 .cg-app .cg-card__main { flex: 1; min-width: 0; }
 .cg-app .cg-card__title {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
+  display: block;
   margin: 0 0 0.25rem;
   font-family: var(--font-sans);
   font-size: var(--cg-fs-lead);
   font-weight: var(--fw-semibold);
   line-height: 1.3;
-  .icon { margin-top: 0.125rem; color: var(--cg-care-icon); }
 }
+// Ladrilho de porta de seção: emblema em cima, título serifado, a frase embaixo, o desenho no canto.
+.cg-app .cg-card--tile {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  min-height: 9.5rem;
+  padding: 1.25rem 1.25rem 1.125rem;
+  overflow: hidden;
+  .cg-card__main { display: flex; flex-direction: column; width: 100%; }
+  .cg-card__title { font-family: var(--font-serif); font-weight: 400; font-size: calc(1.5rem * var(--cg-zoom)); color: var(--cg-acc-ink); line-height: 1.2; }
+  .cg-card__text { padding-inline-end: 2.25rem; }
+  .cg-card__go { position: absolute; inset: auto 1rem 1rem auto; }
+  // A largura do desenho vem da grade (`--tile-art`): menor quando são 3 ou 4 ladrilhos lado a lado, maior em 2 x 2.
+  .cg-card__art { position: absolute; inset: 0.625rem 0.75rem auto auto; width: var(--tile-art, 5rem); opacity: 0.95; }
+  &.cg-card--art .cg-card__badge { display: none; }
+  // O desenho fica no canto do alto: o título dá a volta nele e o texto começa abaixo dele.
+  &.cg-card--art .cg-card__title { min-height: calc(var(--tile-art, 5rem) * 0.8 + 0.5rem); padding-inline-end: calc(var(--tile-art, 5rem) + 0.5rem); overflow-wrap: break-word; }
+}
+.cg-app .cg-tiles { --tile-art: 4.75rem; @include up(md) { --tile-art: 6rem; } @include up(lg) { --tile-art: 7.5rem; } }
+.cg-app .cg-tiles--3 { @include up(lg) { --tile-art: 5.25rem; } }
+.cg-app .cg-tiles--4 { @include up(xl) { --tile-art: 5.25rem; } }
 .cg-app .cg-card__text { display: grid; gap: 0.5rem; justify-items: start; margin: 0; }
 .cg-app .cg-card__footer { margin-top: 0.5rem; &:empty { display: none; } }
 
@@ -602,9 +768,9 @@
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  padding: 1rem;
+  padding: 1rem 1.125rem;
   border: 1px solid var(--note-border);
-  border-radius: var(--cg-radius-control);
+  border-radius: 1rem;
   background: var(--note-bg);
   color: var(--note-fg);
 }
@@ -637,14 +803,15 @@
   text-decoration: none;
   transition: background var(--cg-dur) var(--ease);
   &:focus-visible { outline-offset: -3px; }
-  &[aria-current='true'] { background: var(--brand-soft); }
+  &[aria-current='true'] { background: var(--cg-acc-tint); }
 }
 // Só o que clica parece clicável: a linha de leitura (um `div.cg-row`, como o histórico do Cartão) não tem mão nem destaque ao toque.
 .cg-app a.cg-row, .cg-app button.cg-row {
   cursor: pointer;
+  &:hover { background: var(--cg-acc-tint); }
   &:active { background: var(--cg-surface-sunken); }
 }
-.cg-app .cg-row__icon { display: grid; place-items: center; flex-shrink: 0; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--brand-soft); color: var(--cg-heading); }
+.cg-app .cg-row__icon { display: grid; place-items: center; flex-shrink: 0; width: 2.75rem; height: 2.75rem; border-radius: 50%; background: var(--cg-acc-strong); color: var(--cg-acc-ink); }
 // Corpo da linha: o texto tem largura mínima (10 em) e a etiqueta (`[cgRowEnd]`) só fica ao lado dele se couber; senão
 // desce para baixo do título (CXC-001). A medida em `em` acompanha o tamanho da letra (Normal, Grande, Bem grande).
 .cg-app .cg-row__body { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }
@@ -731,11 +898,13 @@
 .cg-app .cg-switch[aria-checked='true'] .cg-switch__track { background: var(--cg-action); }
 .cg-app .cg-switch[aria-checked='true'] .cg-switch__thumb { transform: translateX(1.5rem); }
 
-// Humor: 5 colunas com letra Normal e 328 px ou mais; senão, lista de 5 linhas de 56 px. Largura total sempre
+// Humor: 5 colunas com letra Normal e 312 px ou mais (cabe dentro do painel de Hoje no celular); senão, lista de 5 linhas de 56 px. Largura total sempre
 // (CXC-002): sem ela, dentro de uma grade com justify-items: start o contêiner de medida encolhia a zero.
 .cg-app .cg-mood-host { display: block; width: 100%; container-type: inline-size; }
 .cg-app .cg-mood { display: grid; gap: 0.5rem; grid-template-columns: minmax(0, 1fr); }
 .cg-app .cg-mood__option {
+  --mood-tint: var(--cg-mood-3-tint);
+  --mood-ink: var(--cg-mood-3-ink);
   position: relative;
   display: flex;
   align-items: center;
@@ -746,14 +915,34 @@
   border-radius: var(--cg-radius-control);
   background: var(--cg-surface);
   cursor: pointer;
-  &.is-selected { border-width: 3px; border-color: var(--cg-action); background: var(--brand-soft); }
+  transition: transform var(--cg-dur) var(--ease), background var(--cg-dur-sheet) var(--ease);
+  &[data-value='1'] { --mood-tint: var(--cg-mood-1-tint); --mood-ink: var(--cg-mood-1-ink); }
+  &[data-value='2'] { --mood-tint: var(--cg-mood-2-tint); --mood-ink: var(--cg-mood-2-ink); }
+  &[data-value='3'] { --mood-tint: var(--cg-mood-3-tint); --mood-ink: var(--cg-mood-3-ink); }
+  &[data-value='4'] { --mood-tint: var(--cg-mood-4-tint); --mood-ink: var(--cg-mood-4-ink); }
+  &[data-value='5'] { --mood-tint: var(--cg-mood-5-tint); --mood-ink: var(--cg-mood-5-ink); }
+  &:active { transform: scale(0.97); }
+  &.is-selected { border-width: 3px; border-color: var(--cg-action); background: var(--mood-tint); }
   &:has(.cg-mood__input:focus-visible) { outline: 3px solid var(--cg-focus); outline-offset: 3px; }
 }
 .cg-app .cg-mood__input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-.cg-app .cg-mood__face { position: relative; display: grid; place-items: center; color: var(--cg-heading); }
+.cg-app .cg-mood__face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--mood-tint);
+  color: var(--mood-ink);
+  transition: transform var(--cg-dur-sheet) var(--ease), background var(--cg-dur-sheet) var(--ease);
+  .icon { stroke-width: 1.7; }
+}
+.cg-app .cg-mood__option.is-selected .cg-mood__face { background: var(--cg-surface); transform: scale(1.12); }
 .cg-app .cg-mood__check { position: absolute; inset: auto -0.5rem -0.5rem auto; padding: 1px; border-radius: 50%; background: var(--cg-action); color: #fff; }
 .cg-app .cg-mood__label { font-size: var(--cg-fs-small); font-weight: var(--fw-semibold); }
-@container (min-width: 328px) {
+@container (min-width: 312px) {
   .cg-app[data-text='normal'] .cg-mood { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
   .cg-app[data-text='normal'] .cg-mood__option { flex-direction: column; justify-content: center; gap: 0.25rem; min-height: 4.75rem; padding: 0.5rem 0.25rem; text-align: center; }
   .cg-app[data-text='normal'] .cg-mood__label { font-size: 0.8125rem; line-height: 1.2; }
@@ -814,12 +1003,14 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas: 'icon text time' 'icon text action';
   align-items: center;
-  gap: 0.25rem 0.75rem;
+  gap: 0.25rem 0.875rem;
   min-height: 4.5rem;
-  padding: 0.75rem 1rem;
+  padding: 0.875rem 1rem;
   border: 1px solid var(--cg-border);
   border-radius: var(--cg-radius-card);
   background: var(--cg-surface);
+  box-shadow: var(--cg-shadow-1);
+  transition: background var(--cg-dur-sheet) var(--ease), border-color var(--cg-dur-sheet) var(--ease);
   &.is-given { background: var(--cg-ok-bg); border-color: var(--cg-ok-border); }
   &.is-late { border-color: var(--cg-late-border); }
   @include up(sm) {
@@ -827,8 +1018,22 @@
     grid-template-areas: 'icon text time action';
   }
 }
-.cg-app .cg-dose__icon { grid-area: icon; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--brand-soft); color: var(--cg-heading); }
-.cg-app .cg-dose.is-given .cg-dose__icon { background: var(--cg-surface); color: var(--cg-ok-icon); }
+.cg-app .cg-dose__icon { grid-area: icon; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%; background: var(--cg-acc-strong); color: var(--cg-acc-ink); transition: background var(--cg-dur-sheet) var(--ease); }
+.cg-app .cg-dose.is-given .cg-dose__icon { background: var(--cg-ok-icon); color: #ffffff; }
+// O check de "dado": o traço se desenha e o emblema "pula" quando a pessoa acaba de marcar (nunca ao abrir a tela).
+.cg-app .cg-dose__check {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.cg-app .cg-dose__icon.is-popping { animation: cg-pop 360ms var(--ease) backwards; }
+.cg-app .cg-dose__icon.is-popping .cg-dose__check path { animation: cg-draw 380ms var(--ease) 140ms backwards; }
 .cg-app .cg-dose__text { grid-area: text; display: grid; gap: 0.125rem; min-width: 0; }
 .cg-app .cg-dose__name { font-weight: var(--fw-semibold); overflow-wrap: anywhere; }
 .cg-app .cg-dose__dosage { color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
@@ -868,6 +1073,48 @@
 .cg-app .cg-plan-tag--cuida { background: var(--plan-cuida-bg); color: var(--plan-cuida-text); }
 .cg-app .cg-plan-tag--sustenta { background: var(--plan-sustenta-bg); color: var(--plan-sustenta-text); }
 
+.cg-app .cg-trend-host { display: grid; gap: 1rem; }
+// A trilha: um ponto por conversa, na rampa de UMA cor, ligados por um fio. Só desenho, sem número.
+.cg-app .cg-trend__trail {
+  --gap: clamp(1rem, 6vw, 2.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  margin: 0;
+  padding: 0.75rem 1.25rem;
+  list-style: none;
+  border-radius: var(--cg-radius-pill);
+  background: linear-gradient(120deg, var(--cg-care-bg), var(--cg-surface));
+  box-shadow: inset 0 0 0 1px var(--cg-care-border);
+}
+.cg-app .cg-trend__trail-dot {
+  position: relative;
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border: 2px solid var(--cg-border-control);
+  border-radius: 50%;
+  background: var(--cg-band-1);
+  animation: cg-pop 320ms var(--ease) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+  &[data-band='2'] { background: var(--cg-band-2); }
+  &[data-band='3'] { background: var(--cg-band-3); }
+  &[data-band='4'] { background: var(--cg-band-4); }
+  &.is-latest { box-shadow: 0 0 0 3px var(--cg-surface), 0 0 0 6px var(--cg-action); }
+}
+.cg-app .cg-trend__trail-dot + .cg-trend__trail-dot { margin-inline-start: var(--gap); }
+.cg-app .cg-trend__trail-dot + .cg-trend__trail-dot::before {
+  content: '';
+  position: absolute;
+  inset-block-start: calc(50% - 1px);
+  inset-inline-end: calc(100% + 2px);
+  inline-size: calc(var(--gap) - 4px);
+  block-size: 2px;
+  border-radius: 1px;
+  background: var(--cg-care-border);
+}
 .cg-app .cg-trend { position: relative; margin: 0; padding: 0; list-style: none; display: grid; gap: 1rem; }
 .cg-app .cg-trend::before { content: ''; position: absolute; inset: 0.5rem auto 0.5rem 0.4375rem; width: 2px; background: var(--cg-border-control); }
 .cg-app .cg-trend__item {

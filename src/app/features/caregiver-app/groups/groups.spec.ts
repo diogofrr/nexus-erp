@@ -425,4 +425,34 @@ describe('Área groups (Grupos e capacitações)', () => {
     await click(app, openSheet(app)?.querySelector('[data-role="confirm-join"]'));
     expect(sheetText(app)).toContain('Marque que você leu o contrato de sigilo para entrar.');
   });
+
+  it('cada tipo de atividade tem a sua cor e o seu ícone (grupo de apoio, capacitação, roda aberta, grupo com psicólogo)', async () => {
+    const app = await bootCaregiverApp('cg_0001', { url: URL });
+    const tones = new Map<string, string>();
+    for (const card of Array.from(app.root.querySelectorAll<HTMLElement>('[data-role="activity"]'))) {
+      const kind = card.querySelector('app-cg-seal')?.textContent?.trim() ?? '';
+      const emblem = card.querySelector('.nx-kind')?.className ?? '';
+      tones.set(kind, /nx-kind--(\w+)/.exec(emblem)?.[1] ?? '');
+      expect(card.querySelector('.nx-kind')?.getAttribute('aria-hidden')).toBe('true');
+    }
+    if (tones.has('Grupo de apoio')) {
+      expect(tones.get('Grupo de apoio')).toBe('care');
+    }
+    if (tones.has('Roda de conversa aberta')) {
+      expect(tones.get('Roda de conversa aberta')).toBe('ok');
+    }
+    if (tones.has('Grupo com psicólogo')) {
+      expect(tones.get('Grupo com psicólogo')).toBe('accent');
+    }
+    expect(new Set(tones.values()).size).toBeGreaterThan(1);
+  });
+
+  it('o detalhe tem ícone em cada fato (encontros, onde, quem conduz, vagas) e o nome do tipo escrito', async () => {
+    const app = await bootCaregiverApp('cg_0001', { url: `${URL}?atividade=act_0008` });
+    const labels = Array.from(app.root.querySelectorAll('main dl .nx-fact dt')).map((dt) => dt.textContent?.trim());
+    expect(labels).toEqual(['Encontros', 'Onde', 'Quem conduz', 'Vagas']);
+    expect(app.root.querySelectorAll('main dl .nx-fact__icon svg').length).toBe(4);
+    expect(app.root.querySelector('[data-role="kind"]')?.textContent?.trim()).toBe('Grupo de apoio');
+  });
+
 });

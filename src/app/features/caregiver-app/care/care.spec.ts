@@ -523,4 +523,23 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(shortName('Rafael Moreira')).toBe('Rafael');
     });
   });
+
+  describe('vida do atendimento (V2)', () => {
+    it('a próxima conversa tem o bloco de data (mês curto e dia) e os passos mostram "Passo 1 de 2" e "Passo 2 de 2"', async () => {
+      const app = await bootCaregiverApp('cg_0001', { url: '/cuidador/cuidar-de-mim/atendimento' });
+      const tile = app.root.querySelector('[data-role="next-conversation"] .conv__date') as HTMLElement | null;
+      expect(tile?.getAttribute('aria-hidden')).toBe('true');
+      expect(tile?.querySelector('.conv__mon')?.textContent?.trim()).toMatch(/^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)$/);
+      expect(tile?.querySelector('.conv__dom')?.textContent?.trim()).toMatch(/^\d{2}$/);
+      (app.root.querySelector('[data-role="start-booking"]') as HTMLElement).click();
+      await settleCaregiver(app.fixture);
+      expect(app.root.querySelector('.conv__count')?.textContent?.trim()).toBe('Passo 1 de 2');
+      expect(app.root.querySelectorAll('main h1').length).toBe(1);
+      (app.root.querySelector('[data-role="formats"] .cg-row') as HTMLElement).click();
+      await settleCaregiver(app.fixture);
+      expect(app.root.querySelector('.conv__count')?.textContent?.trim()).toBe('Passo 2 de 2');
+      expect(app.root.querySelectorAll('main h1').length).toBe(1);
+    });
+  });
+
 });

@@ -8,7 +8,7 @@ const URL = '/cuidador/cuidar-de-mim/conteudos';
 function titles(app: BootedCaregiverApp, section: string): string[] {
   const heading = Array.from(app.root.querySelectorAll('main h2')).find((h) => h.textContent?.trim() === section);
   const list = heading?.parentElement?.querySelector('ul');
-  return Array.from(list?.querySelectorAll('.cg-row__title') ?? []).map((t) => t.textContent?.trim() ?? '');
+  return Array.from(list?.querySelectorAll('.nx-read__title') ?? []).map((t) => t.textContent?.trim() ?? '');
 }
 
 async function click(app: BootedCaregiverApp, element: Element | null | undefined): Promise<void> {
@@ -49,7 +49,7 @@ describe('Área content (Conteúdos)', () => {
       'Pausas curtas para quem cuida',
       'Como organizar os medicamentos da semana',
     ]);
-    const descriptions = Array.from(app.root.querySelectorAll('.cg-row__desc')).map((d) => d.textContent?.trim());
+    const descriptions = Array.from(app.root.querySelectorAll('.nx-read__time')).map((d) => d.textContent?.trim());
     expect(descriptions.every((d) => /^Leitura de \d+ minutos?$/.test(d ?? ''))).toBe(true);
     // Em revisão e rascunho nunca aparecem.
     const text = app.root.textContent ?? '';
@@ -86,7 +86,7 @@ describe('Área content (Conteúdos)', () => {
 
   it('abre a leitura em folha de tela cheia com ?conteudo=, com tempo, parágrafos, aviso e Voltar (AC-CG-111, S-21)', async () => {
     const app = await bootCaregiverApp('cg_0002', { url: URL });
-    const row = Array.from(app.root.querySelectorAll('button.cg-row')).find((b) => b.textContent?.includes('Pausas curtas para quem cuida'));
+    const row = Array.from(app.root.querySelectorAll('button.nx-read')).find((b) => b.textContent?.includes('Pausas curtas para quem cuida'));
     await click(app, row);
     expect(app.router.url).toBe(`${URL}?conteudo=gdc_0002`);
     expect(app.root.querySelectorAll('main h1').length).toBe(1);
@@ -98,13 +98,13 @@ describe('Área content (Conteúdos)', () => {
       'Este conteúdo orienta e não substitui o médico, o psicólogo ou outro profissional. Dúvida sobre remédio: fale com o médico ou a farmácia.',
     );
     // Nada de lista junto da leitura, o foco foi ao título e "Voltar" leva de volta à lista.
-    expect(app.root.querySelector('.cg-list')).toBeNull();
+    expect(app.root.querySelector('.nx-reads')).toBeNull();
     expect(document.activeElement?.tagName).toBe('H1');
     const back = Array.from(app.root.querySelectorAll('.cg-action-bar a')).find((a) => a.textContent?.trim() === 'Voltar');
     await click(app, back);
     expect(app.router.url).toBe(URL);
     expect(app.root.querySelector('main h1')?.textContent?.trim()).toBe('Conteúdos');
-    expect(app.root.querySelectorAll('.cg-list').length).toBeGreaterThan(0);
+    expect(app.root.querySelectorAll('.nx-reads').length).toBeGreaterThan(0);
   });
 
   it('a leitura do conteúdo exclusivo abre para quem tem o plano e não existe para o Livre (sem revelar o título)', async () => {

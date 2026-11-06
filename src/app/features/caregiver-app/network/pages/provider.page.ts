@@ -4,8 +4,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ServiceRequest } from '../../../../core/models';
 import { CaregiverNetworkService } from '../../../../core/network/caregiver-network.service';
-import { BadgeComponent } from '../../../../shared/ui/display/badge.component';
-import { EmptyStateComponent } from '../../../../shared/ui/display/empty-state.component';
 import { IconComponent } from '../../../../shared/ui/display/icon.component';
 import { FormFieldComponent } from '../../../../shared/ui/forms/form-field.component';
 import { NxInputDirective } from '../../../../shared/ui/forms/input.directive';
@@ -15,8 +13,11 @@ import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { ContactDialogService } from '../../state/contact-dialog.service';
 import { COPY_NUMBER_FAILED, NUMBER_COPIED } from '../../state/copy-feedback';
 import { CgChoice, CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
+import { CgEmptyComponent } from '../../ui/cg-empty.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
+import { CgIconBadgeComponent } from '../../ui/cg-icon-badge.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
+import { CgSealComponent } from '../../ui/cg-seal.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import {
   CONDITIONS_FROM_ESSENCIAL,
@@ -24,6 +25,8 @@ import {
   REQUEST_SUMMARY,
   ratingText,
 } from '../state/network-copy';
+import { ProviderAvatarComponent } from '../ui/provider-avatar.component';
+import { StarsComponent } from '../ui/stars.component';
 
 type Modality = ServiceRequest['modality'];
 
@@ -42,25 +45,61 @@ const SENT_MESSAGE = 'Pedido enviado. A equipe avisa você quando o profissional
   selector: 'app-cg-provider-page',
   imports: [
     RouterLink,
-    BadgeComponent,
-    EmptyStateComponent,
     IconComponent,
     FormFieldComponent,
     NxInputDirective,
     CgChoiceGroupComponent,
+    CgEmptyComponent,
+    CgHeroComponent,
+    CgIconBadgeComponent,
     CgNoteComponent,
-    CgPageHeaderComponent,
+    CgSealComponent,
     CgSheetComponent,
+    ProviderAvatarComponent,
+    StarsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
       .nx-phone { font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; user-select: all; }
+      .nx-who { display: flex; align-items: center; gap: 1rem; margin-top: 0.75rem; }
+      .nx-who__text { display: grid; gap: 0.375rem; min-inline-size: 0; }
+      .nx-who__text p { margin: 0; }
+      .nx-who__spec { font-size: var(--cg-fs-lead); font-weight: var(--fw-semibold); color: var(--cg-heading); overflow-wrap: anywhere; }
+      .nx-rate { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.5rem; }
+      .nx-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+      .nx-head .cg-section__title { margin: 0; }
+      .nx-phonebox { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-card); background: var(--cg-surface); }
+      .nx-phonebox p { margin: 0; }
     `,
   ],
   template: `
     @if (provider(); as p) {
-      <app-cg-page-header [title]="p.name" backLink="/cuidador/rede/buscar" backLabel="Buscar" />
+      <app-cg-hero [title]="p.name" backLink="/cuidador/rede/buscar" backLabel="Buscar">
+        <div class="nx-who">
+          <app-cg-provider-avatar [name]="p.name" size="xl" />
+          <div class="nx-who__text">
+            <p class="nx-who__spec" data-role="specialty">{{ p.specialtyLabel }} · {{ p.city }}</p>
+            @if (p.homeCare || p.highlight) {
+              <p class="cg-tags">
+                @if (p.highlight) {
+                  <app-cg-seal tone="gold" icon="award">Em destaque</app-cg-seal>
+                }
+                @if (p.homeCare) {
+                  <app-cg-seal tone="care" icon="house">Atende em casa</app-cg-seal>
+                }
+              </p>
+            }
+            <p class="nx-rate" data-role="rating">
+              <app-cg-stars [value]="p.average" />
+              <span>{{ rating(p) }}</span>
+            </p>
+            @if (p.councilLabel) {
+              <p class="cg-muted" data-role="council">Registro: {{ p.councilLabel }}</p>
+            }
+          </div>
+        </div>
+      </app-cg-hero>
       <div class="cg-stack">
         @if (sent()) {
           <app-cg-note variant="ok" data-role="sent">
@@ -69,28 +108,13 @@ const SENT_MESSAGE = 'Pedido enviado. A equipe avisa você quando o profissional
           </app-cg-note>
         }
 
-        <div class="cg-stack cg-stack--tight">
-          <p class="cg-muted" data-role="specialty">{{ p.specialtyLabel }} · {{ p.city }}</p>
-          @if (p.homeCare || p.highlight) {
-            <p class="cg-tags">
-              @if (p.highlight) {
-                <app-badge variant="success" icon="award">Em destaque</app-badge>
-              }
-              @if (p.homeCare) {
-                <app-badge variant="info" icon="house">Atende em casa</app-badge>
-              }
-            </p>
-          }
-          @if (p.councilLabel) {
-            <p class="cg-muted" data-role="council">Registro: {{ p.councilLabel }}</p>
-          }
-          <p data-role="rating">{{ rating(p) }}</p>
-        </div>
-
         <app-cg-note variant="info" data-role="notice">{{ notice }}</app-cg-note>
 
         <section aria-labelledby="provider-conditions">
-          <h2 class="cg-section__title" id="provider-conditions">Condições para quem é da Nexus</h2>
+          <div class="nx-head">
+            <app-cg-icon-badge icon="badge-check" />
+            <h2 class="cg-section__title" id="provider-conditions">Condições para quem é da Nexus</h2>
+          </div>
           <p data-role="conditions">{{ conditions() }}</p>
         </section>
 
@@ -113,10 +137,13 @@ const SENT_MESSAGE = 'Pedido enviado. A equipe avisa você quando o profissional
         }
 
         <section class="cg-stack cg-stack--tight" aria-label="Falar direto com o profissional">
-          <p data-role="phone-line">
-            Prefere falar direto com {{ p.name }}?
-            <span class="nx-phone" data-role="phone" #phoneEl>{{ p.phone }}</span>.
-          </p>
+          <div class="nx-phonebox">
+            <app-cg-icon-badge icon="phone" />
+            <p data-role="phone-line">
+              Prefere falar direto com {{ p.name }}?
+              <span class="nx-phone" data-role="phone" #phoneEl>{{ p.phone }}</span>.
+            </p>
+          </div>
           <div>
             <button type="button" class="cg-link-btn" data-role="copy-phone" (click)="copyPhone(p.phone)">
               <svg appIcon="copy" size="sm"></svg>Copiar número
@@ -149,10 +176,10 @@ const SENT_MESSAGE = 'Pedido enviado. A equipe avisa você quando o profissional
         </ng-container>
       </app-cg-sheet>
     } @else {
-      <app-cg-page-header title="Profissional" backLink="/cuidador/rede/buscar" backLabel="Buscar" />
-      <app-empty-state title="Não encontramos este profissional.">
+      <app-cg-hero title="Profissional" backLink="/cuidador/rede/buscar" backLabel="Buscar" />
+      <app-cg-empty illustration="network" [headingLevel]="2" title="Não encontramos este profissional.">
         <a class="btn" routerLink="/cuidador/rede/buscar">Voltar para a busca</a>
-      </app-empty-state>
+      </app-cg-empty>
     }
   `,
 })

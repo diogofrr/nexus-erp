@@ -52,7 +52,7 @@ describe('Área privacy (Privacidade e meus dados)', () => {
     expect(app.router.url).toBe('/cuidador/mais/privacidade');
     expect(text(q('main h1'))).toBe('Privacidade e meus dados');
     expect(document.title).toContain('Privacidade e meus dados');
-    expect(text(q('.cg-page-header__desc'))).toBe(
+    expect(text(q('.cg-hero__desc'))).toBe(
       'Você decide o que a Nexus pode fazer com os seus dados. Pode mudar quando quiser. O plano Livre continua em qualquer caso.',
     );
   });

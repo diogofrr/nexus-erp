@@ -5,7 +5,7 @@ import { SelfRequestType } from '@core/privacy/subject-rights.service';
 import { CheckboxComponent, IconComponent, IconName } from '@shared/ui';
 import { ToastService } from '@shared/ui/overlay';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
 import { CgRowComponent } from '../../ui/cg-row.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import {
@@ -46,7 +46,7 @@ const CONSENT_ICONS: Readonly<Record<ConsentKey, IconName>> = {
  */
 @Component({
   selector: 'app-privacy-page',
-  imports: [CgPageHeaderComponent, CgRowComponent, CgSheetComponent, CgNoteComponent, CheckboxComponent, IconComponent],
+  imports: [CgHeroComponent, CgRowComponent, CgSheetComponent, CgNoteComponent, CheckboxComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
@@ -75,9 +75,10 @@ const CONSENT_ICONS: Readonly<Record<ConsentKey, IconName>> = {
     `,
   ],
   template: `
-    <app-cg-page-header
+    <app-cg-hero
       title="Privacidade e meus dados"
       description="Você decide o que a Nexus pode fazer com os seus dados. Pode mudar quando quiser. O plano Livre continua em qualquer caso."
+      illustration="privacy"
       backLink="/cuidador/mais"
       backLabel="Mais"
     />

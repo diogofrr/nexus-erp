@@ -41,6 +41,7 @@ export const CG_NAV_ITEMS: readonly CgNavItem[] = [
           <li class="cg-nav__li">
             <a
               class="cg-nav__link"
+              [attr.data-sec]="item.id"
               [routerLink]="item.path"
               routerLinkActive="is-current"
               ariaCurrentWhenActive="page"

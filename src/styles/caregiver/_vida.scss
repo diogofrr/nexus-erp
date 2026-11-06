@@ -1,0 +1,464 @@
+// =============================================================================
+// Vida visual do aplicativo do cuidador (docs/17-vida-kit.md e docs/17-vida-v1.md).
+// O que é NOVO: ilustração, emblema de ícone, anel de progresso, herói, estado vazio com desenho, selo, ladrilhos de
+// porta, número em serifa, movimento de entrada e a vida da Entrada. As tintas por seção (`--cg-acc-*`, `--cg-sec-*`)
+// vivem em `_caregiver.scss`. Vida é cor, desenho, hierarquia e movimento suave: NÃO é mais texto nem mais cartões.
+// Tudo o que se move para com `prefers-reduced-motion` (bloco no fim).
+// =============================================================================
+@use '../tokens' as *;
+
+// ---------------------------------------------------------------------------
+// Movimento (200 a 350 ms, saída exponencial). Cada animação tem o seu quadro-chave; o fim do arquivo as desliga.
+// ---------------------------------------------------------------------------
+@keyframes cg-rise {
+  from { opacity: 0; transform: translateY(0.75rem); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cg-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes cg-pop {
+  0% { opacity: 0; transform: scale(0.55); }
+  60% { opacity: 1; transform: scale(1.14); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes cg-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes cg-ring-fill {
+  from { stroke-dashoffset: var(--cg-ring-circ, 264); }
+}
+@keyframes cg-glow {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+
+// Os blocos de uma tela sobem e aparecem um depois do outro (cada filho direto da página, até o 8º). A tela de "Ajuda agora"
+// fica parada (`.cg-still`): "sem animação" é regra dela.
+.cg-app .cg-col > :not(.cg-still) > * {
+  animation: cg-rise 320ms var(--ease) backwards;
+  &:nth-child(2) { animation-delay: 50ms; }
+  &:nth-child(3) { animation-delay: 100ms; }
+  &:nth-child(4) { animation-delay: 150ms; }
+  &:nth-child(5) { animation-delay: 200ms; }
+  &:nth-child(6) { animation-delay: 240ms; }
+  &:nth-child(n + 7) { animation-delay: 280ms; }
+}
+// A mesma ideia para uma lista: `cg-enter` no pai escalona os filhos diretos.
+.cg-app .cg-enter > * {
+  animation: cg-rise 300ms var(--ease) backwards;
+  &:nth-child(2) { animation-delay: 45ms; }
+  &:nth-child(3) { animation-delay: 90ms; }
+  &:nth-child(4) { animation-delay: 135ms; }
+  &:nth-child(5) { animation-delay: 180ms; }
+  &:nth-child(n + 6) { animation-delay: 220ms; }
+}
+
+// ---------------------------------------------------------------------------
+// Ilustração (app-cg-illustration): traço único e arredondado, azul e dourado, no desenho do símbolo da marca.
+// ---------------------------------------------------------------------------
+.cg-ill {
+  --ill-line: var(--nx-blue-700);
+  --ill-gold: var(--nx-gold-500);
+  --ill-tint: var(--nx-blue-100);
+  --ill-tint-2: var(--nx-gold-100);
+  --ill-paper: #fff;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 6.5rem;
+  line-height: 0;
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    fill: none;
+    stroke: var(--ill-line);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .t1 { fill: var(--ill-tint); stroke: none; }
+  .t2 { fill: var(--ill-tint-2); stroke: none; }
+  .pp { fill: var(--ill-paper); }
+  .gd { stroke: var(--ill-gold); }
+  .gf, .gf * { fill: var(--ill-gold); stroke: none; }
+  .lf { fill: var(--ill-line); stroke: none; }
+  .dots, .dots * { fill: var(--ill-line); stroke: none; opacity: 0.3; }
+  .thin { stroke-width: 1.6; }
+  .dotted { stroke-dasharray: 0.1 5.2; stroke-width: 2.6; }
+  .dashed { stroke-dasharray: 3 4; }
+  .stripe { stroke: var(--ill-gold); stroke-width: 10; stroke-linecap: butt; }
+  .cg-ill__hands { stroke-width: 3.9; }
+  .cg-ill__hands.mini { stroke-width: 12; }
+  .cg-ill__shake { stroke-width: 1.3; }
+  .g1 { opacity: 0.9; }
+  .g2 { opacity: 0.6; }
+  .g3 { opacity: 0.35; }
+}
+.cg-ill--sm { width: 4rem; }
+.cg-ill--md { width: 6.5rem; }
+.cg-ill--lg { width: 9.5rem; }
+.cg-ill--xl { width: 15rem; }
+.cg-ill--fill { width: 100%; }
+// A seção corrente tinge o desenho (linha na tinta, preenchimentos nas tintas calmas).
+.cg-ill--accent {
+  --ill-line: var(--cg-acc-ink);
+  --ill-tint: var(--cg-acc-strong);
+  --ill-tint-2: var(--cg-acc-tint);
+}
+// Sobre o azul institucional da Entrada.
+.cg-ill--light {
+  --ill-line: #ffffff;
+  --ill-gold: var(--nx-gold-300);
+  --ill-tint: rgb(255 255 255 / 0.12);
+  --ill-tint-2: rgb(227 193 94 / 0.22);
+  --ill-paper: rgb(255 255 255 / 0.06);
+}
+
+// ---------------------------------------------------------------------------
+// Emblema de ícone (app-cg-icon-badge)
+// ---------------------------------------------------------------------------
+.cg-badge {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--cg-acc-strong);
+  color: var(--cg-acc-ink);
+  .icon { stroke-width: 1.9; }
+}
+.cg-badge--sm { width: 2rem; height: 2rem; }
+.cg-badge--md { width: 2.75rem; height: 2.75rem; }
+.cg-badge--lg { width: 3.5rem; height: 3.5rem; }
+.cg-badge--xl { width: 4.5rem; height: 4.5rem; }
+.cg-badge--solid { background: var(--cg-acc-solid); color: #ffffff; }
+
+// ---------------------------------------------------------------------------
+// Anel de progresso (app-cg-progress-ring)
+// ---------------------------------------------------------------------------
+.cg-ring {
+  position: relative;
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 6.5rem;
+  height: 6.5rem;
+  color: var(--cg-acc-ink);
+  svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+}
+.cg-ring--sm { width: 3.5rem; height: 3.5rem; }
+.cg-ring--md { width: 4.75rem; height: 4.75rem; }
+.cg-ring--lg { width: 6.5rem; height: 6.5rem; }
+.cg-ring__track { fill: none; stroke: var(--cg-acc-strong); stroke-width: 9; }
+.cg-ring__bar {
+  fill: none;
+  stroke: var(--cg-acc-solid);
+  stroke-width: 9;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 600ms var(--ease), stroke 200ms var(--ease);
+  animation: cg-ring-fill 900ms var(--ease) 150ms both;
+}
+.cg-ring.is-done .cg-ring__bar { stroke: var(--cg-ok-icon); }
+.cg-ring__center { position: relative; display: grid; justify-items: center; line-height: 1; text-align: center; }
+.cg-ring__value {
+  font-family: var(--font-serif);
+  font-size: calc(2.25rem * min(var(--cg-zoom, 1), 1.15));
+  font-variant-numeric: tabular-nums;
+  color: var(--cg-acc-ink);
+}
+.cg-ring__of { margin-top: 0.125rem; color: var(--cg-text-soft); font-size: calc(0.8125rem * min(var(--cg-zoom, 1), 1.15)); font-weight: var(--fw-semibold); }
+.cg-ring--md .cg-ring__value { font-size: calc(1.75rem * min(var(--cg-zoom, 1), 1.15)); }
+.cg-ring--sm .cg-ring__value { font-size: calc(1.375rem * min(var(--cg-zoom, 1), 1.15)); }
+.cg-ring--sm .cg-ring__of { display: none; }
+
+// ---------------------------------------------------------------------------
+// Herói (app-cg-hero): o cabeçalho da página com cor, ilustração e a linha dourada
+// ---------------------------------------------------------------------------
+.cg-app .cg-hero {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  margin: 1rem 0 var(--cg-gap-block);
+  padding: 1.25rem var(--cg-pad-card);
+  border: 1px solid var(--cg-acc-strong);
+  border-radius: 1.5rem;
+  background: linear-gradient(125deg, var(--cg-acc-tint) 0%, var(--cg-acc-strong) 150%);
+  box-shadow: var(--cg-shadow-1);
+  overflow: hidden;
+  // Um clarão suave no canto: dá profundidade sem desenho.
+  &::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: -40% -10% auto auto;
+    width: 22rem;
+    height: 22rem;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(255 255 255 / 0.75) 0%, rgb(255 255 255 / 0) 68%);
+    animation: cg-glow 600ms var(--ease) both;
+  }
+  @include up(md) { padding: 1.75rem 2rem; }
+  @include up(lg) { padding: 2rem 2.5rem; }
+}
+.cg-app .cg-hero__main { display: grid; gap: 0.25rem; align-content: center; min-width: 0; }
+.cg-app .cg-hero__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: calc(2rem * var(--cg-zoom));
+  line-height: 1.12;
+  color: var(--cg-acc-ink);
+  @include up(lg) { font-size: calc(2.75rem * var(--cg-zoom)); }
+  &::after { content: ''; display: block; width: 3.5rem; height: 3px; margin-top: 0.625rem; border-radius: 2px; background: var(--cg-gold-line); }
+}
+.cg-app .cg-hero__desc { margin: 0.5rem 0 0; color: var(--cg-text); font-size: var(--cg-fs-lead); }
+.cg-app .cg-hero__extra { margin-top: 1rem; &:empty { display: none; } }
+.cg-app .cg-hero .cg-page-header__back { justify-self: start; margin-inline-start: -0.5rem; color: var(--cg-acc-ink); }
+// Com ilustração: no celular o desenho fica no canto e o texto respeita o espaço dele; de 768 px em diante vira uma coluna.
+.cg-app .cg-hero--art {
+  .cg-hero__main { padding-inline-end: 4.75rem; }
+  .cg-hero__art { position: absolute; inset: auto 0.75rem 0.5rem auto; width: 5.5rem; z-index: -1; opacity: 0.95; animation: cg-fade 500ms var(--ease) 120ms both; }
+  @include up(md) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1.5rem;
+    .cg-hero__main { padding-inline-end: 0; }
+    .cg-hero__art { position: static; width: 10rem; z-index: auto; margin-block: -0.5rem; }
+  }
+  @include up(lg) { .cg-hero__art { width: 13rem; } }
+}
+// Compacto (sem frase de apoio): menos altura, o título um pouco menor.
+.cg-app .cg-hero--compact {
+  padding-block: 0.875rem;
+  @include up(md) { padding-block: 1rem; }
+  .cg-hero__title { font-size: calc(1.75rem * var(--cg-zoom)); @include up(lg) { font-size: calc(2.25rem * var(--cg-zoom)); } }
+  &.cg-hero--art .cg-hero__art { width: 4.75rem; @include up(md) { width: 7rem; margin-block: -0.25rem; } @include up(lg) { width: 8.5rem; } }
+}
+.cg-app[data-text='xlarge'] .cg-hero--art { @include down(md) { .cg-hero__art { display: none; } .cg-hero__main { padding-inline-end: 0; } } }
+
+// ---------------------------------------------------------------------------
+// Cores dos planos (Figura 1): `.cg-tone--livre|essencial|cuida|sustenta`. Cada uma define a cor (`--tone`), o texto sobre ela
+// (`--tone-on`, 4,5:1 ou mais), o fundo claro e o texto escuro do mesmo plano (`--tone-soft`, `--tone-text`), a linha
+// (`--tone-line`) e o fim do degradê (`--tone-2`). Valem em qualquer lugar (Meu plano, Cartão, Hoje).
+// ---------------------------------------------------------------------------
+.cg-tone--livre { --tone: var(--plan-livre); --tone-line: var(--plan-livre); --tone-2: color-mix(in srgb, var(--plan-livre), #ffffff 22%); --tone-on: var(--nx-slate-950); --tone-soft: var(--plan-livre-bg); --tone-text: var(--plan-livre-text); }
+.cg-tone--essencial { --tone: var(--plan-essencial); --tone-line: var(--plan-essencial); --tone-2: color-mix(in srgb, var(--plan-essencial), #ffffff 22%); --tone-on: var(--nx-blue-950); --tone-soft: var(--plan-essencial-bg); --tone-text: var(--plan-essencial-text); }
+.cg-tone--cuida { --tone: var(--plan-cuida); --tone-line: var(--plan-cuida); --tone-2: color-mix(in srgb, var(--plan-cuida), var(--nx-blue-900) 30%); --tone-on: var(--nx-slate-0); --tone-soft: var(--plan-cuida-bg); --tone-text: var(--plan-cuida-text); }
+.cg-tone--sustenta { --tone: var(--plan-sustenta); --tone-line: var(--nx-gold-600); --tone-2: color-mix(in srgb, var(--plan-sustenta), #ffffff 22%); --tone-on: var(--nx-slate-950); --tone-soft: var(--plan-sustenta-bg); --tone-text: var(--plan-sustenta-text); }
+
+// ---------------------------------------------------------------------------
+// Estado vazio com desenho (app-cg-empty)
+// ---------------------------------------------------------------------------
+.cg-app .cg-empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem 2rem;
+  border: 1px solid var(--cg-acc-strong);
+  border-radius: var(--cg-radius-card);
+  background: linear-gradient(180deg, var(--cg-acc-tint), transparent 90%);
+  text-align: center;
+  .empty__title { margin: 0; font-size: var(--cg-fs-h2); color: var(--cg-acc-ink); }
+  .empty__text { margin: 0; color: var(--cg-text); font-size: var(--cg-fs-body); }
+  .empty__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin-top: 0.75rem; &:empty { display: none; } }
+}
+.cg-app .cg-empty__art { margin-bottom: 0.25rem; }
+.cg-app[data-text='xlarge'] .cg-empty__art { display: none; }
+
+// ---------------------------------------------------------------------------
+// Selo (app-cg-seal): pílula com forma e cor
+// ---------------------------------------------------------------------------
+.cg-seal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 1.75rem;
+  padding: 0.125rem 0.75rem;
+  border-radius: var(--cg-radius-pill);
+  background: var(--cg-acc-strong);
+  color: var(--cg-acc-ink);
+  font-size: var(--cg-fs-caption);
+  font-weight: var(--fw-semibold);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.cg-seal--ok { background: var(--cg-ok-bg); color: var(--cg-ok-fg); }
+.cg-seal--care { background: var(--cg-care-bg); color: var(--cg-care-fg); }
+.cg-seal--gold { background: var(--nx-gold-100); color: var(--nx-gold-800); }
+.cg-seal--neutral { background: var(--cg-soft-bg); color: var(--cg-soft-fg); }
+
+// ---------------------------------------------------------------------------
+// Ladrilhos de porta: os cartões da porta de uma seção (Cuidar de mim, Rede)
+// ---------------------------------------------------------------------------
+.cg-app .cg-tiles {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  @include up(md) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+}
+.cg-app .cg-tiles--3 { @include up(lg) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cg-app .cg-tiles--4 { @include up(xl) { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+// Cartões da mesma linha com a mesma altura (a grade estica o hospedeiro; o cartão enche ele).
+.cg-app .cg-equal > .cg-card-host,
+.cg-app .cg-tiles > .cg-card-host { display: flex; > .cg-card { flex: 1; min-width: 0; } }
+.cg-app .cg-equal > .cg-card-host > .cg-card--tile { flex: 1; }
+
+// Painel simples: o cartão branco que agrupa um bloco (tamanho da letra, por exemplo).
+.cg-app .cg-panel {
+  padding: var(--cg-pad-card);
+  border: 1px solid var(--cg-border);
+  border-radius: var(--cg-radius-card);
+  background: var(--cg-surface);
+  box-shadow: var(--cg-shadow-1);
+  > .cg-section__title { margin-top: 0; }
+}
+
+// Quem é a pessoa (Mais): o avatar com as iniciais em serifa, o nome e o plano.
+.cg-app .cg-who { margin: 0; gap: 0.75rem 1rem; }
+.cg-app .cg-hero .cg-who { margin: 0.25rem 0 0; }
+.cg-app .cg-who__avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: var(--cg-surface);
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.6), var(--cg-shadow-1);
+  color: var(--cg-acc-ink);
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+// ---------------------------------------------------------------------------
+// Números e horas em serifa (destaque calmo)
+// ---------------------------------------------------------------------------
+.cg-app .cg-bignum {
+  font-family: var(--font-serif);
+  font-size: calc(2.5rem * min(var(--cg-zoom), 1.15));
+  font-weight: 400;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--cg-acc-ink);
+}
+.cg-app .cg-bignum--sm { font-size: calc(1.75rem * min(var(--cg-zoom), 1.15)); }
+
+// Linha de seção: o título à esquerda e um detalhe (anel, selo) à direita.
+.cg-app .cg-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+  > h2 { margin: 0; }
+}
+
+// ---------------------------------------------------------------------------
+// Entrada (/login): a vida do painel azul e das pessoas de exemplo
+// ---------------------------------------------------------------------------
+.login .login__brand {
+  background:
+    radial-gradient(120% 70% at 85% 8%, rgb(227 193 94 / 0.16) 0%, rgb(227 193 94 / 0) 55%),
+    linear-gradient(165deg, var(--nx-blue-900) 0%, var(--nx-blue-950) 100%);
+}
+.login__scene {
+  display: none;
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 26rem);
+  animation: cg-fade 700ms var(--ease) 100ms both;
+  @include up(lg) { display: block; }
+}
+.login__mini-art {
+  position: absolute;
+  inset: 50% 1.25rem auto auto;
+  width: 5.5rem;
+  transform: translateY(-50%);
+  opacity: 0.9;
+  @include up(lg) { display: none; }
+}
+.login .login__tagline { @include up(lg) { font-size: var(--fs-4xl); max-width: 16ch; } }
+
+.cg-door { box-shadow: var(--cg-shadow-2); border-color: var(--nx-blue-600); border-radius: 1.5rem; position: relative; overflow: hidden; }
+.cg-door:not(.cg-door--staff)::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 0.5rem;
+  background: linear-gradient(90deg, var(--nx-blue-600), var(--nx-blue-300) 60%, var(--nx-gold-300));
+}
+.cg-door:not(.cg-door--staff) { padding-top: 1.75rem; }
+.cg-door__person {
+  position: relative;
+  border-radius: 1rem;
+  box-shadow: var(--cg-shadow-1);
+  transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease), box-shadow var(--dur-2) var(--ease);
+  &:hover { box-shadow: var(--cg-shadow-2); transform: translateY(-1px); }
+  &:active { transform: scale(0.985); }
+  .avatar {
+    width: 3.5rem;
+    height: 3.5rem;
+    flex-shrink: 0;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--cg-border-subtle), var(--cg-shadow-1);
+    background: var(--cg-mood-2-tint);
+    color: var(--cg-mood-2-ink);
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    &[data-tone='1'] { background: var(--cg-mood-1-tint); color: var(--cg-mood-1-ink); }
+    &[data-tone='2'] { background: var(--cg-mood-2-tint); color: var(--cg-mood-2-ink); }
+    &[data-tone='3'] { background: var(--cg-mood-3-tint); color: var(--cg-mood-3-ink); }
+    &[data-tone='4'] { background: var(--cg-mood-4-tint); color: var(--cg-mood-4-ink); }
+    &[data-tone='5'] { background: var(--cg-mood-5-tint); color: var(--cg-mood-5-ink); }
+  }
+}
+.cg-door__list > li { display: grid; }
+.cg-door__list > li > .cg-door__person { height: 100%; }
+.login__panel .cg-door__list > li { animation: cg-rise 320ms var(--ease) backwards; }
+.login__panel .cg-door__list > li:nth-child(2) { animation-delay: 50ms; }
+.login__panel .cg-door__list > li:nth-child(3) { animation-delay: 100ms; }
+.login__panel .cg-door__list > li:nth-child(4) { animation-delay: 150ms; }
+.login__panel .cg-door__list > li:nth-child(5) { animation-delay: 200ms; }
+.login__panel .cg-door__list > li:nth-child(n + 6) { animation-delay: 240ms; }
+// Em tela larga o painel azul acompanha a rolagem (logo, desenho e lema sempre à vista) e, de 1440 px em diante, as pessoas
+// de exemplo ficam em duas colunas (aproveita a largura do painel sem espremer os nomes).
+@include up(lg) {
+  .login .login__brand { position: sticky; top: 0; align-self: start; height: 100vh; height: 100dvh; }
+}
+@include up(xxl) {
+  .login .login__panel { max-width: 56rem; }
+  .login .cg-door__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+// ---------------------------------------------------------------------------
+// Sem movimento para quem pede (prefers-reduced-motion): nenhuma animação nem transição do aplicativo roda.
+// ---------------------------------------------------------------------------
+@media (prefers-reduced-motion: reduce) {
+  .cg-app,
+  .cg-app *,
+  .cg-app *::before,
+  .cg-app *::after,
+  .cg-door,
+  .cg-door *,
+  .login,
+  .login *,
+  .login *::before,
+  .login *::after,
+  .cg-ill,
+  .cg-ill * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

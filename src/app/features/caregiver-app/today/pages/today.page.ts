@@ -19,21 +19,37 @@ import { OnlineStatusService } from '../../state/online-status.service';
 import { StorageStatusService, doseNotSavedText } from '../../state/storage-status.service';
 import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgDoseComponent } from '../../ui/cg-dose.component';
+import { CgEmptyComponent } from '../../ui/cg-empty.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
+import { CgIllustrationComponent } from '../../ui/cg-illustration.component';
 import { CgMoodComponent, MoodValue } from '../../ui/cg-mood.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
+import { CgProgressRingComponent } from '../../ui/cg-progress-ring.component';
 import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
 
 /**
- * Hoje (UX C4, `/cuidador/hoje`): o que importa hoje, sem painel. Ordem: saudação, nota de cuidado (só com contato
- * da equipe), próximo compromisso, remédios de hoje com "Dei" (o que falta primeiro), humor, "Para você" e "Falar com a
- * gente". Quem prefere telefone ou WhatsApp vê o cartão com o número logo depois da saudação (CXC-025).
+ * Hoje (UX C4, `/cuidador/hoje`): o que importa hoje, sem painel. Ordem: saudação (o herói azul-céu com o sol nascente),
+ * nota de cuidado (só com contato da equipe), próximo compromisso (a hora grande em serifa), remédios de hoje com
+ * "Dei" (o que falta primeiro; o anel mostra "2 de 4" sem escrever), humor, "Para você" e "Falar com a gente". Quem
+ * prefere telefone ou WhatsApp vê o cartão com o número logo depois da saudação (CXC-025).
  * Em 1024 px ou mais, duas colunas (compromisso e remédios; humor e convite). O plano nunca aparece aqui, e a tela
  * não lê pontuação nem faixa: o contato da equipe vem só de `staffContact` do contexto (P-03).
+ * Vida (docs/17-vida-v1.md): cada bloco leva a tinta da sua seção (remédios na sálvia, humor e convite na areia), sem
+ * acrescentar nenhum texto novo.
  */
 @Component({
   selector: 'app-today-page',
-  imports: [CgCardComponent, CgDoseComponent, CgMoodComponent, CgNoteComponent, CgPageHeaderComponent, RouterLink],
+  imports: [
+    CgCardComponent,
+    CgDoseComponent,
+    CgEmptyComponent,
+    CgHeroComponent,
+    CgIllustrationComponent,
+    CgMoodComponent,
+    CgNoteComponent,
+    CgProgressRingComponent,
+    RouterLink,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .today-cols,
@@ -48,25 +64,11 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
       .today-cols {
         grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
         align-items: start;
+        gap: 2rem;
       }
     }
     .today-block > h2 {
       margin: 0;
-    }
-    .today-head {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 0.25rem 1rem;
-    }
-    .today-head > h2 {
-      margin: 0;
-    }
-    .today-progress {
-      color: var(--cg-text-soft);
-      font-size: var(--cg-fs-small);
-      font-weight: var(--fw-semibold);
     }
     .today-support {
       color: var(--cg-text-soft);
@@ -82,20 +84,81 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
     .today-actions {
       display: flex;
       flex-wrap: wrap;
+      justify-content: center;
       gap: 0.5rem 1rem;
     }
-    .today-end {
-      display: grid;
-      gap: 0.25rem;
-      justify-items: start;
-      margin-top: 2rem;
+    .today-when {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 1rem;
     }
-    .today-end p {
+    .today-when__time {
+      display: grid;
+      justify-items: start;
+      gap: 0.25rem;
+      padding-inline-end: 1rem;
+      border-inline-end: 2px solid var(--cg-acc-strong);
+    }
+    .today-when__day {
+      color: var(--cg-acc-ink);
+      font-size: var(--cg-fs-small);
+      font-weight: var(--fw-semibold);
+    }
+    .today-when__what {
+      display: grid;
+      flex: 1 1 9rem;
+      gap: 0.125rem;
+      min-width: 0;
+      overflow-wrap: break-word;
+      font-weight: var(--fw-semibold);
+    }
+    .today-panel {
+      display: grid;
+      gap: 0.75rem;
+      padding: 1rem 0.75rem;
+      border: 1px solid var(--cg-acc-strong);
+      border-radius: var(--cg-radius-card);
+      background: linear-gradient(160deg, var(--cg-surface) 40%, var(--cg-acc-tint) 135%);
+      box-shadow: inset 0 3px 0 var(--cg-acc-strong), var(--cg-shadow-1);
+    }
+    .today-panel > h2 {
       margin: 0;
+      padding-inline: 0.25rem;
+    }
+    @media (min-width: 48rem) {
+      .today-panel {
+        padding: var(--cg-pad-card);
+      }
+      .today-panel > h2 {
+        padding-inline: 0;
+      }
+    }
+    .today-end {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding: 1rem var(--cg-pad-card);
+      border-radius: var(--cg-radius-card);
+      background: var(--cg-acc-tint);
+    }
+    .today-end__text {
+      display: grid;
+      gap: 0.125rem;
+      justify-items: start;
+    }
+    .today-end__text p {
+      margin: 0;
+    }
+    .today-end--card {
+      display: block;
+      padding: 0;
+      background: none;
     }
   `,
   template: `
-    <app-cg-page-header [title]="view.greeting()" [description]="view.dateLabel()" />
+    <app-cg-hero [title]="view.greeting()" [description]="view.dateLabel()" illustration="day" />
 
     <div class="cg-stack">
       @if (!online.online()) {
@@ -124,20 +187,27 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
       <div class="today-cols">
         <div class="today-main">
           @if (view.empty()) {
-            <app-cg-note variant="soft" icon="hourglass">
-              Ainda não há nada para hoje. Comece pelos remédios ou por um compromisso.
-              <span cgNoteActions class="today-actions">
-                <a class="btn" routerLink="/cuidador/rotina/remedios" [queryParams]="{ novo: 1 }">Cadastrar um remédio</a>
+            <app-cg-empty illustration="day" title="Ainda não há nada para hoje" text="Comece pelos remédios ou por um compromisso.">
+              <span class="today-actions">
+                <a class="btn btn--primary" routerLink="/cuidador/rotina/remedios" [queryParams]="{ novo: 1 }">Cadastrar um remédio</a>
                 <a class="btn" routerLink="/cuidador/rotina/agenda" [queryParams]="{ novo: 1 }">Adicionar compromisso</a>
               </span>
-            </app-cg-note>
+            </app-cg-empty>
           } @else {
             @if (view.next(); as next) {
               <app-cg-card title="Próximo compromisso" icon="calendar" link="/cuidador/rotina/agenda">
-                <span>{{ next.text }}</span>
-                @if (next.support; as support) {
-                  <span class="today-support">{{ support }}</span>
-                }
+                <span class="today-when">
+                  <span class="today-when__time">
+                    <span class="today-when__day">{{ next.day }}&ngsp;</span>
+                    <span class="cg-bignum">{{ next.time }}&ngsp;</span>
+                  </span>
+                  <span class="today-when__what">
+                    <span>{{ next.title }}</span>
+                    @if (next.support; as support) {
+                      <span class="today-support">{{ support }}</span>
+                    }
+                  </span>
+                </span>
               </app-cg-card>
             } @else {
               <app-cg-card title="Próximo compromisso" icon="calendar">
@@ -146,15 +216,17 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
               </app-cg-card>
             }
 
-            <section class="today-block cg-stack cg-stack--tight" aria-labelledby="today-meds-title">
-              <div class="today-head">
+            <section class="today-block cg-stack cg-stack--tight cg-sec--rotina" aria-labelledby="today-meds-title">
+              <div class="cg-section-head">
                 <h2 class="cg-section__title" id="today-meds-title">Remédios de hoje</h2>
                 @if (view.progress().total > 0) {
-                  <span class="today-progress">{{ view.progress().given }} de {{ view.progress().total }} dados</span>
+                  <span class="today-progress">
+                    <app-cg-progress-ring [value]="view.progress().given" [max]="view.progress().total" size="md" label="dados" />
+                  </span>
                 }
               </div>
               @if (view.slots().length > 0) {
-                <ul class="cg-plain-list">
+                <ul class="cg-plain-list cg-enter">
                   @for (slot of visibleSlots(); track slot.key) {
                     <li>
                       <app-cg-dose
@@ -184,7 +256,7 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
 
         <div class="today-side">
           @if (view.moodEnabled()) {
-            <section class="today-block cg-stack cg-stack--tight" aria-labelledby="today-mood-title">
+            <section class="today-block today-panel cg-sec--cuidar" aria-labelledby="today-mood-title">
               <h2 class="cg-section__title" id="today-mood-title">Como você está hoje?</h2>
               @if (view.todayMood() && !editingMood()) {
                 <app-cg-note variant="ok">
@@ -220,16 +292,16 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
           }
 
           @if (view.rate(); as rate) {
-            <section class="today-block cg-stack cg-stack--tight" aria-labelledby="today-foryou-title">
+            <section class="today-block cg-stack cg-stack--tight cg-sec--rede" aria-labelledby="today-foryou-title">
               <h2 class="cg-section__title" id="today-foryou-title">Para você</h2>
-              <app-cg-card [headingLevel]="3" [title]="'Como foi o atendimento de ' + rate.providerName + '?'">
+              <app-cg-card [headingLevel]="3" icon="star" [title]="'Como foi o atendimento de ' + rate.providerName + '?'">
                 <a cgCardFooter class="btn" routerLink="/cuidador/rede/pedidos" [queryParams]="{ avaliar: rate.requestId }">Avaliar</a>
               </app-cg-card>
             </section>
           } @else if (view.invite(); as invite) {
-            <section class="today-block cg-stack cg-stack--tight" aria-labelledby="today-foryou-title">
+            <section class="today-block cg-stack cg-stack--tight cg-sec--cuidar" aria-labelledby="today-foryou-title">
               <h2 class="cg-section__title" id="today-foryou-title">Para você</h2>
-              <app-cg-card [headingLevel]="3" [title]="invite.title">
+              <app-cg-card [headingLevel]="3" icon="sparkles" [title]="invite.title">
                 <span>{{ invite.text }}</span>
                 @if (invite.query; as query) {
                   <a cgCardFooter class="btn" [routerLink]="invite.link" [queryParams]="query">{{ invite.actionLabel }}</a>
@@ -245,14 +317,17 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
 
     @if (!phoneFirst()) {
       @if (prefersPhone()) {
-        <app-cg-card class="today-end" title="Prefere falar com a gente?" variant="soft" icon="phone">
+        <app-cg-card class="today-end today-end--card" title="Prefere falar com a gente?" variant="soft" icon="phone">
           <p class="today-phone">{{ phone }}</p>
           <button cgCardFooter type="button" class="btn" (click)="contact.open()">Como falar com a gente</button>
         </app-cg-card>
       } @else {
         <div class="today-end">
-          <p>Quer falar com a gente?</p>
-          <button type="button" class="cg-link-btn" (click)="contact.open()">Como falar com a gente</button>
+          <app-cg-illustration name="chat" size="sm" tone="accent" />
+          <div class="today-end__text">
+            <p>Quer falar com a gente?</p>
+            <button type="button" class="cg-link-btn" (click)="contact.open()">Como falar com a gente</button>
+          </div>
         </div>
       }
     }

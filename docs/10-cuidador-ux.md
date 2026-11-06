@@ -1348,12 +1348,12 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 ## C16. `/cuidador/rede/cartao`: Cartão Nexus (P3, `card`)
 **Propósito.** Mostrar o número do cartão e onde usar os descontos; para quem está no Livre, mostrar com calma que o benefício existe.
 **Ação principal.** **Copiar número** (assinante). O Livre não tem ação principal.
-**De cara (assinante).** `h1` "Cartão Nexus"; o **cartão** (símbolo, nome da pessoa, número `NX-0000-0000` em 28 px tabular, etiqueta do plano); "Mostre o número no balcão do parceiro."; **Copiar número**.
-**Atrás de um toque.** h2 **Onde usar** (parceiros **ativos**: nome, categoria, "10% de desconto"); h2 **O que você já economizou** ("Neste mês: R$ {valor} em {n} compras.": o valor vem dos usos registrados, não é fixo; sem compras no mês, "Neste mês: ainda sem compras com o cartão." e o total de antes) com a lista dos usos (data, parceiro, desconto).
+**De cara (assinante).** `h1` "Cartão Nexus"; o **cartão**, que PARECE cartão (proporção 1,586:1, a **cor do plano**, o símbolo da marca, o chip, o número `NX-0000-0000` grande e tabular, o nome em caixa alta e a etiqueta do plano; vida em `docs/17-vida-v2.md`); "Mostre o número no balcão do parceiro."; **Copiar número**.
+**Atrás de um toque.** h2 **Onde usar** (parceiros **ativos**: ícone do tipo, nome, categoria, "10% de desconto"); h2 **O que você já economizou**: o **valor em destaque** ("R$ {valor} economizados neste mês, em {n} compras": o valor vem dos usos registrados, não é fixo; sem compras no mês, o destaque é o total "R$ {valor} economizados ao todo, em {n} compras" e a linha de apoio diz "Neste mês: ainda sem compras com o cartão.") com as **3 últimas compras** (data, parceiro, desconto) e "Ver todas (N)".
 **Textos.**
 - Validade: "Vale enquanto o seu plano estiver ativo." `[S-22]` Com cancelamento agendado (Marcos): "Seu cartão vale até 13/11, quando o plano muda para o Livre."
 - Sem uso: "Você ainda não usou o cartão." Sem parceiro ativo: "Ainda não há parceiros por aqui."
-- **Livre** (ou cartão inativo): h1 "Cartão Nexus" e um cartão `soft`: "O Cartão Nexus dá descontos em farmácias, clínicas e outros parceiros. Ele vem com os planos pagos." e o botão de texto "Ver os planos". **Sem percentuais, sem nomes de parceiros, sem preço em destaque.**
+- **Livre** (ou cartão inativo): h1 "Cartão Nexus", o desenho de um cartão tracejado e vazio (sem número) e a frase "O Cartão Nexus dá descontos em farmácias, clínicas e outros parceiros. Ele vem com os planos pagos." com o botão secundário "Ver os planos". **Sem percentuais, sem nomes de parceiros, sem preço em destaque.**
 - Erro: "Não foi possível abrir o cartão. Tente de novo."
 **Estados.**
 - Só parceiros `active` aparecem.
@@ -1424,8 +1424,8 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 ## C18. `/cuidador/mais/plano`: Meu plano (P3, `plan`)
 **Propósito.** Mostrar o plano da pessoa e deixar trocar ou cancelar com o efeito dito antes, sem letra miúda.
 **Ação principal.** **Ver outros planos** (no Livre, **Ver os planos**).
-**De cara.** `h1` "Meu plano"; o **cartão do plano atual**: etiqueta, preço ("R$ 119,90 por mês"; Livre, "Sem custo, sem prazo"), situação ("Próxima cobrança em 18/11/2026"), e 3 a 4 itens do que inclui; botão secundário **Ver outros planos**; botão de texto **Cancelar plano** (só plano pago).
-**Atrás de um toque.** **Ver outros planos** abre o **quadro dos 4 planos** (folha de tela cheia): para cada plano, nome, preço, "Tudo do plano anterior, mais:" e os itens (Figura 1); o plano atual marcado "Seu plano agora"; o aviso fixo "A mensalidade não inclui serviços da rede nem atendimento psicológico." e "Você pode cancelar em qualquer mês, sem multa." Tocar num plano abre a **folha com o efeito** (B9).
+**De cara.** `h1` "Meu plano"; **um único herói**, o plano atual num cartão com a **cor do plano** (Figura 1): "Seu plano agora", o **nome em serifa grande**, o preço ("R$ 119,90 por mês"; Livre, "Sem custo, sem prazo"; pago pela empresa, "Pago pela empresa"), a situação ("Próxima cobrança em 18/11/2026") e **4 destaques com ícone** (Cuida: Grupos de apoio, Capacitações, Maior suporte à organização, Descontos exclusivos do Cartão Nexus); o link **Ver tudo que inclui** abre a lista completa numa folha (a lista longa não aparece de cara); o único botão cheio, **Ver outros planos**; o link de texto calmo **Cancelar plano**, no fim (só plano pago). Mudança agendada: faixa clara acima do herói, "Seu plano muda para o Essencial em 18/11/2026." (ou "Seu plano volta a ser o Livre em 18/11/2026.") com **Manter meu plano**. Vida e decisões em `docs/17-vida-v2.md`.
+**Atrás de um toque.** **Ver outros planos** abre **Comparar planos** (`?ver=planos`): quatro cartões, cada um com a **sua cor**, o nome em serifa, o preço, "Tudo do plano anterior, mais:" e os **3 destaques próprios** (nunca a lista completa); lado a lado de 1200 px em diante e, abaixo disso, carrossel de rolagem horizontal com encaixe, já com o plano atual no meio; o plano atual marcado "Seu plano" (borda na cor do plano, sem botão); os outros com o botão calmo **Escolher**; **sem "recomendado", sem selo de oferta, sem urgência** (RN-PLN-19 e 22); o aviso fixo "A mensalidade não inclui serviços da rede nem atendimento psicológico." e "Você pode cancelar em qualquer mês, sem multa." em duas linhas com ícone, no tamanho do corpo. Tocar num plano abre a **folha com o efeito** (B9).
 **Textos.**
 - Itens:
   - **Livre** "Acesso ao aplicativo, organização básica, agenda e lembretes, conteúdos, acesso inicial à rede"
@@ -1443,7 +1443,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
   - **Confirmar mudança de plano**
   - **Voltar**. **Sem campo de cartão de crédito** (pagamento simulado).
 - Aceite na primeira contratação paga `[S-23]`: o aviso de emergência com caixa "Li e entendi".
-- Mudança agendada: nota `info` "Mudança agendada: Cuida para Essencial em 18/11/2026." com o botão de texto **Manter meu plano**; ao tocar: faixa "Plano mantido."
+- Mudança agendada: faixa `info` acima do herói, com o título "Mudança agendada" e "Seu plano muda para o Essencial em 18/11/2026." (cancelamento: título "Cancelamento agendado" e "Seu plano volta a ser o Livre em 18/11/2026."), com o botão de texto **Manter meu plano**; ao tocar: faixa "Plano mantido."
 - Pago pela empresa: nota `soft` "Este plano é pago pela empresa Exemplo Logística. A mudança é feita pelo contrato da empresa." e **sem** botões de troca.
 - Erros: "Não foi possível mudar o plano. Nada foi alterado. Tente de novo; se continuar, fale com a gente."
 **Estados.**
@@ -1452,12 +1452,12 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 **Por pessoa.** Ana (Cuida): cartão com R$ 119,90. Maria (Essencial): R$ 49,90. João (Livre): "Sem custo, sem prazo" e **Ver os planos**. Elza e Lourdes (Sustenta): R$ 149,90. Marcos: nota de mudança agendada com **Manter meu plano**.
 **RN.** RN-PLN-01 a 08, 11 a 14, 19, 22, RN-GRP-17, RN-CRT-03, RN-ATD-05, 11, RN-CAN-06.
 **Critérios de aceite.**
-- **AC-CG-149** Dada a rota, então aparecem `h1`, o cartão do plano atual com etiqueta, preço e situação, **Ver outros planos** e (no plano pago) **Cancelar plano**; no Livre, **Ver os planos** e sem cancelar.
-- **AC-CG-150** Dado o quadro dos planos, então mostra os 4 planos com os preços R$ 0,00, R$ 49,90, R$ 119,90 e R$ 149,90 por mês, os itens da Figura 1, o plano atual marcado "Seu plano agora" e o aviso literal "A mensalidade não inclui serviços da rede nem atendimento psicológico." **sem letra miúda** (nenhum texto abaixo de 14 px).
+- **AC-CG-149** Dada a rota, então aparecem `h1`, o herói do plano atual com a cor do plano, o nome, o preço, a situação e 4 destaques, **Ver tudo que inclui** (a lista completa na folha), **Ver outros planos** como único botão cheio e (no plano pago) **Cancelar plano** como link calmo no fim; no Livre, **Ver os planos** e sem cancelar.
+- **AC-CG-150** Dado o quadro dos planos, então mostra os 4 planos, cada um com a sua cor, os preços R$ 0,00, R$ 49,90, R$ 119,90 e R$ 149,90 por mês e os 3 destaques próprios (carrossel no celular, lado a lado em tela larga), o plano atual marcado "Seu plano", o botão calmo **Escolher** nos outros, sem "recomendado" nem selo de oferta, e o aviso literal "A mensalidade não inclui serviços da rede nem atendimento psicológico." **sem letra miúda** (nenhum texto abaixo de 14 px).
 - **AC-CG-151** Dado **subir** de plano, então a folha diz "Vale hoje." e quando a cobrança começa; ao confirmar, o plano muda na hora, o cartão é emitido e a tela mostra "Plano alterado para o Cuida. Cartão NX-0000-0042 emitido."
 - **AC-CG-152** Dado **descer** de plano, então a folha diz que vale no fim do ciclo (com a data) e lista as turmas futuras das quais a pessoa sai; ao confirmar, a assinatura fica `cancel_scheduled` com a data e o plano de destino, e o plano atual continua até lá.
 - **AC-CG-153** Dado **cancelar**, então a folha diz o efeito (cartão deixa de valer, plano vira Livre, na data do fim do ciclo); ao confirmar, aparece a nota "Mudança agendada" e **Manter meu plano**.
-- **AC-CG-154** Dado **Manter meu plano**, então desfaz a mudança agendada em **um toque**, sem folha, com a faixa "Plano mantido."
+- **AC-CG-154** Dado **Manter meu plano** (na faixa "Seu plano muda para o Essencial em 18/11/2026." ou "Seu plano volta a ser o Livre em 18/11/2026."), então desfaz a mudança agendada em **um toque**, sem folha, com a faixa "Plano mantido."
 - **AC-CG-155** Dada a primeira contratação paga, então **a mesma folha do efeito** (um passo só, CXC-010) traz o aviso de emergência numa linha e a caixa "Li e entendi", e grava a data e a hora; sem o aceite, o botão da ação ("Mudar para o Cuida") mostra "Marque que você leu o aviso para continuar." "Seu plano agora" lista tudo o que o plano inclui, também o que vem dos planos anteriores, e a folha diz "Se mudar de ideia, é só mudar de plano de novo."
 - **AC-CG-156** Dado todo o fluxo de troca, então **não existe** campo de número de cartão, validade ou código de segurança.
 - **AC-CG-157** Dado um plano pago pela empresa, então não há botões de troca nem de cancelamento e a nota explica que a mudança é pelo contrato da empresa.

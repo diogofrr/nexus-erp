@@ -7,108 +7,101 @@ import { PlanId } from '../../../../core/models';
 import { PLAN_ORDER } from '../../../../core/rules/plans';
 import { planShortName } from '../../../../core/rules/plan-features';
 import { PageChromeService } from '../../../../layout/state/page-chrome.service';
-import { BadgeComponent } from '../../../../shared/ui/display/badge.component';
+import { IconComponent } from '../../../../shared/ui/display/icon.component';
 import { CheckboxComponent } from '../../../../shared/ui/forms/checkbox.component';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { CHANNELS_NOTICE } from '../../state/nexus-contact';
-import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
-import { CgPlanTagComponent } from '../../ui/cg-plan-tag.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import { CaregiverPlanService } from '../state/caregiver-plan.service';
+import { BoardPlan, PlanBoardComponent } from '../ui/plan-board.component';
 import {
-  CANCEL_ANY_MONTH,
   CHANGE_FAILED,
   NOT_INCLUDED_NOTICE,
   actionLabelFor,
   allBenefits,
   changeCopy,
-  ownBenefits,
-  priceLine,
+  planPerks,
+  priceParts,
+  scheduledNote,
 } from '../state/plan-copy';
 
-interface BoardPlan {
-  id: PlanId;
-  name: string;
-  price: string;
-  /** "Tudo do plano anterior, mais:" (todos menos o Livre). */
-  inherits: boolean;
-  items: string[];
-  current: boolean;
-  /** Texto do botão de troca; `null` no plano atual e quando a pessoa não pode trocar. */
-  action: string | null;
-}
-
 /**
- * Meu plano (UX C18 e B9, `/cuidador/mais/plano`). O cartão do plano atual (etiqueta, preço, situação e o que inclui),
- * **Ver outros planos** (no Livre, **Ver os planos**) e, só em plano pago, **Cancelar plano**. O quadro dos 4 planos abre em
- * folha de tela cheia (`?ver=planos`), sem letra miúda, com o aviso "a mensalidade não inclui serviços da rede nem atendimento
- * psicológico". Tocar num plano abre a folha com o EFEITO dito antes: subir vale hoje, descer e cancelar valem no fim do
- * ciclo pago, com as turmas que a pessoa deixa. Mudança agendada tem **Manter meu plano** (um toque, sem folha). Plano
- * pago pela empresa não tem botão de troca. Pagamento simulado: nenhum campo de cartão. O plano só aparece aqui, porque a
- * pessoa abriu esta tela; nunca por pontuação, faixa, alerta ou ARBE (RN-PLN-19).
+ * Meu plano (UX C18 e B9, `/cuidador/mais/plano`). Um único herói: o plano atual num cartão com a COR do plano (Figura 1), o
+ * nome em serifa grande, o preço, a próxima cobrança e 4 destaques com ícone; a lista inteira fica atrás de **Ver tudo que
+ * inclui** (folha). Uma ação principal, **Ver outros planos** (no Livre, **Ver os planos**); **Cancelar plano** é um link calmo
+ * no fim, só em plano pago. Mudança agendada vira uma faixa "Seu plano muda para X em DD/MM" com **Manter meu plano** (um
+ * toque, sem folha).
+ *
+ * **Ver outros planos** abre o quadro de comparação (`?ver=planos`): 4 cartões lado a lado em tela larga e carrossel com
+ * encaixe no celular, cada um com a sua cor, o preço e os 3 destaques DELE; o atual marcado "Seu plano". Sem "recomendado",
+ * sem selo de oferta, sem urgência (RN-PLN-19 e 22). Tocar em **Escolher** abre a folha com o EFEITO dito antes: subir vale
+ * hoje, descer e cancelar valem no fim do ciclo pago, com as turmas que a pessoa deixa; na primeira contratação paga, a
+ * mesma folha traz o aviso de emergência numa linha com a caixa (um passo só, CXC-010). Plano pago pela empresa não tem botão
+ * de troca. Pagamento simulado: nenhum campo de cartão. O plano só aparece aqui, porque a pessoa abriu esta tela; nunca por
+ * pontuação, faixa, alerta ou ARBE (RN-PLN-19).
+ *
+ * Cores (classes `cg-tone--*` do kit, em `_vida.scss`): cada plano define `--tone` (a cor da Figura 1), `--tone-on` (o texto sobre ela, sempre 4,5:1 ou mais; os pares estão
+ * em `scripts/check-caregiver-a11y.mjs`), `--tone-soft` e `--tone-text` (fundo claro e texto escuro do mesmo plano).
  */
 @Component({
   selector: 'app-cg-plan-page',
-  imports: [
-    BadgeComponent,
-    CheckboxComponent,
-    CgCardComponent,
-    CgNoteComponent,
-    CgPageHeaderComponent,
-    CgPlanTagComponent,
-    CgSheetComponent,
-  ],
+  imports: [CheckboxComponent, CgNoteComponent, CgPageHeaderComponent, CgSheetComponent, IconComponent, PlanBoardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
-      .nx-price { margin: 0; font-size: var(--cg-fs-lead); font-weight: var(--fw-semibold); color: var(--cg-heading); }
-      .nx-items { margin: 0; padding-inline-start: 1.25rem; display: grid; gap: 0.25rem; }
-      .nx-plans { display: grid; gap: var(--cg-gap-block); margin: 0; padding: 0; list-style: none; grid-template-columns: minmax(0, 1fr); }
-      @media (min-width: 64rem) { .nx-plans { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-      .nx-plan { display: grid; gap: 0.75rem; align-content: start; height: 100%; }
-      .nx-plan__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
-      .nx-plan__more { margin: 0; font-weight: var(--fw-semibold); }
+
+      @keyframes nx-rise { from { opacity: 0; transform: translateY(0.5rem); } to { opacity: 1; transform: none; } }
+
+      .nx-perks { display: grid; gap: 0.625rem; margin: 0; padding: 0; list-style: none; }
+      .nx-perks li { display: flex; align-items: center; gap: 0.75rem; min-width: 0; animation: nx-rise var(--dur-3) var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms + 140ms); }
+      .nx-perk__icon { flex: none; display: grid; place-items: center; inline-size: 2.5rem; block-size: 2.5rem; border-radius: 50%; background: var(--tone-soft); color: var(--tone-text); }
+      .nx-perk__text { min-width: 0; overflow-wrap: anywhere; }
+
+      .nx-hero { display: grid; border: 1px solid var(--cg-border); border-radius: var(--radius-xl); background: var(--cg-surface); box-shadow: var(--shadow-2); overflow: hidden; }
+      @media (min-width: 48rem) { .nx-hero { grid-template-columns: minmax(18rem, 0.85fr) 1.15fr; } }
+      .nx-hero__band { position: relative; isolation: isolate; display: grid; gap: 0.25rem; align-content: center; padding: 1.25rem 1.5rem; background-color: var(--tone); background-image: linear-gradient(155deg, var(--tone) 35%, var(--tone-2)); color: var(--tone-on); overflow: hidden; }
+      @media (min-width: 48rem) { .nx-hero__band { padding: 2rem; } }
+      .nx-hero__mark { position: absolute; z-index: -1; inset-inline-end: -1.25rem; inset-block-end: -0.75rem; inline-size: 9rem; block-size: 6rem; color: currentColor; opacity: 0.2; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .nx-hero__eyebrow { margin: 0; font-size: var(--cg-fs-small); font-weight: var(--fw-semibold); }
+      .nx-hero__name { margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: calc(2.75rem * var(--cg-zoom)); line-height: 1.05; color: inherit; overflow-wrap: normal; }
+      .nx-hero__price { margin: 0.5rem 0 0; font-size: calc(1.5rem * var(--cg-zoom)); font-weight: var(--fw-semibold); line-height: 1.2; font-variant-numeric: tabular-nums; }
+      .nx-hero__unit { font-size: var(--cg-fs-body); font-weight: var(--fw-regular); }
+      .nx-hero__when { margin: 0; font-size: var(--cg-fs-small); }
+      .nx-hero__body { display: grid; gap: 0.5rem; align-content: center; padding: 1.25rem 1.5rem; }
+      @media (min-width: 48rem) { .nx-hero__body { padding: 2rem; } }
+      .nx-hero__all { justify-self: start; margin-inline-start: -0.5rem; }
+
+      .nx-actions { display: grid; }
+      @media (min-width: 48rem) { .nx-actions { display: flex; } .nx-actions .btn { min-width: 15rem; } }
+      .nx-quiet { margin: 0; }
+      .nx-quiet .cg-link-btn { color: var(--cg-text-soft); font-weight: var(--fw-regular); margin-inline-start: -0.5rem; }
+
+      .nx-all { display: grid; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+      .nx-all li { display: flex; align-items: center; gap: 0.75rem; }
+      .nx-all .nx-perk__icon { inline-size: 2rem; block-size: 2rem; }
       .nx-effect p { margin: 0; }
       .nx-effect__notice { color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
+
+      @media (prefers-reduced-motion: reduce) {
+        .nx-perks li { animation: none; }
+      }
     `,
   ],
   template: `
     @if (boardOpen()) {
-      <app-cg-page-header title="Planos" backLink="/cuidador/mais/plano" backLabel="Meu plano" />
+      <app-cg-page-header
+        title="Planos"
+        description="Escolha com calma. Antes de confirmar, você vê o que muda."
+        backLink="/cuidador/mais/plano"
+        backLabel="Meu plano"
+      />
       <div class="cg-stack">
-        <app-cg-note variant="info" data-role="not-included">{{ notIncluded }}</app-cg-note>
-        <p data-role="cancel-any-month">{{ cancelAnyMonth }}</p>
         @if (service.isCorporate()) {
           <app-cg-note variant="soft" icon="info" data-role="corporate">{{ corporateText() }}</app-cg-note>
         }
-        <ul class="nx-plans">
-          @for (plan of board(); track plan.id) {
-            <li>
-              <section class="cg-card nx-plan" [attr.aria-labelledby]="'plan-' + plan.id" data-role="board-plan">
-                <div class="nx-plan__head">
-                  <h2 class="cg-card__title" [id]="'plan-' + plan.id">Plano {{ plan.name }}</h2>
-                  @if (plan.current) {
-                    <app-badge variant="info" icon="check">Seu plano agora</app-badge>
-                  }
-                </div>
-                <p class="nx-price">{{ plan.price }}</p>
-                @if (plan.inherits) {
-                  <p class="nx-plan__more">Tudo do plano anterior, mais:</p>
-                }
-                <ul class="nx-items">
-                  @for (item of plan.items; track item) {
-                    <li>{{ item }}</li>
-                  }
-                </ul>
-                @if (plan.action; as label) {
-                  <button type="button" class="btn" [attr.data-plan]="plan.id" (click)="openChange(plan.id)">{{ label }}</button>
-                }
-              </section>
-            </li>
-          }
-        </ul>
+        <app-cg-plan-board [plans]="board()" (choose)="openChange($event)" />
       </div>
     } @else {
       <app-cg-page-header title="Meu plano" backLink="/cuidador/mais" backLabel="Mais" />
@@ -117,44 +110,77 @@ interface BoardPlan {
           <app-cg-note [variant]="r.variant" data-role="result">{{ r.text }}</app-cg-note>
         }
 
-        <app-cg-card title="Seu plano agora" data-role="current-plan">
-          <app-cg-plan-tag [plan]="ctx.planId()" />
-          @if (service.isCorporate()) {
-            <p class="nx-price">Pago pela empresa</p>
-          } @else {
-            <p class="nx-price" data-role="price">{{ currentPrice() }}</p>
-            @if (situation(); as text) {
-              <p data-role="situation">{{ text }}</p>
-            }
-          }
-          <ul class="nx-items">
-            @for (item of currentItems(); track item) {
-              <li>{{ item }}</li>
-            }
-          </ul>
-          @if (!service.isCorporate()) {
-            <div cgCardFooter class="cg-stack cg-stack--tight">
-              <button type="button" class="btn" data-role="see-plans" (click)="showBoard()">
-                {{ ctx.planId() === 'livre' ? 'Ver os planos' : 'Ver outros planos' }}
-              </button>
-              @if (canCancel()) {
-                <button type="button" class="cg-link-btn" data-role="cancel-plan" (click)="openChange('livre')">Cancelar plano</button>
-              }
-            </div>
-          }
-        </app-cg-card>
-
-        @if (service.isCorporate()) {
-          <app-cg-note variant="soft" icon="info" data-role="corporate">{{ corporateText() }}</app-cg-note>
-        }
-
         @if (ctx.scheduledChange(); as scheduled) {
-          <app-cg-note variant="info" data-role="scheduled">
-            {{ scheduledText(scheduled.label) }}
+          @let note = scheduledText(scheduled);
+          <app-cg-note variant="info" icon="calendar-days" [heading]="note.title" data-role="scheduled">
+            {{ note.text }}
             <button cgNoteActions type="button" class="cg-link-btn" data-role="keep-plan" (click)="keep()">Manter meu plano</button>
           </app-cg-note>
         }
+
+        <section [class]="'nx-hero cg-tone--' + ctx.planId()" data-role="current-plan" aria-labelledby="nx-hero-name">
+          <div class="nx-hero__band">
+            <svg class="nx-hero__mark" viewBox="-18 3 156 98" aria-hidden="true"><use href="icons/sprite.svg#nx-symbol" /></svg>
+            <p class="nx-hero__eyebrow">Seu plano agora</p>
+            <h2 class="nx-hero__name" id="nx-hero-name"><span class="sr-only">Plano </span>{{ ctx.planName() }}</h2>
+            @if (service.isCorporate()) {
+              <p class="nx-hero__price" data-role="price">Pago pela empresa</p>
+            } @else {
+              <p class="nx-hero__price" data-role="price">
+                @if (ctx.planId() === 'livre') {
+                  Sem custo, sem prazo
+                } @else {
+                  {{ currentPrice().amount }} <span class="nx-hero__unit">{{ currentPrice().unit }}</span>
+                }
+              </p>
+              @if (situation(); as text) {
+                <p class="nx-hero__when" data-role="situation">{{ text }}</p>
+              }
+            }
+          </div>
+          <div class="nx-hero__body">
+            <ul class="nx-perks" data-role="perks">
+              @for (perk of heroPerks(); track perk.key; let i = $index) {
+                <li [style.--i]="i">
+                  <span class="nx-perk__icon"><svg [appIcon]="perk.icon" size="md"></svg></span>
+                  <span class="nx-perk__text">{{ perk.label }}</span>
+                </li>
+              }
+            </ul>
+            <button type="button" class="cg-link-btn nx-hero__all" data-role="see-all" (click)="includesOpen.set(true)">
+              Ver tudo que inclui
+              <svg appIcon="chevron-right" size="sm"></svg>
+            </button>
+          </div>
+        </section>
+
+        @if (service.isCorporate()) {
+          <app-cg-note variant="soft" icon="info" data-role="corporate">{{ corporateText() }}</app-cg-note>
+        } @else {
+          <div class="nx-actions">
+            <button type="button" class="btn btn--primary" data-role="see-plans" (click)="showBoard()">
+              {{ ctx.planId() === 'livre' ? 'Ver os planos' : 'Ver outros planos' }}
+            </button>
+          </div>
+          @if (canCancel()) {
+            <p class="nx-quiet">
+              <button type="button" class="cg-link-btn" data-role="cancel-plan" (click)="openChange('livre')">Cancelar plano</button>
+            </p>
+          }
+        }
       </div>
+
+      <app-cg-sheet [heading]="'O que o plano ' + ctx.planName() + ' inclui'" [(open)]="includesOpen">
+        <ul [class]="'nx-all cg-tone--' + ctx.planId()" data-role="all-benefits">
+          @for (item of currentItems(); track item) {
+            <li>
+              <span class="nx-perk__icon"><svg appIcon="check" size="sm"></svg></span>
+              <span class="nx-perk__text">{{ item }}</span>
+            </li>
+          }
+        </ul>
+        <button cgSheetActions type="button" class="btn" data-role="close-all" (click)="includesOpen.set(false)">Fechar</button>
+      </app-cg-sheet>
     }
 
     @if (copy(); as c) {
@@ -207,21 +233,26 @@ export class PlanPage {
 
   protected readonly notIncluded = NOT_INCLUDED_NOTICE;
   protected readonly channelsNotice = CHANNELS_NOTICE;
-  protected readonly cancelAnyMonth = CANCEL_ANY_MONTH;
 
   private readonly params = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });
   protected readonly boardOpen = computed(() => this.params().get('ver') === 'planos');
 
-  // ===== Cartão do plano atual =====
+  // ===== O plano atual (o herói) =====
 
   private readonly currentPlan = computed(() => this.ctx.plans().find((p) => p.id === this.ctx.planId()));
 
-  protected readonly currentPrice = computed(() =>
-    this.ctx.planId() === 'livre' ? 'Sem custo, sem prazo' : this.currentPlan() ? priceLine(this.currentPlan()!) : '',
-  );
+  protected readonly currentPrice = computed(() => {
+    const plan = this.currentPlan();
+    return plan ? priceParts(plan) : { amount: '', unit: '' };
+  });
+
+  /** Os 4 destaques do herói; a lista inteira fica na folha "Ver tudo que inclui". */
+  protected readonly heroPerks = computed(() => planPerks(this.ctx.planId(), this.ctx.plans(), 4));
 
   /** Tudo o que o plano inclui, também o que vem dos planos anteriores (CXC-010). */
   protected readonly currentItems = computed(() => allBenefits(this.ctx.planId(), this.ctx.plans()));
+
+  protected readonly includesOpen = signal(false);
 
   /** "Próxima cobrança em 18/11/2026"; com mudança agendada, até quando o plano vale. */
   protected readonly situation = computed(() => {
@@ -246,11 +277,11 @@ export class PlanPage {
     return `Este plano é pago pela empresa ${company}. A mudança é feita pelo contrato da empresa.`;
   }
 
-  protected scheduledText(label: string): string {
-    return `${label}.`;
+  protected scheduledText(change: NonNullable<ReturnType<CaregiverContextService['scheduledChange']>>): { title: string; text: string } {
+    return scheduledNote(change);
   }
 
-  // ===== Quadro dos 4 planos =====
+  // ===== Comparar planos =====
 
   protected readonly board = computed<BoardPlan[]>(() => {
     const plans = this.ctx.plans();
@@ -261,15 +292,17 @@ export class PlanPage {
       if (!plan) {
         return [];
       }
+      const price = priceParts(plan);
       return [
         {
           id,
           name: planShortName(id, plans),
-          price: priceLine(plan),
+          amount: price.amount,
+          unit: price.unit,
           inherits: id !== 'livre',
-          items: ownBenefits(id, plans),
+          perks: planPerks(id, plans, 3),
           current: id === current,
-          action: id === current || !canChange ? null : actionLabelFor(this.service.quote(id).kind, id),
+          canChoose: id !== current && canChange && actionLabelFor(this.service.quote(id).kind, id) !== null,
         },
       ];
     });

@@ -671,12 +671,12 @@ describe('Rotina (UX C5 e C6)', () => {
       expect(check?.time).toMatch(/^\d{2}:\d{2}$/);
       expect(check?.givenAt).toBe('2026-11-04T12:05:00-03:00');
       expect(text(q('.cg-dose.is-given:last-of-type, .cg-dose.is-given'))).toContain('Dado às');
-      expect(text(q('.routine-progress'))).toBe('3 de 4 dados');
+      expect(q('.routine-progress app-cg-progress-ring')?.getAttribute('aria-label')).toBe('3 de 4 dados');
       // Recarrega o app com o mesmo armazenamento (sem gerar o seed de novo).
       const local = app.local;
       TestBed.resetTestingModule();
       app = await bootCaregiverApp('cg_0001', { url: '/cuidador/rotina/remedios', time: '12:05', local, seed: false });
-      expect(text(q('.routine-progress'))).toBe('3 de 4 dados');
+      expect(q('.routine-progress app-cg-progress-ring')?.getAttribute('aria-label')).toBe('3 de 4 dados');
     });
 
     it('"Desfazer" remove sem confirmar; "Dei em outro horário" troca só o givenAt (AC-CG-66)', async () => {

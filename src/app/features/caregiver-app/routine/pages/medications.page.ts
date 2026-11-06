@@ -10,7 +10,6 @@ import { ID, Medication } from '../../../../core/models';
 import { isTimeOfDay } from '../../../../core/rules/care-agenda';
 import { NAME_MAX_CHARS, tooLongText } from '../../../../core/rules/text-limits';
 import { DoseSlot, doseProgress } from '../../../../core/rules/medication-doses';
-import { EmptyStateComponent } from '../../../../shared/ui/display/empty-state.component';
 import { IconComponent } from '../../../../shared/ui/display/icon.component';
 import { ErrorSummaryComponent, ErrorSummaryItem } from '../../../../shared/ui/forms/error-summary.component';
 import { FormFieldComponent } from '../../../../shared/ui/forms/form-field.component';
@@ -22,7 +21,9 @@ import { OnlineStatusService } from '../../state/online-status.service';
 import { StorageStatusService, doseNotSavedText } from '../../state/storage-status.service';
 import { CgDoseComponent } from '../../ui/cg-dose.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
+import { CgEmptyComponent } from '../../ui/cg-empty.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
+import { CgProgressRingComponent } from '../../ui/cg-progress-ring.component';
 import { CgRowComponent } from '../../ui/cg-row.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import { CgSwitchComponent } from '../../ui/cg-switch.component';
@@ -51,11 +52,12 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
   imports: [
     CgDoseComponent,
     CgNoteComponent,
-    CgPageHeaderComponent,
+    CgHeroComponent,
+    CgProgressRingComponent,
     CgRowComponent,
     CgSheetComponent,
     CgSwitchComponent,
-    EmptyStateComponent,
+    CgEmptyComponent,
     ErrorSummaryComponent,
     FormFieldComponent,
     IconComponent,
@@ -73,6 +75,25 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
     .routine-panel .cg-actions,
     .routine-block .cg-actions {
       margin-top: 0;
+    }
+    /* Em tela larga: os remédios de hoje à esquerda e, à direita, o aviso e a lista de todos os remédios. */
+    @media (min-width: 64rem) {
+      .routine-panel {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+        align-items: start;
+        column-gap: 2rem;
+      }
+      .routine-panel > * {
+        grid-column: 2;
+      }
+      .routine-panel > .routine-main {
+        grid-column: 1;
+        grid-row: 1 / span 4;
+      }
+      .routine-panel > app-cg-empty,
+      .routine-panel > app-cg-note:first-child {
+        grid-column: 1 / -1;
+      }
     }
     .routine-block > h2 {
       margin: 0;
@@ -173,7 +194,7 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
     }
   `,
   template: `
-    <app-cg-page-header title="Rotina" />
+    <app-cg-hero title="Rotina" illustration="medicine" />
     <app-routine-tabs current="remedios" panelId="routine-panel" />
 
     <div class="routine-panel" id="routine-panel" role="tabpanel" aria-labelledby="routine-tab-remedios">
@@ -182,22 +203,25 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
       }
 
       @if (!hasAny()) {
-        <app-empty-state
+        <app-cg-empty
+          illustration="medicine"
           title="Você ainda não cadastrou remédios"
           text="Cadastre os remédios e o app mostra, a cada dia, os horários de cada um."
         >
           <button type="button" class="btn btn--primary" (click)="openNew()">Cadastrar um remédio</button>
-        </app-empty-state>
+        </app-cg-empty>
       } @else {
-        <section class="routine-block cg-stack cg-stack--tight" aria-labelledby="routine-today-title">
-          <div class="routine-head">
+        <section class="routine-block routine-main cg-stack cg-stack--tight" aria-labelledby="routine-today-title">
+          <div class="cg-section-head">
             <h2 class="cg-section__title" id="routine-today-title">Hoje</h2>
             @if (progress().total > 0) {
-              <span class="routine-progress">{{ progress().given }} de {{ progress().total }} dados</span>
+              <span class="routine-progress">
+                <app-cg-progress-ring [value]="progress().given" [max]="progress().total" size="md" label="dados" />
+              </span>
             }
           </div>
           @if (slots().length > 0) {
-            <ul class="cg-plain-list">
+            <ul class="cg-plain-list cg-enter">
               @for (slot of slots(); track slot.key) {
                 <li class="routine-dose">
                   <app-cg-dose

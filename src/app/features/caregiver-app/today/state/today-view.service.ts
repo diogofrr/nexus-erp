@@ -22,6 +22,12 @@ export interface NextEvent {
   key: string;
   /** "Fisioterapia, hoje às 14:00" ou "Sua conversa com a Dra. Beatriz, qui, 06/11, às 14:00". */
   text: string;
+  /** "Fisioterapia" ou "Sua conversa com a Dra. Beatriz" (o texto sem o quando). */
+  title: string;
+  /** "Hoje", "Amanhã" ou "Qui, 06/11": o dia, para o destaque. */
+  day: string;
+  /** "14:00": a hora, em destaque (serifa grande). */
+  time: string;
   /** Onde ou com quem (só nos compromissos). */
   support: string | null;
   /** A conversa da própria pessoa leva a etiqueta "Para você" (S-27). */
@@ -87,6 +93,9 @@ export class TodayViewService {
             key: a.id,
             at: a.at,
             text: `${a.title}, ${relativeDateTime(a.at, today)}`,
+            title: a.title,
+            day: capitalize(relativeDay(dateOf(a.at), today)),
+            time: timeOf(a.at),
             support: a.place?.trim() ? a.place.trim() : null,
             forYou: false,
           }),
@@ -103,6 +112,9 @@ export class TodayViewService {
             key: s.id,
             at: s.startAt,
             text: `Sua conversa com ${who}, ${relativeDateTime(s.startAt, today)}`,
+            title: `Sua conversa com ${who}`,
+            day: capitalize(relativeDay(dateOf(s.startAt), today)),
+            time: timeOf(s.startAt),
             support: null,
             forYou: true,
           });

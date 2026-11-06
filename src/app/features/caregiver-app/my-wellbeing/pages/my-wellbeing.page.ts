@@ -8,9 +8,11 @@ import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { CARE_INVITE, CARE_TODAY_TEXT, careTodayHeading } from '../../state/care-note';
 import { ContactDialogService } from '../../state/contact-dialog.service';
 import { CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
+import { CgIconBadgeComponent } from '../../ui/cg-icon-badge.component';
+import { CgIllustrationComponent } from '../../ui/cg-illustration.component';
 import { CgMoodComponent, MoodValue, moodLabel } from '../../ui/cg-mood.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import { CgTrendComponent } from '../../ui/cg-trend.component';
 import {
@@ -44,7 +46,9 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
   selector: 'app-my-wellbeing-page',
   imports: [
     RouterLink,
-    CgPageHeaderComponent,
+    CgHeroComponent,
+    CgIconBadgeComponent,
+    CgIllustrationComponent,
     CgNoteComponent,
     CgMoodComponent,
     CgTrendComponent,
@@ -61,10 +65,13 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
       .well__list li { padding: 0.5rem 0.75rem; border-left: 3px solid var(--cg-border-control); background: var(--cg-surface-sunken); border-radius: 0 var(--cg-radius-control) var(--cg-radius-control) 0; }
       .well__sheet p { margin: 0; }
       .well__tools { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
+      .well__head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+      .well__head .cg-section__title { margin: 0; }
+      .well__empty { display: grid; justify-items: center; gap: 0.75rem; }
     `,
   ],
   template: `
-    <app-cg-page-header title="Como estou" [description]="lead" backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
+    <app-cg-hero title="Como estou" [description]="lead" illustration="heart" backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
 
     <div class="cg-stack">
       @if (paused()) {
@@ -88,7 +95,10 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
         }
 
         <section class="cg-stack cg-stack--tight" aria-labelledby="well-mood">
-          <h2 class="cg-section__title" id="well-mood">Como você está hoje?</h2>
+          <div class="well__head">
+            <app-cg-icon-badge icon="smile" />
+            <h2 class="cg-section__title" id="well-mood">Como você está hoje?</h2>
+          </div>
           <div class="cg-stack cg-stack--tight" data-role="mood">
             @if (todayMood(); as mood) {
               @if (changing()) {
@@ -110,15 +120,21 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
         </section>
 
         <section aria-labelledby="well-timeline" data-role="timeline">
-          <h2 class="cg-section__title" id="well-timeline">Suas conversas com a equipe</h2>
+          <div class="well__head">
+            <app-cg-icon-badge icon="messages-square" />
+            <h2 class="cg-section__title" id="well-timeline">Suas conversas com a equipe</h2>
+          </div>
           @if (!hasConversations()) {
-            <app-cg-note variant="soft" icon="info" [heading]="emptyTitle">
-              <span data-role="timeline-empty">{{ emptyText }}</span>
-            </app-cg-note>
+            <div class="well__empty">
+              <app-cg-illustration name="heart" size="md" tone="accent" />
+              <app-cg-note variant="soft" icon="info" [heading]="emptyTitle">
+                <span data-role="timeline-empty">{{ emptyText }}</span>
+              </app-cg-note>
+            </div>
           } @else {
             <div class="cg-stack cg-stack--tight">
               <p class="cg-muted" data-role="timeline-intro">{{ intro }}</p>
-              <app-cg-trend [items]="visible()" />
+              <app-cg-trend [items]="visible()" trail />
               @if (lastText(); as last) {
                 <p class="well__line" data-role="last-text">{{ last }}</p>
               }

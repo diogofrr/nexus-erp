@@ -1,9 +1,12 @@
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { ToastProfile, ToastService } from '../../../shared/ui/overlay/toast.service';
 import { ViewportService } from '../../../layout/state/viewport.service';
 import { CaregiverContextService } from '../state/caregiver-context.service';
+import { sectionOfUrl } from '../ui/cg-accent';
 import { STORAGE_NOT_SAVING_TEXT, StorageStatusService } from '../state/storage-status.service';
 import { CgContactDialogComponent } from '../ui/cg-contact-dialog.component';
 import { CgHeaderComponent } from '../ui/cg-header.component';
@@ -31,6 +34,8 @@ export const CAREGIVER_TOAST_PROFILE: ToastProfile = { maxStack: 1, defaultMs: 8
  *   cuidador. Ao sair, devolve o que havia.
  * - Sem sessão (cadastro de quem é novo e "Ajuda agora") não há barra de navegação nem menu do usuário: só a
  *   marca, a Ajuda agora e o link "Entrar".
+ * - A seção corrente (Hoje, Rotina, Cuidar de mim, Rede, Mais) vai em `data-section` na raiz: tudo o que está dentro
+ *   herda a tinta calma dela (`--cg-acc-*`, docs/17-vida-kit.md).
  * - O título da aba (`data.title` de cada rota) e o foco no `h1` a cada tela vêm do `PageChromeService` da raiz,
  *   o mesmo da equipe.
  */
@@ -47,7 +52,7 @@ export const CAREGIVER_TOAST_PROFILE: ToastProfile = { maxStack: 1, defaultMs: 8
     CaregiverUserMenuComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'cg-app', '[attr.data-text]': 'ctx.fontScale()' },
+  host: { class: 'cg-app', '[attr.data-text]': 'ctx.fontScale()', '[attr.data-section]': 'section()' },
   template: `
     <a class="skip-link" href="#conteudo" (click)="skipToContent($event)">Ir para o conteúdo</a>
 
@@ -84,6 +89,16 @@ export class CaregiverShellComponent {
   private readonly viewport = inject(ViewportService);
   private readonly doc = inject(DOCUMENT);
   private readonly toasts = inject(ToastService);
+  private readonly router = inject(Router);
+
+  /** A seção do endereço atual (`null` fora das cinco: Ajuda agora, cadastro): o acento volta ao azul da marca. */
+  protected readonly section = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => sectionOfUrl(event.urlAfterRedirects)),
+    ),
+    { initialValue: sectionOfUrl(this.router.url) },
+  );
 
   /** 1024 px ou mais: a navegação vai para o cabeçalho e a barra inferior não existe. */
   protected readonly wide = computed(() => this.viewport.navLayout() !== 'drawer');

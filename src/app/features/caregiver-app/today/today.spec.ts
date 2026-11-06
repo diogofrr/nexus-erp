@@ -171,7 +171,7 @@ describe('Hoje (UX C4)', () => {
       const card = q('app-cg-card a.cg-card--link');
       expect(card?.getAttribute('href')).toBe('/cuidador/rotina/agenda');
       expect(text(card)).toContain('Próximo compromisso');
-      expect(text(card)).toMatch(/, hoje às \d{2}:\d{2}/);
+      expect(text(card)).toMatch(/Hoje\s+\d{2}:\d{2}/);
     });
 
     it('a conversa da própria pessoa com o psicólogo aparece como "Sua conversa com..." quando é a mais próxima', async () => {
@@ -195,7 +195,7 @@ describe('Hoje (UX C4)', () => {
       await flush();
       const card = q('app-cg-card a.cg-card--link');
       expect(text(card)).toContain('Sua conversa com');
-      expect(text(card)).toContain('amanhã às 14:00');
+      expect(text(card)).toMatch(/Amanhã\s+14:00/);
       // A frase já diz que a conversa é da pessoa; a etiqueta "Para você" ficou só na Agenda (CXC-020).
       expect(text(card)).not.toContain('Para você');
     });
@@ -212,14 +212,14 @@ describe('Hoje (UX C4)', () => {
 
     it('um compromisso de hoje cuja hora já passou não é mais o próximo', async () => {
       await open('cg_0001', { time: '20:00' });
-      expect(text(q('app-cg-card a.cg-card--link'))).not.toMatch(/hoje às/);
+      expect(text(q('app-cg-card a.cg-card--link'))).not.toMatch(/Hoje\s+\d{2}:\d{2}/);
     });
   });
 
   describe('AC-CG-46 a 49: remédios de hoje', () => {
     it('mostra "2 de 4 dados" e as 4 linhas de Ana, sem "Ver todos"', async () => {
       await open('cg_0001');
-      expect(text(q('.today-progress'))).toBe('2 de 4 dados');
+      expect(q('.today-progress app-cg-progress-ring')?.getAttribute('aria-label')).toBe('2 de 4 dados');
       expect(all('app-cg-dose')).toHaveLength(4);
       expect(buttonByText('Ver todos (4)')).toBeUndefined();
       expect(all('.cg-dose.is-given')).toHaveLength(2);
@@ -237,7 +237,7 @@ describe('Hoje (UX C4)', () => {
       expect(check?.medicationId).toBeTruthy();
       expect(check?.date).toBe('2026-11-04');
       expect(check?.givenAt).toBe('2026-11-04T12:05:00-03:00');
-      expect(text(q('.today-progress'))).toBe('3 de 4 dados');
+      expect(q('.today-progress app-cg-progress-ring')?.getAttribute('aria-label')).toBe('3 de 4 dados');
       expect(all('.cg-dose.is-given')).toHaveLength(3);
       expect(all('app-cg-dose').map((d) => text(d.querySelector('.cg-dose__name')))).toEqual(before);
       expect(text(q('.cg-dose.is-given'))).toContain('Dado às');
@@ -253,7 +253,7 @@ describe('Hoje (UX C4)', () => {
       const undo = all<HTMLButtonElement>('app-cg-dose button').find((b) => b.getAttribute('aria-label')?.startsWith('Desfazer'));
       await click(undo);
       expect(app.db.doseChecks.size()).toBe(countBefore - 1);
-      expect(text(q('.today-progress'))).toBe('1 de 4 dados');
+      expect(q('.today-progress app-cg-progress-ring')?.getAttribute('aria-label')).toBe('1 de 4 dados');
       expect(app.root.querySelector('dialog[open]')).toBeNull();
     });
 
@@ -323,7 +323,8 @@ describe('Hoje (UX C4)', () => {
       app.db.careAppointments.removeWhere((a) => a.elderId === elderId);
       app.db.careSessions.removeWhere((s) => s.caregiverId === 'cg_0001');
       await flush();
-      expect(text(q('main'))).toContain('Ainda não há nada para hoje. Comece pelos remédios ou por um compromisso.');
+      expect(text(q('main'))).toContain('Ainda não há nada para hoje');
+      expect(text(q('main'))).toContain('Comece pelos remédios ou por um compromisso.');
       expect(buttonByText('Cadastrar um remédio')).toBeDefined();
       expect(buttonByText('Adicionar compromisso')).toBeDefined();
     });

@@ -58,16 +58,38 @@ describe('Área plan (Meu plano)', () => {
     });
   });
 
-  describe('o cartão do plano atual (AC-CG-149)', () => {
-    it('Ana (Cuida): etiqueta, preço, situação, o que inclui, Ver outros planos e Cancelar plano', async () => {
+  describe('o herói: o plano atual (AC-CG-149)', () => {
+    it('Ana (Cuida): a cor do plano, o nome, o preço, a situação e 4 destaques; Ver outros planos é a ação principal e Cancelar plano um link calmo', async () => {
       const app = await bootCaregiverApp('cg_0001', { url: URL });
       expect(app.root.querySelector('main h1')?.textContent?.trim()).toBe('Meu plano');
       const card = app.root.querySelector('[data-role="current-plan"]') as HTMLElement;
-      expect(norm(card.querySelector('.cg-plan-tag')?.textContent)).toBe('Plano Cuida');
+      expect(card.classList.contains('cg-tone--cuida')).toBe(true);
+      expect(norm(card.querySelector('h2')?.textContent)).toBe('Plano Cuida');
       expect(norm(card.querySelector('[data-role="price"]')?.textContent)).toBe('R$ 119,90 por mês');
       expect(norm(card.querySelector('[data-role="situation"]')?.textContent)).toBe('Próxima cobrança em 06/11/2026');
-      // CXC-010: "Seu plano agora" lista TUDO o que o plano inclui, também o que vem dos planos anteriores.
-      expect(Array.from(card.querySelectorAll('li')).map((li) => norm(li.textContent))).toEqual([
+      // Só 4 destaques de cara: a lista longa fica atrás de "Ver tudo que inclui".
+      expect(Array.from(card.querySelectorAll('[data-role="perks"] li')).map((li) => norm(li.textContent))).toEqual([
+        'Grupos de apoio',
+        'Capacitações',
+        'Maior suporte à organização',
+        'Descontos exclusivos do Cartão Nexus',
+      ]);
+      expect(openSheet(app)).toBeNull();
+      const primary = byText(app, 'main button', 'Ver outros planos');
+      expect(primary?.classList.contains('btn--primary')).toBe(true);
+      // Cancelar plano é calmo: link de texto, no fim da tela, sem competir com a ação principal.
+      const cancel = byText(app, 'main button', 'Cancelar plano');
+      expect(cancel?.classList.contains('cg-link-btn')).toBe(true);
+      expect(cancel?.classList.contains('btn')).toBe(false);
+      const buttons = Array.from(app.root.querySelectorAll('main button'));
+      expect(buttons.indexOf(cancel as HTMLButtonElement)).toBeGreaterThan(buttons.indexOf(primary as HTMLButtonElement));
+    });
+
+    it('Ver tudo que inclui abre a folha com a lista completa, também o que vem dos planos anteriores (CXC-010)', async () => {
+      const app = await bootCaregiverApp('cg_0001', { url: URL });
+      await click(app, app.root.querySelector('[data-role="see-all"]'));
+      expect(openSheet(app)?.querySelector('.cg-sheet__title')?.textContent?.trim()).toBe('O que o plano Cuida inclui');
+      expect(Array.from(openSheet(app)?.querySelectorAll('[data-role="all-benefits"] li') ?? []).map((li) => norm(li.textContent))).toEqual([
         'Acesso ao aplicativo',
         'Organização básica',
         'Agenda e lembretes',
@@ -81,8 +103,24 @@ describe('Área plan (Meu plano)', () => {
         'Grupos de apoio',
         'Capacitações',
       ]);
-      expect(norm(byText(app, 'main button', 'Ver outros planos')?.textContent)).toBe('Ver outros planos');
-      expect(byText(app, 'main button', 'Cancelar plano')).toBeDefined();
+      await click(app, openSheet(app)?.querySelector('[data-role="close-all"]'));
+      expect(openSheet(app)).toBeNull();
+    });
+
+    it('cada plano tem a sua cor, o seu nome e os seus 4 destaques', async () => {
+      const expected = [
+        ['cg_0003', 'livre', 'Plano Livre', ['Agenda e lembretes', 'Organização básica', 'Conteúdos', 'Acesso inicial à rede']],
+        ['cg_0002', 'essencial', 'Plano Essencial', ['Organização ampliada', 'Descontos exclusivos do Cartão Nexus', 'Conteúdos exclusivos', 'Condições especiais na rede']],
+        ['cg_0027', 'sustenta', 'Plano Sustenta', ['Acompanhamento organizacional mais próximo', 'Maior nível de suporte', 'Benefícios diferenciados na rede', 'Grupos de apoio']],
+      ] as const;
+      for (const [id, tone, name, perks] of expected) {
+        const app = await bootCaregiverApp(id, { url: URL });
+        const card = app.root.querySelector('[data-role="current-plan"]') as HTMLElement;
+        expect(card.classList.contains(`cg-tone--${tone}`)).toBe(true);
+        expect(norm(card.querySelector('h2')?.textContent)).toBe(name);
+        expect(Array.from(card.querySelectorAll('[data-role="perks"] li')).map((li) => norm(li.textContent))).toEqual(perks);
+        TestBed.resetTestingModule();
+      }
     });
 
     it('cada plano pago mostra o seu preço, e o Livre mostra "Sem custo, sem prazo" com Ver os planos e sem cancelar', async () => {
@@ -97,7 +135,8 @@ describe('Área plan (Meu plano)', () => {
       expect(byText(joao, 'main button', 'Ver os planos')).toBeDefined();
       expect(byText(joao, 'main button', 'Ver outros planos')).toBeUndefined();
       expect(byText(joao, 'main button', 'Cancelar plano')).toBeUndefined();
-      expect(Array.from(joao.root.querySelectorAll('[data-role="current-plan"] li')).map((li) => norm(li.textContent))).toEqual([
+      await click(joao, joao.root.querySelector('[data-role="see-all"]'));
+      expect(Array.from(openSheet(joao)?.querySelectorAll('[data-role="all-benefits"] li') ?? []).map((li) => norm(li.textContent))).toEqual([
         'Acesso ao aplicativo',
         'Organização básica',
         'Agenda e lembretes',
@@ -107,8 +146,8 @@ describe('Área plan (Meu plano)', () => {
     });
   });
 
-  describe('o quadro dos 4 planos (AC-CG-150)', () => {
-    it('mostra os 4 preços, os itens, o plano atual marcado e os avisos sem letra miúda', async () => {
+  describe('comparar planos (AC-CG-150)', () => {
+    it('mostra os 4 preços, os 3 destaques de cada plano, o plano atual marcado "Seu plano" e os avisos sem letra miúda', async () => {
       const app = await bootCaregiverApp('cg_0001', { url: URL });
       await click(app, byText(app, 'main button', 'Ver outros planos'));
       expect(app.router.url).toBe(BOARD);
@@ -119,7 +158,7 @@ describe('Área plan (Meu plano)', () => {
         price: norm(p.querySelector('.nx-price')?.textContent),
         more: norm(p.querySelector('.nx-plan__more')?.textContent),
         items: Array.from(p.querySelectorAll('.nx-items li')).map((li) => norm(li.textContent)),
-        current: norm(p.querySelector('app-badge')?.textContent),
+        current: norm(p.querySelector('[data-role="here"]')?.textContent),
       }));
       expect(plans.map((p) => [p.title, p.price])).toEqual([
         ['Plano Livre', 'R$ 0,00 por mês'],
@@ -127,13 +166,16 @@ describe('Área plan (Meu plano)', () => {
         ['Plano Cuida', 'R$ 119,90 por mês'],
         ['Plano Sustenta', 'R$ 149,90 por mês'],
       ]);
-      expect(plans[0]?.items).toEqual(['Acesso ao aplicativo', 'Organização básica', 'Agenda e lembretes', 'Conteúdos', 'Acesso inicial à rede']);
+      // Os 3 destaques PRÓPRIOS de cada plano, nunca a lista inteira.
+      expect(plans[0]?.items).toEqual(['Agenda e lembretes', 'Organização básica', 'Conteúdos']);
       expect(plans[0]?.more).toBe('');
       expect(plans[1]?.more).toBe('Tudo do plano anterior, mais:');
-      expect(plans[1]?.items).toEqual(['Organização ampliada', 'Descontos exclusivos do Cartão Nexus', 'Conteúdos exclusivos', 'Condições especiais na rede']);
-      expect(plans[2]?.items).toEqual(['Maior suporte à organização', 'Grupos de apoio', 'Capacitações']);
+      expect(plans[1]?.items).toEqual(['Organização ampliada', 'Descontos exclusivos do Cartão Nexus', 'Conteúdos exclusivos']);
+      expect(plans[2]?.items).toEqual(['Grupos de apoio', 'Capacitações', 'Maior suporte à organização']);
       expect(plans[3]?.items).toEqual(['Acompanhamento organizacional mais próximo', 'Maior nível de suporte', 'Benefícios diferenciados na rede']);
-      expect(plans.map((p) => p.current)).toEqual(['', '', 'Seu plano agora', '']);
+      expect(plans.map((p) => p.current)).toEqual(['', '', 'Seu plano', '']);
+      // Cada cartão tem a sua cor.
+      expect(Array.from(app.root.querySelectorAll('[data-role="board-plan"]')).map((p) => /cg-tone--(\w+)/.exec(p.className)?.[1])).toEqual(['livre', 'essencial', 'cuida', 'sustenta']);
       expect(norm(app.root.querySelector('[data-role="not-included"]')?.textContent)).toBe(
         'A mensalidade não inclui serviços da rede nem atendimento psicológico.',
       );
@@ -142,14 +184,22 @@ describe('Área plan (Meu plano)', () => {
       expect(app.root.querySelector('main small')).toBeNull();
     });
 
-    it('cada plano diferente do atual tem o botão do que acontece, e o atual não tem ação', async () => {
+    it('sem "recomendado", sem selo de oferta, sem urgência (RN-PLN-19 e 22)', async () => {
+      const app = await bootCaregiverApp('cg_0002', { url: BOARD });
+      expect(mainText(app).toLowerCase()).not.toMatch(/recomend|oferta|promo|melhor|mais vendido|últim|só hoje|aproveite|garanta|corra/);
+      expect(app.root.querySelector('main [data-role="board-plan"] app-badge')).toBeNull();
+    });
+
+    it('cada plano diferente do atual tem o botão calmo "Escolher" (o efeito vem na folha), e o atual só leva a marca "Seu plano"', async () => {
       const app = await bootCaregiverApp('cg_0001', { url: BOARD });
       const actions = Array.from(app.root.querySelectorAll('main [data-plan]')).map((b) => [b.getAttribute('data-plan'), norm(b.textContent)]);
       expect(actions).toEqual([
-        ['livre', 'Agendar cancelamento'],
-        ['essencial', 'Agendar mudança para o Essencial'],
-        ['sustenta', 'Mudar para o Sustenta'],
+        ['livre', 'Escolher o plano Livre'],
+        ['essencial', 'Escolher o plano Essencial'],
+        ['sustenta', 'Escolher o plano Sustenta'],
       ]);
+      expect(Array.from(app.root.querySelectorAll('main [data-plan]')).every((b) => !b.classList.contains('btn--primary'))).toBe(true);
+      expect(app.root.querySelectorAll('main [data-role="here"]').length).toBe(1);
     });
 
     it('Voltar leva a Meu plano', async () => {
@@ -208,7 +258,7 @@ describe('Área plan (Meu plano)', () => {
       expect(TestBed.inject(ToastService).toasts().find((t) => t.message === message)).toBeUndefined();
       expect(app.context.planId()).toBe('cuida');
       expect(app.router.url).toBe(URL);
-      expect(norm(app.root.querySelector('[data-role="current-plan"] .cg-plan-tag')?.textContent)).toBe('Plano Cuida');
+      expect(norm(app.root.querySelector('[data-role="current-plan"] h2')?.textContent)).toBe('Plano Cuida');
     });
 
     it('quem já aceitou o aviso não precisa aceitar de novo: confirma direto e o cartão segue ativo', async () => {
@@ -250,7 +300,10 @@ describe('Área plan (Meu plano)', () => {
       const sub = app.db.subscriptions.require(subOf(app, 'cg_0001').id);
       expect(sub).toMatchObject({ status: 'cancel_scheduled', scheduledPlanId: 'essencial', scheduledChangeAt: '2026-11-06', planId: 'cuida' });
       expect(app.context.planId()).toBe('cuida');
-      expect(norm(app.root.querySelector('[data-role="scheduled"]')?.textContent)).toContain('Mudança agendada: Cuida para Essencial em 06/11/2026.');
+      const band = norm(app.root.querySelector('[data-role="scheduled"]')?.textContent);
+      expect(band).toContain('Mudança agendada');
+      expect(band).toContain('Seu plano muda para o Essencial em 06/11/2026.');
+      expect(band).toContain('Manter meu plano');
       expect(norm(app.root.querySelector('[data-role="result"]')?.textContent)).toBe('Mudança para o Essencial agendada para 06/11/2026.');
       const change = app.db.planChanges.query((p) => p.subscriptionId === sub.id && p.kind === 'downgrade')[0];
       expect(change?.byUserId).toBe('cg_0001');
@@ -271,7 +324,7 @@ describe('Área plan (Meu plano)', () => {
       await click(app, confirmButton(app));
       const sub = app.db.subscriptions.require(subOf(app, 'cg_0001').id);
       expect(sub).toMatchObject({ status: 'cancel_scheduled', scheduledPlanId: 'livre', scheduledChangeAt: '2026-11-06' });
-      expect(norm(app.root.querySelector('[data-role="scheduled"]')?.textContent)).toContain('Cancelamento agendado para 06/11/2026.');
+      expect(norm(app.root.querySelector('[data-role="scheduled"]')?.textContent)).toContain('Cancelamento agendado Seu plano volta a ser o Livre em 06/11/2026.');
       expect(byText(app, 'main button', 'Manter meu plano')).toBeDefined();
       expect(byText(app, 'main button', 'Cancelar plano')).toBeUndefined();
       expect(norm(app.root.querySelector('[data-role="situation"]')?.textContent)).toBe('Seu plano atual vale até 06/11/2026.');
@@ -289,7 +342,7 @@ describe('Área plan (Meu plano)', () => {
   describe('Manter meu plano (AC-CG-154)', () => {
     it('Marcos tem cancelamento agendado: um toque desfaz, sem folha, com a faixa "Plano mantido."', async () => {
       const app = await bootCaregiverApp('cg_0026', { url: URL });
-      expect(norm(app.root.querySelector('[data-role="scheduled"]')?.textContent)).toContain('Cancelamento agendado para 13/11/2026.');
+      expect(norm(app.root.querySelector('[data-role="scheduled"]')?.textContent)).toContain('Seu plano volta a ser o Livre em 13/11/2026.');
       await click(app, byText(app, 'main button', 'Manter meu plano'));
       expect(openSheet(app)).toBeNull();
       const sub = app.db.subscriptions.require(subOf(app, 'cg_0026').id);

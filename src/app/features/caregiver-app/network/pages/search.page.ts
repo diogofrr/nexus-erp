@@ -16,15 +16,36 @@ import { ProviderCategory } from '../../../../core/models';
 import { CaregiverNetworkService, ProviderPublicView } from '../../../../core/network/caregiver-network.service';
 import { BadgeComponent } from '../../../../shared/ui/display/badge.component';
 import { EmptyStateComponent } from '../../../../shared/ui/display/empty-state.component';
-import { IconComponent } from '../../../../shared/ui/display/icon.component';
+import { IconComponent, IconName } from '../../../../shared/ui/display/icon.component';
 import { FormFieldComponent } from '../../../../shared/ui/forms/form-field.component';
 import { NxInputDirective } from '../../../../shared/ui/forms/input.directive';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { ContactDialogService } from '../../state/contact-dialog.service';
+import { CgAccent } from '../../ui/cg-accent';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
+import { CgIconBadgeComponent } from '../../ui/cg-icon-badge.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
+import { ProviderAvatarComponent } from '../ui/provider-avatar.component';
+import { StarsComponent } from '../ui/stars.component';
 import { CATEGORIES, CONDITIONS_FROM_ESSENCIAL, categoryLabel, parseCategory, ratingShort, ratingText } from '../state/network-copy';
+
+/**
+ * O ícone e a tinta de cada necessidade (docs/17-vida-v1.md): saúde na sálvia, cuidado em casa na areia, mente e
+ * alimentação no azul-céu, direito e serviços especiais no azul profundo. A cor agrupa, o nome escrito diz qual é.
+ */
+const CATEGORY_STYLE: Readonly<Record<ProviderCategory, { icon: IconName; accent: CgAccent }>> = {
+  physiotherapy: { icon: 'accessibility', accent: 'rotina' },
+  professional_caregiver: { icon: 'hand-heart', accent: 'cuidar' },
+  home_care: { icon: 'house-heart', accent: 'cuidar' },
+  nursing: { icon: 'syringe', accent: 'rotina' },
+  pharmacy: { icon: 'pill', accent: 'rotina' },
+  clinic: { icon: 'stethoscope', accent: 'rotina' },
+  psychology: { icon: 'brain', accent: 'hoje' },
+  nutrition: { icon: 'apple', accent: 'hoje' },
+  legal: { icon: 'scale', accent: 'rede' },
+  specialized_service: { icon: 'sparkles', accent: 'rede' },
+};
 
 /** No máximo 3 profissionais lado a lado (UX C13). */
 const MAX_COMPARE = 3;
@@ -57,18 +78,30 @@ interface CompareRow {
     IconComponent,
     FormFieldComponent,
     NxInputDirective,
+    CgHeroComponent,
+    CgIconBadgeComponent,
     CgNoteComponent,
-    CgPageHeaderComponent,
     CgSheetComponent,
+    ProviderAvatarComponent,
+    StarsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
-      .nx-cats { display: grid; gap: 0.5rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+      .nx-cats { display: grid; gap: 0.75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
       @media (min-width: 48rem) { .nx-cats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-      .nx-cat { display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; min-height: var(--cg-target-lg); padding: 0.5rem 0.75rem; border: 2px solid var(--cg-action); border-radius: var(--cg-radius-control); background: var(--cg-surface); color: var(--cg-heading); font: inherit; font-weight: var(--fw-semibold); text-align: center; cursor: pointer; }
-      .nx-cat[aria-pressed='true'] { background: var(--cg-action); color: #fff; }
-      .nx-toggle { justify-content: flex-start; }
+      @media (min-width: 64rem) { .nx-cats { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; } }
+      /* Cada necessidade é um ladrilho: o emblema colorido em cima, o nome embaixo. Escolhido, o ladrilho enche com a cor cheia. */
+      .nx-cat { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; width: 100%; min-height: 7rem; padding: 0.75rem 0.5rem; border: 2px solid var(--cg-acc-solid); border-radius: var(--cg-radius-card); background: var(--cg-acc-tint); color: var(--cg-acc-ink); font: inherit; font-weight: var(--fw-semibold); text-align: center; cursor: pointer; transition: transform var(--cg-dur) var(--ease), background var(--cg-dur-sheet) var(--ease), box-shadow var(--cg-dur-sheet) var(--ease); }
+      .nx-cat:hover { box-shadow: var(--cg-shadow-2); }
+      .nx-cat:active { transform: scale(0.97); }
+      .nx-cat[aria-pressed='true'] { background: var(--cg-acc-solid); color: #fff; box-shadow: var(--cg-shadow-2); }
+      .nx-cat[aria-pressed='true'] app-cg-icon-badge { background: rgb(255 255 255 / 0.24); color: #fff; }
+      .nx-cat__check { position: absolute; inset: 0.5rem 0.5rem auto auto; }
+      .nx-toggle { flex-direction: row; justify-content: flex-start; min-height: var(--cg-target-lg); border-color: var(--cg-action); background: var(--cg-surface); color: var(--cg-heading); }
+      .nx-toggle[aria-pressed='true'] { background: var(--cg-action); color: #fff; }
+      .nx-result__head { display: flex; align-items: flex-start; gap: 0.75rem; }
+      .nx-result__head .nx-result__title { flex: 1; min-width: 0; }
       .nx-results { display: grid; gap: var(--cg-gap-stack); margin: 0; padding: 0; list-style: none; grid-template-columns: minmax(0, 1fr); }
       @media (min-width: 64rem) { .nx-results { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       .nx-result { position: relative; display: grid; gap: 0.5rem; align-content: start; padding: var(--cg-pad-card); border: 1px solid var(--cg-border); border-radius: var(--cg-radius-card); background: var(--cg-surface); }
@@ -98,7 +131,7 @@ interface CompareRow {
     `,
   ],
   template: `
-    <app-cg-page-header title="Buscar" backLink="/cuidador/rede" backLabel="Rede" />
+    <app-cg-hero title="Buscar" illustration="network" backLink="/cuidador/rede" backLabel="Rede" />
     <div class="cg-stack">
       <app-form-field label="Buscar pelo nome" optional controlId="search-name">
         <input appInput type="search" autocomplete="off" [value]="name()" (input)="onName($event)" />
@@ -108,12 +141,13 @@ interface CompareRow {
         <h2 class="cg-section__title" id="search-needs">O que você procura?</h2>
         <ul class="nx-cats">
           @for (c of categories; track c.value) {
-            <li>
+            <li [class]="'cg-sec--' + style(c.value).accent">
               <button type="button" class="nx-cat" [attr.aria-pressed]="category() === c.value" [attr.data-category]="c.value" (click)="chooseCategory(c.value)">
+                <app-cg-icon-badge [icon]="style(c.value).icon" size="lg" />
                 @if (category() === c.value) {
-                  <svg appIcon="check" size="sm"></svg>
+                  <svg class="nx-cat__check" appIcon="check" size="sm"></svg>
                 }
-                {{ c.label }}
+                <span>{{ c.label }}</span>
               </button>
             </li>
           }
@@ -156,10 +190,13 @@ interface CompareRow {
             }
             <ul class="nx-results" aria-label="Resultados da busca">
               @for (p of results(); track p.id) {
-                <li class="nx-result" data-role="result">
-                  <h3 class="cg-card__title nx-result__title">
-                    <a class="nx-result__link" [routerLink]="['/cuidador/rede/profissional', p.id]">{{ p.name }}</a>
-                  </h3>
+                <li class="nx-result" data-role="result" [class]="'nx-result cg-sec--' + style(p.category).accent">
+                  <div class="nx-result__head">
+                    <app-cg-provider-avatar [name]="p.name" size="md" />
+                    <h3 class="cg-card__title nx-result__title">
+                      <a class="nx-result__link" [routerLink]="['/cuidador/rede/profissional', p.id]">{{ p.name }}</a>
+                    </h3>
+                  </div>
                   <p class="cg-meta">{{ p.specialtyLabel }} · {{ p.city }}</p>
                   @if (p.homeCare || p.highlight) {
                     <p class="cg-tags">
@@ -171,7 +208,7 @@ interface CompareRow {
                       }
                     </p>
                   }
-                  <p class="cg-meta" data-role="rating">{{ rating(p) }}</p>
+                  <p class="cg-meta" data-role="rating"><app-cg-stars [value]="p.average" /> {{ rating(p) }}</p>
                   <label class="check">
                     <input
                       type="checkbox"
@@ -252,6 +289,9 @@ export class SearchPage {
   protected readonly ctx = inject(CaregiverContextService);
 
   protected readonly categories = CATEGORIES;
+  protected style(category: ProviderCategory): { icon: IconName; accent: CgAccent } {
+    return CATEGORY_STYLE[category];
+  }
   protected readonly maxCompare = MAX_COMPARE;
 
   private readonly params = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });

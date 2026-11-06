@@ -107,12 +107,12 @@ interface DayView {
   host: { class: 'cg-calendar-host' },
   styles: `
     :host { display: block; container: cg-cal / inline-size; }
-    .cg-cal { padding-block: 0.25rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-card); background: var(--cg-surface); }
-    .cg-cal__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.25rem; padding: 0.5rem 0.5rem 0 0.75rem; }
-    .cg-cal__title { flex: 1 0 100%; margin: 0 0 0.25rem; color: var(--cg-heading); font-size: var(--cg-fs-lead); font-weight: 700; line-height: 1.25; }
+    .cg-cal { padding-block: 0 0.25rem; border: 1px solid var(--cg-acc-strong); border-radius: var(--cg-radius-card); background: var(--cg-surface); box-shadow: var(--cg-shadow-1); overflow: hidden; }
+    .cg-cal__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.25rem; margin-bottom: 0.25rem; padding: 0.75rem 0.5rem 0.5rem 1rem; background: var(--cg-acc-tint); }
+    .cg-cal__title { flex: 1 0 100%; margin: 0 0 0.25rem; color: var(--cg-acc-ink); font-family: var(--font-serif); font-size: calc(1.5rem * var(--cg-zoom)); line-height: 1.2; }
     .cg-cal__title::first-letter { text-transform: uppercase; }
-    .cg-cal__step { display: grid; place-items: center; width: var(--cg-target); height: var(--cg-target); padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--cg-heading); cursor: pointer; transition: background-color var(--cg-dur) ease; }
-    .cg-cal__today { min-height: var(--cg-target); margin-inline-start: auto; padding: 0 1rem; border: 2px solid var(--cg-action); border-radius: var(--cg-radius-pill); background: var(--cg-surface); color: var(--cg-action); font: inherit; font-weight: var(--fw-semibold); cursor: pointer; transition: background-color var(--cg-dur) ease; }
+    .cg-cal__step { display: grid; place-items: center; width: var(--cg-target); height: var(--cg-target); padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--cg-acc-ink); cursor: pointer; transition: background-color var(--cg-dur) ease; }
+    .cg-cal__today { min-height: var(--cg-target); margin-inline-start: auto; padding: 0 1rem; border: 2px solid var(--cg-acc-solid); border-radius: var(--cg-radius-pill); background: var(--cg-surface); color: var(--cg-acc-ink); font: inherit; font-weight: var(--fw-semibold); cursor: pointer; transition: background-color var(--cg-dur) ease; }
     .cg-cal__step:hover, .cg-cal__today:hover { background: var(--cg-surface-sunken); }
     .cg-cal__row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
     .cg-cal__dow { padding: 0.5rem 0 0.25rem; color: var(--cg-text-soft); font-size: var(--cg-fs-caption); font-weight: var(--fw-semibold); text-align: center; }
@@ -122,10 +122,10 @@ interface DayView {
     .cg-cal__day:focus-visible { outline-offset: -4px; }
     .cg-cal__day.is-other { color: var(--cg-border-control); }
     .cg-cal__day.is-other:hover { color: var(--cg-text-soft); }
-    .cg-cal__day.is-selected { border-color: var(--cg-action); background: var(--brand-soft); color: var(--cg-heading); }
+    .cg-cal__day.is-selected { border-color: var(--cg-acc-solid); background: var(--cg-acc-tint); color: var(--cg-acc-ink); }
     .cg-cal__num { display: grid; place-items: center; min-width: 1.75em; height: 1.75em; border-radius: 50%; }
     .cg-cal__day.has-events .cg-cal__num { font-weight: 700; }
-    .cg-cal__day.is-today .cg-cal__num { background: var(--cg-action); color: var(--cg-surface); font-weight: 700; }
+    .cg-cal__day.is-today .cg-cal__num { background: var(--cg-acc-solid); color: var(--cg-surface); font-weight: 700; }
     .cg-cal__marks { display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 0.125rem; min-height: 0.625rem; }
     .cg-cal__more { color: var(--cg-text-soft); font-size: calc(0.8125rem * min(var(--cg-zoom, 1), 1.1)); font-weight: var(--fw-semibold); line-height: 1; white-space: nowrap; }
     .cg-cal__mark { --mark: var(--cg-action); flex: none; box-sizing: border-box; display: inline-block; width: 0.625rem; height: 0.625rem; background: var(--mark); }

@@ -170,7 +170,7 @@ describe('Área help (Falar com a Nexus e Ajuda agora)', () => {
   describe('Falar com a Nexus (C19)', () => {
     it('AC-CG-159: mostra os 4 canais com o preferido primeiro, os prazos certos e o aviso de emergência', async () => {
       app = await bootCaregiverApp('cg_0003', { url: '/cuidador/mais/ajuda' });
-      expect(text(q('.cg-page-header__desc'))).toBe('Escolha o jeito mais fácil para você.');
+      expect(text(q('.cg-hero__desc'))).toBe('Escolha o jeito mais fácil para você.');
       const rows = all('[data-role="channels"] .cg-row');
       expect(rows).toHaveLength(4);
       const titles = rows.map((r) => text(r.querySelector('.cg-row__title')));

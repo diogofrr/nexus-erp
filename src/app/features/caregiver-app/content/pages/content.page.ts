@@ -1,16 +1,18 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Database } from '../../../../core/data/database';
 import { GuidanceContent } from '../../../../core/models';
 import { canReadContent, contentParagraphs, publishedContents, readingTimeLabel } from '../../../../core/rules/guidance-content';
-import { EmptyStateComponent } from '../../../../shared/ui/display/empty-state.component';
 import { PageChromeService } from '../../../../layout/state/page-chrome.service';
+import { IconComponent } from '../../../../shared/ui/display/icon.component';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
+import { CgEmptyComponent } from '../../ui/cg-empty.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
+import { CgIllustrationComponent } from '../../ui/cg-illustration.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
 import { CgPlanLockComponent } from '../../ui/cg-plan-lock.component';
-import { CgRowComponent } from '../../ui/cg-row.component';
 
 /** Rodapé da leitura (UX C11): o conteúdo orienta e não substitui profissional nem diz o que fazer com remédio. */
 export const CONTENT_FOOTER =
@@ -23,24 +25,42 @@ interface ContentItem {
 }
 
 /**
- * Conteúdos (UX C11, `/cuidador/cuidar-de-mim/conteudos`): leituras curtas de orientação. Duas listas, "Para todos" e,
- * do Essencial em diante, "Do seu plano" (os exclusivos); no Livre, UM cartão de bloqueio no lugar dessa lista, sem
- * listar os títulos exclusivos como isca. Tocar numa leitura abre o texto em folha de tela cheia, com `?conteudo=` na
- * URL (S-21): título em serifa, texto de 18 px ou mais em até 66 caracteres por linha, tempo de leitura, o aviso de que
- * não substitui profissional e "Voltar". Só aparece conteúdo PUBLICADO. A ordem é da mais nova para a mais antiga, igual
- * para todos: nada é escolhido por pontuação, faixa, alerta ou ARBE (RN-PLN-19, RN-ZRT-09).
+ * Conteúdos (UX C11, `/cuidador/cuidar-de-mim/conteudos`): leituras curtas de orientação, em cartões com um desenho no alto e o
+ * tempo de leitura ("Leitura de 1 minuto"). Duas listas, "Para todos" e, do Essencial em diante, "Do seu plano" (os
+ * exclusivos); no Livre, UM cartão de bloqueio no lugar dessa lista, sem listar os títulos exclusivos como isca. Tocar numa
+ * leitura abre o texto em tela cheia, com `?conteudo=` na URL (S-21): título em serifa, texto de 18 px ou mais em até 66
+ * caracteres por linha, tempo de leitura, o aviso de que não substitui profissional e "Voltar". Só aparece conteúdo PUBLICADO.
+ * A ordem é da mais nova para a mais antiga, igual para todos: nada é escolhido por pontuação, faixa, alerta ou ARBE
+ * (RN-PLN-19, RN-ZRT-09). A cor do desenho do cartão alterna entre três tintas calmas, só para a lista não ficar monótona:
+ * não quer dizer nada (nem o tema, nem a importância).
  */
 @Component({
   selector: 'app-cg-content-page',
-  imports: [RouterLink, CgPageHeaderComponent, CgRowComponent, CgPlanLockComponent, CgNoteComponent, EmptyStateComponent],
+  imports: [NgTemplateOutlet, RouterLink, IconComponent, CgEmptyComponent, CgHeroComponent, CgIllustrationComponent, CgNoteComponent, CgPlanLockComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
+      .nx-reads { display: grid; gap: var(--cg-gap-stack); margin: 0; padding: 0; list-style: none; grid-template-columns: minmax(0, 1fr); }
+      @media (min-width: 40rem) { .nx-reads { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; } }
+      @media (min-width: 64rem) { .nx-reads { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+      .nx-reads > li { display: flex; }
+      .nx-read { display: grid; grid-template-rows: auto 1fr; inline-size: 100%; padding: 0; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-card); background: var(--cg-surface); color: var(--cg-text); font: inherit; text-align: start; cursor: pointer; overflow: hidden; box-shadow: var(--cg-shadow-1); transition: box-shadow var(--cg-dur) var(--ease), transform var(--cg-dur) var(--ease); }
+      .nx-read:hover { box-shadow: var(--cg-shadow-2); }
+      .nx-read:active { transform: scale(0.985); }
+      .nx-read__cover { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-block-size: 5.25rem; padding: 0.75rem 1rem 0.75rem 1.25rem; }
+      .nx-read__cover--0 { background: linear-gradient(120deg, var(--cg-acc-tint), var(--cg-acc-strong)); }
+      .nx-read__cover--1 { background: linear-gradient(120deg, var(--cg-care-bg), var(--cg-care-border)); }
+      .nx-read__cover--2 { background: linear-gradient(120deg, var(--cg-ok-bg), var(--cg-ok-border)); }
+      .nx-read__time { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.125rem 0.625rem; border-radius: var(--cg-radius-pill); background: var(--cg-surface); color: var(--cg-text); font-size: var(--cg-fs-caption); font-weight: var(--fw-semibold); }
+      .nx-read__time .icon { color: var(--cg-soft-icon); }
+      .nx-read__body { display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem 1.25rem 1.25rem; }
+      .nx-read__title { flex: 1; min-inline-size: 0; font-size: var(--cg-fs-lead); font-weight: var(--fw-semibold); line-height: 1.3; color: var(--cg-heading); overflow-wrap: anywhere; }
+      .nx-read__go { flex: none; margin-top: 0.125rem; color: var(--cg-text-soft); }
     `,
   ],
   template: `
     @if (reading(); as item) {
-      <app-cg-page-header [title]="item.title" backLink="/cuidador/cuidar-de-mim/conteudos" backLabel="Conteúdos" />
+      <app-cg-hero [title]="item.title" illustration="book" backLink="/cuidador/cuidar-de-mim/conteudos" backLabel="Conteúdos" />
       <article class="cg-reading cg-stack cg-stack--tight" data-role="reading">
         <p class="cg-meta" data-role="reading-time">{{ item.time }}</p>
         @for (paragraph of item.paragraphs; track $index) {
@@ -54,7 +74,7 @@ interface ContentItem {
         <a class="btn" routerLink="/cuidador/cuidar-de-mim/conteudos">Voltar</a>
       </div>
     } @else {
-      <app-cg-page-header title="Conteúdos" description="Leituras curtas. Escolha uma." backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
+      <app-cg-hero title="Conteúdos" description="Leituras curtas. Escolha uma." illustration="book" backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
 
       @if (missing()) {
         <app-cg-note variant="soft" icon="info">
@@ -64,16 +84,14 @@ interface ContentItem {
       }
 
       @if (openItems().length === 0 && !showLock() && exclusiveItems().length === 0) {
-        <app-empty-state title="Ainda não há leituras" text="Quando a equipe publicar, elas aparecem aqui." />
+        <app-cg-empty illustration="book" [headingLevel]="2" title="Ainda não há leituras" text="Quando a equipe publicar, elas aparecem aqui." />
       } @else {
         @if (openItems().length > 0) {
           <section class="cg-section" aria-labelledby="content-open">
             <h2 class="cg-section__title" id="content-open">Para todos</h2>
-            <ul class="cg-list">
-              @for (item of openItems(); track item.id) {
-                <li>
-                  <app-cg-row icon="book-open" [title]="item.title" [description]="item.time" (activated)="open(item.id)" />
-                </li>
+            <ul class="nx-reads cg-enter">
+              @for (item of openItems(); track item.id; let i = $index) {
+                <ng-container [ngTemplateOutlet]="read" [ngTemplateOutletContext]="{ $implicit: item, i: i }" />
               }
             </ul>
           </section>
@@ -82,11 +100,9 @@ interface ContentItem {
         @if (exclusiveItems().length > 0) {
           <section class="cg-section" aria-labelledby="content-plan">
             <h2 class="cg-section__title" id="content-plan">Do seu plano</h2>
-            <ul class="cg-list">
-              @for (item of exclusiveItems(); track item.id) {
-                <li>
-                  <app-cg-row icon="book-open" [title]="item.title" [description]="item.time" (activated)="open(item.id)" />
-                </li>
+            <ul class="nx-reads cg-enter">
+              @for (item of exclusiveItems(); track item.id; let i = $index) {
+                <ng-container [ngTemplateOutlet]="read" [ngTemplateOutletContext]="{ $implicit: item, i: i }" />
               }
             </ul>
           </section>
@@ -101,6 +117,21 @@ interface ContentItem {
         }
       }
     }
+
+    <ng-template #read let-item let-i="i">
+      <li>
+        <button type="button" class="nx-read" data-role="read" (click)="open(item.id)">
+          <span [class]="'nx-read__cover nx-read__cover--' + (i % 3)">
+            <span class="nx-read__time"><svg appIcon="clock" size="sm"></svg>{{ item.time }}</span>
+            <app-cg-illustration name="book" size="sm" tone="brand" />
+          </span>
+          <span class="nx-read__body">
+            <span class="nx-read__title">{{ item.title }}</span>
+            <svg class="nx-read__go" appIcon="chevron-right"></svg>
+          </span>
+        </button>
+      </li>
+    </ng-template>
   `,
 })
 export class ContentPage {

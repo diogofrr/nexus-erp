@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, computed, input } from '@angular/core';
 
 export interface CgTrendItem {
   id: string;
@@ -34,8 +34,12 @@ export function trendItemLabel(item: CgTrendItem): string {
  * pontos usam uma rampa de uma cor só (azul, do mais claro ao mais escuro): sem octógono, sem triângulo, sem
  * vermelho, sem âmbar, nenhum número grande. A frase "Não é um diagnóstico" vai na folha "Entender as faixas".
  *
+ * Com `trail`, uma trilha de pontos (um por conversa, do mais antigo ao mais novo, até 6, na mesma rampa de uma cor) aparece
+ * acima da lista: só desenho (`aria-hidden`), sem número; o texto da lista diz tudo. A última conversa leva o anel.
+ *
  * ```html
  * <app-cg-trend [items]="items()" />
+ * <app-cg-trend [items]="visible()" trail />
  * ```
  */
 @Component({
@@ -43,6 +47,13 @@ export function trendItemLabel(item: CgTrendItem): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'cg-trend-host' },
   template: `
+    @if (trailItems().length > 1) {
+      <ol class="cg-trend__trail" aria-hidden="true">
+        @for (item of trailItems(); track item.id; let i = $index) {
+          <li class="cg-trend__trail-dot" [class.is-latest]="item.latest" [attr.data-band]="item.band" [style.--i]="i"></li>
+        }
+      </ol>
+    }
     <ol class="cg-trend" aria-label="Suas conversas com a equipe">
       @for (item of items(); track item.id) {
         <li class="cg-trend__item" [class.is-latest]="item.latest" [attr.aria-label]="label(item)">
@@ -65,6 +76,11 @@ export function trendItemLabel(item: CgTrendItem): string {
 })
 export class CgTrendComponent {
   readonly items = input.required<readonly CgTrendItem[]>();
+  /** Desenha a trilha de pontos acima da lista (precisa de 2 conversas ou mais). */
+  readonly trail = input(false, { transform: booleanAttribute });
+
+  /** Do mais antigo ao mais novo, no máximo 6 (a lista vem do mais recente para o mais antigo). */
+  protected readonly trailItems = computed(() => (this.trail() ? [...this.items().slice(0, 6)].reverse() : []));
 
   protected readonly label = trendItemLabel;
 }

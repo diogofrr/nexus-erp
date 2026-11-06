@@ -6,19 +6,21 @@ import { timeOf } from '../../../../core/clock/date-utils';
 import { Database } from '../../../../core/data/database';
 import { formatDate } from '../../../../core/format/format';
 import { CaregiverActivitiesService, ActivityStanding } from '../../../../core/groups/caregiver-activities.service';
-import { Activity, ISODateTime } from '../../../../core/models';
+import { Activity, ActivityKind, ISODateTime } from '../../../../core/models';
 import { PageChromeService } from '../../../../layout/state/page-chrome.service';
-import { EmptyStateComponent } from '../../../../shared/ui/display/empty-state.component';
-import { IconComponent } from '../../../../shared/ui/display/icon.component';
+import { IconComponent, IconName } from '../../../../shared/ui/display/icon.component';
 import { CheckboxComponent } from '../../../../shared/ui/forms/checkbox.component';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { ContactDialogService } from '../../state/contact-dialog.service';
 import { relativeDateTime } from '../../state/day-format';
 import { activityFormatLabel } from '../../state/format-labels';
+import { CgEmptyComponent } from '../../ui/cg-empty.component';
+import { CgHeroComponent } from '../../ui/cg-hero.component';
+import { CgIllustrationName } from '../../ui/cg-illustration.component';
 import { CgNoteComponent, CgNoteVariant } from '../../ui/cg-note.component';
-import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
 import { CgPlanLockComponent } from '../../ui/cg-plan-lock.component';
 import { CgRowComponent } from '../../ui/cg-row.component';
+import { CgSealComponent, CgSealTone } from '../../ui/cg-seal.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import {
   CHARACTER_LABELS,
@@ -32,10 +34,24 @@ import {
   seatsText,
 } from '../state/group-copy';
 
+/**
+ * Cada tipo de atividade tem a sua cor calma, o seu ícone e o seu desenho: grupo de apoio em azul, capacitação em dourado,
+ * grupo com psicólogo na tinta da seção, roda aberta em verde. O tipo nunca depende só da cor: o nome vem escrito na etiqueta.
+ */
+const KIND_LOOK: Readonly<Record<ActivityKind, { tone: CgSealTone; icon: IconName; art: CgIllustrationName }>> = {
+  support_group: { tone: 'care', icon: 'users-round', art: 'group' },
+  training: { tone: 'gold', icon: 'award', art: 'book' },
+  group_therapy: { tone: 'accent', icon: 'heart', art: 'heart' },
+  open_conversation_circle: { tone: 'ok', icon: 'messages-square', art: 'chat' },
+};
+
 interface ActivityCard {
   id: string;
   title: string;
   kind: string;
+  look: (typeof KIND_LOOK)[ActivityKind];
+  /** O ícone do formato (on-line ou presencial). */
+  formatIcon: IconName;
   /** Do plano Cuida em diante, e a pessoa ainda não tem acesso: a linha diz o plano, sem pressão (CXC-021). */
   planTag: string | null;
   character: string;
@@ -53,6 +69,7 @@ interface MineRow {
 interface ActivityDetail {
   activity: Activity;
   kind: string;
+  look: (typeof KIND_LOOK)[ActivityKind];
   character: string;
   characterText: string;
   about: string;
@@ -86,33 +103,48 @@ interface Banner {
   imports: [
     RouterLink,
     IconComponent,
-    EmptyStateComponent,
     CheckboxComponent,
-    CgPageHeaderComponent,
+    CgEmptyComponent,
+    CgHeroComponent,
     CgNoteComponent,
     CgPlanLockComponent,
     CgRowComponent,
+    CgSealComponent,
     CgSheetComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
-      .nx-tag { display: inline-flex; align-items: center; min-height: 1.75rem; padding: 0 0.625rem; border-radius: var(--cg-radius-pill); background: var(--brand-soft); color: var(--cg-heading); font-size: var(--cg-fs-caption); font-weight: var(--fw-semibold); }
-      .nx-tag--soft { background: var(--cg-surface-sunken); color: var(--cg-text); }
       .nx-cards { display: grid; gap: var(--cg-gap-stack); margin: 0; padding: 0; list-style: none; grid-template-columns: minmax(0, 1fr); }
       @media (min-width: 64rem) { .nx-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-      .nx-cards .cg-card { height: 100%; }
-      .nx-dl { display: grid; gap: 1rem; margin: 0; }
-      .nx-dl dt { font-weight: var(--fw-semibold); color: var(--cg-heading); }
-      .nx-dl dd { margin: 0.25rem 0 0; }
-      .nx-dl ul { margin: 0; padding-inline-start: 1.25rem; }
+      /* Emblema, título e seta na primeira linha; etiquetas e datas embaixo, na largura toda (no celular a coluna do texto era estreita). */
+      .nx-cards .cg-card { height: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 0.75rem; row-gap: 0.5rem; align-items: center; align-content: start; }
+      .nx-cards .cg-card__main { display: contents; }
+      .nx-cards .cg-card__title { grid-column: 2; grid-row: 1; margin: 0; }
+      .nx-cards .cg-card__text { grid-column: 1 / -1; }
+      .nx-cards .cg-card__chevron { grid-column: 3; grid-row: 1; }
+      .nx-cards .nx-kind { grid-column: 1; grid-row: 1; }
+      /* O emblema de cada tipo: a cor calma do tipo (as mesmas dos selos do kit). */
+      .nx-kind { display: grid; place-items: center; flex: none; inline-size: 3rem; block-size: 3rem; border-radius: 50%; }
+      .nx-kind--care { background: var(--cg-care-bg); color: var(--cg-care-fg); box-shadow: inset 0 0 0 1px var(--cg-care-border); }
+      .nx-kind--gold { background: var(--nx-gold-100); color: var(--nx-gold-800); box-shadow: inset 0 0 0 1px var(--nx-gold-200); }
+      .nx-kind--ok { background: var(--cg-ok-bg); color: var(--cg-ok-fg); box-shadow: inset 0 0 0 1px var(--cg-ok-border); }
+      .nx-kind--accent { background: var(--cg-acc-strong); color: var(--cg-acc-ink); }
+      .nx-meta { display: flex; align-items: center; gap: 0.5rem; margin: 0; color: var(--cg-text-soft); font-size: var(--cg-fs-small); line-height: 1.4; }
+      .nx-meta .icon { flex: none; color: var(--cg-acc-ink); }
+      .nx-facts { display: grid; gap: 1.25rem; margin: 0; }
+      @media (min-width: 64rem) { .nx-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 2rem; } }
+      .nx-fact dt { display: flex; align-items: center; gap: 0.75rem; font-weight: var(--fw-semibold); color: var(--cg-heading); }
+      .nx-fact dd { margin: 0.375rem 0 0; padding-inline-start: 2.75rem; }
+      .nx-fact ul { margin: 0; padding-inline-start: 1.25rem; }
+      .nx-fact__icon { display: grid; place-items: center; flex: none; inline-size: 2rem; block-size: 2rem; border-radius: 50%; background: var(--cg-acc-strong); color: var(--cg-acc-ink); }
       .nx-block { display: block; }
       .nx-stamp { margin: 0; color: var(--cg-ok-fg); font-weight: var(--fw-semibold); }
     `,
   ],
   template: `
     @if (detail(); as d) {
-      <app-cg-page-header [title]="d.activity.title" backLink="/cuidador/cuidar-de-mim/grupos" backLabel="Grupos e capacitações" />
+      <app-cg-hero [title]="d.activity.title" [illustration]="d.look.art" backLink="/cuidador/cuidar-de-mim/grupos" backLabel="Grupos e capacitações" />
       <div class="cg-stack">
         @if (banner(); as b) {
           <app-cg-note [variant]="b.variant" data-role="result">{{ b.text }}</app-cg-note>
@@ -120,16 +152,16 @@ interface Banner {
 
         <div class="cg-stack cg-stack--tight">
           <p class="cg-tags">
-            <span class="nx-tag" data-role="kind">{{ d.kind }}</span>
-            <span class="nx-tag nx-tag--soft" data-role="character">{{ d.character }}</span>
+            <app-cg-seal [tone]="d.look.tone" [icon]="d.look.icon" data-role="kind">{{ d.kind }}</app-cg-seal>
+            <app-cg-seal tone="neutral" data-role="character">{{ d.character }}</app-cg-seal>
           </p>
           <p>{{ d.about }}</p>
           <p data-role="character-text">{{ d.characterText }}</p>
         </div>
 
-        <dl class="nx-dl">
-          <div>
-            <dt>Encontros</dt>
+        <dl class="nx-facts">
+          <div class="nx-fact">
+            <dt><span class="nx-fact__icon" aria-hidden="true"><svg appIcon="calendar-days" size="sm"></svg></span>Encontros</dt>
             <dd>
               <ul>
                 @for (m of d.meetings; track m) {
@@ -138,8 +170,8 @@ interface Banner {
               </ul>
             </dd>
           </div>
-          <div>
-            <dt>Onde</dt>
+          <div class="nx-fact">
+            <dt><span class="nx-fact__icon" aria-hidden="true"><svg [appIcon]="d.activity.mode === 'in_person' ? 'map-pin' : 'video'" size="sm"></svg></span>Onde</dt>
             <dd data-role="where">
               {{ d.format }}
               @if (d.room; as room) {
@@ -153,16 +185,16 @@ interface Banner {
               }
             </dd>
           </div>
-          <div>
-            <dt>Quem conduz</dt>
+          <div class="nx-fact">
+            <dt><span class="nx-fact__icon" aria-hidden="true"><svg appIcon="user-round" size="sm"></svg></span>Quem conduz</dt>
             <dd>
               @for (line of d.leaders; track line) {
                 <span data-role="leader" class="nx-block">{{ line }}</span>
               }
             </dd>
           </div>
-          <div>
-            <dt>Vagas</dt>
+          <div class="nx-fact">
+            <dt><span class="nx-fact__icon" aria-hidden="true"><svg appIcon="users" size="sm"></svg></span>Vagas</dt>
             <dd data-role="seats">{{ d.seats }}</dd>
           </div>
         </dl>
@@ -242,7 +274,7 @@ interface Banner {
         </ng-container>
       </app-cg-sheet>
     } @else {
-      <app-cg-page-header title="Grupos e capacitações" description="A programação do mês." backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
+      <app-cg-hero title="Grupos e capacitações" description="A programação do mês." illustration="group" backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
 
       @if (missing()) {
         <app-cg-note variant="soft" icon="info">
@@ -252,7 +284,7 @@ interface Banner {
       }
 
       @if (cards().length === 0) {
-        <app-empty-state title="Ainda não há grupos neste mês" text="A programação é montada todo mês. Volte em breve." />
+        <app-cg-empty illustration="group" [headingLevel]="2" title="Ainda não há grupos neste mês" text="A programação é montada todo mês. Volte em breve." />
       } @else {
         @if (mine().length > 0) {
           <section class="cg-section" aria-labelledby="groups-mine">
@@ -273,18 +305,19 @@ interface Banner {
             @for (card of cards(); track card.id) {
               <li>
                 <a class="cg-card cg-card--link" [routerLink]="[]" [queryParams]="{ atividade: card.id }" data-role="activity">
+                  <span [class]="'nx-kind nx-kind--' + card.look.tone" aria-hidden="true"><svg [appIcon]="card.look.icon" size="lg"></svg></span>
                   <div class="cg-card__main">
                     <h3 class="cg-card__title">{{ card.title }}</h3>
                     <div class="cg-card__text">
                       <p class="cg-tags">
-                        <span class="nx-tag">{{ card.kind }}</span>
-                        <span class="nx-tag nx-tag--soft">{{ card.character }}</span>
+                        <app-cg-seal [tone]="card.look.tone">{{ card.kind }}</app-cg-seal>
+                        <app-cg-seal tone="neutral">{{ card.character }}</app-cg-seal>
                         @if (card.planTag; as plan) {
-                          <span class="nx-tag nx-tag--soft" data-role="plan-tag"><svg appIcon="lock" size="sm"></svg>{{ plan }}</span>
+                          <app-cg-seal tone="neutral" icon="lock" data-role="plan-tag">{{ plan }}</app-cg-seal>
                         }
                       </p>
-                      <p class="cg-meta">{{ card.next }}</p>
-                      <p class="cg-meta">{{ card.format }} · {{ card.seats }}</p>
+                      <p class="nx-meta"><svg appIcon="calendar-days" size="sm"></svg>{{ card.next }}</p>
+                      <p class="nx-meta"><svg [appIcon]="card.formatIcon" size="sm"></svg>{{ card.format }} · {{ card.seats }}</p>
                     </div>
                   </div>
                   <svg class="cg-card__chevron" appIcon="chevron-right"></svg>
@@ -328,6 +361,8 @@ export class GroupsPage {
         id: a.id,
         title: a.title,
         kind: KIND_LABELS[a.kind],
+        look: KIND_LOOK[a.kind],
+        formatIcon: a.mode === 'in_person' ? 'map-pin' : 'video',
         planTag: a.kind === 'open_conversation_circle' ? null : planTag,
         character: CHARACTER_LABELS[a.character],
         next: next ? `Próximo encontro: ${relativeDateTime(next.startAt, today)}` : 'Sem encontros marcados',
@@ -377,6 +412,7 @@ export class GroupsPage {
     return {
       activity,
       kind: KIND_LABELS[activity.kind],
+      look: KIND_LOOK[activity.kind],
       character: CHARACTER_LABELS[activity.character],
       characterText: CHARACTER_TEXT[activity.character],
       about: KIND_TEXT[activity.kind],

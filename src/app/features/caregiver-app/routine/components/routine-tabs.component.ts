@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { IconComponent, IconName } from '../../../../shared/ui/display/icon.component';
 
 export type RoutineTab = 'agenda' | 'remedios';
 
@@ -7,54 +8,64 @@ interface TabItem {
   id: RoutineTab;
   label: string;
   link: string;
+  icon: IconName;
 }
 
 const TABS: readonly TabItem[] = [
-  { id: 'agenda', label: 'Agenda', link: '/cuidador/rotina/agenda' },
-  { id: 'remedios', label: 'Remédios', link: '/cuidador/rotina/remedios' },
+  { id: 'agenda', label: 'Agenda', link: '/cuidador/rotina/agenda', icon: 'calendar-days' },
+  { id: 'remedios', label: 'Remédios', link: '/cuidador/rotina/remedios', icon: 'pill' },
 ];
 
 /**
- * As duas abas de Rotina (UX C5 e C6): Agenda e Remédios, de 56 px, com a linha dourada na atual. Cada aba é um
+ * As duas abas de Rotina (UX C5 e C6): Agenda e Remédios, de 56 px, em uma pista arredondada na tinta da seção; a atual
+ * é uma pastilha branca com sombra suave (e a linha dourada embaixo). Cada aba é um
  * link de verdade (a rota muda), com `role="tab"` e `aria-selected`; as setas, Home e End movem entre as abas.
  * O conteúdo da aba fica num `role="tabpanel"` de quem usa (`panelId`).
  */
 @Component({
   selector: 'app-routine-tabs',
-  imports: [RouterLink],
+  imports: [RouterLink, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .routine-tabs {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.25rem;
       margin: 0 0 var(--cg-gap-block);
-      border-bottom: 1px solid var(--cg-border);
+      padding: 0.25rem;
+      border-radius: var(--cg-radius-pill);
+      background: var(--cg-acc-strong);
     }
     .routine-tab {
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 0.5rem;
       min-height: var(--cg-target-lg);
       padding: 0.5rem 1rem;
-      color: var(--cg-text-soft);
+      border-radius: var(--cg-radius-pill);
+      color: var(--cg-acc-ink);
       font-weight: var(--fw-semibold);
       text-align: center;
       text-decoration: none;
+      transition: background var(--cg-dur-sheet) var(--ease), box-shadow var(--cg-dur-sheet) var(--ease);
     }
     .routine-tab[aria-selected='true'] {
-      color: var(--cg-heading);
+      background: var(--cg-surface);
+      box-shadow: var(--cg-shadow-1);
       font-weight: 700;
     }
     .routine-tab[aria-selected='true']::after {
       content: '';
       position: absolute;
-      inset: auto 0 -1px;
+      inset: auto calc(50% - 1rem) 0.3125rem;
       height: 3px;
+      border-radius: 2px;
       background: var(--cg-gold-line);
     }
-    .routine-tab:hover {
-      background: var(--cg-surface-sunken);
+    .routine-tab:hover:not([aria-selected='true']) {
+      background: rgb(255 255 255 / 0.55);
     }
   `,
   template: `
@@ -69,7 +80,7 @@ const TABS: readonly TabItem[] = [
           [attr.aria-controls]="panelId()"
           [attr.tabindex]="current() === tab.id ? 0 : -1"
           (keydown)="onKey($event)"
-        >{{ tab.label }}</a>
+        ><svg [appIcon]="tab.icon" size="lg"></svg>{{ tab.label }}</a>
       }
     </div>
   `,

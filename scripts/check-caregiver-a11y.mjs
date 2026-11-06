@@ -10,6 +10,9 @@
  *     temas do cuidador (hoje só o claro, S-01; um bloco `.cg-app` que redefina cores `--cg-*` entra sozinho).
  *  2. PARES DECLARADOS NO CSS: toda regra de `_caregiver.scss` e de estilos de componente do aplicativo que declara ao
  *     mesmo tempo `color` e `background` (com cores que dá para resolver) precisa de 4,5:1.
+ *  2b. VIDA VISUAL (docs/17-vida-kit.md): as tintas por seção (`--cg-sec-*`: tinta, fundo claro, fundo do emblema e cor cheia), as
+ *     cinco cores do humor (`--cg-mood-*`) e o selo dourado, todos em 4,5:1 (texto) ou 3:1 (ícone, anel). Os parciais de
+ *     `src/styles/caregiver/` entram na conferência de pares do CSS e de alvos.
  *  3. ALVOS: `--cg-target` e companhia nos tokens (48 px ou mais), e a altura (e a largura, quando declarada) dos
  *     controles do kit no CSS (`.btn`, `.cg-link-btn`, `.cg-row`, `.cg-choice`, ...), sempre de 48 px ou mais.
  *
@@ -22,6 +25,7 @@ import { join, relative, sep } from 'node:path';
 const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const TOKENS_FILE = join(root, 'src', 'styles', '_tokens.scss');
 const CAREGIVER_FILE = join(root, 'src', 'styles', '_caregiver.scss');
+const CAREGIVER_PARTIALS_DIR = join(root, 'src', 'styles', 'caregiver');
 const APP_DIR = join(root, 'src', 'app', 'features', 'caregiver-app');
 const REM = 16;
 const MIN_TARGET_PX = 48;
@@ -300,6 +304,14 @@ const baseEnv = readNxPrimitives(tokensScss);
 readRootTokens(tokensScss, baseEnv);
 
 const caregiverRules = parseRules(caregiverScss);
+/** Os parciais (`src/styles/caregiver/_*.scss`): estilos novos do kit, conferidos como o resto. */
+const partialSources = readdirSync(CAREGIVER_PARTIALS_DIR)
+  .filter((name) => name.endsWith('.scss'))
+  .map((name) => {
+    const file = join(CAREGIVER_PARTIALS_DIR, name);
+    return { file: rel(file), rules: parseRules(readFileSync(file, 'utf8')) };
+  });
+const allCaregiverRules = [...caregiverRules, ...partialSources.flatMap((p) => p.rules)];
 
 /** Temas do cuidador: o claro (S-01) mais qualquer bloco de `.cg-app` que redefina cores `--cg-*`. */
 const themes = [{ name: 'claro', env: new Map(baseEnv) }];
@@ -324,6 +336,15 @@ for (const rule of caregiverRules) {
   if (rule.selectors.length === 1 && rule.selectors[0] === '.cg-app') {
     rule.decls
       .filter((d) => d.prop.startsWith('--') && !d.conditional && !isColorToken(d.prop))
+      .forEach((d) => themes.forEach((t) => t.env.set(d.prop, d.value)));
+  }
+}
+
+// As tintas por seção e o humor vivem em `:root` (a Entrada também as usa): valem para todos os temas.
+for (const rule of caregiverRules) {
+  if (rule.selectors.length === 1 && rule.selectors[0] === ':root') {
+    rule.decls
+      .filter((d) => /^--cg-(sec|mood|acc)-/.test(d.prop))
       .forEach((d) => themes.forEach((t) => t.env.set(d.prop, d.value)));
   }
 }
@@ -379,10 +400,52 @@ pair('faixa 4 da escala sobre cartão', '--cg-band-4', '--cg-surface', LARGE, 'A
 for (const mark of ['--cg-action', '--cg-ok-icon', '--cg-soft-icon', '--nx-gold-700', '--cg-border-control']) {
   pair(`marca do calendário (${mark})`, mark, '--cg-surface', LARGE, 'calendário da Agenda');
   pair(`marca do calendário (${mark}) no dia escolhido`, mark, '--brand-soft', LARGE, 'calendário da Agenda');
+  pair(`marca do calendário (${mark}) no dia escolhido (tinta da Rotina)`, mark, '--cg-sec-rotina-tint', LARGE, 'calendário da Agenda');
 }
 pair('número do dia de outro mês no calendário', '--cg-border-control', '--cg-surface', TEXT, 'calendário da Agenda');
 pair('número do dia de hoje no calendário', '--cg-surface', '--cg-action', TEXT, 'calendário da Agenda');
 pair('número do dia escolhido no calendário', '--cg-heading', '--brand-soft', TEXT, 'calendário da Agenda');
+pair('número do dia escolhido no calendário (tinta da Rotina)', '--cg-sec-rotina-ink', '--cg-sec-rotina-tint', TEXT, 'calendário da Agenda');
+pair('número do dia de hoje no calendário (cor cheia da Rotina)', '--cg-surface', '--cg-sec-rotina-solid', TEXT, 'calendário da Agenda');
+// Meu plano (docs/17-vida-v2.md): cada plano tem a cor da Figura 1 (`--plan-*`) e o texto sobre ela. Texto claro só no Cuida; no
+// Livre, no Essencial e no Sustenta (cores mais claras) o texto é escuro, para o nome e o preço passarem 4,5:1 sobre a cor pura.
+// O texto escuro do mesmo plano (`--plan-*-text`) precisa passar sobre o branco (preço no cartão) e sobre o fundo claro do plano (ícone).
+// A borda do plano atual no quadro (`--tone-line`) é a cor pura, menos no Sustenta, cujo dourado puro dá 2,98:1: ali é o dourado 600.
+for (const [plan, on, line] of [
+  ['livre', '--nx-slate-950', '--plan-livre'],
+  ['essencial', '--nx-blue-950', '--plan-essencial'],
+  ['cuida', '--nx-slate-0', '--plan-cuida'],
+  ['sustenta', '--nx-slate-950', '--nx-gold-600'],
+]) {
+  pair(`texto sobre a cor do plano ${plan}`, on, `--plan-${plan}`, TEXT, 'Meu plano');
+  pair(`preço do plano ${plan} sobre o cartão`, `--plan-${plan}-text`, '--cg-surface', TEXT, 'Meu plano');
+  pair(`ícone do plano ${plan} sobre o fundo claro do plano`, `--plan-${plan}-text`, `--plan-${plan}-bg`, TEXT, 'Meu plano');
+  pair(`borda do plano ${plan} sobre o cartão`, line, '--cg-surface', LARGE, 'Meu plano');
+}
+
+// Vida visual: cada seção (texto na tinta sobre o fundo claro e o do emblema, cor cheia do anel), o humor e os selos.
+const SECTIONS = ['base', 'hoje', 'rotina', 'cuidar', 'rede', 'mais'];
+for (const sec of SECTIONS) {
+  const t = (name) => `--cg-sec-${sec}-${name}`;
+  pair(`seção ${sec}: tinta sobre fundo claro`, t('ink'), t('tint'), TEXT, 'vida');
+  pair(`seção ${sec}: tinta sobre o fundo do emblema`, t('ink'), t('strong'), TEXT, 'vida');
+  pair(`seção ${sec}: tinta sobre cartão`, t('ink'), '--cg-surface', TEXT, 'vida');
+  pair(`seção ${sec}: tinta sobre a página`, t('ink'), '--cg-bg', TEXT, 'vida');
+  pair(`seção ${sec}: texto sobre fundo claro`, '--cg-text', t('tint'), TEXT, 'vida');
+  pair(`seção ${sec}: texto sobre o fundo do emblema`, '--cg-text', t('strong'), TEXT, 'vida');
+  pair(`seção ${sec}: texto de apoio sobre o fundo do emblema`, '--cg-text-soft', t('strong'), TEXT, 'vida');
+  pair(`seção ${sec}: cor cheia (anel) sobre cartão`, t('solid'), '--cg-surface', LARGE, 'vida');
+  pair(`seção ${sec}: cor cheia (anel) sobre o fundo claro`, t('solid'), t('tint'), LARGE, 'vida');
+  pair(`seção ${sec}: ícone branco sobre a cor cheia`, '--cg-surface', t('solid'), TEXT, 'vida');
+}
+for (const level of [1, 2, 3, 4, 5]) {
+  pair(`humor ${level}: carinha sobre o fundo`, `--cg-mood-${level}-ink`, `--cg-mood-${level}-tint`, LARGE, 'vida');
+  pair(`humor ${level}: carinha sobre o cartão`, `--cg-mood-${level}-ink`, '--cg-surface', LARGE, 'vida');
+  pair(`humor ${level}: rótulo sobre o fundo escolhido`, '--cg-text', `--cg-mood-${level}-tint`, TEXT, 'vida');
+}
+pair('selo dourado', '--nx-gold-800', '--nx-gold-100', TEXT, 'vida');
+pair('check de dose dada (ícone branco)', '--cg-surface', '--cg-ok-icon', LARGE, 'vida');
+pair('ícone do botão Ajuda agora (branco no azul)', '--cg-surface', '--nx-blue-800', TEXT, 'vida');
 
 const LIST = process.argv.includes('--list');
 for (const theme of themes) {
@@ -424,6 +487,7 @@ if (!trendDots.some((r) => r.decls.some((d) => d.prop === 'border' && d.value.in
 // ---- 2. Pares color + background declarados no CSS -------------------------
 const cssSources = [
   { file: rel(CAREGIVER_FILE), rules: caregiverRules },
+  ...partialSources,
   ...componentStyles(APP_DIR).map((s) => ({ file: s.file, rules: parseRules(s.css) })),
 ];
 const SKIP_SELECTOR = /sr-only|visually-hidden/;
@@ -513,7 +577,7 @@ const HEIGHT_PROPS = ['min-height', 'height', 'min-block-size', 'block-size'];
 const WIDTH_PROPS = ['min-width', 'width', 'min-inline-size', 'inline-size'];
 
 for (const control of CONTROLS) {
-  const matching = caregiverRules.filter((r) =>
+  const matching = allCaregiverRules.filter((r) =>
     r.selectors.some((s) => control.selector.test(s) && !/__icon|__input|__text|__label/.test(s)),
   );
   if (matching.length === 0) {
@@ -545,7 +609,7 @@ for (const control of CONTROLS) {
 // Controles de CSS de componente: seletor que parece controle (botão, chip, aba, hora) com altura abaixo de 48 px.
 const INTERACTIVE_HINT = /(btn|button|chip|tab|time|link|toggle|action|row|choice)\b|__(chip|time|tab|btn|action|link)/;
 const NOT_A_TARGET = /icon|dot|bar|progress|dl|dt|dd|tag|badge|handle|line|number|text$|name|desc|label$|muted|meta|small/;
-for (const source of cssSources.slice(1)) {
+for (const source of cssSources.slice(1 + partialSources.length)) {
   for (const rule of source.rules) {
     const selector = rule.selectors[0] ?? '';
     // Pseudo-elementos (a linha de 3 px da aba atual, por exemplo) não são o alvo de toque.

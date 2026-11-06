@@ -26,6 +26,9 @@ export const ICONS = [
   'user-check', 'user-x', 'star', 'award', 'badge-check', 'clock', 'timer', 'hourglass', 'map-pin', 'gauge', 'thermometer', 'siren',
   // aplicativo do cuidador (docs/10-cuidador-ux.md A.5)
   'house', 'life-buoy', 'pill', 'video', 'frown', 'annoyed', 'meh', 'smile', 'laugh',
+  // vida visual (docs/17-vida-kit.md): categorias da rede, humor, destaques
+  'sunrise', 'sparkles', 'sprout', 'heart', 'syringe', 'brain', 'apple', 'accessibility', 'leaf', 'house-heart', 'heart-plus',
+  'phone-call', 'ambulance', 'calendar-check', 'hand-helping',
 ];
 
 export function buildSprite() {

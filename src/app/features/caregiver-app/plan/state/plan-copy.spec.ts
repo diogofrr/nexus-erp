@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ChangeQuote } from '../../../../core/commerce/subscription.service';
 import { DEFAULT_PLANS } from '../../../../core/rules/plans';
-import { actionLabelFor, changeCopy, ownBenefits, priceLine } from './plan-copy';
+import { actionLabelFor, changeCopy, ownBenefits, planPerks, priceLine, priceParts, scheduledNote } from './plan-copy';
 
 const plans = DEFAULT_PLANS;
 const price = (id: string): string => (id === 'cuida' ? 'R$ 119,90' : id === 'sustenta' ? 'R$ 149,90' : 'R$ 49,90');
@@ -20,6 +20,32 @@ function quote(partial: Partial<ChangeQuote> & Pick<ChangeQuote, 'from' | 'to' |
 }
 
 describe('textos de Meu plano (UX C18 e B9)', () => {
+  it('os destaques de cada plano: 4 no herói, os 3 primeiros no quadro, sempre com ícone e só o que o plano inclui', () => {
+    expect(planPerks('cuida', plans, 4).map((p) => p.label)).toEqual(['Grupos de apoio', 'Capacitações', 'Maior suporte à organização', 'Descontos exclusivos do Cartão Nexus']);
+    expect(planPerks('cuida', plans, 3).map((p) => p.label)).toEqual(['Grupos de apoio', 'Capacitações', 'Maior suporte à organização']);
+    expect(planPerks('livre', plans, 4).map((p) => p.icon)).toEqual(['calendar-days', 'clipboard-check', 'book-open', 'handshake']);
+    // O catálogo é editável: sem o benefício, ele não aparece; completa com os outros do plano.
+    const trimmed = plans.map((p) => (p.id === 'cuida' ? { ...p, benefits: p.benefits.filter((b) => b !== 'trainings') } : p));
+    expect(planPerks('cuida', trimmed, 4).map((p) => p.label)).toEqual([
+      'Grupos de apoio',
+      'Maior suporte à organização',
+      'Descontos exclusivos do Cartão Nexus',
+      'Acesso ao aplicativo',
+    ]);
+  });
+
+  it('o preço em duas partes e a faixa da mudança agendada', () => {
+    expect(priceParts({ monthlyPriceCents: 11990 })).toEqual({ amount: 'R$ 119,90', unit: 'por mês' });
+    expect(scheduledNote({ kind: 'change', to: 'essencial', at: '2026-11-18' })).toEqual({
+      title: 'Mudança agendada',
+      text: 'Seu plano muda para o Essencial em 18/11/2026.',
+    });
+    expect(scheduledNote({ kind: 'cancel', to: 'livre', at: '2026-11-18' })).toEqual({
+      title: 'Cancelamento agendado',
+      text: 'Seu plano volta a ser o Livre em 18/11/2026.',
+    });
+  });
+
   it('cada plano traz só o que é dele além do anterior (Figura 1)', () => {
     expect(ownBenefits('livre', plans)).toEqual(['Acesso ao aplicativo', 'Organização básica', 'Agenda e lembretes', 'Conteúdos', 'Acesso inicial à rede']);
     expect(ownBenefits('essencial', plans)).toEqual(['Organização ampliada', 'Descontos exclusivos do Cartão Nexus', 'Conteúdos exclusivos', 'Condições especiais na rede']);

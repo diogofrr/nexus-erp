@@ -5,15 +5,21 @@ import { ContactDialogService } from '../../state/contact-dialog.service';
 import { CgCardComponent } from '../cg-card.component';
 import { CgChoice, CgChoiceGroupComponent } from '../cg-choice-group.component';
 import { CgDoseComponent } from '../cg-dose.component';
+import { CG_ACCENTS } from '../cg-accent';
 import { CgEmergencyNoteComponent } from '../cg-emergency-note.component';
+import { CgEmptyComponent } from '../cg-empty.component';
+import { CgHeroComponent } from '../cg-hero.component';
+import { CgIconBadgeComponent } from '../cg-icon-badge.component';
+import { CG_ILLUSTRATION_NAMES, CgIllustrationComponent } from '../cg-illustration.component';
 import { CgMoodComponent, MoodValue } from '../cg-mood.component';
 import { CgNoteComponent } from '../cg-note.component';
-import { CgPageHeaderComponent } from '../cg-page-header.component';
 import { CgPlanLockComponent } from '../cg-plan-lock.component';
 import { CgPlanTagComponent } from '../cg-plan-tag.component';
+import { CgProgressRingComponent } from '../cg-progress-ring.component';
 import { CgRatingPairComponent } from '../cg-rating-pair.component';
 import { CgRatingValue } from '../cg-rating.component';
 import { CgRowComponent } from '../cg-row.component';
+import { CgSealComponent } from '../cg-seal.component';
 import { CgSheetComponent } from '../cg-sheet.component';
 import { CgSwitchComponent } from '../cg-switch.component';
 import { CgTextSizeComponent } from '../cg-text-size.component';
@@ -26,18 +32,31 @@ import { CgTrendComponent, CgTrendItem } from '../cg-trend.component';
  */
 @Component({
   selector: 'app-caregiver-kit-page',
+  styles: `
+    .kit-art { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0 0 1rem; padding: 1rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-card); background: var(--cg-surface); }
+    .kit-art--dark { background: var(--nx-blue-900); }
+    .kit-art figure { display: grid; justify-items: center; gap: 0.25rem; margin: 0; }
+    .kit-art figcaption { color: var(--cg-text-soft); font-size: var(--cg-fs-caption); }
+    .kit-accents { display: grid; gap: 0.75rem; margin-bottom: 1rem; }
+    .kit-accent { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 1rem; border-radius: var(--cg-radius-card); background: var(--cg-acc-tint); }
+  `,
   imports: [
     CgCardComponent,
     CgChoiceGroupComponent,
     CgDoseComponent,
     CgEmergencyNoteComponent,
+    CgEmptyComponent,
+    CgHeroComponent,
+    CgIconBadgeComponent,
+    CgIllustrationComponent,
     CgMoodComponent,
     CgNoteComponent,
-    CgPageHeaderComponent,
     CgPlanLockComponent,
     CgPlanTagComponent,
+    CgProgressRingComponent,
     CgRatingPairComponent,
     CgRowComponent,
+    CgSealComponent,
     CgSheetComponent,
     CgSwitchComponent,
     CgTextSizeComponent,
@@ -46,7 +65,59 @@ import { CgTrendComponent, CgTrendItem } from '../cg-trend.component';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-cg-page-header title="Kit do cuidador" description="Os componentes do aplicativo, com dados de exemplo." />
+    <app-cg-hero title="Kit do cuidador" description="Os componentes do aplicativo, com dados de exemplo." illustration="welcome" accent="hoje" />
+
+    <section class="cg-section"><h2 class="cg-section__title">Vida: ilustrações</h2>
+      <div class="kit-art">
+        @for (name of illustrations; track name) {
+          <figure><app-cg-illustration [name]="name" size="md" /><figcaption>{{ name }}</figcaption></figure>
+        }
+      </div>
+      <p class="cg-meta">Tom accent (a seção corrente) e tom light (sobre o azul da Entrada):</p>
+      <div class="kit-art">
+        @for (name of illustrations; track name) {
+          <figure><app-cg-illustration [name]="name" size="md" tone="accent" /></figure>
+        }
+      </div>
+      <div class="kit-art kit-art--dark">
+        @for (name of illustrations; track name) {
+          <figure><app-cg-illustration [name]="name" size="md" tone="light" /></figure>
+        }
+      </div>
+    </section>
+
+    <section class="cg-section"><h2 class="cg-section__title">Vida: acentos por seção</h2>
+      <div class="kit-accents">
+        @for (accent of accents; track accent) {
+          <div class="kit-accent" [class]="'kit-accent cg-sec--' + accent">
+            <app-cg-icon-badge icon="pill" size="lg" />
+            <app-cg-icon-badge icon="heart" size="md" solid />
+            <app-cg-progress-ring [value]="2" [max]="4" size="md" label="dados" />
+            <app-cg-seal icon="sparkles">{{ accent }}</app-cg-seal>
+            <app-cg-seal tone="ok" icon="circle-check">Dado às 08:12</app-cg-seal>
+            <app-cg-seal tone="gold" icon="award">Em destaque</app-cg-seal>
+          </div>
+        }
+      </div>
+      <div class="kit-accents">
+        <app-cg-progress-ring [value]="4" [max]="4" size="lg" label="dados" />
+        <app-cg-progress-ring [value]="0" [max]="3" size="sm" label="dados" />
+        <app-cg-progress-ring [value]="1" [max]="3" size="md" label="dados" />
+      </div>
+    </section>
+
+    <section class="cg-section"><h2 class="cg-section__title">Vida: cartões e ladrilhos</h2>
+      <ul class="cg-tiles cg-tiles--3">
+        <li><app-cg-card layout="tile" icon="messages-square" illustration="chat" title="Ladrilho com desenho" link="/cuidador/_kit">Uma frase curta.</app-cg-card></li>
+        <li><app-cg-card layout="tile" icon="users" title="Ladrilho com emblema" link="/cuidador/_kit">Uma frase curta.</app-cg-card></li>
+        <li><app-cg-card icon="calendar" title="Cartão com emblema" link="/cuidador/_kit">Uma frase curta.</app-cg-card></li>
+      </ul>
+      <div class="cg-stack cg-stack--tight">
+        <app-cg-empty illustration="medicine" title="Estado vazio com desenho" text="Uma frase que acolhe e diz o que fazer.">
+          <button type="button" class="btn btn--primary">Cadastrar um remédio</button>
+        </app-cg-empty>
+      </div>
+    </section>
 
     <section class="cg-section"><h2 class="cg-section__title">Avisos calmos</h2>
       <div class="cg-stack cg-stack--tight">
@@ -136,6 +207,8 @@ import { CgTrendComponent, CgTrendItem } from '../cg-trend.component';
 })
 export class CaregiverKitPageComponent {
   protected readonly contact = inject(ContactDialogService);
+  protected readonly illustrations = CG_ILLUSTRATION_NAMES;
+  protected readonly accents = CG_ACCENTS;
 
   protected readonly mood = signal<MoodValue | null>(null);
   protected readonly choice = signal<string | null>(null);
