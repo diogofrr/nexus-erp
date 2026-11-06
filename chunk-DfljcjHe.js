@@ -1,0 +1,1 @@
+var o=[{path:``,loadComponent:()=>import(`./chunk-BP18XuUx.js`).then(t=>t.CareHubPage),data:{title:`Cuidar de mim`}},{path:`atendimento`,loadComponent:()=>import(`./chunk-DdWdsRyc.js`).then(t=>t.PsychologistPage),data:{title:`Conversar com um psicólogo`}}];export{o as ROUTES};

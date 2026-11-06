@@ -1,0 +1,1 @@
+function e(t,o){return t.trim().length>o}function n(t){return`Escreva at\xE9 ${t} caracteres.`}var r=`Escolha uma data que exista.`;export{n,r,e as t};

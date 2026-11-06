@@ -1,0 +1,1 @@
+var o=[{path:``,loadComponent:()=>import(`./chunk-CmR93CRv.js`).then(t=>t.GroupsPage),data:{title:`Grupos e capacitações`}}];export{o as ROUTES};

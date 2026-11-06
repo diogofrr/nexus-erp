@@ -1,0 +1,1 @@
+function c(r,n){let t=r.subscriptions.query(e=>e.caregiverId===n),a=t.filter(e=>e.status!==`cancelled`);return[...a.length>0?a:t].sort((e,o)=>o.createdAt.localeCompare(e.createdAt))[0]}function l(r,n){let t=c(r,n);return t&&t.status!==`cancelled`?t.planId:`livre`}export{l as n,c as t};

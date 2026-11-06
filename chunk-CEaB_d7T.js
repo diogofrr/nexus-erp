@@ -1,0 +1,1 @@
+var o={online:`On-line`,in_person_coworking:`No espaço de coworking`,in_person_home:`Em casa`};function i(n){return n===`online`?o.online:o.in_person_coworking}export{o as n,i as t};

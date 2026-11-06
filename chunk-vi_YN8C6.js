@@ -1,1 +1,0 @@
-import{a as A,d as B,ea as or}from"./chunk-CrqneOxf.js";var a=new B(`HARD_NAVIGATE`,{providedIn:`root`,factory:()=>{let o=A(or);return r=>{let t=o.defaultView;t&&t.location.assign(new URL(r.replace(/^\//,``),o.baseURI).toString())}}});export{a as t};
