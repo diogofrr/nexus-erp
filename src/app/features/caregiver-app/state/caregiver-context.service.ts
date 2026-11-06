@@ -28,6 +28,10 @@ import {
   planShortName,
 } from '../../../core/rules/plan-features';
 import { FontScale, FontScaleService } from './font-scale.service';
+import { firstNameOf } from './people-format';
+
+/** Tamanho da linha de remédio: grande para quem tem pouca familiaridade digital (UX C6, "por pessoa"). */
+export type DoseRowSize = 'default' | 'large';
 
 export interface CaregiverConsentView {
   key: ConsentKey;
@@ -74,7 +78,14 @@ export class CaregiverContextService {
   /** O cadastro do cuidador (`null` fora de uma sessão de cuidador). */
   readonly caregiver = this.session.caregiver;
   /** Primeiro nome, para a saudação ("Bom dia, Ana"). */
-  readonly firstName = computed(() => this.caregiver()?.fullName.split(/\s+/)[0] ?? '');
+  readonly firstName = computed(() => {
+    const caregiver = this.caregiver();
+    return caregiver ? firstNameOf(caregiver.fullName) : '';
+  });
+  /** Pouca familiaridade digital (UX "por pessoa": canais simples, linha de remédio maior). */
+  readonly lowDigitalLiteracy = computed(() => this.caregiver()?.digitalLiteracy === 'low');
+  /** A linha de remédio ("Dei") fica maior para quem tem pouca familiaridade digital (UX C6, o João). */
+  readonly doseSize = computed<DoseRowSize>(() => (this.lowDigitalLiteracy() ? 'large' : 'default'));
   /** Canal que a pessoa prefere (RN-CAN-01, RN-USR-18). Sem sessão, o aplicativo. */
   readonly preferredChannel = computed<Channel>(() => this.caregiver()?.preferredChannel ?? 'app');
 

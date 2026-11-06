@@ -7,7 +7,7 @@ import { BootedCaregiverApp, bootCaregiverApp, settleCaregiver } from '../testin
 import { ROUTES } from './today.routes';
 import { withArticle } from '../state/people-format';
 import { greetingFor, inviteKindFor } from './state/today-rules';
-import { WellbeingCheckService, WellbeingError } from './state/wellbeing-check.service';
+import { WellbeingCheckService, WellbeingError } from '../../../core/care/wellbeing-check.service';
 
 const text = (el: Element | null | undefined): string => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
@@ -192,6 +192,8 @@ describe('Hoje (UX C4)', () => {
     it('sem compromisso nenhum, mostra o vazio com "Adicionar compromisso"', async () => {
       await open('cg_0001');
       app.db.careAppointments.removeWhere((a) => a.elderId === app.context.elderId());
+      // A conversa com o psicólogo que o seed deixa para a Ana também é compromisso.
+      app.db.careSessions.removeWhere((x) => x.caregiverId === app.context.caregiverId());
       await flush();
       expect(text(q('main'))).toContain('Nenhum compromisso nos próximos dias.');
       expect(buttonByText('Adicionar compromisso')?.getAttribute('href')).toContain('/cuidador/rotina/agenda');
@@ -291,6 +293,19 @@ describe('Hoje (UX C4)', () => {
       expect(text(q('main'))).toContain('Ainda não há nada para hoje. Comece pelos remédios ou por um compromisso.');
       expect(buttonByText('Cadastrar um remédio')).toBeDefined();
       expect(buttonByText('Adicionar compromisso')).toBeDefined();
+    });
+  });
+
+  describe('UX C6, "por pessoa": linha de remédio grande para quem tem pouca familiaridade digital', () => {
+    it('João (familiaridade baixa) vê as linhas na variante grande; Ana e Maria, na padrão', async () => {
+      await open('cg_0003');
+      expect(all('.cg-dose').length).toBeGreaterThan(0);
+      expect(all('.cg-dose').every((d) => d.classList.contains('cg-dose--large'))).toBe(true);
+      for (const id of ['cg_0001', 'cg_0002']) {
+        await open(id);
+        expect(all('.cg-dose').length, id).toBeGreaterThan(0);
+        expect(all('.cg-dose--large'), id).toHaveLength(0);
+      }
     });
   });
 

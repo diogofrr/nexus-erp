@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, dateOf } from '../clock/date-utils';
+import { addDays, dateOf, isWeekend } from '../clock/date-utils';
 import { doseProgress, dosesForDate } from '../rules/medication-doses';
 import { DEMO_CAREGIVER_NUMBERS, caregiverId, elderId, generateSeed } from './index';
 
@@ -12,7 +12,8 @@ describe('Seed do aplicativo do cuidador', () => {
     expect(c.caregivers).toHaveLength(340);
     expect(c.elders).toHaveLength(340);
     expect(c.messages).toHaveLength(28);
-    expect(c.careSessions).toHaveLength(60);
+    // 60 do seed original + 2 conversas futuras de demonstração (Ana e Lourdes).
+    expect(c.careSessions).toHaveLength(62);
     expect(c.consents).toHaveLength(340 * 6);
   });
 
@@ -92,6 +93,62 @@ describe('Seed do aplicativo do cuidador', () => {
     expect(
       c.subscriptions.find((s) => s.caregiverId === caregiverId(26))?.scheduledChangeAt,
     ).toBe(addDays(TODAY, 9));
+  });
+
+  it('Ana e Lourdes têm uma conversa futura com o psicólogo, com a vaga ocupada e o preço do plano', () => {
+    const slotOf = (id: string) => c.availabilitySlots.find((x) => x.id === id);
+    const ana = c.careSessions.find((x) => x.caregiverId === caregiverId(1) && x.startAt.slice(0, 10) > TODAY);
+    expect(ana).toMatchObject({
+      psychologistId: 'psy_0001',
+      status: 'scheduled',
+      modality: 'online',
+      discountPercent: 15,
+      priceCents: 10200,
+    });
+    // 3 dias úteis a partir de quarta, 04/11/2026: quinta, sexta e segunda, 09/11.
+    expect(dateOf(ana?.startAt ?? '')).toBe('2026-11-09');
+    expect(slotOf(ana?.slotId ?? '')).toMatchObject({ status: 'booked', psychologistId: 'psy_0001', date: '2026-11-09' });
+
+    const lourdes = c.careSessions.find((x) => x.caregiverId === caregiverId(24) && x.startAt.slice(0, 10) > TODAY);
+    expect(lourdes).toMatchObject({
+      psychologistId: 'psy_0003',
+      status: 'confirmed',
+      modality: 'in_person_coworking',
+      discountPercent: 20,
+    });
+    expect(c.rooms.find((r) => r.id === lourdes?.roomId)?.accessibility).toEqual({
+      stepFreeAccess: true,
+      adaptedRestroom: true,
+      goodLighting: true,
+      armrestSeating: true,
+    });
+    expect(slotOf(lourdes?.slotId ?? '')?.status).toBe('booked');
+    [ana, lourdes].forEach((x) => expect(isWeekend(dateOf(x?.startAt ?? ''))).toBe(false));
+  });
+
+  it('as duas conversas de demonstração não dividem o horário com nenhuma outra sessão do psicólogo', () => {
+    const futureOf = (n: number) =>
+      c.careSessions.find((x) => x.caregiverId === caregiverId(n) && x.startAt.slice(0, 10) > TODAY);
+    [futureOf(1), futureOf(24)].forEach((demo) => {
+      const same = c.careSessions.filter(
+        (x) => x.psychologistId === demo?.psychologistId && x.startAt === demo?.startAt,
+      );
+      expect(same).toHaveLength(1);
+      const slots = c.availabilitySlots.filter(
+        (x) => x.psychologistId === demo?.psychologistId && x.date === dateOf(demo?.startAt ?? '') && `${x.date}T${x.start}` === (demo?.startAt ?? '').slice(0, 16),
+      );
+      expect(slots).toHaveLength(1);
+    });
+  });
+
+  it('os meses fechados de Rafael continuam em 160/138 e 160/146 (86,3% e 91,3%)', () => {
+    const rows = c.monthSummaries
+      .filter((m) => m.psychologistId === 'psy_0001')
+      .sort((a, b) => (a.month < b.month ? -1 : 1));
+    expect(rows.map((m) => [m.availableHours, m.doneHours])).toEqual([
+      [160, 138],
+      [160, 146],
+    ]);
   });
 
   it('toda marcação aponta para um remédio que existe e para um horário dele', () => {

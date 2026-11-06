@@ -519,7 +519,7 @@ Cada fluxo traz **onde começa**, o **máximo de toques** (a partir de Hoje, sem
 1. Cuidar de mim (1), **Grupos e capacitações** (2), tocar no grupo (3).
 2. Página do grupo: o que é, **o caráter** ("Orientação e psicoeducação" ou "Psicoterapia, terapia de grupo"), datas dos encontros, formato, quem conduz (com o registro profissional), vagas. Botão **Quero participar** (4).
 3. **Folha do sigilo**: texto do contrato de sigilo e a caixa "Li e aceito o contrato de sigilo do grupo" (5); botão **Entrar no grupo** (6).
-4. Resultado: "Você está no grupo Sobrecarga e autocuidado. Primeiro encontro: qui, 12/11, às 19:00." A inscrição aparece em **Minhas inscrições**.
+4. Resultado: "Você está no grupo Sobrecarga e autocuidado. Primeiro encontro: sáb, 07/11, às 14:00." (o dia e a hora vêm da programação; no seed é sáb, 07/11) A inscrição aparece em **Minhas inscrições**.
 5. **Grupo lotado**: o botão é **Entrar na lista de espera**; a folha diz "Você entra na posição 3. Se abrir uma vaga, você entra automaticamente e a gente avisa." (promoção automática).
 6. **Sair do grupo**: **Sair do grupo** na inscrição; folha "Você deixa de participar. A sua vaga volta para outra pessoa." **Sair do grupo** (suave) e **Voltar**.
 
@@ -541,7 +541,7 @@ Cada fluxo traz **onde começa**, o **máximo de toques** (a partir de Hoje, sem
 **Começa em**: Rede. **Máximo**: 2 toques para mostrar o cartão. **Telas**: 16. **RN**: RN-CRT-02, 03, 10, 11, 12, RN-PLN-08.
 1. Rede (1), **Cartão Nexus** (2): aparece o cartão com o **número** `NX-0000-0000` em 28 px, o nome e "Válido enquanto o seu plano estiver ativo".
 2. **Onde usar**: lista de parceiros **ativos** com o desconto de cada um ("Farmácia Vida Plena, 10%"); tocar no parceiro mostra o endereço e a frase "Mostre o número do cartão no balcão."
-3. **O que você já economizou**: "Neste mês: R$ 38,40 em 3 compras" (usos registrados pelo parceiro, `CardUsage`).
+3. **O que você já economizou**: "Neste mês: R$ {valor} em {n} compras." Os valores vêm dos usos registrados pelo parceiro (`CardUsage`), não de um número fixo; sem compras no mês: "Neste mês: ainda sem compras com o cartão." e, havendo histórico, "Ao todo: R$ {valor} em {n} compras." `[S-P3-03]`
 
 **Erros e recuperação**: plano **Livre**: o cartão não existe; a tela é um convite calmo ("O Cartão Nexus vem com os planos pagos"), **sem percentuais** e sem pressão; cancelamento agendado: "Seu cartão vale até 14/11, quando o plano muda para o Livre."; parceiro suspenso some da lista; nenhum parceiro ativo na cidade: estado vazio "Ainda não há parceiros por aqui."
 
@@ -618,7 +618,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 2. `h1` "Entrar". Duas portas em cartões grandes: **Sou cuidador(a)** (aberta, em destaque) e **Sou da equipe Nexus** (recolhida, discreta; ao abrir mostra a lista atual de 8 pessoas e o segundo fator, que **não mudam**).
 3. Na porta do cuidador: frase "Neste protótipo não há senha. Escolha uma pessoa de exemplo." e **6 cartões** (item de lista de 88 px): iniciais, nome e idade, etiqueta de plano, uma frase neutra.
 **Atrás de um toque.**
-- "Ver mais exemplos" (botão de texto) mostra mais 4 cartões.
+- "Ver mais exemplos" (botão de texto) mostra mais 5 cartões (a 11ª pessoa é a Raimunda, com pedido de privacidade aberto).
 - "Criar minha conta" (botão secundário abaixo da lista) leva a `/cuidador/comecar`.
 **Textos.**
 - Título da porta: "Sou cuidador(a)". Apoio: "Para quem cuida de uma pessoa idosa."
@@ -631,6 +631,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
   - Marcos Vinícius Leal, 39, Essencial: "Tem uma mudança de plano agendada."
   - Sônia Maria Dutra, 55, Essencial: "Retirou uma autorização de privacidade."
   - Marlene Cardoso, 61, Livre: "Usa só a organização da rotina."
+  - Raimunda Siqueira, 53, Livre: "Tem um pedido de privacidade aberto." (a 11ª pessoa, com pedido de exclusão aberto)
 - Botões: "Criar minha conta", "Ver mais exemplos", "Ver menos exemplos".
 - Rodapé: "Em emergência, ligue 192 (SAMU)." e o botão de texto "Ajuda agora" (a entrada não tem o cabeçalho do app).
 **Estados.**
@@ -643,7 +644,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 **Critérios de aceite.**
 - **AC-CG-17** Dada a rota `/login`, então a porta "Sou cuidador(a)" vem **antes** e aberta, com 6 cartões; "Sou da equipe Nexus" vem depois, recolhida, e ao abrir mostra a lista atual com o segundo fator.
 - **AC-CG-18** Dado um toque em um cartão do cuidador, então a sessão é criada em `sessionStorage` na chave `nexus-erp:caregiver-session` e a rota é `/cuidador/hoje` (ou a rota de origem na mesma aba), **sem senha e sem pedido de código**.
-- **AC-CG-19** Dado "Ver mais exemplos", então aparecem mais 4 cartões (10 no total) e o botão passa a "Ver menos exemplos"; o foco fica no primeiro cartão novo.
+- **AC-CG-19** Dado "Ver mais exemplos", então aparecem mais 5 cartões (11 no total) e o botão passa a "Ver menos exemplos"; o foco fica no primeiro cartão novo.
 - **AC-CG-20** Dado um cuidador com cadastro `closed`, anonimizado ou eliminado, então ele **não aparece** na lista; dado um com pedido de exclusão aberto, então aparece.
 - **AC-CG-21** Dado qualquer cartão de cuidador, então a frase de apoio **não contém pontuação, faixa, alerta nem dado de saúde**, e o cartão tem altura de pelo menos 72 px, com a área tocável inteira.
 - **AC-CG-22** Dada uma sessão da equipe, quando abre `/cuidador/**`, então volta a `/app/painel`; dada uma sessão do cuidador, quando abre `/app/**`, então volta a `/cuidador/hoje`.
@@ -786,7 +787,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - Convite do dia (rodízio fixo, **só itens abertos a todos os planos**): "Uma conversa só para você. Reserve um horário com um psicólogo da Nexus. Você escolhe o formato." (**Ver horários**)
   - "Roda de conversa aberta. Quinta, 12/11, às 19:00. Aberta a todos." (**Ver detalhes**)
   - "Leitura de 3 minutos. {título do conteúdo}." (**Ler agora**).
-- Avaliar: "Como foi o atendimento de Dra. Renata Sampaio?" e **Avaliar**.
+- Avaliar: "Como foi o atendimento de Dra. Renata Sampaio?" e **Avaliar**, que leva a `/cuidador/rede/pedidos?avaliar=<id do pedido>` (a folha de avaliação é de Meus pedidos).
 - Fechamento: "Precisa de ajuda com o app ou com a sua conta?" e botão de texto **Falar com a gente**.
 **Estados.**
 - Carregando: esqueleto dos 3 primeiros blocos.
@@ -815,7 +816,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-50** Dado o humor, quando se toca uma das 5 opções, então grava **um registro por dia** (tocar de novo em "Mudar" substitui), nada vem pré-marcado e as 5 opções têm o mesmo visual (sem cor de semáforo); dado "Muito mal" ou "Mal", então aparece a nota "Dias difíceis acontecem..." com "Falar com a gente".
 - **AC-CG-51** Dado consentimento de saúde retirado (Sônia), então o bloco de humor **não aparece** em Hoje e a nota de cuidado também não.
 - **AC-CG-52** Dado o convite do dia, então ele é sempre de item **aberto a todos os planos** (conversa com psicólogo, roda aberta ou conteúdo livre), muda por regra de calendário, **nunca** depende de pontuação, faixa, alerta ou ARBE, e **nunca** mostra preço, plano nem bloqueio.
-- **AC-CG-53** Dado um serviço da rede concluído e ainda sem avaliação, então "Para você" mostra "Como foi o atendimento de {nome}?" com **Avaliar**, que abre a folha de A.2.22.
+- **AC-CG-53** Dado um serviço da rede concluído e ainda sem avaliação, então "Para você" mostra "Como foi o atendimento de {nome}?" com **Avaliar**, que leva a `/cuidador/rede/pedidos?avaliar=<id do pedido>`, onde abre a folha de A.2.22 (a folha é de Meus pedidos, não de Hoje).
 - **AC-CG-54** Dada a pessoa com canal preferido telefone ou familiaridade digital baixa (João), então o fechamento de Hoje é o cartão "Prefere falar com a gente?" com o telefone `(34) 90000-0000` em destaque; para os demais é o botão de texto.
 - **AC-CG-55** Dado Hoje em 1280 px, então os blocos ficam em duas colunas (compromisso e remédios à esquerda; humor e convite à direita) e a nota de cuidado ocupa a largura toda acima.
 - **AC-CG-56** Dado Hoje, então não aparece plano, preço, desconto, pontuação, faixa, ARBE nem a palavra "alerta" para nenhuma pessoa de demonstração.
@@ -1091,7 +1092,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - Caráter: "Orientação e psicoeducação: encontros para aprender e trocar. Não é psicoterapia." · "Psicoterapia: terapia de grupo conduzida por psicólogo da Nexus, com objetivo clínico." Quem conduz: "Conduzido por Dra. Letícia Amaral, psicóloga (CRP-04/00003, fictício)."
 - Botão por situação: com vaga, **Quero participar**; lotado, **Entrar na lista de espera**; inscrita, nota `ok` "Você está no grupo." com **Sair do grupo** (botão de texto); em lista de espera, "Você está na lista de espera, posição 2. Avisamos quando abrir uma vaga." `[S-20]` com **Sair da lista**; em andamento, "Em andamento. As inscrições estão encerradas."
 - Folha do sigilo: título "Contrato de sigilo do grupo"; o texto do grupo (`confidentialityText`), por exemplo "O que cada pessoa conta aqui fica entre os participantes. Ninguém repete fora do grupo o que ouviu."; caixa "Li e aceito o contrato de sigilo do grupo"; depois de marcar, o carimbo "Aceito em 04/11/2026, às 09:42"; botão **Entrar no grupo** (ou **Entrar na lista de espera**).
-- Resultado: "Você está no grupo Sobrecarga e autocuidado. Primeiro encontro: qui, 12/11, às 19:00." ou "Você entrou na lista de espera, posição 3."
+- Resultado: "Você está no grupo Sobrecarga e autocuidado. Primeiro encontro: sáb, 07/11, às 14:00." ou "Você entrou na lista de espera, posição 3."
 - Folha de saída: "Você deixa de participar. A sua vaga volta para outra pessoa." Botões **Sair do grupo** (perigo suave) e **Voltar**.
 - **Bloqueio por plano** (A.2.15), no lugar da ação das atividades que exigem o Cuida: título "Disponível no plano Cuida", texto "Grupos de apoio e capacitações fazem parte do plano Cuida. Seu plano agora é o Essencial. As rodas de conversa abertas são para todos.", botão de texto "Ver os planos". As **rodas abertas** aparecem normais, com **Quero participar**.
 - Terapia de grupo sem indicação do psicólogo: nota `soft` "Esta atividade começa com a indicação do seu psicólogo. Fale com a gente." (sem razão clínica).
@@ -1103,7 +1104,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 **Por pessoa.**
 - **Ana** (Cuida): tudo liberado.
 - **Maria** (Essencial) e **João** (Livre): bloqueio por plano nos grupos e nas capacitações, rodas abertas liberadas, **o mesmo bloqueio que qualquer pessoa do plano** teria.
-- **Lourdes** (Sustenta): "Sobrecarga e autocuidado" lotado, ela na lista de espera, em "Minhas inscrições".
+- **Lourdes** (Sustenta): "Sobrecarga e autocuidado" lotado, ela na lista de espera (posição 1; Elza está na 2), em "Minhas inscrições". **No seed essa atividade tem 8 vagas**: o padrão de 12 vagas é da regra (RN-GRP-13) e é editável por atividade.
 - **Sônia**: igual ao plano dela (Essencial).
 **RN.** RN-GRP-01 a 03, 09, 13, 14, 16, 17, RN-PLN-10, 19, RN-ATD-19, RN-ETICA-04, 07, RN-USR-11.
 **Critérios de aceite.**
@@ -1280,7 +1281,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - Uma avaliação por serviço concluído; depois de 7 dias, a avaliação não pode ser corrigida ("Prazo de correção encerrado.").
 - **Nenhuma** informação de monitoramento do profissional aparece.
 - A resposta do profissional é registrada pela equipe (ele não tem login).
-**Por pessoa.** Elza: histórico com serviço "Avaliado" (a nutricionista), nada a avaliar. Quem tem serviço concluído sem avaliação vê o grupo **Precisa da sua avaliação** e o cartão em Hoje. João e Marlene (Livre): vazio, com **Buscar profissionais**.
+**Por pessoa.** Quem tem serviço concluído sem avaliação (Rita, Lourdes, Marlene e Sônia, no seed) vê o grupo **Precisa da sua avaliação** e o cartão em Hoje. Ana tem um serviço "Avaliado" (fora do prazo de correção). Elza não tem serviço avaliado no seed: tem um pedido "Enviado" e nada a avaliar. **João e Marlene (Livre) têm pedidos na lista**: João tem 3 (1 em andamento e 2 avaliados) e Marlene, 1 serviço concluído a avaliar. Só **Maria** tem a lista vazia ("Você ainda não fez pedidos" com **Buscar profissionais**); use-a para o estado vazio. O caso de profissional suspenso na lista aparece com Lourdes (Nutri Camila Rezende, pedido recusado).
 **RN.** RN-REDE-26, RN-ARP-02, 16, 18, RN-USR-19, RN-ENC-10.
 **Critérios de aceite.**
 - **AC-CG-131** Dada a rota, então os pedidos aparecem em **Precisa da sua avaliação**, **Em andamento** e **Anteriores** (recolhido), cada um com a situação em texto e ícone (nunca só cor).
@@ -1296,7 +1297,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 **Propósito.** Mostrar o número do cartão e onde usar os descontos; para quem está no Livre, mostrar com calma que o benefício existe.
 **Ação principal.** **Copiar número** (assinante). O Livre não tem ação principal.
 **De cara (assinante).** `h1` "Cartão Nexus"; o **cartão** (símbolo, nome da pessoa, número `NX-0000-0000` em 28 px tabular, etiqueta do plano); "Mostre o número no balcão do parceiro."; **Copiar número**.
-**Atrás de um toque.** h2 **Onde usar** (parceiros **ativos**: nome, categoria, "10% de desconto"); h2 **O que você já economizou** ("Neste mês: R$ 38,40 em 3 compras") com a lista dos usos (data, parceiro, desconto).
+**Atrás de um toque.** h2 **Onde usar** (parceiros **ativos**: nome, categoria, "10% de desconto"); h2 **O que você já economizou** ("Neste mês: R$ {valor} em {n} compras.": o valor vem dos usos registrados, não é fixo; sem compras no mês, "Neste mês: ainda sem compras com o cartão." e o total de antes) com a lista dos usos (data, parceiro, desconto).
 **Textos.**
 - Validade: "Vale enquanto o seu plano estiver ativo." `[S-22]` Com cancelamento agendado (Marcos): "Seu cartão vale até 13/11, quando o plano muda para o Livre."
 - Sem uso: "Você ainda não usou o cartão." Sem parceiro ativo: "Ainda não há parceiros por aqui."
@@ -1307,7 +1308,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - O percentual é o de cada parceiro, igual para todos os planos pagos.
 - O cartão é inativado no instante em que a assinatura deixa de valer.
 **Por pessoa.**
-- **Elza** (Sustenta): 8 usos listados, com a economia somada.
+- **Elza** (Sustenta): 8 usos listados (de agosto a 31/10), com a economia somada; hoje, 04/11, ela não tem compra em novembro, então vê "Neste mês: ainda sem compras com o cartão." e "Ao todo: ...".
 - **Maria** (Essencial): cartão ativo.
 - **Ana** (Cuida): ativo.
 - **João** (Livre): convite calmo.
@@ -1316,7 +1317,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 **Critérios de aceite.**
 - **AC-CG-139** Dado um assinante pago, então a tela mostra o cartão com o número no formato `NX-0000-0000`, **Copiar número** (que mostra "Número copiado." ou o plano B de seleção) e "Mostre o número no balcão do parceiro."
 - **AC-CG-140** Dada a lista **Onde usar**, então só aparecem parceiros ativos, cada um com o seu percentual, e parceiros suspensos ou encerrados não aparecem.
-- **AC-CG-141** Dado um assinante com usos, então "O que você já economizou" mostra o total do mês e a lista de usos (data, parceiro, desconto); Elza vê 8 usos.
+- **AC-CG-141** Dado um assinante com usos, então "O que você já economizou" mostra o total do mês (calculado dos usos registrados) e a lista de usos (data, parceiro, desconto); Elza vê 8 usos.
 - **AC-CG-142** Dada a pessoa do plano Livre (João), então a tela mostra só o convite calmo, **sem** percentual, sem nome de parceiro, sem preço e sem número de cartão.
 - **AC-CG-143** Dado um cancelamento de plano agendado (Marcos), então o cartão mostra "Seu cartão vale até 13/11, quando o plano muda para o Livre."; no dia em que a assinatura deixa de valer, o cartão some e vira o convite do Livre.
 - **AC-CG-144** Dada a tela inteira, então nenhum dado de pontuação, alerta ou ARBE influencia o que aparece (RN-PLN-19).
@@ -1566,7 +1567,7 @@ Hoje = quarta-feira, 04/11/2026. "Padrão" = saudação, próximo compromisso, r
 | **Ana Paula Ferraz** (`cg_0001`, Cuida) | Saudação, **nota de cuidado**: "A equipe de psicologia vai falar com você hoje." com "Prefere falar agora?"; compromisso; remédios | Humor; **sem convite do dia** (a nota ocupa o lugar); "Para você" só se houver serviço a avaliar | Pontuação (63), faixa, "alerta", "vermelho", prazo em horas, ARBE (crítico), ocorrência, plano |
 | **Maria Aparecida Lemos** (`cg_0002`, Essencial) | Saudação, **nota de cuidado**: "A equipe ainda não conseguiu falar com você. A responsável técnica foi avisada e vai procurar você." com **Falar com a gente agora**; compromisso; remédios | Humor; sem convite; **o pedido de revisão não aparece em Hoje** (fica em Como estou) | "Vencido", "atrasado", pontuação (79), faixa, cadeado de grupo, plano |
 | **João Batista Carneiro** (`cg_0003`, Livre) | Saudação, compromisso, remédios (hora em destaque, botão **Dei** largo) | Humor; convite do dia; no fim, o cartão **"Prefere falar com a gente?"** com o telefone `(34) 90000-0000` em destaque (canal preferido telefone, pouca familiaridade digital) | Pontuação (66 e 52), faixa, "Cartão Nexus" ou plano, qualquer cadeado |
-| **Elza Guimarães** (`cg_0027`, Sustenta) | Saudação, compromisso, remédios | Humor; convite do dia; **sem** "Avaliar" (já avaliou o serviço) | O desconto do Cartão (8 usos), a reclamação grave da avaliação, plano |
+| **Elza Guimarães** (`cg_0027`, Sustenta) | Saudação, compromisso, remédios | Humor; convite do dia; **sem** "Avaliar" (no seed ela não tem serviço concluído esperando avaliação: tem um pedido "enviado" e nenhum serviço avaliado) | O desconto do Cartão (8 usos), a reclamação grave da avaliação, plano |
 | **Lourdes Campos** (`cg_0024`, Sustenta, piloto) | Saudação, compromisso, remédios | Humor; convite do dia (a roda aberta, por exemplo); a fila do grupo **não aparece** em Hoje (está em Cuidar de mim e em Grupos) | Pontuação (52 e 44), piloto, plano |
 | **Marcos Vinícius Leal** (`cg_0026`, Essencial, cancelamento agendado) | Saudação, compromisso, remédios | Humor; convite do dia; "Falar com a gente" em texto | **A mudança de plano** ("muda para o Livre em 13/11"): fica em Mais, Meu plano e Cartão, **não em Hoje** |
 | **Sônia Maria Dutra** (`cg_0016`, Essencial, saúde retirada) | Saudação, compromisso, remédios | **Sem humor**; convite do dia; nenhuma nota de saúde | Nota de cuidado, humor, qualquer texto de acompanhamento; a explicação da pausa fica em Como estou |
@@ -1728,7 +1729,7 @@ Onde o plano e as regras são omissos, o desenho segue e registra aqui. Para o P
 18. **S-18** Os **comentários** das avaliações não são mostrados ao cuidador; só a nota e a contagem. (tela 14)
 19. **S-19** Profissional **sem a cláusula de proteção de dados assinada** não recebe pedido pelo app: o botão some e a nota é neutra (RN-LGPD-13). (tela 14)
 20. **S-20** A **posição na lista de espera** é visível ao cuidador (RN-GRP-13 só pede o aviso na promoção). (tela 10)
-21. **S-21** O detalhe de grupo e a leitura de conteúdo abrem em **folha de tela cheia** com parâmetro na URL (`?atividade=`, `?conteudo=`), sem criar rota nova. (telas 10 e 11)
+21. **S-21** O detalhe de grupo e a leitura de conteúdo abrem em **tela cheia** com parâmetro na URL (`?atividade=`, `?conteudo=`), sem criar rota nova. **Decisão do líder (aceita):** a tela cheia é uma **página** que troca o conteúdo da própria tela (com Voltar e foco no título), e não um `<dialog>`; ver S-P3-01. (telas 10 e 11)
 22. **S-22** O Cartão Nexus **não tem validade própria**: vale enquanto o plano pago estiver ativo (RN-CRT-03). (tela 16)
 23. **S-23** O aceite do aviso de emergência e dos canais (RN-ATD-11, RN-CAN-06) é pedido **no cadastro e na primeira contratação de plano pago**. (telas 2 e 18)
 24. **S-24** O app **não detecta risco** no texto da mensagem; a equipe sinaliza, como no F17 do ERP. (tela 19)
@@ -1746,7 +1747,60 @@ Onde o plano e as regras são omissos, o desenho segue e registra aqui. Para o P
 36. **S-36** Mais de 4 remédios no dia: Hoje mostra 4 linhas e "Ver todos"; as doses **dadas ficam no lugar** (não somem da lista). (tela 4)
 37. **S-37** Os valores de prazo de resposta (24 h úteis, 4 h úteis, na hora, 48 h úteis) vêm de RN-CAN-02 e o relógio "fechado agora" segue RN-CAN-03 (segunda a sexta, 8h às 18h, sem feriado nacional). (telas 3 e 19)
 
+### Suposições registradas pelos devs de página (S-38 a S-47 de P1, S-P2-01 a 15 de P2, S-P3-01 a 13 de P3)
+
+Todas **aceitas pelo líder** na integração. Três delas são decisões explícitas e estão marcadas como **Decisão aceita**: terapia de grupo só entra com inscrição feita pelo psicólogo (S-P3-05), detalhe de grupo, leitura de conteúdo e quadro de planos abrem como página e não como diálogo de tela cheia (S-P3-01), e subir de plano em dois passos quando falta o aceite do aviso de emergência (S-P3-06).
+
+**P1 (Hoje, Rotina, Começar, Meu perfil, Família)**
+
+38. **S-38** "Compromissos desta semana" (Família) são os dos próximos 7 dias, sem os de hoje, para o texto não repetir o de hoje nem ficar vazio no sábado. (tela 20) *Aceita.*
+39. **S-39** O tipo do compromisso (Consulta, Fisioterapia, Psicologia, Outro) é obrigatório e nada vem marcado: "Escolha o tipo do compromisso." (tela 5) *Aceita.*
+40. **S-40** Quem escolhe WhatsApp como canal mas não autoriza o contato por WhatsApp (etapa 4) nasce com o canal "aplicativo", e o número fica guardado (mesma regra da revogação, RN-LGPD-05 e). A etapa 4 avisa na hora. (tela 2) *Aceita.*
+41. **S-41** A dose do remédio é opcional no formulário (o AC-CG-67 só exige nome e horário). (tela 6) *Aceita.*
+42. **S-42** "Preencher com dados de exemplo" preenche as etapas 1 a 3 (nunca as autorizações), para a demonstração do cadastro caber em poucos toques. (tela 2) *Aceita.*
+43. **S-43** Quem já tem sessão e abre `/cuidador/comecar` vai a Hoje. (tela 2) *Aceita.*
+44. **S-44** "Dei em outro horário" é um botão de texto sob a linha dada (o UX dizia "tocar na linha"), para funcionar por teclado e leitor de tela. (telas 4 e 6) *Aceita.*
+45. **S-45** O aceite do aviso de emergência do cadastro fica em `Caregiver.emergencyNoticeAcceptedAt`, com data e hora. (tela 2) *Aceita.*
+46. **S-46** "Agora não" em Família não grava nada e mostra a nota "Tudo bem. Nada foi compartilhado." (tela 20) *Aceita.*
+47. **S-47** `?novo=1` abre direto a folha de novo compromisso (Agenda) ou de novo remédio (Remédios), para os botões de Hoje levarem a um passo só. (telas 4, 5 e 6) *Aceita.*
+
+**P2 (Cuidar de mim, Conversar com um psicólogo, Como estou, Ajuda agora, Falar com a Nexus, Privacidade)**
+
+- **S-P2-01** "Retirar o pedido" encerra o pedido do titular como `rejected_with_reason` com o motivo "Retirado pelo titular." e a tela diz "Pedido retirado por você."; o cadastro volta a `active` (ou a `paused_by_consent_revocation`, se a autorização de saúde continua retirada). Não existe estado "retirado" em `DsrStatus`. (tela 21) *Aceita.*
+- **S-P2-02** "Pedir uma cópia dos meus dados" abre um pedido do tipo `access` (RN-LGPD-18); "Baixar o arquivo" gera o JSON do titular quando a equipe conclui. (tela 21) *Aceita.*
+- **S-P2-03** O pedido de revisão de uma decisão (`decision_review`, da equipe) não aparece em "Meus pedidos" de Privacidade: fica em Como estou. (telas 9 e 21) *Aceita.*
+- **S-P2-04** Conversa em casa: o cuidador informa o endereço e a segurança do local fica "não confirmada" até o psicólogo (`homeSafetyPending`, RN-ATD-09). Quem agenda pela equipe continua confirmando na hora. (tela 8) *Aceita.*
+- **S-P2-05** No coworking o aplicativo atribui a primeira sala reservável por nome (os 4 itens de acessibilidade, RN-ATD-10); sem sala reservável o formato não tem horário. (tela 8) *Aceita.*
+- **S-P2-06** "Combinar um horário" aparece com a nota "vai falar com você hoje" e com a "ainda não conseguiu"; cria uma mensagem do aplicativo (assunto "Combinar um horário") marcada como pedido de apoio. (tela 9) *Aceita.*
+- **S-P2-07** Datas de outro ano mostram o ano ("ano só quando não é o corrente"). (telas 5, 8 e 9) *Aceita.*
+- **S-P2-08** O prazo do pedido de revisão é de 15 dias corridos (`settings.dsrDeadlineDays`, o mesmo da equipe); o "10/11" do exemplo é o pedido do seed da Maria. (tela 9) *Aceita.*
+- **S-P2-09** A autorização do piloto só aparece para quem já decidiu sobre ela ou está no piloto, e a pessoa só pode retirá-la (quem inclui no piloto é a equipe, S-12). (tela 21) *Aceita.*
+- **S-P2-10** Os textos de efeito de retirar as autorizações que não são de saúde (números somados, família, imagem, WhatsApp, piloto) foram escritos na voz do aplicativo; a de saúde é o texto literal. Nenhum fala em plano (RN-PLN-19). (tela 21) *Aceita.*
+- **S-P2-11** "Com quem os meus dados foram compartilhados" lista todos os pedidos de serviço da pessoa (nome do profissional e data), qualquer que seja a situação, e diz "Nada mais é compartilhado." (tela 21) *Aceita.*
+- **S-P2-12** Cancelar a menos de 24 horas segue o núcleo (RN-ATD-16): a conversa vira falta e o horário não volta a ficar aberto; "Cancelada por você" com horário aberto vale para 24 horas ou mais. A folha diz isso antes. (tela 8) *Aceita.*
+- **S-P2-13** Uma conversa registrada pela equipe por telefone ou WhatsApp aparece em "Suas mensagens" com a situação "Registrada pela equipe". (tela 19) *Aceita.*
+- **S-P2-14** Sem sessão, "Ajuda agora" mostra o telefone como canal em destaque (não há preferência a respeitar e é o que funciona sem o aplicativo, RN-CAN-05). (tela 3) *Aceita.*
+- **S-P2-15** "Não sei" em "O que você procura?" grava orientação psicológica (S-07) e a conversa passa a mostrar esse caráter. (tela 8) *Aceita.*
+
+**P3 (Rede, Cartão, Meu plano, Grupos, Conteúdos)**
+
+- **S-P3-01** **Decisão aceita.** O detalhe de grupo, a leitura de conteúdo e o quadro dos 4 planos abrem como **página** (trocam o conteúdo da própria tela; o `h1` passa a ser o da folha, com Voltar e foco no título) e não como `<dialog>` de tela cheia. Mantêm a URL (`?atividade=`, `?conteudo=`, `?ver=planos`), o botão Voltar do navegador fecha e não há segunda pilha de foco. As folhas de confirmação e de formulário curto usam o `app-cg-sheet`. (telas 10, 11 e 18)
+- **S-P3-02** Em "Meus pedidos", um pedido antigo a um profissional que saiu da busca (suspenso, por exemplo) mantém o nome do profissional (é o histórico da própria pessoa) mas não leva à ficha. (tela 15) *Aceita.*
+- **S-P3-03** "O que você já economizou" mostra "Neste mês: R$ {valor} em {n} compras." quando há compras no mês de hoje; sem compras no mês, "Neste mês: ainda sem compras com o cartão." e, havendo histórico, "Ao todo: R$ {valor} em {n} compras." (tela 16) *Aceita.*
+- **S-P3-04** O tempo de leitura vem do texto (150 palavras por minuto, no mínimo 1 minuto). (tela 11) *Aceita.*
+- **S-P3-05** **Decisão aceita.** Terapia de grupo: o cuidador **nunca entra sozinho**. A "indicação do psicólogo" é a inscrição feita pelo psicólogo (RN-GRP-14); sem ela a tela mostra a frase neutra e **Falar com a gente**, sem motivo clínico. Quem já foi inscrito pelo psicólogo vê "Você está no grupo." e pode sair. (tela 10)
+- **S-P3-06** **Decisão aceita.** Subir de plano tem **dois passos** na mesma folha: o efeito (botão "Mudar para o Cuida") e, só na primeira contratação paga, "Antes de confirmar" com o aviso de emergência, a caixa "Li e entendi" e **Confirmar mudança de plano**. Sem a necessidade do aceite, o botão do efeito já confirma. Cancelar usa o botão de perigo suave com Voltar embaixo. (tela 18)
+- **S-P3-07** A folha "Lado a lado" é uma grade que se ajusta à largura (colunas quando cabem, empilhadas no celular), em vez de "um profissional por vez com abas". (tela 13) *Aceita.*
+- **S-P3-08** Frases novas onde o UX não deu texto: "Compare as opções por necessidade.", "N serviços para avaliar.", "Acompanhe os seus pedidos.", "Você já escolheu 3. Desmarque um para comparar outro.", "Ninguém atende em casa em {necessidade}" com "Ver todas as opções", "Pedido cancelado. Você pode pedir de novo quando quiser." e "Você saiu do grupo. A sua vaga voltou para outra pessoa." (telas 12, 13 e 15) *Aceita.*
+- **S-P3-09** O cartão de bloqueio de conteúdo do Livre e a lista "Do seu plano" só aparecem se existir conteúdo exclusivo publicado. (tela 11) *Aceita.*
+- **S-P3-10** Em "Meus pedidos", tocar num serviço concluído sem avaliação abre direto a folha de avaliação (a ação principal); os demais pedidos abrem os detalhes com as ações. (tela 15) *Aceita.*
+- **S-P3-11** No quadro dos planos o botão de cada plano já diz o efeito ("Mudar para o Cuida", "Agendar mudança para o Essencial", "Agendar cancelamento"); o Livre, a partir de um plano pago, é o cancelamento. (tela 18) *Aceita.*
+- **S-P3-12** Assinatura cancelada ou inexistente: a tela trata como Livre e, ao contratar, cria a assinatura nova em nome do cuidador (`reactivate` ou `startSubscription`). (tela 18) *Aceita.*
+- **S-P3-13** Nos textos, a atividade se chama pelo tipo: "Entrar no grupo", "Entrar na capacitação", "Entrar na roda". (tela 10) *Aceita.*
+
 ## D.5 Pedidos ao líder (nada disto foi aplicado)
+
+*Status na integração:* P-01 (ícones), P-02 (donos das telas), P-03 (contato da equipe, `core/rules/staff-contact.ts`), P-04 (decidido: página, S-P3-01), P-05 (seed, mais as conversas de Ana e Lourdes) e P-06 (`check-core.mjs`) foram atendidos. **P-07** (fonte oficial do CVV) e **P-08** (etapa de tamanho da letra no cadastro) seguem abertos.
 
 1. **[P-01] Ícones.** Autorizar a Base a incluir 9 ícones do `lucide-static` 1.68.0 em `tools/build-icons.mjs` e regenerar `public/icons/sprite.svg`: `house`, `life-buoy`, `pill`, `video`, `frown`, `annoyed`, `meh`, `smile`, `laugh`. (Arquivos fora da posse da Base.)
 2. **[P-02] Dono de cada tela.** O contexto não nomeia o dono de **Cuidar de mim (porta)**, **Mais (porta)**, **Meu perfil**, **Rede (porta)** e da **Entrada**. Sugestão: Entrada e Mais com a Base; Cuidar de mim com P2 (`care`); Rede com P3 (`network`); Meu perfil com P1 (`start`, mesmos campos do cadastro).

@@ -120,11 +120,11 @@ describe('dados de demonstração (SCR-M15-01, AC-M15-01 a 03)', () => {
     await settle(app.fixture);
     expect(app.db.caregivers.size()).toBe(340);
     expect(app.db.providers.size()).toBe(20);
-    expect(app.db.careSessions.size()).toBe(60);
+    expect(app.db.careSessions.size()).toBe(62);
     expect(app.db.caregivers.get('cg_0001')?.fullName).toBe('Ana Paula Ferraz');
     expect(count('cuidadores')).toBe(340);
     expect(count('prestadores')).toBe(20);
-    expect(count('sessões de atendimento')).toBe(60);
+    expect(count('sessões de atendimento')).toBe(62);
     // Mantém o usuário conectado e o relógio.
     expect(app.auth.isAuthenticated()).toBe(true);
     expect(app.auth.user()?.id).toBe('u1');
@@ -142,7 +142,7 @@ describe('dados de demonstração (SCR-M15-01, AC-M15-01 a 03)', () => {
     expect(dialog().hasAttribute('open')).toBe(true);
     expect(dialog().querySelector('h2')?.textContent).toBe('Voltar aos dados de demonstração?');
     const body = dialog().textContent ?? '';
-    expect(body).toContain('340 cuidadores, 20 prestadores e 60 sessões');
+    expect(body).toContain('340 cuidadores, 20 prestadores e 62 sessões');
     expect(body).toContain('Sua sessão continua como Helena');
     expect(body).toContain('O relógio simulado (04/11/2026) continua');
     expect(body).toContain('Não dá para desfazer');
@@ -212,7 +212,7 @@ describe('dados de demonstração (SCR-M15-01, AC-M15-01 a 03)', () => {
     expect(preview.ok).toBe(true);
     if (preview.ok) {
       expect(demo.summary(preview.counts)).toBe(
-        '340 cuidadores, 20 prestadores, 60 sessões de atendimento',
+        '340 cuidadores, 20 prestadores, 62 sessões de atendimento',
       );
     }
     if (preview.ok) {
@@ -267,7 +267,7 @@ describe('dados de demonstração (SCR-M15-01, AC-M15-01 a 03)', () => {
     await new Promise((resolve) => setTimeout(resolve, 40));
     await settle(app.fixture);
     expect(q('[data-role="preview"]')?.textContent).toContain(
-      'Tem 340 cuidadores, 20 prestadores, 60 sessões de atendimento.',
+      'Tem 340 cuidadores, 20 prestadores, 62 sessões de atendimento.',
     );
     click(q('[data-role="confirm-import"]'));
     await settle(app.fixture);

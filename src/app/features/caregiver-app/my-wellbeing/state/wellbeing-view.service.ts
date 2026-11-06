@@ -8,8 +8,9 @@ import { ConsentService } from '@core/privacy';
 import { ZARIT_BANDS, zaritBandInfo } from '@core/rules/zarit';
 import { MessagesService } from '../../../messages/state/messages.service';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
-import { dayMonth } from '../../state/day-format';
-import { WellbeingCheckService } from '../../today/state/wellbeing-check.service';
+import { dayMonth, dayMonthOrYear } from '../../state/day-format';
+import { shortName, withArticle, withArticleOf } from '../../state/people-format';
+import { WellbeingCheckService } from '@core/care/wellbeing-check.service';
 import { CgTrendItem } from '../../ui/cg-trend.component';
 import { MoodValue, moodLabel } from '../../ui/cg-mood.component';
 import {
@@ -235,15 +236,14 @@ export class WellbeingViewService {
 
   /** "04/11"; com o ano quando não é o corrente ("04/11/2025"). */
   private dateLabel(date: ISODate): string {
-    const sameYear = date.slice(0, 4) === this.ctx.today().slice(0, 4);
-    return sameYear ? dayMonth(date) : `${dayMonth(date)}/${date.slice(0, 4)}`;
+    return dayMonthOrYear(date, this.ctx.today());
   }
 
   private toReview(request: ReviewRequest): ReviewView {
     const psychologist = this.db.psychologists.get(request.psychologistId);
-    const short = psychologist ? psychologist.displayName.split(/\s+/).slice(0, 2).join(' ') : '';
-    const who = /^Dra\./.test(short) ? `a ${short}` : /^Dr\./.test(short) ? `o ${short}` : short || 'a equipe de psicologia';
-    const whoOf = /^Dra\./.test(short) ? `da ${short}` : /^Dr\./.test(short) ? `do ${short}` : short ? `de ${short}` : 'da equipe de psicologia';
+    const short = psychologist ? shortName(psychologist.displayName) : '';
+    const who = short ? withArticle(short) : 'a equipe de psicologia';
+    const whoOf = short ? withArticleOf(short) : 'da equipe de psicologia';
     return {
       id: request.id,
       answered: !!request.answeredAt,

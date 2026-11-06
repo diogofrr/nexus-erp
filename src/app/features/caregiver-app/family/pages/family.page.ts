@@ -2,7 +2,10 @@ import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { ToastService } from '../../../../shared/ui/overlay/toast.service';
 import { CONSENT_COPY } from '../../../../shared/ui/forms/consent-copy';
+import { copyOrSelect } from '../../../../shared/ui/util/clipboard';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
+import { COPY_TEXT_FAILED } from '../../state/copy-feedback';
+import { firstNameOf } from '../../state/people-format';
 import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
@@ -11,7 +14,6 @@ import { FamilyShareService } from '../state/family-share.service';
 import { FamilyShareChoices, NO_FAMILY_CHOICES, anyChosen } from '../state/family-text';
 
 const COPIED = 'Texto copiado. Cole na conversa da sua família.';
-const COPY_BY_HAND = 'Não consegui copiar sozinho. Segure sobre o texto e escolha Copiar.';
 
 /**
  * Família (UX C20, `/cuidador/mais/familia`): um texto com a rotina da pessoa idosa, para copiar e colar na conversa
@@ -73,7 +75,7 @@ const COPY_BY_HAND = 'Não consegui copiar sozinho. Segure sobre o texto e escol
     }
   `,
   template: `
-    <app-cg-page-header title="Família" [description]="description()" />
+    <app-cg-page-header title="Família" [description]="description()" backLink="/cuidador/mais" backLabel="Mais" />
 
     <div class="cg-stack cg-reading">
       @if (!service.authorized()) {
@@ -161,7 +163,8 @@ export class FamilyPage {
   protected readonly status = signal<string | null>(null);
 
   protected readonly description = computed(() => {
-    const first = this.ctx.elder()?.fullName.split(/\s+/)[0] ?? 'quem você cuida';
+    const elder = this.ctx.elder();
+    const first = elder ? firstNameOf(elder.fullName) : 'quem você cuida';
     return `Gere um texto com a rotina de ${first} para mandar à sua família. Você escolhe o que entra.`;
   });
   protected readonly anySelected = computed(() => anyChosen(this.choices()));
@@ -185,30 +188,13 @@ export class FamilyPage {
     if (content === null) {
       return;
     }
-    try {
-      const clipboard = this.doc.defaultView?.navigator.clipboard;
-      if (!clipboard) {
-        throw new Error('sem área de transferência');
-      }
-      await clipboard.writeText(content);
+    const element = this.box()?.nativeElement;
+    if (await copyOrSelect(content, element, this.doc)) {
       this.status.set(null);
       this.toasts.show({ message: COPIED, durationMs: 8000 });
-    } catch {
-      this.selectBox();
-      this.status.set(COPY_BY_HAND);
+    } else {
+      element?.focus();
+      this.status.set(COPY_TEXT_FAILED);
     }
-  }
-
-  private selectBox(): void {
-    const element = this.box()?.nativeElement;
-    const selection = this.doc.defaultView?.getSelection();
-    if (!element || !selection) {
-      return;
-    }
-    const range = this.doc.createRange();
-    range.selectNodeContents(element);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    element.focus();
   }
 }

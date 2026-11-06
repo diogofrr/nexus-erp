@@ -47,6 +47,8 @@ Nenhum seed foi alterado. Nenhum `index.ts` foi tocado (importo pelos caminhos d
 
 ## Pedidos ao líder
 
+**Status na integração (`docs/12-cuidador-integracao.md`):** 1 feito (o diálogo "Como falar com a gente" seleciona o número e usa a frase do AC-CG-161, com o helper único `shared/ui/util/clipboard.ts`; AC-CG-161 passa a atendido); 2 feito (`WellbeingCheckService` em `core/care`); 3 feito (`requestClosure` delega a `SubjectRightsService`); 4 feito (rótulo por item em `app-cg-trend`); 5 feito (Ana tem conversa agendada com o Dr. Rafael e Lourdes, confirmada com a Dra. Letícia).
+
 1. **Contato "Como falar com a gente" (Base, `ui/cg-contact-dialog.component.ts`)**: com a área de transferência negada o texto é "Não consegui copiar sozinho. Segure sobre o número e escolha Copiar." e o número não fica selecionado; o AC-CG-161 pede "Não foi possível copiar. Segure sobre o número e escolha Copiar." com o número SELECIONADO. A folha de número da "Ajuda agora" (minha, `help/ui/call-number-sheet.component.ts`) já faz isso; `help/state/copy-text.ts` tem `copyToClipboard` e `selectContents` prontos para a Base reaproveitar.
 2. **Humor**: mover `WellbeingCheckService` (P1) para `core/care` (como o `DoseCheckService`), para Hoje e Como estou usarem o mesmo serviço sem importar entre áreas. Hoje `my-wellbeing` importa de `../../today/state/wellbeing-check.service`.
 3. **`CaregiverService.requestClosure`** (`features/caregivers/state`, arquivo do P1 em andamento) pode delegar a `SubjectRightsService` do núcleo (`requestErasure`) quando o P1 terminar; hoje a regra de "encerramento pedido" existe nos dois, com a diferença de que o do cuidador devolve "já existe" em vez de reaproveitar o pedido aberto.
@@ -121,7 +123,7 @@ Legenda: **atendido** (testado), **parcial** (com o motivo), **não atendido** (
 |---|---|---|
 | AC-CG-159 | atendido | 4 canais, o preferido primeiro com "Seu canal preferido", prazos certos e o aviso de emergência. |
 | AC-CG-160 | atendido | Telefone e WhatsApp abrem o diálogo da Base com o número e "Copiar número"; nenhum `tel:` nem `wa.me`. O "28 px" é do CSS da Base. |
-| AC-CG-161 | parcial | O diálogo "Como falar com a gente" é da Base: com a área de transferência negada o texto é outro e o número não fica selecionado. Pedido 1 ao líder. A folha de número da Ajuda agora cumpre o critério. |
+| AC-CG-161 | atendido | O diálogo "Como falar com a gente" (Base) seleciona o número e diz "Não foi possível copiar. Segure sobre o número e escolha Copiar." quando a área de transferência é negada (ajustado na integração). A folha de número da Ajuda agora também cumpre. |
 | AC-CG-162 | atendido | Grava mensagem do canal aplicativo com prazo de 24 horas úteis, mostra a confirmação e ela aparece em "Suas mensagens"; vazia mostra "Escreva a sua mensagem para enviar." |
 | AC-CG-163 | atendido | Marcos: vazio com os 3 assuntos à vista e nada marcado. |
 | AC-CG-164 | atendido | Fora do horário: "Fechado agora. Abrimos amanhã às 8h." e a sugestão de WhatsApp ou mensagem. |

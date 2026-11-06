@@ -119,14 +119,6 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
     .routine-day {
       margin: 0 0 0.75rem;
     }
-    .routine-tag {
-      padding: 0 0.5rem;
-      border-radius: var(--cg-radius-pill);
-      background: var(--brand-soft);
-      color: var(--cg-heading);
-      font-size: var(--cg-fs-caption);
-      font-weight: var(--fw-semibold);
-    }
     .routine-late {
       display: inline-flex;
       align-items: center;
@@ -207,10 +199,6 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
       font-size: var(--cg-fs-lead);
       color: var(--cg-heading);
     }
-    .routine-muted {
-      margin: 0;
-      color: var(--cg-text-soft);
-    }
   `,
   template: `
     <app-cg-page-header title="Rotina" />
@@ -272,7 +260,7 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
                     [icon]="entry.icon"
                     link="/cuidador/cuidar-de-mim/atendimento"
                   >
-                    <span cgRowEnd class="routine-tag">Para você</span>
+                    <span cgRowEnd class="cg-tag">Para você</span>
                   </app-cg-row>
                 } @else {
                   <app-cg-row
@@ -307,7 +295,7 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
       @if (selected(); as apt) {
         <p class="routine-when">{{ whenOf(apt.at) }}</p>
         @if (apt.place) {
-          <p class="routine-muted">{{ apt.place }}</p>
+          <p class="cg-muted">{{ apt.place }}</p>
         }
         <app-cg-switch
           label="Lembrar de mim"

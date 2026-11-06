@@ -84,10 +84,10 @@ describe('Área help (Falar com a Nexus e Ajuda agora)', () => {
       expect(text(q('app-call-number-sheet .cg-sheet__actions'))).toContain('Copiar número');
       expect(all('a[href^="tel:"], a[href*="wa.me"]')).toHaveLength(0);
       // O CVV e o Disque 100 usam o mesmo diálogo.
-      await click(button('Fechar'));
+      await click(button('Voltar'));
       await click(button('Ligar para o CVV 188'));
       expect(text(q('[data-role="call-number"]'))).toBe('188');
-      await click(button('Fechar'));
+      await click(button('Voltar'));
       await click(button('Ver o número do Disque 100'));
       expect(text(q('[data-role="call-number"]'))).toBe('100');
     });

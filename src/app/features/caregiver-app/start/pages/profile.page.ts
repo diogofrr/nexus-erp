@@ -113,7 +113,7 @@ const chosen =
     }
   `,
   template: `
-    <app-cg-page-header title="Meu perfil" />
+    <app-cg-page-header title="Meu perfil" backLink="/cuidador/mais" backLabel="Mais" />
 
     <div class="cg-stack cg-reading">
       <app-cg-card title="Você" icon="user-round">

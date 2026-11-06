@@ -74,6 +74,12 @@ import { CgTrendComponent, CgTrendItem } from '../cg-trend.component';
           <app-cg-dose [slot]="slot" />
         }
       </div>
+      <h3 class="cg-section__title">Variante grande (pouca familiaridade digital)</h3>
+      <div class="cg-stack cg-stack--tight">
+        @for (slot of slots.slice(0, 1); track slot.key) {
+          <app-cg-dose [slot]="slot" size="large" />
+        }
+      </div>
     </section>
 
     <section class="cg-section"><h2 class="cg-section__title">Como você está hoje?</h2>

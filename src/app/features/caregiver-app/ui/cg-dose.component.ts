@@ -7,6 +7,12 @@ import { IconComponent } from '../../../shared/ui/display/icon.component';
 /** Estado visual da dose (UX A.2.12). */
 export type CgDoseState = 'later' | 'due' | 'late' | 'given';
 
+/**
+ * Tamanho da linha: `large` é a variante "por pessoa" de quem tem pouca familiaridade digital (UX C6, o João): a hora
+ * em 22 px e o botão **Dei** com 96 px de largura. Quem decide é a tela, pelo `CaregiverContextService.doseSize()`.
+ */
+export type CgDoseSize = 'default' | 'large';
+
 /** Até quantos minutos antes do horário o botão "Dei" já fica em destaque (UX A.2.12). */
 export const DOSE_DUE_WINDOW_MIN = 30;
 
@@ -15,11 +21,12 @@ export const DOSE_DUE_WINDOW_MIN = 30;
  * "dado agora" pelo relógio do sistema). Estados: a dar (botão secundário); no horário ou até 30 minutos antes
  * (primário); passou do horário (nota âmbar "Passou do horário (08:00)", que é só da pessoa idosa, nunca da saúde
  * emocional); dado (fundo verde, "Dado às 08:12" e o botão de texto "Desfazer"). A linha não muda de lugar ao
- * marcar. O componente só desenha e avisa: quem grava é a tela, com `DoseCheckService`.
+ * marcar. O componente só desenha e avisa: quem grava é a tela, com `DoseCheckService`. `size="large"` é a variante de
+ * quem tem pouca familiaridade digital (hora em 22 px, **Dei** de 96 px).
  *
  * ```html
  * @for (slot of slots(); track slot.key) {
- *   <app-cg-dose [slot]="slot" (dei)="doses.mark($event.medicationId, $event.date, $event.time)"
+ *   <app-cg-dose [slot]="slot" [size]="ctx.doseSize()" (dei)="doses.mark($event.medicationId, $event.date, $event.time)"
  *                (undo)="doses.unmark($event.medicationId, $event.date, $event.time)" />
  * }
  * ```
@@ -30,7 +37,12 @@ export const DOSE_DUE_WINDOW_MIN = 30;
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'cg-dose-host' },
   template: `
-    <div class="cg-dose" [class.is-given]="state() === 'given'" [class.is-late]="state() === 'late'">
+    <div
+      class="cg-dose"
+      [class.is-given]="state() === 'given'"
+      [class.is-late]="state() === 'late'"
+      [class.cg-dose--large]="size() === 'large'"
+    >
       <span class="cg-dose__icon"><svg appIcon="pill" size="lg"></svg></span>
       <span class="cg-dose__text">
         <span class="cg-dose__name">{{ slot().medicationName }}</span>
@@ -73,6 +85,8 @@ export class CgDoseComponent {
   private readonly clock = inject(Clock);
 
   readonly slot = input.required<DoseSlot>();
+  /** `large` para quem tem pouca familiaridade digital (UX C6, "por pessoa"). */
+  readonly size = input<CgDoseSize>('default');
   /** A pessoa tocou em "Dei". */
   readonly dei = output<DoseSlot>();
   /** A pessoa tocou em "Desfazer". */

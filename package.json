@@ -9,7 +9,8 @@
     "test": "ng test",
     "test:ci": "ng test --watch=false",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.spec.json --noEmit",
-    "check:core": "node scripts/check-core.mjs"
+    "check:core": "node scripts/check-core.mjs",
+    "check:a11y": "node scripts/check-caregiver-a11y.mjs"
   },
   "private": true,
   "packageManager": "pnpm@10.2.0",

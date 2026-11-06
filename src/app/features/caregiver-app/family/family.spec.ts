@@ -241,7 +241,7 @@ describe('Família (UX C20)', () => {
       Object.defineProperty(window.navigator, 'clipboard', { value: { writeText }, configurable: true });
       await click(switches()[0]);
       await click(copyButton());
-      expect(text(q('.family-status'))).toBe('Não consegui copiar sozinho. Segure sobre o texto e escolha Copiar.');
+      expect(text(q('.family-status'))).toBe('Não foi possível copiar. Segure sobre o texto e escolha Copiar.');
       const selection = window.getSelection();
       expect(selection?.rangeCount).toBe(1);
       const range = selection?.getRangeAt(0);

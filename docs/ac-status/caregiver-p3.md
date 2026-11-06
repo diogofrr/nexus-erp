@@ -150,6 +150,8 @@ C13, C14, C10 e C16 listam "carregando em esqueleto" e "erro com Tentar de novo"
 
 ## Onde o seed diverge do UX (D.1), para o QA
 
+*Na integração o texto do UX foi ajustado ao seed (`docs/12`, seção 3); a lista abaixo fica como registro.*
+
 - Elza (`cg_0027`) tem 1 pedido "enviado" e nenhum serviço avaliado; o UX fala de uma nutricionista avaliada. Ana tem o "Avaliado" (`srq_0092`, fora do prazo de correção) e Rita o serviço a avaliar. O caso "profissional suspenso na lista de pedidos" aparece com Lourdes (`srq_0206`, Nutri Camila Rezende, recusado).
 - O UX diz "lista vazia" para João e Marlene, mas o seed dá pedidos a eles: João tem 3 (1 em andamento e 2 avaliados) e Marlene tem 1 serviço concluído sem avaliação (como Sônia e Lourdes, que também têm um a avaliar). Só Maria tem a lista de pedidos vazia (use-a para o estado vazio).
 - "Neste mês: R$ 38,40 em 3 compras" do UX não existe nos dados de hoje (os 8 usos de Elza vão de agosto a 31/10).

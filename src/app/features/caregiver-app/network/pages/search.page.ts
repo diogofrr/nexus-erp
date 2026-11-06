@@ -58,8 +58,6 @@ const MAX_COMPARE = 3;
       .nx-result__link:focus-visible { outline: none; }
       .nx-result__link:focus-visible::after { outline: 3px solid var(--cg-focus); outline-offset: 3px; }
       .nx-result .check { position: relative; z-index: 1; width: fit-content; min-height: var(--cg-target); }
-      .nx-meta { margin: 0; color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
-      .nx-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; }
       .nx-compare-cols { display: grid; gap: var(--cg-gap-block); grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
       .nx-compare-col { display: grid; gap: 0.5rem; align-content: start; padding: var(--cg-pad-card); border: 1px solid var(--cg-border); border-radius: var(--cg-radius-control); }
       .nx-compare-col h3, .nx-compare-col p { margin: 0; overflow-wrap: anywhere; }
@@ -130,9 +128,9 @@ const MAX_COMPARE = 3;
                   <h3 class="cg-card__title nx-result__title">
                     <a class="nx-result__link" [routerLink]="['/cuidador/rede/profissional', p.id]">{{ p.name }}</a>
                   </h3>
-                  <p class="nx-meta">{{ p.specialtyLabel }} · {{ p.city }}</p>
+                  <p class="cg-meta">{{ p.specialtyLabel }} · {{ p.city }}</p>
                   @if (p.homeCare || p.highlight) {
-                    <p class="nx-tags">
+                    <p class="cg-tags">
                       @if (p.homeCare) {
                         <app-badge variant="info" icon="house">Atende em casa</app-badge>
                       }
@@ -141,7 +139,7 @@ const MAX_COMPARE = 3;
                       }
                     </p>
                   }
-                  <p class="nx-meta" data-role="rating">{{ rating(p) }}</p>
+                  <p class="cg-meta" data-role="rating">{{ rating(p) }}</p>
                   <label class="check">
                     <input
                       type="checkbox"
@@ -186,7 +184,7 @@ const MAX_COMPARE = 3;
         }
       </div>
       <ng-container cgSheetActions>
-        <button type="button" class="btn btn--primary" (click)="compareOpen.set(false)">Fechar</button>
+        <button type="button" class="cg-link-btn" (click)="compareOpen.set(false)">Voltar</button>
       </ng-container>
     </app-cg-sheet>
   `,

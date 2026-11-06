@@ -11,7 +11,7 @@ import { formatDayLong, relativeDay, relativeDateTime } from '../../state/day-fo
 import { MoodValue, moodLabel } from '../../ui/cg-mood.component';
 import { withArticle } from '../../state/people-format';
 import { InviteKind, capitalize, greetingFor, inviteKindFor } from './today-rules';
-import { WellbeingCheckService, WellbeingError } from './wellbeing-check.service';
+import { WellbeingCheckService, WellbeingError } from '../../../../core/care/wellbeing-check.service';
 
 /** Quantas linhas de remédio Hoje mostra de cara (S-36): o resto fica atrás de "Ver todos". */
 export const TODAY_DOSE_ROWS = 4;

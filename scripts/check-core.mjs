@@ -39,7 +39,12 @@ const isComment = (line) => /^\s*(\/\/|\*|\/\*)/.test(line);
 const codeFiles = walk(srcApp).filter((f) => /\.(ts|html)$/.test(f));
 const textFiles = [
   ...codeFiles,
-  ...['docs/08-arquitetura.md', 'docs/11-cuidador-arquitetura.md', 'src/app/core/README.md']
+  ...[
+    'docs/08-arquitetura.md',
+    'docs/11-cuidador-arquitetura.md',
+    'docs/12-cuidador-integracao.md',
+    'src/app/core/README.md',
+  ]
     .map((f) => join(root, f))
     .filter((f) => {
       try {

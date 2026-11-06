@@ -23,6 +23,11 @@ export function dayMonth(date: ISODate): string {
   return `${day}/${month}`;
 }
 
+/** "04/11" (com o ano, "04/11/2025", quando não é o ano de `today`): a data curta sem o dia da semana. */
+export function dayMonthOrYear(date: ISODate, today: ISODate): string {
+  return date.slice(0, 4) === today.slice(0, 4) ? dayMonth(date) : `${dayMonth(date)}/${date.slice(0, 4)}`;
+}
+
 /** "qui, 06/11" (com o ano, "qui, 06/11/2027", quando não é o ano de `today`). */
 export function formatDayShort(date: ISODate, today: ISODate): string {
   const sameYear = date.slice(0, 4) === today.slice(0, 4);

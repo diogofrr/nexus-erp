@@ -57,18 +57,16 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
-      .well__soft { margin: 0; color: var(--cg-text-soft); }
       .well__line { margin: 0; }
       .well__answer { margin: 0.25rem 0 0; white-space: pre-line; overflow-wrap: anywhere; }
       .well__list { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
       .well__list li { padding: 0.5rem 0.75rem; border-left: 3px solid var(--cg-border-control); background: var(--cg-surface-sunken); border-radius: 0 var(--cg-radius-control) var(--cg-radius-control) 0; }
-      .well__sheet { display: grid; gap: 0.75rem; }
       .well__sheet p { margin: 0; }
       .well__tools { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
     `,
   ],
   template: `
-    <app-cg-page-header title="Como estou" [description]="lead" />
+    <app-cg-page-header title="Como estou" [description]="lead" backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
 
     <div class="cg-stack">
       @if (paused()) {
@@ -118,7 +116,7 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
             </app-cg-note>
           } @else {
             <div class="cg-stack cg-stack--tight">
-              <p class="well__soft" data-role="timeline-intro">{{ intro }}</p>
+              <p class="cg-muted" data-role="timeline-intro">{{ intro }}</p>
               <app-cg-trend [items]="visible()" />
               @if (lastText(); as last) {
                 <p class="well__line" data-role="last-text">{{ last }}</p>
@@ -158,7 +156,7 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
         <button type="button" class="cg-link-btn" data-role="review" (click)="openReview()">Pedir revisão de uma decisão</button>
       </div>
 
-      <p class="well__soft" data-role="privacy-line">{{ privacyLine }}</p>
+      <p class="cg-muted" data-role="privacy-line">{{ privacyLine }}</p>
     </div>
 
     <!-- Os últimos 7 dias do humor -->
@@ -179,7 +177,7 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
 
     <!-- Entender as faixas -->
     <app-cg-sheet heading="Entender as faixas" [open]="is('bands')" (openChange)="onOpenChange('bands', $event)">
-      <div class="well__sheet" data-role="bands-sheet">
+      <div class="well__sheet cg-stack cg-stack--tight" data-role="bands-sheet">
         <p>A escala ajuda a equipe a escutar você. Não é um diagnóstico.</p>
         <ul class="well__list">
           @for (band of bands; track band.band) {
@@ -195,7 +193,7 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
 
     <!-- Pedir revisão -->
     <app-cg-sheet heading="Pedir revisão" [open]="is('review')" (openChange)="onOpenChange('review', $event)">
-      <div class="well__sheet">
+      <div class="well__sheet cg-stack cg-stack--tight">
         <p>{{ reviewText }}</p>
         <div class="field" [class.field--error]="!!reviewError()">
           <label class="field__label" for="well-review">O que você quer que a equipe reveja?</label>
@@ -225,7 +223,7 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
 
     <!-- Combinar um horário -->
     <app-cg-sheet heading="Combinar um horário" [open]="is('arrange')" (openChange)="onOpenChange('arrange', $event)">
-      <div class="well__sheet">
+      <div class="well__sheet cg-stack cg-stack--tight">
         <p>Em que período a equipe pode falar com você?</p>
         <app-cg-choice-group legend="Período" [options]="periods" [(value)]="period" />
         @if (arrangeError()) {

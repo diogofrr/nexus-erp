@@ -15,6 +15,8 @@ import { PageChromeService } from '@layout/state/page-chrome.service';
 import { ToastService } from '@shared/ui/overlay';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { ContactDialogService } from '../../state/contact-dialog.service';
+import { FORMAT_LABEL } from '../../state/format-labels';
+import { withArticle } from '../../state/people-format';
 import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
 import { CgEmergencyNoteComponent } from '../../ui/cg-emergency-note.component';
@@ -25,7 +27,6 @@ import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import {
   CANCEL_FREE,
   CANCEL_LATE,
-  FORMAT_LABEL,
   FORMAT_NOTICE,
   FORMAT_OPTIONS,
   KIND_OPTIONS,
@@ -38,11 +39,6 @@ import {
 import { Conversation, ConversationsService, SlotOption } from '../state/conversations.service';
 
 type Mode = 'home' | 'format' | 'slots';
-
-/** "a Dra. Beatriz" e "o Dr. Rafael": o jeito de falar de quem está na conversa. */
-function withArticle(short: string): string {
-  return /^Dra\./.test(short) ? `a ${short}` : /^Dr\./.test(short) ? `o ${short}` : short;
-}
 
 /**
  * Conversar com um psicólogo (UX C8, B4; RN-ATD-02 a 05, 07, 09 a 12, 15, 16, 19, 20, RN-PLN-12 e 19). Marcar, ver, remarcar e
@@ -85,7 +81,6 @@ function withArticle(short: string): string {
       .conv__slots { display: grid; gap: 0.75rem; grid-template-columns: minmax(0, 1fr); }
       @media (min-width: 30rem) { .conv__slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       .conv__slots .btn { width: 100%; }
-      .conv__sheet { display: grid; gap: 0.75rem; }
       .conv__sheet p { margin: 0; overflow-wrap: anywhere; }
       .conv__prices { display: grid; gap: 0.25rem; padding: 0.75rem 1rem; border-radius: var(--cg-radius-control); background: var(--cg-surface-sunken); }
       .conv__total { font-weight: 600; font-size: var(--cg-fs-lead); }
@@ -98,6 +93,8 @@ function withArticle(short: string): string {
     <app-cg-page-header
       title="Conversar com um psicólogo"
       description="As conversas são com psicólogos da Nexus, com registro no conselho de Psicologia."
+      backLink="/cuidador/cuidar-de-mim"
+      backLabel="Cuidar de mim"
     />
 
     <div class="cg-stack">
@@ -230,7 +227,7 @@ function withArticle(short: string): string {
     <!-- Resumo antes de gravar -->
     <app-cg-sheet [heading]="rescheduling() ? 'Confirme o novo horário' : 'Confirme a conversa'" [(open)]="summaryOpen">
       @if (picked(); as slot) {
-        <div class="conv__sheet" data-role="summary">
+        <div class="conv__sheet cg-stack cg-stack--tight" data-role="summary">
           <p data-role="summary-when">Quando: {{ pickedDay() }}, às {{ slot.time }} (1 hora).</p>
           <p data-role="summary-who">Com quem: {{ psychologistLine() }}.</p>
           <p data-role="summary-how">Como: {{ formatLabel() }}.</p>
@@ -269,7 +266,7 @@ function withArticle(short: string): string {
     <!-- Detalhe da conversa -->
     <app-cg-sheet heading="Sua conversa" [(open)]="detailOpen">
       @if (detail(); as c) {
-        <div class="conv__sheet" data-role="detail">
+        <div class="conv__sheet cg-stack cg-stack--tight" data-role="detail">
           <p class="conv__when">{{ c.whenText }}</p>
           <p>Com {{ c.psychologistName }}, {{ c.psychologistRole }} ({{ c.crp }}, fictício).</p>
           <p>{{ c.formatLabel }} · {{ c.kindLabel }}</p>
@@ -291,7 +288,7 @@ function withArticle(short: string): string {
     <!-- Cancelar, com o efeito dito antes -->
     <app-cg-sheet heading="Cancelar a conversa?" initialFocus="safe-action" [(open)]="cancelOpen">
       @if (detail(); as c) {
-        <div class="conv__sheet">
+        <div class="conv__sheet cg-stack cg-stack--tight">
           <p><strong>{{ c.whenText }}</strong>, com {{ c.psychologistShort }}.</p>
           <p data-role="cancel-effect">{{ c.late ? cancelLate : cancelFree }}</p>
           @if (sheetError()) {

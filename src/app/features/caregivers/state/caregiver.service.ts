@@ -16,7 +16,8 @@ import type {
   Relationship,
   Sex,
 } from '@core/models';
-import { ConsentService, DataSubjectRequestService } from '@core/privacy';
+import { ConsentService } from '@core/privacy';
+import { SubjectRightsService } from '@core/privacy/subject-rights.service';
 import { PilotEligibility, evaluatePilotEligibility } from '@core/rules/pilot-eligibility';
 import type { CaregiverRow } from './caregiver-directory.service';
 import { STATUS_SHORT_LABELS } from './caregiver-labels';
@@ -59,7 +60,7 @@ export class CaregiverService {
   private readonly audit = inject(AuditLogService);
   private readonly consent = inject(ConsentService);
   private readonly registration = inject(CaregiverRegistrationService);
-  private readonly dsr = inject(DataSubjectRequestService);
+  private readonly subjectRights = inject(SubjectRightsService);
 
   /** Cuidador que já usa este CPF fictício (para "Já existe um cuidador com este CPF"). */
   findByCpf(cpf: string, exceptId?: ID): Caregiver | undefined {
@@ -179,31 +180,24 @@ export class CaregiverService {
 
   /**
    * Pede o encerramento: o cadastro vai a `closure_requested` e a solicitação de eliminação (POP-10)
-   * entra na fila do titular. Se já há uma eliminação aberta, ela é reaproveitada.
+   * entra na fila do titular. Se já há uma eliminação aberta, ela é reaproveitada. O miolo é do núcleo
+   * (`SubjectRightsService.requestErasure`, o mesmo que o titular usa pelo aplicativo); aqui ficam a checagem do
+   * estado do cadastro e o canal "presencial" da equipe.
    */
   requestClosure(caregiverId: ID, reason: string): DataSubjectRequest {
     const caregiver = this.db.caregivers.require(caregiverId);
     if (caregiver.status === 'closed' || caregiver.status === 'closure_requested') {
       throw new CaregiverError('Este cadastro já está com encerramento pedido ou encerrado.');
     }
-    this.db.caregivers.update(caregiverId, {
-      status: 'closure_requested',
-      closureRequestedAt: this.clock.today(),
+    const outcome = this.subjectRights.requestErasure(caregiverId, {
+      channel: 'in_person',
+      description: `Encerramento do cadastro (POP-10). Motivo: ${reason}`,
+      reuseOpen: true,
     });
-    const open = this.db.dataSubjectRequests.find(
-      (r) =>
-        r.caregiverId === caregiverId &&
-        r.type === 'erasure' &&
-        (r.status === 'open' || r.status === 'in_progress'),
-    );
-    const request =
-      open ??
-      this.db.dataSubjectRequests.update(
-        this.dsr.open({ caregiverId, type: 'erasure' }).id,
-        { channel: 'in_person', description: `Encerramento do cadastro (POP-10). Motivo: ${reason}` },
-      );
-    this.audit.write('update', 'caregiver', caregiverId, caregiverId, 'encerramento pedido (POP-10)');
-    return request;
+    if (!outcome.ok) {
+      throw new CaregiverError('Este cadastro já está com encerramento pedido ou encerrado.');
+    }
+    return outcome.request;
   }
 
   // ===== Exportação da lista (SCR-M03-01) =====

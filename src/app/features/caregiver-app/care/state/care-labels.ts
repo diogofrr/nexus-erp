@@ -1,5 +1,6 @@
 import { CareSession, SessionModality, SessionStatus } from '@core/models';
 import { IconName } from '@shared/ui';
+import { FORMAT_LABEL } from '../../state/format-labels';
 
 /**
  * Os textos de "Conversar com um psicólogo" (UX C8, B4; RN-ATD-02, 07, 09, 10, 15, 16, 19). "Conversa" no lugar de
@@ -15,21 +16,15 @@ export interface FormatOption {
 
 /** Os 3 formatos, na ordem da tela (RN-ATD-02). */
 export const FORMAT_OPTIONS: readonly FormatOption[] = [
-  { value: 'online', label: 'On-line', hint: 'Pelo celular ou computador, de onde você estiver.', icon: 'video' },
+  { value: 'online', label: FORMAT_LABEL.online, hint: 'Pelo celular ou computador, de onde você estiver.', icon: 'video' },
   {
     value: 'in_person_coworking',
-    label: 'No espaço de coworking',
+    label: FORMAT_LABEL.in_person_coworking,
     hint: 'Em uma sala com acesso sem degraus, em Uberlândia.',
     icon: 'building-2',
   },
-  { value: 'in_person_home', label: 'Em casa', hint: 'O psicólogo vai até você, se for seguro e adequado.', icon: 'house' },
+  { value: 'in_person_home', label: FORMAT_LABEL.in_person_home, hint: 'O psicólogo vai até você, se for seguro e adequado.', icon: 'house' },
 ];
-
-export const FORMAT_LABEL: Readonly<Record<SessionModality, string>> = {
-  online: 'On-line',
-  in_person_coworking: 'No espaço de coworking',
-  in_person_home: 'Em casa',
-};
 
 /** Aviso por formato, na folha de resumo (RN-ATD-07 e RN-ATD-09). O coworking não precisa de aviso. */
 export const FORMAT_NOTICE: Readonly<Record<SessionModality, string | null>> = {

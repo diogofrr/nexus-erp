@@ -25,6 +25,7 @@ import {
   CgSwitchComponent,
   CgTrendComponent,
   CgTrendItem,
+  trendItemLabel,
   MOOD_OPTIONS,
   MoodValue,
   CgRatingValue,
@@ -319,6 +320,14 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
     expect(items[0]?.querySelector('.cg-trend__dot')?.getAttribute('data-band')).toBe('4');
   });
 
+  it('evolução: cada item tem o rótulo que o leitor de tela lê, com data, faixa e pontos', () => {
+    const f = mountKit('cg_0001');
+    const items = all(f, '.cg-trend__item');
+    expect(items[0]?.getAttribute('aria-label')).toBe('04/11, sobrecarga severa, 63 pontos, última conversa');
+    expect(items[1]?.getAttribute('aria-label')).toBe('10/08, sobrecarga moderada a severa, 48 pontos');
+    expect(trendItemLabel({ id: 'x', dateLabel: '01/02', bandLabel: 'Sobrecarga moderada', band: 2 })).toBe('01/02, sobrecarga moderada');
+  });
+
   it('etiqueta de plano: ponto e nome', () => {
     const f = mountKit('cg_0001');
     expect(text(root(f).querySelector('app-cg-plan-tag'))).toBe('Plano Sustenta');
@@ -441,10 +450,12 @@ describe('Diálogo "Como falar com a gente" (UX A.2.16)', () => {
     writeText.mockRejectedValue(new Error('negado'));
     click(copy);
     await settleCaregiver(app.fixture);
-    expect(text(q('.cg-contact__status'))).toBe('Não consegui copiar sozinho. Segure sobre o número e escolha Copiar.');
+    expect(text(q('.cg-contact__status'))).toBe('Não foi possível copiar. Segure sobre o número e escolha Copiar.');
+    // O número fica selecionado para a pessoa segurar e copiar à mão (AC-CG-161).
+    expect(window.getSelection()?.toString().trim()).toBe('(34) 90000-0000');
   });
 
-  it('"Escrever mensagem" leva a Falar com a Nexus e fecha o diálogo; "Fechar" também fecha', async () => {
+  it('"Escrever mensagem" leva a Falar com a Nexus e fecha o diálogo; "Voltar" também fecha', async () => {
     app = await bootCaregiverApp('cg_0001');
     await open();
     click(all('a.cg-contact__action')[0]);
@@ -452,7 +463,7 @@ describe('Diálogo "Como falar com a gente" (UX A.2.16)', () => {
     expect(app.router.url).toBe('/cuidador/mais/ajuda');
     expect(TestBed.inject(ContactDialogService).isOpen()).toBe(false);
     await open();
-    click(q('.cg-sheet__actions .btn'));
+    click(q('.cg-sheet__actions .cg-link-btn'));
     await settleCaregiver(app.fixture);
     expect(TestBed.inject(ContactDialogService).isOpen()).toBe(false);
     expect(q('dialog.cg-sheet')?.hasAttribute('open')).toBe(false);

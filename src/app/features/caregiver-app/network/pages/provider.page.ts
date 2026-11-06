@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ServiceRequest } from '../../../../core/models';
@@ -10,9 +10,10 @@ import { IconComponent } from '../../../../shared/ui/display/icon.component';
 import { FormFieldComponent } from '../../../../shared/ui/forms/form-field.component';
 import { NxInputDirective } from '../../../../shared/ui/forms/input.directive';
 import { ToastService } from '../../../../shared/ui/overlay/toast.service';
-import { copyToClipboard } from '../../../../shared/ui/util/clipboard';
+import { copyOrSelect } from '../../../../shared/ui/util/clipboard';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { ContactDialogService } from '../../state/contact-dialog.service';
+import { COPY_NUMBER_FAILED, NUMBER_COPIED } from '../../state/copy-feedback';
 import { CgChoice, CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
@@ -27,7 +28,6 @@ import {
 type Modality = ServiceRequest['modality'];
 
 const SENT_MESSAGE = 'Pedido enviado. A equipe avisa você quando o profissional responder.';
-const COPY_FALLBACK = 'Não foi possível copiar. Segure sobre o número e escolha Copiar.';
 
 /**
  * Profissional (UX C14, `/cuidador/rede/profissional/:id`): a ficha e **Pedir serviço**, que vale para TODOS os planos (decisão
@@ -55,8 +55,6 @@ const COPY_FALLBACK = 'Não foi possível copiar. Segure sobre o número e escol
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
-      .nx-meta { margin: 0; color: var(--cg-text-soft); }
-      .nx-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; }
       .nx-phone { font-weight: var(--fw-semibold); font-variant-numeric: tabular-nums; user-select: all; }
     `,
   ],
@@ -72,9 +70,9 @@ const COPY_FALLBACK = 'Não foi possível copiar. Segure sobre o número e escol
         }
 
         <div class="cg-stack cg-stack--tight">
-          <p class="nx-meta" data-role="specialty">{{ p.specialtyLabel }} · {{ p.city }}</p>
+          <p class="cg-muted" data-role="specialty">{{ p.specialtyLabel }} · {{ p.city }}</p>
           @if (p.homeCare || p.highlight) {
-            <p class="nx-tags">
+            <p class="cg-tags">
               @if (p.highlight) {
                 <app-badge variant="success" icon="award">Em destaque</app-badge>
               }
@@ -84,7 +82,7 @@ const COPY_FALLBACK = 'Não foi possível copiar. Segure sobre o número e escol
             </p>
           }
           @if (p.councilLabel) {
-            <p class="nx-meta" data-role="council">Registro: {{ p.councilLabel }}</p>
+            <p class="cg-muted" data-role="council">Registro: {{ p.councilLabel }}</p>
           }
           <p data-role="rating">{{ rating(p) }}</p>
         </div>
@@ -117,7 +115,7 @@ const COPY_FALLBACK = 'Não foi possível copiar. Segure sobre o número e escol
         <section class="cg-stack cg-stack--tight" aria-label="Falar direto com o profissional">
           <p data-role="phone-line">
             Prefere falar direto com {{ p.name }}?
-            <span class="nx-phone" data-role="phone">{{ p.phone }}</span>.
+            <span class="nx-phone" data-role="phone" #phoneEl>{{ p.phone }}</span>.
           </p>
           <div>
             <button type="button" class="cg-link-btn" data-role="copy-phone" (click)="copyPhone(p.phone)">
@@ -169,7 +167,7 @@ export class ProviderPage {
   protected readonly notice = NETWORK_NOTICE;
   protected readonly summary = REQUEST_SUMMARY;
   protected readonly sentMessage = SENT_MESSAGE;
-  protected readonly copyFallback = COPY_FALLBACK;
+  protected readonly copyFallback = COPY_NUMBER_FAILED;
 
   private readonly params = toSignal(this.route.paramMap, { initialValue: this.route.snapshot.paramMap });
   private readonly providerId = computed(() => this.params().get('id') ?? '');
@@ -198,6 +196,7 @@ export class ProviderPage {
   private readonly sentFor = signal<string | null>(null);
   protected readonly sent = computed(() => this.sentFor() === this.providerId());
   protected readonly copyFailed = signal(false);
+  private readonly phoneEl = viewChild<ElementRef<HTMLElement>>('phoneEl');
 
   protected rating(p: { average: number | null; evaluationCount: number }): string {
     return ratingText(p);
@@ -249,10 +248,10 @@ export class ProviderPage {
   }
 
   protected async copyPhone(phone: string): Promise<void> {
-    const ok = await copyToClipboard(phone, this.doc);
+    const ok = await copyOrSelect(phone, this.phoneEl()?.nativeElement, this.doc);
     this.copyFailed.set(!ok);
     if (ok) {
-      this.toast.show({ message: 'Número copiado.', durationMs: 8000 });
+      this.toast.show({ message: NUMBER_COPIED, durationMs: 8000 });
     }
   }
 }

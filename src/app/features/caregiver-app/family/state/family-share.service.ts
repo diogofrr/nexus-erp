@@ -5,6 +5,7 @@ import { Database } from '../../../../core/data/database';
 import { ConsentService } from '../../../../core/privacy/consent.service';
 import { betweenDates, onDate } from '../../../../core/rules/care-agenda';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
+import { firstNameOf } from '../../state/people-format';
 import { FamilyShareChoices, FamilyShareData, buildFamilyText } from './family-text';
 
 /** O texto da família não pôde ser feito (sem a autorização de compartilhar). A frase é para a tela. */
@@ -45,7 +46,7 @@ export class FamilyShareService {
     const today = this.ctx.today();
     const appointments = this.db.careAppointments.query((a) => a.elderId === elder.id);
     return {
-      elderFirstName: elder.fullName.split(/\s+/)[0] ?? elder.fullName,
+      elderFirstName: firstNameOf(elder.fullName),
       caregiverFirstName: this.ctx.firstName(),
       today,
       appointmentsToday: onDate(appointments, today),

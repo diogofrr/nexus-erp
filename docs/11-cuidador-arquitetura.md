@@ -1,6 +1,6 @@
 # Aplicativo do cuidador: arquitetura e contrato da Base (Dev F)
 
-Status: PRONTO. A Base entregou sessão e guards, entrada, rotas e esqueletos das 13 áreas, contexto do cuidador, coleção `doseChecks`, seed das pessoas de demonstração, shell, kit visual (Parte A do UX), SCSS e testes. Pendências e pedidos ao líder estão na seção 14.
+Status: PRONTO (Base) e integrado (ver `docs/12-cuidador-integracao.md`). A Base entregou sessão e guards, entrada, rotas e esqueletos das 13 áreas, contexto do cuidador, coleção `doseChecks`, seed das pessoas de demonstração, shell, kit visual (Parte A do UX), SCSS e testes. Pendências e pedidos ao líder estão na seção 14.
 
 Contrato para os devs de página (P1, P2, P3). Complementa `docs/10-cuidador-contexto.md` (decisões e regras), `docs/10-cuidador-ux.md` (UX e UI: o que cada tela mostra), `docs/08-arquitetura.md` (núcleo) e `docs/09-guia-dev-modulos.md` (regras de trabalho). Onde este documento e o UX divergem sobre estrutura de código, vale este; sobre texto e visual da tela, vale o UX.
 
@@ -20,10 +20,11 @@ Decisão do líder (P-02): Entrada e porta de Mais com a Base; Cuidar de mim com
 ```
 src/app/features/caregiver-app/
   testing.ts                 bootCaregiverApp (só para specs)
-  routing/                   caregiver-areas.ts (mapa), caregiver.routes.ts (rotas de /cuidador), area-placeholder.component.ts
+  routing/                   caregiver-areas.ts (mapa), caregiver.routes.ts (rotas de /cuidador; `createCaregiverRoutes(devMode)`)
   shell/                     caregiver-shell.component.ts, menu do usuário, sair, pages/ (porta de Mais, não encontrado)
   state/                     caregiver-context.service.ts, font-scale.service.ts, contact-dialog.service.ts,
-                             nexus-contact.ts, day-format.ts, demo-caregivers.ts
+                             nexus-contact.ts, day-format.ts, demo-caregivers.ts, people-format.ts, format-labels.ts,
+                             copy-feedback.ts, online-status.service.ts
   ui/                        kit visual (cg-*.component.ts), index.ts, kit/ (catálogo de desenvolvimento)
   start/ today/ routine/ family/ care/ my-wellbeing/ help/ privacy/ network/ card/ plan/ groups/ content/
     <area>.routes.ts         exporta ROUTES (e, em start e help, uma segunda constante)
@@ -59,10 +60,10 @@ Não está na tabela porque é da Base: `/cuidador` (vai a `hoje`), `/cuidador/m
 
 Como preencher uma área:
 
-1. Abra `<area>/<area>.routes.ts`. Cada rota aponta para `CaregiverPlaceholderComponent` com `data: { title }`. Troque `component` pela tela de verdade (`loadComponent: () => import('./pages/...')` ou `component`), **mantendo `data.title`** (vira o título da aba, `Título · Nexus ERP`).
+1. Abra `<area>/<area>.routes.ts`. Cada rota tem `data: { title }` e a tela de verdade (`loadComponent: () => import('./pages/...')` ou `component`), **mantendo `data.title`** (vira o título da aba, `Título · Nexus ERP`).
 2. Acrescente sub-rotas da área no mesmo arquivo. Detalhe de grupo e de conteúdo **não** têm rota filha: abrem em folha de tela cheia com parâmetro na URL (`?atividade=`, `?conteudo=`), decisão P-04.
 3. Toda tela tem um `h1` (use `<app-cg-page-header>`): o shell leva o foco a ele a cada tela e o teste de fumaça confere.
-4. Atualize o `<area>.spec.ts` (a tabela `cases` e os testes da tela). Remova o placeholder da área quando ela estiver pronta.
+4. Atualize o `<area>.spec.ts` (a tabela `cases` e os testes da tela). O "Em construção" (placeholder) já foi removido: as 13 áreas estão prontas.
 5. Nunca importe de outra área. O que for comum vai para `state/` (Base) ou `core/` (pedido ao líder).
 
 ## 4. Sessão e guards
@@ -98,6 +99,7 @@ ctx.consentStatus('family_sharing');   // 'granted' | 'refused' | 'revoked' | 'p
 ctx.hasConsent('health_data');         // vigente?  ctx.healthConsent() é o atalho do de saúde
 ctx.staffContact();          // 'none' | 'today' | 'not_yet'  (ver abaixo)
 ctx.canUse('groups');        // acesso por plano
+ctx.lowDigitalLiteracy();    // pouca familiaridade digital?  ctx.doseSize() → 'default' | 'large'
 ctx.access('card');          // { allowed, minPlan, reason? }
 ctx.fontScale(); ctx.setFontScale('large');
 ctx.today();                 // '2026-11-04', do Clock (reativo ao relógio simulado)
@@ -144,7 +146,7 @@ Cabeçalho (marca, **Ajuda agora** sempre visível, menu do usuário com Meu per
 - Sem sessão (cadastro de quem é novo e Ajuda agora) não há barra nem menu: só a marca, a Ajuda agora e "Entrar".
 - Teclado virtual aberto: a barra inferior some (`visualViewport`).
 - O `ContactDialogService.open()` abre o "Como falar com a gente" de qualquer tela; o shell monta uma só instância.
-- Portas: **Mais** é da Base. **Cuidar de mim** é de P2 (rota `''` de `care`) e **Rede** é de P3 (rota `''` de `network`); hoje são o placeholder.
+- Portas: **Mais** é da Base. **Cuidar de mim** é de P2 (rota `''` de `care`) e **Rede** é de P3 (rota `''` de `network`); ambas já existem (P2 e P3).
 
 ## 9. Kit visual (`features/caregiver-app/ui`, importe de `'../ui'`)
 
@@ -159,13 +161,13 @@ Tudo standalone, OnPush, signals, sem estilo inline (o CSS está em `src/styles/
 | `app-cg-choice-group<T>` | `legend*`, `options*` (`{ value, label, hint? }`), `value` (model) | Escolha única em linhas grandes; nada pré-marcado (A.2.9) |
 | `app-cg-switch` | `label*`, `hint`, `onText`, `offText`, `disabled`, `checked` (model) | Chave de liga e desliga com o estado escrito (A.2.10); consentimento usa a folha de efeito, não só a chave |
 | `app-cg-mood` | `label`, `value` (model), saída `chosen`; `MOOD_OPTIONS`, `moodLabel` | Humor de 5 opções em 1 toque (A.2.11). É dado de saúde: só com o consentimento |
-| `app-cg-dose` | `slot*` (`DoseSlot`), saídas `dei` e `undo` | Linha "dei o remédio": a dar, no horário (até 30 min antes), passou do horário (âmbar), dado (A.2.12). Só desenha; quem grava é a tela |
+| `app-cg-dose` | `slot*` (`DoseSlot`), `size` (`default` ou `large`), saídas `dei` e `undo` | Linha "dei o remédio": a dar, no horário (até 30 min antes), passou do horário (âmbar), dado (A.2.12). Só desenha; quem grava é a tela. `large` (hora em 22 px, **Dei** de 96 px) é de quem tem pouca familiaridade digital: as telas passam `ctx.doseSize()` |
 | `app-cg-plan-lock` | `feature*`, `description`; conteúdo projetado = alternativa gratuita | Bloqueio por plano sem pressão (A.2.15) |
 | `app-cg-plan-tag` | `plan*` | "Plano Cuida" com ponto e nome (A.2.23) |
 | `app-cg-sheet` | `heading*`, `open` (model), `initialFocus`; slot `[cgSheetActions]` | Folha de baixo: `<dialog>` modal, foco no título, devolve o foco, Esc e toque no fundo fecham (A.2.17) |
 | `app-cg-emergency-note` | `variant` (`compact`, `full`) | Aviso de 192, compacto ou o bloco da Ajuda agora com 192 e 188 (A.2.19) |
 | `app-cg-text-size` | `showLegend` | Normal, Grande, Bem grande (A.2.20) |
-| `app-cg-trend` | `items*` (`CgTrendItem`) | Linha do tempo da evolução, rampa de azul, pontuação só em legenda (A.2.21) |
+| `app-cg-trend` | `items*` (`CgTrendItem`) | Linha do tempo da evolução, rampa de azul, pontuação só em legenda; cada `<li>` leva o rótulo "04/11, sobrecarga severa, 63 pontos" (A.2.21) |
 | `app-cg-rating`, `app-cg-rating-pair` | `label*`, `value` (model); `quality` e `punctuality` (models); `ratingPairMissingText(q, p)` | Nota de 1 a 5 numerada, e as duas notas da avaliação (A.2.22) |
 | `app-cg-header`, `app-cg-nav`, `app-cg-proto-note`, `app-cg-contact-dialog` | montados pelo shell | Não use nas telas |
 
@@ -224,11 +226,37 @@ Pessoas de demonstração úteis (docs/10-cuidador-ux.md, D.1): Ana `cg_0001` (C
 | `scripts/check-core.mjs` | Varre `features/caregiver-app` e a entrada (AC-CG-12) e também o `docs/11` para travessão |
 | `features/auth` | A entrada nova e `destinationAfterCaregiverLogin` |
 
+Arquivos que os devs de página (P1, P2, P3) e a integração tocaram fora das próprias pastas (cada dev registra o detalhe em `docs/ac-status/caregiver-p1.md`, `-p2.md` e `-p3.md`; a integração, em `docs/12-cuidador-integracao.md`):
+
+| Onde | O quê | Quem |
+|---|---|---|
+| `core/models/caregivers.ts` | Dois campos opcionais: `Caregiver.emergencyNoticeAcceptedAt` (aceite do aviso de emergência com data e hora, AC-CG-30 e AC-CG-155) e `CareAppointment.place` ("onde ou com quem", C5). Sem migração | P1 |
+| `core/care/caregiver-registration.service.ts` (+ spec) | Miolo do cadastro do cuidador (código `CUI-xxxx`, pessoa idosa, consentimentos, assinatura Livre); `CaregiverError` mora aqui | P1 |
+| `features/caregivers/state/caregiver.service.ts` | `create`, `findByCpf` e `nextIdentity` delegam ao `CaregiverRegistrationService` (o log de auditoria fica aqui); `requestClosure` delega ao `SubjectRightsService.requestErasure` com `reuseOpen` (a checagem do estado do cadastro e o canal "presencial" ficam na borda) | P1 e integração |
+| `core/rules/care-agenda.ts` (+ spec) | Regras puras da agenda do cuidador (próximos compromissos, dias, "passou do horário") | P1 |
+| `features/caregiver-app/state/online-status.service.ts`, `people-format.ts` | Aviso de "sem conexão" e a frase "com a Dra. ..."; servem a mais de uma área, que nunca importam umas das outras | P1 |
+| `features/auth/caregiver-entry.spec.ts` | Uma linha: o h1 de Hoje passou a ser a saudação | P1 |
+| `core/care/session-booking.service.ts` (+ spec) | Miolo de agendar, cancelar e remarcar sessão (RN-ATD-02 a 05, 09, 10, 12, 16, 19), sem checagem de perfil; opção `homeSafetyPending` | P2 |
+| `features/care-sessions/state/care-sessions.service.ts` | `CareSessionsService` delega as leituras e os três atos ao `SessionBookingService`; a checagem de perfil fica na borda | P2 |
+| `core/care/review-request.service.ts` (+ spec) e `features/zarit/state/zarit.service.ts` | Miolo do pedido de revisão de decisão (RN-ZRT-20); `registerReviewRequest` delega a ele | P2 |
+| `core/care/caregiver-messages.service.ts` (+ spec) | Mensagem do cuidador para a equipe pelo aplicativo (canal `app`, prazo de 24 horas úteis) | P2 |
+| `core/privacy/subject-rights.service.ts` (+ spec) | Pedir cópia, pedir eliminação e retirar o pedido (RN-LGPD-18, 20, 21, 24); `requestErasure` ganhou `ErasureOptions` (canal, descrição, `reuseOpen`) para a equipe usar o mesmo miolo | P2 e integração |
+| `core/commerce/subscription.service.ts` | `changePlan`, `keepPlan`, `reactivate` e `startSubscription` ganharam o último parâmetro opcional `author` (a troca feita pelo cuidador fica no histórico em nome dele; sem ele vale a sessão da equipe e, sem sessão, `system`) (+ `subscription-author.spec.ts`) | P3 |
+| `features/network/state/network-admin.service.ts` | `createRequest` e `registerEvaluation` usam `serviceRequestProblem` e `isValidRating` do núcleo (mesmas frases, mesma ordem) | P3 |
+| `core/rules/service-requests.ts`, `benefit-card.ts`, `guidance-content.ts` (+ specs) | Pedido de serviço e nota, economia do Cartão e parceiros ativos, conteúdos publicados e exclusivos | P3 |
+| `core/network/caregiver-network.service.ts` (+ spec) | A rede vista pelo cuidador: busca, ficha pública (sem monitoramento, recusa, comissão nem disponibilidade), pedidos, cancelamento, avaliação e correção em 7 dias | P3 |
+| `core/groups/caregiver-activities.service.ts` (+ spec) | Programação, situação da pessoa em cada atividade, inscrição com sigilo, lista de espera e saída | P3 |
+| `shared/ui/util/clipboard.ts` (+ spec) | O único helper de copiar do app: `copyToClipboard(text, doc)`, `selectContents(element, doc)` e `copyOrSelect` (copia; se negar, deixa o elemento selecionado). Substituiu `help/state/copy-text.ts` e as cópias inline do diálogo de contato e da Família | P3 e integração |
+| `core/care/wellbeing-check.service.ts` (+ spec) | `WellbeingCheckService` (humor do dia) saiu de `today/state` para o núcleo, porque Hoje e Como estou usam o mesmo; `today/state/wellbeing-check.service.ts` ficou como re-export fino | integração |
+| `features/caregiver-app/state/copy-feedback.ts`, `caregiver-context.service.ts` | Frases de copiar numa lista só; `lowDigitalLiteracy()` e `doseSize()` no contexto | integração |
+| `features/caregiver-app/ui/cg-trend.component.ts`, `cg-dose.component.ts`, `cg-contact-dialog.component.ts`, `src/styles/_caregiver.scss` | Kit: rótulo de leitor de tela por item da linha do tempo; `size="large"` do `app-cg-dose` (hora em 22 px, **Dei** de 96 px); diálogo de contato com o número selecionado e a frase "Não foi possível copiar..." quando a área de transferência é negada | integração |
+| `core/seed/build-caregiver-app.ts`, `seed.spec.ts`, `caregiver-app-seed.spec.ts`, `settings/pages/data.page.ts` | Uma conversa futura com o psicólogo para Ana e para Lourdes (`careSessions` 60 para 62; `docs/12` seção 1) | integração |
+
 Testes existentes alterados, com o motivo: `core/data/database.spec.ts` (57 para 58 coleções, por `doseChecks`); `app.spec.ts` (22 rotas carregadas sob demanda em vez de 21, pela rota `cuidador`, e `cuidador` na lista de rotas); `features/auth/auth.spec.ts` (a lista da equipe agora começa recolhida e o `h1` é "Entrar"; os testes abrem a porta da equipe antes de escolher o perfil). Nenhuma contagem protegida do seed mudou.
 
 ## 13. Seed das pessoas de demonstração
 
-Todas as 29 pessoas de cenário já tinham pessoa idosa, 2 remédios com horários e 1 compromisso. `build-caregiver-app.ts` roda **por último, sem sortear** (não mexe na sequência do gerador, só acrescenta linhas): compromissos de hoje (fim da tarde) e de 1 a 3 e de 4 a 6 dias adiante para as 11 pessoas da entrada; um 3º remédio de Ana (Omeprazol às 07:30, para somar 4 doses por dia); remédios marcados como dados nos últimos 4 dias para Ana (menos a dose das 20h de anteontem) e os de antes das 9h de hoje; um serviço concluído e sem avaliação para Rita (um pedido que já existia, de um cuidador de volume, reatribuído a ela, então as contagens de pedidos e as métricas da rede não mudam); João sem autorização de compartilhar com a família (`scenarios.ts`), enquanto Ana autorizou. Maria (pedido de revisão aberto), Raimunda (exclusão aberta), João (mensagem por telefone) e Marcos (mudança de plano em D+9) já existiam. O teste `core/seed/caregiver-app-seed.spec.ts` guarda tudo isso e que a mesma data gera exatamente os mesmos dados.
+Todas as 29 pessoas de cenário já tinham pessoa idosa, 2 remédios com horários e 1 compromisso. `build-caregiver-app.ts` roda **por último, sem sortear** (não mexe na sequência do gerador, só acrescenta linhas): compromissos de hoje (fim da tarde) e de 1 a 3 e de 4 a 6 dias adiante para as 11 pessoas da entrada; um 3º remédio de Ana (Omeprazol às 07:30, para somar 4 doses por dia); remédios marcados como dados nos últimos 4 dias para Ana (menos a dose das 20h de anteontem) e os de antes das 9h de hoje; um serviço concluído e sem avaliação para Rita (um pedido que já existia, de um cuidador de volume, reatribuído a ela, então as contagens de pedidos e as métricas da rede não mudam); João sem autorização de compartilhar com a família (`scenarios.ts`), enquanto Ana autorizou. Maria (pedido de revisão aberto), Raimunda (exclusão aberta), João (mensagem por telefone) e Marcos (mudança de plano em D+9) já existiam. **Integração:** Ana e Lourdes ganharam uma conversa futura com o psicólogo (Ana: Dr. Rafael, `scheduled`, on-line, em 3 dias úteis; Lourdes: Dra. Letícia, `confirmed`, coworking, em 2 dias úteis), cada uma com a vaga `booked`; `careSessions` passou de 60 para 62 (`docs/12`, seção 1). O teste `core/seed/caregiver-app-seed.spec.ts` guarda tudo isso e que a mesma data gera exatamente os mesmos dados.
 
 Navegador que já tinha o banco gerado antes: use "Resetar para o seed" (M15) para receber os dados novos.
 
@@ -246,8 +274,8 @@ Decisões tomadas (suposições de protótipo, fora do plano):
 Pendências e pedidos:
 
 - **Dado inconsistente no UX**: o doc usa "qui, 06/11" com hoje em quarta, 04/11/2026; 06/11 é sexta. O código usa o calendário de verdade (`sex, 06/11`).
-- `SubscriptionService.changePlan` grava `byUserId: 'system'` quando não há sessão da equipe: para P3 decidir se a troca feita pelo cuidador deve gravar o id dele (mudança em `core/commerce`, pedido ao líder).
+- Resolvido: `SubscriptionService.changePlan`, `keepPlan`, `reactivate` e `startSubscription` ganharam o parâmetro opcional `author`; a troca feita pelo cuidador grava o id dele (P3, seção 12).
 - `ConsentService` exige `registeredByUserId`; a convenção acima (id do cuidador) funciona, mas a tela de histórico da equipe mostra "usuário".
 - Existem `shared/ui/plan/subscription-panel` e `plan-change-drawer` (visão da equipe); P3 decide se reaproveita o miolo ou escreve a tela do cuidador com o kit.
-- Telas de Hoje, Agenda, Remédios etc. continuam placeholders por definição (são dos devs de página). As portas de Cuidar de mim e de Rede também: o texto e as frases dinâmicas estão em UX C7 e C12.
-- Não verificado por script: contraste (AC-CG-06) dos tokens `--cg-*` e o alvo de 48 px de todo controle (AC-CG-01); conferidos só por inspeção visual em 360, 390 e 1280 px com as três letras no catálogo do kit.
+- Resolvido: as 22 telas foram entregues por P1, P2 e P3 e integradas (`docs/12-cuidador-integracao.md`).
+- Contraste (AC-CG-06) dos tokens `--cg-*` e alvo de 48 px (AC-CG-01): verificados por `pnpm run check:a11y` (`scripts/check-caregiver-a11y.mjs`); o resto (rolagem, texto cortado, foco) segue por inspeção visual em 360, 390 e 1280 px.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { routes } from '../../../app.routes';
 import { CAREGIVER_AREAS } from './caregiver-areas';
-import { ROUTES as CAREGIVER_ROUTES } from './caregiver.routes';
+import { ROUTES as CAREGIVER_ROUTES, createCaregiverRoutes } from './caregiver.routes';
 
 /** A tabela do contexto: área e rota base (docs/10-cuidador-contexto.md e docs/11-cuidador-arquitetura.md). */
 const EXPECTED: readonly [string, string, 'session' | 'open'][] = [
@@ -77,6 +77,15 @@ describe('Rotas de /cuidador no roteador central', () => {
 });
 
 describe('Catálogo do kit (só em desenvolvimento)', () => {
+  const guardedPaths = (devMode: boolean): (string | undefined)[] =>
+    (createCaregiverRoutes(devMode)[0]?.children?.find((c) => c.canActivate)?.children ?? []).map((c) => c.path);
+
+  it('em produção a rota _kit não existe (cai em "Página não encontrada"); em desenvolvimento ela existe', () => {
+    expect(guardedPaths(false)).not.toContain('_kit');
+    expect(guardedPaths(true)).toContain('_kit');
+    expect(CAREGIVER_ROUTES[0]?.children?.find((c) => c.canActivate)?.children?.some((c) => c.path === '_kit')).toBe(true);
+  });
+
   it('/cuidador/_kit abre com sessão de cuidador e mostra os componentes', async () => {
     const { bootCaregiverApp } = await import('../testing');
     const { TestBed } = await import('@angular/core/testing');

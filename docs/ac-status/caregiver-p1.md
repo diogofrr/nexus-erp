@@ -43,7 +43,7 @@ Estados: sem conexão (`OnlineStatusService`) atendido. **Carregando e erro** ("
 | AC-CG-60 | atendido | **Remarcar** reabre o formulário com os dados; "Remarcado para sex, 06/11, às 15:00." com **Desfazer** que restaura |
 | AC-CG-61 | atendido | "Tirar este compromisso da agenda?" com o efeito escrito, foco inicial em **Voltar**; só depois de confirmar sai; **Desfazer** devolve com o mesmo id |
 | AC-CG-62 | atendido | "Lembrar de mim" vem ligado; desligar (no cadastro ou no detalhe) grava `reminder: false` sem confirmação |
-| AC-CG-63 | atendido | Conversa do próprio cuidador com o psicólogo aparece no dia com "Para você" e leva a `/cuidador/cuidar-de-mim/atendimento`; nunca entra no texto da família. O seed não tem conversa marcada para as pessoas de demonstração, então o teste cria uma |
+| AC-CG-63 | atendido | Conversa do próprio cuidador com o psicólogo aparece no dia com "Para você" e leva a `/cuidador/cuidar-de-mim/atendimento`; nunca entra no texto da família. No seed, Ana (seg, 09/11, on-line) e Lourdes (sex, 06/11, coworking) têm uma conversa futura desde a integração (`docs/12`, seção 1) |
 
 Estados: sem conexão atendido; "Passou do horário (HH:mm)" em compromisso de hoje atendido; vazio atendido. Carregando e erro: não atendido, pelo mesmo motivo de Hoje.
 
@@ -135,6 +135,8 @@ Nenhuma edição em `seed`, `styles` ou `routing`. Nenhuma coleção nova (`well
 - **S-47** `?novo=1` abre direto a folha de novo compromisso (Agenda) ou de novo remédio (Remédios), para os botões de Hoje levarem a um passo só.
 
 ## Pedidos ao líder
+
+**Status na integração (`docs/12-cuidador-integracao.md`):** 1 feito (`docs/11`, seção 12); 2 feito (conversas de Ana e de Lourdes no seed); 3 feito (`app-cg-dose` com `size`, ligado em Hoje e Remédios para `digitalLiteracy: 'low'`); 4 segue aberto (conferir em navegador); 5 feito (AC-CG-53 e C4 corrigidos no UX).
 
 1. Incluir no `docs/11-cuidador-arquitetura.md` (seção 12) as linhas da tabela de alterações acima.
 2. Seed: o UX (D.1.1) diz que Ana e Lourdes têm conversa marcada com o psicólogo, mas o seed não tem nenhuma `careSession` futura para as pessoas de demonstração; a linha "Para você" de Hoje e da Agenda só aparece em teste. Sugestão: uma sessão `confirmed` futura para Ana e outra para Lourdes em `build-caregiver-app.ts`.

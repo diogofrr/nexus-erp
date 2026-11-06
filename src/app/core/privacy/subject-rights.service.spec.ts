@@ -52,6 +52,25 @@ describe('SubjectRightsService (pedidos do titular pelo aplicativo, RN-LGPD-18, 
     expect(rights.requestErasure('cg_0018')).toMatchObject({ ok: false, reason: 'duplicate' });
   });
 
+  it('a equipe pede o encerramento pelo mesmo miolo: canal presencial, descrição própria e pedido aberto reaproveitado', () => {
+    const { rights, db } = setup();
+    const made = rights.requestErasure('cg_0011', {
+      channel: 'in_person',
+      description: 'Encerramento do cadastro (POP-10). Motivo: teste',
+      reuseOpen: true,
+    });
+    expect(made.ok).toBe(true);
+    expect(made.ok && made.request).toMatchObject({ channel: 'in_person', type: 'erasure' });
+    expect(db.caregivers.require('cg_0011').status).toBe('closure_requested');
+
+    // Raimunda já tem eliminação aberta: com reuseOpen o pedido é o mesmo e o cadastro vai a encerramento.
+    const size = db.dataSubjectRequests.size();
+    const reused = rights.requestErasure('cg_0018', { channel: 'in_person', reuseOpen: true });
+    expect(reused.ok && reused.request.id).toBe('dsr_0001');
+    expect(db.dataSubjectRequests.size()).toBe(size);
+    expect(db.caregivers.require('cg_0018').status).toBe('closure_requested');
+  });
+
   it('retirar o pedido de eliminação devolve o cadastro e encerra o pedido como retirado, sem apagar nada', () => {
     const { rights, db } = setup();
     const made = rights.requestErasure('cg_0004');

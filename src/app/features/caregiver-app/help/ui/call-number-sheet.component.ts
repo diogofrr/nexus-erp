@@ -1,10 +1,11 @@
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, input, model, signal, viewChild } from '@angular/core';
 import { IconComponent } from '@shared/ui';
+import { copyOrSelect } from '../../../../shared/ui/util/clipboard';
+import { COPY_NUMBER_FAILED, NUMBER_COPIED } from '../../state/copy-feedback';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
-import { COPY_DENIED, HelpNumber, NO_CALL_IN_PROTOTYPE } from '../state/help-numbers';
-import { copyToClipboard, selectContents } from '../state/copy-text';
+import { HelpNumber, NO_CALL_IN_PROTOTYPE } from '../state/help-numbers';
 
 /**
  * Diálogo do número de ajuda (UX C3, AC-CG-35, S-13): número grande (40 px), "Copiar número" e a frase de que, no
@@ -21,7 +22,6 @@ import { copyToClipboard, selectContents } from '../state/copy-text';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
-      .call__about { margin: 0; color: var(--cg-text-soft); }
       .call__number {
         margin: 0;
         font-size: 2.5rem;
@@ -39,7 +39,7 @@ import { copyToClipboard, selectContents } from '../state/copy-text';
   template: `
     <app-cg-sheet [heading]="heading()" [(open)]="open">
       @if (help(); as item) {
-        <p class="call__about">{{ item.about }}</p>
+        <p class="cg-muted">{{ item.about }}</p>
         <p class="call__number" data-role="call-number" #numberEl>{{ item.number }}</p>
         <p class="call__status" role="status" aria-live="polite" data-role="call-feedback">{{ feedback() }}</p>
         <app-cg-note variant="soft" icon="info">{{ notice }}</app-cg-note>
@@ -48,7 +48,7 @@ import { copyToClipboard, selectContents } from '../state/copy-text';
         <button type="button" class="btn btn--primary" (click)="copy()">
           <svg appIcon="copy" size="sm"></svg>Copiar número
         </button>
-        <button type="button" class="cg-link-btn" (click)="open.set(false)">Fechar</button>
+        <button type="button" class="cg-link-btn" (click)="open.set(false)">Voltar</button>
       </ng-container>
     </app-cg-sheet>
   `,
@@ -82,11 +82,7 @@ export class CallNumberSheetComponent {
     if (!item) {
       return;
     }
-    if (await copyToClipboard(this.doc, item.number)) {
-      this.feedback.set('Número copiado.');
-      return;
-    }
-    selectContents(this.doc, this.numberEl()?.nativeElement);
-    this.feedback.set(COPY_DENIED);
+    const copied = await copyOrSelect(item.number, this.numberEl()?.nativeElement, this.doc);
+    this.feedback.set(copied ? NUMBER_COPIED : COPY_NUMBER_FAILED);
   }
 }

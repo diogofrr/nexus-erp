@@ -53,7 +53,7 @@ export class DemoDataService {
     { label: 'linhas no log de acessos', value: this.db.accessLog.size() },
   ]);
 
-  /** "340 cuidadores, 20 prestadores, 60 sessões de atendimento" (as três primeiras). */
+  /** "340 cuidadores, 20 prestadores, 62 sessões de atendimento" (as três primeiras). */
   summary(counts: readonly DemoCount[] = this.counts()): string {
     return counts
       .slice(0, 3)

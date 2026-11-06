@@ -44,14 +44,13 @@ import { MESSAGE_SENT_NOTE, MESSAGE_SUBJECTS, NexusMessagesService } from '../st
       .talk__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
       .talk__meta svg { vertical-align: -0.2em; margin-inline-end: 0.25rem; }
       .talk__status { font-weight: 600; color: var(--cg-heading); }
-      .talk__urgent { margin: 0; color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
       .talk__empty { display: grid; gap: 0.25rem; padding: 1rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-card); background: var(--cg-surface); }
       .talk__empty h3 { margin: 0; font-size: var(--cg-fs-lead); }
       .talk__empty p { margin: 0; color: var(--cg-text-soft); }
     `,
   ],
   template: `
-    <app-cg-page-header title="Falar com a Nexus" description="Escolha o jeito mais fácil para você." />
+    <app-cg-page-header title="Falar com a Nexus" description="Escolha o jeito mais fácil para você." backLink="/cuidador/mais" backLabel="Mais" />
 
     <div class="cg-stack">
       @if (closedNote(); as note) {
@@ -85,7 +84,7 @@ import { MESSAGE_SENT_NOTE, MESSAGE_SUBJECTS, NexusMessagesService } from '../st
           <app-form-field label="Escreva a sua mensagem" controlId="talk-body" [error]="error()" [forceErrors]="true">
             <textarea appInput rows="5" [formControl]="body" #bodyField></textarea>
           </app-form-field>
-          <p class="talk__urgent">Se for urgente, use <a class="cg-link-btn" routerLink="/cuidador/ajuda-agora">Ajuda agora</a>.</p>
+          <p class="cg-meta">Se for urgente, use <a class="cg-link-btn" routerLink="/cuidador/ajuda-agora">Ajuda agora</a>.</p>
           @if (sentNote()) {
             <app-cg-note variant="ok" icon="circle-check"><span data-role="sent-note">{{ sentNote() }}</span></app-cg-note>
           }

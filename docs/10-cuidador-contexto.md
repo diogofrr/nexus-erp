@@ -31,7 +31,7 @@ Rotas fora da barra: `/cuidador/comecar` (cadastro de quem é novo, passo a pass
 ## Entrada
 - `/login` passa a ter duas portas: **"Sou cuidador(a)"** (primeira e em destaque) e **"Sou da equipe Nexus"** (a lista atual, mais discreta, com o segundo fator de sempre). O cuidador **não** tem segundo fator (RN-LGPD-15 vale só para a equipe) e não tem senha no protótipo: escolhe a pessoa de demonstração ou toca em "Criar minha conta".
 - A sessão do cuidador fica em `sessionStorage` (chave `nexus-erp:caregiver-session`), separada da sessão da equipe. Sessão de cuidador nunca abre `/app/**` (volta a `/cuidador/hoje`) e sessão da equipe nunca abre `/cuidador/**` (volta a `/app/painel`).
-- Pessoas de demonstração (6 na entrada e mais 4 em "Ver mais exemplos"; ids do seed, ver `docs/08` seção 7.2):
+- Pessoas de demonstração (6 na entrada e mais 5 em "Ver mais exemplos", 11 no total; ids do seed, ver `docs/08` seção 7.2):
 
 | Pessoa | Id | Plano | Por que está na lista |
 |---|---|---|---|
@@ -39,12 +39,13 @@ Rotas fora da barra: `/cuidador/comecar` (cadastro de quem é novo, passo a pass
 | Maria Aparecida Lemos, 52 | `cg_0002` | Essencial | Persona Maria. Zarit 79, contato vencido; pediu revisão de decisão; Cartão Nexus ativo; grupos bloqueados pelo plano |
 | João Batista Carneiro, 68 | `cg_0003` | Livre | Persona João. Pouca familiaridade digital, prefere telefone; Zarit caiu de 66 para 52; sem Cartão |
 | Rita de Cássia Moura, 50 | `cg_0008` | Cuida | Zarit 41, acompanhamento prioritário |
-| Elza Guimarães, 68 | `cg_0027` | Sustenta | Usa muito o Cartão Nexus; já avaliou a rede |
+| Elza Guimarães, 68 | `cg_0027` | Sustenta | Usa muito o Cartão Nexus (8 usos); tem um pedido enviado na rede e nenhum serviço avaliado |
 | Lourdes Campos, 64 | `cg_0024` | Sustenta | Em lista de espera de um grupo lotado; piloto |
 | Terezinha Alves, 66 | `cg_0012` | Essencial | Piloto concluído, evolução de 40 para 18 |
 | Marcos Vinícius Leal, 39 | `cg_0026` | Essencial | Cancelamento agendado; nunca mandou mensagem (estado vazio) |
 | Sônia Maria Dutra, 55 | `cg_0016` | Essencial | Consentimento de saúde revogado (a Zarit e o acompanhamento ficam parados) |
 | Marlene Cardoso, 61 | `cg_0004` | Livre | Caso simples: Zarit 0, só organização |
+| Raimunda Siqueira, 53, a 11ª | `cg_0018` | Livre | Pedido de eliminação dos dados aberto; entra normalmente |
 
 Cuidador com cadastro `closed`, `anonymizedAt` ou `erasedAt` não entra. Quem tem pedido de exclusão aberto entra normalmente.
 

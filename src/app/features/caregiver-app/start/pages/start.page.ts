@@ -25,6 +25,7 @@ import { FormFieldComponent } from '../../../../shared/ui/forms/form-field.compo
 import { NxInputDirective } from '../../../../shared/ui/forms/input.directive';
 import { NxMaskDirective } from '../../../../shared/ui/forms/mask.directive';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
+import { firstNameOf } from '../../state/people-format';
 import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
 import { CgEmergencyNoteComponent } from '../../ui/cg-emergency-note.component';
@@ -156,10 +157,6 @@ interface Draft {
       gap: 0.75rem;
       align-items: flex-start;
     }
-    .start-lead {
-      margin: 0;
-      color: var(--cg-text-soft);
-    }
     .start-p {
       margin: 0;
     }
@@ -176,10 +173,6 @@ interface Draft {
       margin: 0;
       color: var(--cg-text-soft);
       font-size: var(--cg-fs-caption);
-    }
-    .start-pair {
-      display: grid;
-      gap: 0.75rem;
     }
     .start-pair .btn {
       width: 100%;
@@ -214,10 +207,6 @@ interface Draft {
       margin: 0 0 0.5rem;
       overflow-wrap: anywhere;
     }
-    .start-consent {
-      display: grid;
-      gap: 0.75rem;
-    }
     .start-consent h3 {
       margin: 0;
       font-size: var(--cg-fs-lead);
@@ -247,7 +236,7 @@ interface Draft {
             <app-cg-note variant="info" heading="Você tem um cadastro em andamento">
               Retomar ou começar de novo? O rascunho foi guardado {{ describeDraft(draft) }}.
             </app-cg-note>
-            <div class="start-pair">
+            <div class="start-pair cg-stack cg-stack--tight">
               <button type="button" class="btn" (click)="resume(draft)">Retomar</button>
               <button type="button" class="btn" (click)="startOver()">Começar de novo</button>
             </div>
@@ -334,7 +323,7 @@ interface Draft {
                     <p class="start-error"><span class="sr-only">Erro: </span>Escolha como está a rotina dela.</p>
                   }
                 </div>
-                <p class="start-lead">Os remédios você cadastra depois, em Rotina.</p>
+                <p class="cg-muted">Os remédios você cadastra depois, em Rotina.</p>
               </div>
             }
 
@@ -376,13 +365,13 @@ interface Draft {
             }
 
             @case (3) {
-              <p class="start-lead">
+              <p class="cg-muted">
                 Você escolhe cada item separado. Pode mudar quando quiser, em Mais, Privacidade e meus dados. O plano Livre
                 continua em qualquer caso.
               </p>
               @for (key of consentKeys; track key) {
                 <app-cg-card [title]="copy[key].question" [variant]="key === 'health_data' ? 'care' : 'default'" [attr.data-consent]="key">
-                  <div class="start-consent">
+                  <div class="start-consent cg-stack cg-stack--tight">
                     @if (key === 'health_data' || expanded().has(key)) {
                       <dl class="start-dl">
                         <dt>O que vamos fazer</dt>
@@ -510,7 +499,7 @@ interface Draft {
         }
 
         @case ('done') {
-          <p class="start-lead">Sua conta no plano Livre está criada.</p>
+          <p class="cg-muted">Sua conta no plano Livre está criada.</p>
           @if (healthChoice() === 'granted') {
             <app-cg-note variant="care">
               Se você autorizou o acompanhamento, a equipe de psicologia entra em contato para uma primeira conversa.
@@ -870,7 +859,7 @@ export class StartPage {
       const { caregiver } = this.signup.create(data, this.clock.now());
       this.drafts.clear(DRAFT_FORM, DRAFT_ID);
       this.savedAt.set(null);
-      this.createdName.set(caregiver.fullName.split(/\s+/)[0] ?? caregiver.fullName);
+      this.createdName.set(firstNameOf(caregiver.fullName));
       this.phase.set('done');
       this.focusTitle();
     } catch (error) {

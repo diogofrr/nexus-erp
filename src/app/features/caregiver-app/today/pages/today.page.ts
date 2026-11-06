@@ -40,10 +40,6 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
         align-items: start;
       }
     }
-    .today-block {
-      display: grid;
-      gap: 0.75rem;
-    }
     .today-block > h2 {
       margin: 0;
     }
@@ -62,24 +58,9 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
       font-size: var(--cg-fs-small);
       font-weight: var(--fw-semibold);
     }
-    .today-doses {
-      display: grid;
-      gap: var(--cg-gap-stack);
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
     .today-support {
       color: var(--cg-text-soft);
       font-size: var(--cg-fs-small);
-    }
-    .today-tag {
-      padding: 0 0.5rem;
-      border-radius: var(--cg-radius-pill);
-      background: var(--brand-soft);
-      color: var(--cg-heading);
-      font-size: var(--cg-fs-caption);
-      font-weight: var(--fw-semibold);
     }
     .today-phone {
       margin: 0;
@@ -87,11 +68,6 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
       font-weight: var(--fw-semibold);
       font-variant-numeric: tabular-nums;
       color: var(--cg-heading);
-    }
-    .today-small {
-      margin: 0;
-      color: var(--cg-text-soft);
-      font-size: var(--cg-fs-small);
     }
     .today-actions {
       display: flex;
@@ -146,7 +122,7 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
                   <span class="today-support">{{ support }}</span>
                 }
                 @if (next.forYou) {
-                  <span class="today-tag">Para você</span>
+                  <span class="cg-tag">Para você</span>
                 }
               </app-cg-card>
             } @else {
@@ -156,7 +132,7 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
               </app-cg-card>
             }
 
-            <section class="today-block" aria-labelledby="today-meds-title">
+            <section class="today-block cg-stack cg-stack--tight" aria-labelledby="today-meds-title">
               <div class="today-head">
                 <h2 class="cg-section__title" id="today-meds-title">Remédios de hoje</h2>
                 @if (view.progress().total > 0) {
@@ -164,9 +140,9 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
                 }
               </div>
               @if (view.slots().length > 0) {
-                <ul class="today-doses">
+                <ul class="cg-plain-list">
                   @for (slot of view.visibleSlots(); track slot.key) {
-                    <li><app-cg-dose [slot]="slot" (dei)="dei($event)" (undo)="undo($event)" /></li>
+                    <li><app-cg-dose [slot]="slot" [size]="ctx.doseSize()" (dei)="dei($event)" (undo)="undo($event)" /></li>
                   }
                 </ul>
                 @if (view.slots().length > doseRows) {
@@ -186,7 +162,7 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
 
         <div class="today-side">
           @if (view.moodEnabled()) {
-            <section class="today-block" aria-labelledby="today-mood-title">
+            <section class="today-block cg-stack cg-stack--tight" aria-labelledby="today-mood-title">
               <h2 class="cg-section__title" id="today-mood-title">Como você está hoje?</h2>
               @if (view.todayMood() && !editingMood()) {
                 <app-cg-note variant="ok">
@@ -215,14 +191,14 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
           }
 
           @if (view.rate(); as rate) {
-            <section class="today-block" aria-labelledby="today-foryou-title">
+            <section class="today-block cg-stack cg-stack--tight" aria-labelledby="today-foryou-title">
               <h2 class="cg-section__title" id="today-foryou-title">Para você</h2>
               <app-cg-card [title]="'Como foi o atendimento de ' + rate.providerName + '?'">
                 <a cgCardFooter class="btn" routerLink="/cuidador/rede/pedidos" [queryParams]="{ avaliar: rate.requestId }">Avaliar</a>
               </app-cg-card>
             </section>
           } @else if (view.invite(); as invite) {
-            <section class="today-block" aria-labelledby="today-foryou-title">
+            <section class="today-block cg-stack cg-stack--tight" aria-labelledby="today-foryou-title">
               <h2 class="cg-section__title" id="today-foryou-title">Para você</h2>
               <app-cg-card [title]="invite.title">
                 <span>{{ invite.text }}</span>
@@ -241,7 +217,7 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
     @if (prefersPhone()) {
       <app-cg-card class="today-end" title="Prefere falar com a gente?" variant="soft" icon="phone">
         <p class="today-phone">{{ phone }}</p>
-        <p class="today-small">{{ prototypeCall }}</p>
+        <p class="cg-meta">{{ prototypeCall }}</p>
         <button cgCardFooter type="button" class="btn" (click)="contact.open()">Como falar com a gente</button>
       </app-cg-card>
     } @else {
@@ -269,7 +245,7 @@ export class TodayPage {
 
   /** Canal preferido telefone ou pouca familiaridade digital: o fechamento é o cartão com o número em destaque (AC-CG-54). */
   protected prefersPhone(): boolean {
-    return this.ctx.preferredChannel() === 'phone' || this.ctx.caregiver()?.digitalLiteracy === 'low';
+    return this.ctx.preferredChannel() === 'phone' || this.ctx.lowDigitalLiteracy();
   }
 
   /** "Muito mal" ou "Mal": a nota acolhedora (UX C4, Humor). */

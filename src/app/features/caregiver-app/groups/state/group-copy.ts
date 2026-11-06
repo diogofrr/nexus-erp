@@ -34,11 +34,6 @@ export function placeOf(kind: ActivityKind): { enter: string; leave: string; ins
   }
 }
 
-/** "No espaço de coworking" ou "On-line" (UX C10). */
-export function formatOf(mode: Activity['mode']): string {
-  return mode === 'online' ? 'On-line' : 'No espaço de coworking';
-}
-
 /** "4 vagas", "1 vaga" ou "Lotado". */
 export function seatsText(free: number): string {
   return free <= 0 ? 'Lotado' : `${free} ${free === 1 ? 'vaga' : 'vagas'}`;

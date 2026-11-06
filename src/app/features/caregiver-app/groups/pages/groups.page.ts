@@ -15,6 +15,7 @@ import { ToastService } from '../../../../shared/ui/overlay/toast.service';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { ContactDialogService } from '../../state/contact-dialog.service';
 import { relativeDateTime } from '../../state/day-format';
+import { activityFormatLabel } from '../../state/format-labels';
 import { CgNoteComponent, CgNoteVariant } from '../../ui/cg-note.component';
 import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
 import { CgPlanLockComponent } from '../../ui/cg-plan-lock.component';
@@ -26,7 +27,6 @@ import {
   KIND_LABELS,
   KIND_TEXT,
   THEME_LABELS,
-  formatOf,
   leaderLine,
   placeOf,
   roomAccessibility,
@@ -96,13 +96,11 @@ interface Banner {
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
-      .nx-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; }
       .nx-tag { display: inline-flex; align-items: center; min-height: 1.75rem; padding: 0 0.625rem; border-radius: var(--cg-radius-pill); background: var(--brand-soft); color: var(--cg-heading); font-size: var(--cg-fs-caption); font-weight: var(--fw-semibold); }
       .nx-tag--soft { background: var(--cg-surface-sunken); color: var(--cg-text); }
       .nx-cards { display: grid; gap: var(--cg-gap-stack); margin: 0; padding: 0; list-style: none; grid-template-columns: minmax(0, 1fr); }
       @media (min-width: 64rem) { .nx-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       .nx-cards .cg-card { height: 100%; }
-      .nx-meta { margin: 0; color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
       .nx-dl { display: grid; gap: 1rem; margin: 0; }
       .nx-dl dt { font-weight: var(--fw-semibold); color: var(--cg-heading); }
       .nx-dl dd { margin: 0.25rem 0 0; }
@@ -120,7 +118,7 @@ interface Banner {
         }
 
         <div class="cg-stack cg-stack--tight">
-          <p class="nx-tags">
+          <p class="cg-tags">
             <span class="nx-tag" data-role="kind">{{ d.kind }}</span>
             <span class="nx-tag nx-tag--soft" data-role="character">{{ d.character }}</span>
           </p>
@@ -243,7 +241,7 @@ interface Banner {
         </ng-container>
       </app-cg-sheet>
     } @else {
-      <app-cg-page-header title="Grupos e capacitações" description="A programação do mês." />
+      <app-cg-page-header title="Grupos e capacitações" description="A programação do mês." backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
 
       @if (missing()) {
         <app-cg-note variant="soft" icon="info">
@@ -277,12 +275,12 @@ interface Banner {
                   <div class="cg-card__main">
                     <h3 class="cg-card__title">{{ card.title }}</h3>
                     <div class="cg-card__text">
-                      <p class="nx-tags">
+                      <p class="cg-tags">
                         <span class="nx-tag">{{ card.kind }}</span>
                         <span class="nx-tag nx-tag--soft">{{ card.character }}</span>
                       </p>
-                      <p class="nx-meta">{{ card.next }}</p>
-                      <p class="nx-meta">{{ card.format }} · {{ card.seats }}</p>
+                      <p class="cg-meta">{{ card.next }}</p>
+                      <p class="cg-meta">{{ card.format }} · {{ card.seats }}</p>
                     </div>
                   </div>
                   <svg class="cg-card__chevron" appIcon="chevron-right"></svg>
@@ -321,7 +319,7 @@ export class GroupsPage {
         kind: KIND_LABELS[a.kind],
         character: CHARACTER_LABELS[a.character],
         next: next ? `Próximo encontro: ${relativeDateTime(next.startAt, today)}` : 'Sem encontros marcados',
-        format: formatOf(a.mode),
+        format: activityFormatLabel(a.mode),
         seats: a.status === 'in_progress' ? 'Em andamento' : seatsText(this.activities.seatsFree(a)),
       };
     });
@@ -368,7 +366,7 @@ export class GroupsPage {
       meetings: [...activity.meetings]
         .sort((a, b) => a.startAt.localeCompare(b.startAt))
         .map((m) => relativeDateTime(m.startAt, today)),
-      format: formatOf(activity.mode),
+      format: activityFormatLabel(activity.mode),
       room:
         activity.mode === 'in_person' && room
           ? { name: room.name, address: room.address, access: roomAccessibility(room) }

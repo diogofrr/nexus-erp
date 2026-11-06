@@ -387,6 +387,20 @@
 .cg-app .cg-stack { display: grid; gap: var(--cg-gap-block); grid-template-columns: minmax(0, 1fr); }
 .cg-app .cg-stack--tight { gap: var(--cg-gap-stack); }
 
+// Texto de apoio, legenda, etiquetas e lista sem marcador: as telas repetiam estes blocos em CSS local; usar estas classes.
+.cg-app .cg-muted { margin: 0; color: var(--cg-text-soft); }
+.cg-app .cg-meta { margin: 0; color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
+.cg-app .cg-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; }
+.cg-app .cg-tag {
+  padding: 0 0.5rem;
+  border-radius: var(--cg-radius-pill);
+  background: var(--brand-soft);
+  color: var(--cg-heading);
+  font-size: var(--cg-fs-caption);
+  font-weight: var(--fw-semibold);
+}
+.cg-app .cg-plain-list { display: grid; gap: var(--cg-gap-stack); list-style: none; margin: 0; padding: 0; }
+
 // Cartões em 1 coluna no celular, 2 x 2 de 768 px em diante
 .cg-app .cg-grid {
   display: grid;
@@ -796,6 +810,10 @@
 .cg-app .cg-dose__state { display: inline-flex; align-items: center; gap: 0.25rem; font-size: var(--cg-fs-small); font-weight: var(--fw-semibold); }
 .cg-app .cg-dose__state--ok { color: var(--cg-ok-fg); .icon { color: var(--cg-ok-icon); } }
 .cg-app .cg-dose__state--late { color: var(--cg-late-fg); .icon { color: var(--cg-late-icon); } }
+// Variante grande, "por pessoa" de quem tem pouca familiaridade digital (UX C6, o João): hora em 22 px e Dei de 96 px.
+.cg-app .cg-dose--large .cg-dose__time { font-size: calc(1.375rem * var(--cg-zoom)); }
+.cg-app .cg-dose--large .cg-dose__action { min-width: 6rem; }
+.cg-app .cg-dose--large .cg-dose__action.btn { min-height: var(--cg-target-lg); }
 
 .cg-app .cg-plan-lock { display: grid; gap: 0.5rem; justify-items: start; }
 .cg-app .cg-plan-lock__text { margin: 0; }

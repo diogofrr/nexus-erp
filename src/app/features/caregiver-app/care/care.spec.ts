@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { SessionBookingService } from '@core/care/session-booking.service';
 import { BootedCaregiverApp, bootCaregiverApp, settleCaregiver } from '../testing';
 import { ROUTES } from './care.routes';
-import { bookingErrorText, shortName } from './state/conversations.service';
+import { shortName } from '../state/people-format';
+import { bookingErrorText } from './state/conversations.service';
 
 /**
  * Porta de Cuidar de mim (C7, AC-CG-72 a 75) e Conversar com um psicólogo (C8, AC-CG-76 a 86): marcar em 2 passos mais a
@@ -69,7 +70,8 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
 
   describe('A porta de Cuidar de mim (C7)', () => {
     it('AC-CG-72: exatamente 4 cartões, na ordem, cada um na rota certa, numa grade que vira 2 x 2 em tela larga', async () => {
-      await boot('cg_0001', '/cuidador/cuidar-de-mim');
+      // Maria não tem conversa marcada no seed: o cartão de conversa fala do primeiro passo.
+      await boot('cg_0002', '/cuidador/cuidar-de-mim');
       expect(text(q('main h1'))).toBe('Cuidar de mim');
       expect(text(q('.cg-page-header__desc'))).toBe('Um tempo para você, no seu ritmo.');
       const cards = all('[data-role="care-cards"] a.cg-card--link');
@@ -126,6 +128,18 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(all('.cg-plan-lock')).toHaveLength(0);
     });
 
+    it('Ana e Lourdes (demonstração) já têm uma conversa marcada: a porta fala dela e Conversar mostra o cartão', async () => {
+      await boot('cg_0001', '/cuidador/cuidar-de-mim');
+      expect(text(q('[data-role="care-conversation"]'))).toMatch(/^Você tem uma conversa marcada: seg, 09\/11, às \d{2}:00\.$/);
+      TestBed.resetTestingModule();
+      await boot('cg_0024');
+      const card = text(q('[data-role="next-conversation"]'));
+      expect(text(q('main'))).toContain('Sua próxima conversa');
+      expect(card).toContain('Dra. Letícia Amaral');
+      expect(card).toContain('No espaço de coworking');
+      expect(card).toContain('Confirmada');
+    });
+
     it('quem está em grupos lê quantos são (Ana)', async () => {
       await boot('cg_0001', '/cuidador/cuidar-de-mim');
       const live = new Set(app.db.activities.query((a) => ['open', 'full', 'in_progress'].includes(a.status)).map((a) => a.id));
@@ -137,7 +151,7 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
 
   describe('Conversar com um psicólogo (C8)', () => {
     it('AC-CG-76: sem nenhuma conversa mostra o vazio acolhedor com "Marcar uma conversa" e o aviso de emergência', async () => {
-      await boot('cg_0001');
+      await boot('cg_0002');
       expect(text(q('main h1'))).toBe('Conversar com um psicólogo');
       expect(text(q('.cg-page-header__desc'))).toBe('As conversas são com psicólogos da Nexus, com registro no conselho de Psicologia.');
       expect(text(q('main'))).toContain('Você ainda não marcou nenhuma conversa');

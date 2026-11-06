@@ -50,7 +50,7 @@ describe('Meus pedidos', () => {
       // Ícone e texto: o selo tem um svg além do texto (nunca só cor).
       expect(order(app, 'srq_0126')?.querySelector('[data-role="status"] svg')).not.toBeNull();
       expect(norm(order(app, 'srq_0126')?.querySelector('.cg-row__title')?.textContent)).toBe('Dra. Renata Sampaio');
-      expect(norm(order(app, 'srq_0126')?.querySelector('.nx-meta')?.textContent)).toBe('Pedido em qua, 28/10 · Fisioterapia');
+      expect(norm(order(app, 'srq_0126')?.querySelector('.cg-meta')?.textContent)).toBe('Pedido em qua, 28/10 · Fisioterapia');
     });
 
     it('João: um pedido em andamento e os anteriores recolhidos', async () => {

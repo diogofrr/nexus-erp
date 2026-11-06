@@ -84,11 +84,9 @@ interface Banner {
   styles: [
     `
       .nx-order { display: grid; gap: 0.25rem; justify-items: start; }
-      .nx-meta { margin: 0; color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
       .nx-steps { margin: 0; padding-inline-start: 1.25rem; display: grid; gap: 0.25rem; }
       .nx-prev > summary { display: flex; align-items: center; gap: 0.5rem; min-height: var(--cg-target); padding: 0.5rem 0; font-family: var(--font-serif); font-size: var(--cg-fs-h2); color: var(--cg-heading); cursor: pointer; }
       .nx-prev[open] > summary { margin-bottom: 0.75rem; }
-      .nx-sheet-block { display: grid; gap: 0.75rem; }
       .nx-sheet-block p { margin: 0; }
       .nx-missing { margin: 0; color: var(--cg-soft-fg); font-weight: var(--fw-semibold); }
     `,
@@ -152,7 +150,7 @@ interface Banner {
         <span class="cg-row__text nx-order">
           <span class="cg-row__title">{{ row.providerName }}</span>
           <span class="cg-row__desc">{{ row.need }}</span>
-          <span class="nx-meta">{{ row.meta }}</span>
+          <span class="cg-meta">{{ row.meta }}</span>
           <app-badge [variant]="row.status.variant" [icon]="row.status.icon" data-role="status">{{ row.status.label }}</app-badge>
         </span>
         <span class="cg-row__end"><svg appIcon="chevron-right"></svg></span>
@@ -163,7 +161,7 @@ interface Banner {
       @if (selected(); as o) {
         @switch (mode()) {
           @case ('details') {
-            <div class="nx-sheet-block" data-role="details">
+            <div class="nx-sheet-block cg-stack cg-stack--tight" data-role="details">
               <p><strong>O que você pediu:</strong> {{ o.request.need }}</p>
               <p><strong>Onde:</strong> {{ modality(o) }}</p>
               <p><app-badge [variant]="statusOf(o).variant" [icon]="statusOf(o).icon">{{ statusOf(o).label }}</app-badge></p>
@@ -183,7 +181,7 @@ interface Banner {
                   Você avaliou este serviço: {{ ev.technical }} de 5 no serviço e {{ ev.punctuality }} de 5 na pontualidade e no atendimento.
                 </p>
                 @if (ev.canEdit) {
-                  <p data-role="editable">Você pode corrigir até {{ dayMonthOf(ev.editableUntil) }}.</p>
+                  <p data-role="editable">Você pode corrigir até {{ dayMonthLabel(ev.editableUntil) }}.</p>
                 } @else {
                   <p data-role="editable">Prazo de correção encerrado.</p>
                 }
@@ -194,7 +192,7 @@ interface Banner {
             <p data-role="cancel-effect">O profissional deixa de receber o seu pedido. Você pode pedir de novo quando quiser.</p>
           }
           @default {
-            <div class="nx-sheet-block" data-role="evaluate">
+            <div class="nx-sheet-block cg-stack cg-stack--tight" data-role="evaluate">
               <app-cg-rating-pair [(quality)]="quality" [(punctuality)]="punctuality" />
               <app-form-field label="Quer contar mais?" optional controlId="evaluation-comment">
                 <textarea appInput rows="3" maxlength="500" [value]="comment()" (input)="onComment($event)"></textarea>
@@ -395,9 +393,7 @@ export class OrdersPage {
     return categoryLabel(o.request.specialty);
   }
 
-  protected dayMonthOf(date: string): string {
-    return dayMonth(date);
-  }
+  protected readonly dayMonthLabel = dayMonth;
 
   /** A linha do tempo curta do pedido aberto na folha. */
   protected readonly stepLines = computed(() => {

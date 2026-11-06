@@ -1,10 +1,12 @@
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Clock } from '../../../core/clock/clock.service';
 import { IconComponent } from '../../../shared/ui/display/icon.component';
+import { copyOrSelect } from '../../../shared/ui/util/clipboard';
 import { CaregiverContextService } from '../state/caregiver-context.service';
 import { ContactDialogService } from '../state/contact-dialog.service';
+import { COPY_EMAIL_FAILED, COPY_NUMBER_FAILED, EMAIL_COPIED, NUMBER_COPIED } from '../state/copy-feedback';
 import {
   ContactChannel,
   PROTOTYPE_CALL_NOTICE,
@@ -69,7 +71,7 @@ import { CgSheetComponent } from './cg-sheet.component';
       <app-cg-note variant="soft" icon="info">{{ prototypeCall }}</app-cg-note>
       <app-cg-emergency-note />
       <ng-container cgSheetActions>
-        <button type="button" class="btn btn--primary" (click)="service.close()">Fechar</button>
+        <button type="button" class="cg-link-btn" (click)="service.close()">Voltar</button>
       </ng-container>
     </app-cg-sheet>
   `,
@@ -79,6 +81,7 @@ export class CgContactDialogComponent {
   protected readonly ctx = inject(CaregiverContextService);
   private readonly clock = inject(Clock);
   private readonly doc = inject(DOCUMENT);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly prototypeCall = PROTOTYPE_CALL_NOTICE;
   /** Aviso depois de copiar (ou de não conseguir copiar). */
@@ -97,21 +100,21 @@ export class CgContactDialogComponent {
     }
   }
 
-  /** Copia o número ou o e-mail. Se o navegador negar, a frase diz como copiar na mão. */
+  /**
+   * Copia o número ou o e-mail. Se o navegador negar, o número fica SELECIONADO e a frase diz como copiar na mão
+   * (AC-CG-161, UX C19).
+   */
   protected async copy(channel: ContactChannel): Promise<void> {
     if (!channel.value) {
       return;
     }
-    const noun = channel.action === 'copy_email' ? 'E-mail' : 'Número';
-    try {
-      const clipboard = this.doc.defaultView?.navigator.clipboard;
-      if (!clipboard) {
-        throw new Error('sem área de transferência');
-      }
-      await clipboard.writeText(channel.value);
-      this.feedback.set(`${noun} copiado.`);
-    } catch {
-      this.feedback.set('Não consegui copiar sozinho. Segure sobre o número e escolha Copiar.');
+    const email = channel.action === 'copy_email';
+    const element = this.host.nativeElement.querySelector(`[data-role="value-${channel.channel}"]`);
+    const copied = await copyOrSelect(channel.value, element, this.doc);
+    if (copied) {
+      this.feedback.set(email ? EMAIL_COPIED : NUMBER_COPIED);
+    } else {
+      this.feedback.set(email ? COPY_EMAIL_FAILED : COPY_NUMBER_FAILED);
     }
   }
 }

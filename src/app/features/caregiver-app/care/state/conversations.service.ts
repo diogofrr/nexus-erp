@@ -7,7 +7,9 @@ import { CareSession, ID, ISODate, PsychologistProfile, Room, SessionModality } 
 import { isRoomBookable } from '@core/rules/rooms';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { formatDayShort, relativeDateTime } from '../../state/day-format';
-import { FORMAT_LABEL, KIND_LABEL, KindChoice, SLOT_TAKEN, kindFromChoice, statusText } from './care-labels';
+import { psychologistRole, shortName } from '../../state/people-format';
+import { FORMAT_LABEL } from '../../state/format-labels';
+import { KIND_LABEL, KindChoice, SLOT_TAKEN, kindFromChoice, statusText } from './care-labels';
 
 /** Quantos dias à frente a pessoa vê horários (UX B4: "próximos 14 dias"). */
 export const WINDOW_DAYS = 14;
@@ -76,16 +78,6 @@ export interface BookRequest {
 
 export type ConversationResult =
   { ok: true; session: CareSession } | { ok: false; error: string; field: string };
-
-/** Primeiro nome com o tratamento: "Dra. Beatriz". */
-export function shortName(displayName: string): string {
-  const parts = displayName.split(/\s+/);
-  return /^(dr|dra)\.?$/i.test(parts[0] ?? '') ? parts.slice(0, 2).join(' ') : (parts[0] ?? displayName);
-}
-
-function roleOf(displayName: string): string {
-  return /^dra\.?\s/i.test(displayName) ? 'psicóloga' : 'psicólogo';
-}
 
 /** A frase do erro, na voz do aplicativo (sem dizer por que um horário não vale: RN-ATD-12). */
 export function bookingErrorText(errors: readonly BookingFieldError[]): { field: string; error: string } {
@@ -239,7 +231,7 @@ export class ConversationsService {
   }
 
   psychologistLine(psychologistName: string, crp: string): string {
-    return `${psychologistName}, ${roleOf(psychologistName)} (${crp}, fictício)`;
+    return `${psychologistName}, ${psychologistRole(psychologistName)} (${crp}, fictício)`;
   }
 
   crpOf(psychologistId: ID): string {
@@ -310,7 +302,7 @@ export class ConversationsService {
       time: timeOf(session.startAt),
       psychologistName: name,
       psychologistShort: shortName(name),
-      psychologistRole: roleOf(name),
+      psychologistRole: psychologistRole(name),
       crp: psy?.crp ?? '',
       format: session.modality,
       formatLabel: FORMAT_LABEL[session.modality],

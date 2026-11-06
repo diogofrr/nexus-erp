@@ -36,14 +36,13 @@ interface ContentItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
-      .cg-reading__time { margin: 0; color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
     `,
   ],
   template: `
     @if (reading(); as item) {
       <app-cg-page-header [title]="item.title" backLink="/cuidador/cuidar-de-mim/conteudos" backLabel="Conteúdos" />
       <article class="cg-reading cg-stack cg-stack--tight" data-role="reading">
-        <p class="cg-reading__time" data-role="reading-time">{{ item.time }}</p>
+        <p class="cg-meta" data-role="reading-time">{{ item.time }}</p>
         @for (paragraph of item.paragraphs; track $index) {
           <p>{{ paragraph }}</p>
         }
@@ -55,7 +54,7 @@ interface ContentItem {
         <a class="btn" routerLink="/cuidador/cuidar-de-mim/conteudos">Voltar</a>
       </div>
     } @else {
-      <app-cg-page-header title="Conteúdos" description="Leituras curtas. Escolha uma." />
+      <app-cg-page-header title="Conteúdos" description="Leituras curtas. Escolha uma." backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
 
       @if (missing()) {
         <app-cg-note variant="soft" icon="info">

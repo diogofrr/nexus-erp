@@ -71,7 +71,6 @@ interface BoardPlan {
       .nx-plan { display: grid; gap: 0.75rem; align-content: start; height: 100%; }
       .nx-plan__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
       .nx-plan__more { margin: 0; font-weight: var(--fw-semibold); }
-      .nx-effect { display: grid; gap: 0.75rem; }
       .nx-effect p { margin: 0; }
     `,
   ],
@@ -112,7 +111,7 @@ interface BoardPlan {
         </ul>
       </div>
     } @else {
-      <app-cg-page-header title="Meu plano" />
+      <app-cg-page-header title="Meu plano" backLink="/cuidador/mais" backLabel="Mais" />
       <div class="cg-stack">
         @if (result(); as r) {
           <app-cg-note [variant]="r.variant" data-role="result">{{ r.text }}</app-cg-note>
@@ -161,7 +160,7 @@ interface BoardPlan {
     @if (copy(); as c) {
       <app-cg-sheet [heading]="step() === 'accept' ? 'Antes de confirmar' : c.heading" [(open)]="sheetOpen">
         @if (step() === 'effect') {
-          <div class="nx-effect" data-role="effect">
+          <div class="nx-effect cg-stack cg-stack--tight" data-role="effect">
             @for (line of c.lines; track line) {
               <p>{{ line }}</p>
             }

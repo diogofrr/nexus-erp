@@ -49,7 +49,6 @@ import { CallNumberSheetComponent } from '../ui/call-number-sheet.component';
       .help__more > summary { min-height: var(--cg-target); padding: 0.75rem 1rem; font-weight: 600; cursor: pointer; }
       .help__more-body { display: grid; gap: 1rem; padding: 0 1rem 1rem; }
       .help__more-body p { margin: 0; }
-      .help__footer { margin: 0; color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
     `,
   ],
   template: `
@@ -104,7 +103,7 @@ import { CallNumberSheetComponent } from '../ui/call-number-sheet.component';
         </div>
       </details>
 
-      <p class="help__footer" data-role="help-footer">{{ notice }}</p>
+      <p class="cg-meta" data-role="help-footer">{{ notice }}</p>
     </div>
 
     <app-call-number-sheet [help]="shown()" [(open)]="sheetOpen" />

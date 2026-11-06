@@ -86,7 +86,8 @@ describe('seed: contagens da seção 5.15', () => {
     expect(c.referrals).toHaveLength(10);
     expect(c.occurrences).toHaveLength(3);
     expect(c.cardUsages).toHaveLength(25);
-    expect(c.careSessions).toHaveLength(60);
+    // 60 do seed original + 2 conversas futuras de demonstração (Ana e Lourdes, build-caregiver-app.ts).
+    expect(c.careSessions).toHaveLength(62);
     expect(c.consents).toHaveLength(340 * 6);
     expect(c.consentTerms).toHaveLength(6);
     expect(c.privacyDocuments.map((d) => d.kind).sort()).toEqual([
@@ -494,9 +495,10 @@ describe('seed: rede credenciada (5.8 e 5.9)', () => {
 });
 
 describe('seed: agenda e equipe (5.2)', () => {
-  it('as 60 sessões seguem a distribuição de estados, modalidades e classificação', () => {
+  it('as 62 sessões (60 do seed e 2 de demonstração do aplicativo) seguem a distribuição de estados, modalidades e classificação', () => {
     const s = c.careSessions;
     const count = (status: string): number => s.filter((x) => x.status === status).length;
+    // As 2 conversas de demonstração (Ana, agendada, on-line; Lourdes, confirmada, coworking) somam 1 em cada coluna.
     expect([
       count('done'),
       count('no_show'),
@@ -504,11 +506,11 @@ describe('seed: agenda e equipe (5.2)', () => {
       count('cancelled_by_psychologist'),
       count('confirmed'),
       count('scheduled'),
-    ]).toEqual([24, 3, 2, 2, 8, 21]);
-    expect(s.filter((x) => x.modality === 'online')).toHaveLength(30);
-    expect(s.filter((x) => x.modality === 'in_person_coworking')).toHaveLength(21);
+    ]).toEqual([24, 3, 2, 2, 9, 22]);
+    expect(s.filter((x) => x.modality === 'online')).toHaveLength(31);
+    expect(s.filter((x) => x.modality === 'in_person_coworking')).toHaveLength(22);
     expect(s.filter((x) => x.modality === 'in_person_home')).toHaveLength(9);
-    expect(s.filter((x) => x.kind === 'psychotherapy')).toHaveLength(51);
+    expect(s.filter((x) => x.kind === 'psychotherapy')).toHaveLength(53);
     expect(
       s
         .filter((x) => x.modality === 'online' && x.status === 'done')
@@ -537,7 +539,7 @@ describe('seed: agenda e equipe (5.2)', () => {
     expect(c.availabilitySlots.filter((x) => x.status === 'blocked')).toHaveLength(3);
     open.forEach((x) => expect(compareDates(x.date, TODAY)).toBeGreaterThan(0));
     const sessionSlots = new Set(c.careSessions.map((x) => x.slotId));
-    expect(sessionSlots.size).toBe(60);
+    expect(sessionSlots.size).toBe(62);
   });
 
   it('a ocupação reproduz Rafael 86,3% e 91,3% (alerta), Beatriz sem alerta, Letícia 80% sem alerta e Tiago n/d', () => {
@@ -931,7 +933,7 @@ describe('seed: integridade, dados fictícios e determinismo', () => {
       const other = generateSeed(today);
       const oc = other.collections;
       expect(oc.caregivers).toHaveLength(340);
-      expect(oc.careSessions).toHaveLength(60);
+      expect(oc.careSessions).toHaveLength(62);
       expect(oc.messages).toHaveLength(28);
       expect(oc.accessLog).toHaveLength(80);
       expect(oc.zaritAssessments.filter((z) => z.status === 'completed')).toHaveLength(158);

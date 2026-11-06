@@ -163,6 +163,8 @@ describe('Rotina (UX C5 e C6)', () => {
     it('sem compromisso nenhum: o vazio acolhedor com "Adicionar compromisso"', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda');
       app.db.careAppointments.removeWhere((a) => a.elderId === app.context.elderId());
+      // A conversa com o psicólogo que o seed deixa para a Ana também é compromisso.
+      app.db.careSessions.removeWhere((x) => x.caregiverId === app.context.caregiverId());
       await flush();
       expect(text(q('.empty__title'))).toBe('Nenhum compromisso por aqui');
       expect(text(q('.empty__text'))).toBe('Quando você adicionar uma consulta ou uma sessão, ela aparece nesta lista.');
@@ -503,6 +505,14 @@ describe('Rotina (UX C5 e C6)', () => {
       const labels = all('app-cg-sheet label, app-cg-sheet legend').map(text).join(' | ');
       expect(labels).not.toMatch(/diagn|motivo|para que serve|orienta/i);
       expect(text(q('main'))).not.toMatch(NEVER_HERE);
+    });
+
+    it('João (pouca familiaridade digital) vê as doses na variante grande: hora em 22 px e Dei de 96 px (UX C6, por pessoa)', async () => {
+      await open('cg_0003', '/cuidador/rotina/remedios');
+      expect(all('.cg-dose').length).toBeGreaterThan(0);
+      expect(all('.cg-dose').every((d) => d.classList.contains('cg-dose--large'))).toBe(true);
+      await open('cg_0001', '/cuidador/rotina/remedios');
+      expect(all('.cg-dose--large')).toHaveLength(0);
     });
 
     it('a dose cujo horário passou fica em âmbar suave, com relógio, e "Dei" continua (AC-CG-71)', async () => {

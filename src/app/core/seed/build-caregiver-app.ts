@@ -10,12 +10,17 @@
  *   para a tela mostrar o que já foi dado e o que falta.
  * - Rita (C08) tem um serviço da rede CONCLUÍDO e ainda sem avaliação (o cartão "Avaliar" de Hoje): é um pedido que já
  *   existia, de um cuidador de volume, reatribuído a ela, então as contagens de pedidos e as métricas da rede não mudam.
+ * - Ana (C01) e Lourdes (C24) têm uma conversa FUTURA com o psicólogo (uma a mais em `careSessions` e uma vaga a mais em
+ *   `availabilitySlots`, `booked`), para o "Para você" de Hoje e a Agenda aparecerem na demonstração. Os meses fechados
+ *   (`monthSummaries`, de onde vem a ocupação de Rafael, 86,3% e 91,3%) não são tocados.
  * - João (C03) não autorizou compartilhar com a família e Ana autorizou (`scenarios.ts`).
  * - Raimunda (C18, pedido de exclusão aberto) entra na lista de pessoas de demonstração.
  */
-import { addMinutes } from '../clock/date-utils';
-import { CareAppointment, DoseCheck, Medication } from '../models';
-import { caregiverId, elderId } from './refs';
+import { addDays, addMinutes } from '../clock/date-utils';
+import { AvailabilitySlot, CareAppointment, CareSession, DoseCheck, ISODate, Medication } from '../models';
+import { sessionPriceCents } from '../rules/plans';
+import { isBusinessDay } from '../rules/sla';
+import { PSYCHOLOGIST, PsychologistKey, ROOM, caregiverId, elderId } from './refs';
 import { SeedState } from './state';
 
 /** Números dos cenários (C01...) que aparecem na entrada do aplicativo: 6 em destaque e mais 5 em "Ver mais exemplos". */
@@ -125,4 +130,104 @@ export function buildCaregiverApp(s: SeedState): void {
   if (request) {
     c.serviceRequests[index] = { ...request, caregiverId: caregiverId(8) };
   }
+
+  // Ana e Lourdes: uma conversa futura com o psicólogo, cada uma com a vaga correspondente já ocupada.
+  addDemoSession(s, {
+    caregiverNumber: 1,
+    psychologist: 'rafael',
+    businessDays: 3,
+    status: 'scheduled',
+    modality: 'online',
+  });
+  addDemoSession(s, {
+    caregiverNumber: 24,
+    psychologist: 'leticia',
+    businessDays: 2,
+    status: 'confirmed',
+    modality: 'in_person_coworking',
+  });
+}
+
+/** Horários que o psicólogo atende (os mesmos de `build-sessions`), na ordem em que a demonstração os escolhe. */
+const SESSION_HOURS: readonly string[] = [
+  '10:00',
+  '14:00',
+  '15:00',
+  '16:00',
+  '11:00',
+  '09:00',
+  '17:00',
+  '08:00',
+];
+
+interface DemoSession {
+  caregiverNumber: number;
+  psychologist: PsychologistKey;
+  /** Dias úteis a partir de hoje (fim de semana e feriado nacional não contam). */
+  businessDays: number;
+  status: 'scheduled' | 'confirmed';
+  modality: 'online' | 'in_person_coworking';
+}
+
+/** O dia útil de número `n` depois de hoje: n = 1 é o primeiro dia útil seguinte. */
+function businessDayAfter(today: ISODate, n: number): ISODate {
+  let date = today;
+  let remaining = n;
+  while (remaining > 0) {
+    date = addDays(date, 1);
+    if (isBusinessDay(date)) {
+      remaining -= 1;
+    }
+  }
+  return date;
+}
+
+/**
+ * Uma conversa futura, sem sortear: o primeiro horário em que o psicólogo não tem nenhuma vaga (livre, ocupada ou
+ * bloqueada) naquele dia. A vaga nasce `booked` e o preço já vem com o desconto do plano da pessoa (RN-ATD-05).
+ */
+function addDemoSession(s: SeedState, spec: DemoSession): void {
+  const { ctx, c } = s;
+  const psy = PSYCHOLOGIST[spec.psychologist];
+  const date = businessDayAfter(ctx.today, spec.businessDays);
+  const taken = new Set(
+    c.availabilitySlots
+      .filter((x) => x.psychologistId === psy.id && x.date === date)
+      .map((x) => x.start),
+  );
+  const hour = SESSION_HOURS.find((h) => !taken.has(h));
+  if (!hour) {
+    return;
+  }
+  const end = `${String(Number(hour.slice(0, 2)) + 1).padStart(2, '0')}:00`;
+  const owner = caregiverId(spec.caregiverNumber);
+  const planId = c.subscriptions.find((sub) => sub.caregiverId === owner)?.planId ?? 'livre';
+  const discount = c.plans.find((p) => p.id === planId)?.psychSessionDiscountPercent ?? 0;
+
+  const slotId = ctx.nextId('slot');
+  c.availabilitySlots.push(
+    ctx.entity<AvailabilitySlot>(slotId, ctx.dt(-20, '08:00'), {
+      psychologistId: psy.id,
+      date,
+      start: hour,
+      end,
+      status: 'booked',
+      priorityOnly: false,
+    }),
+  );
+  c.careSessions.push(
+    ctx.entity<CareSession>(ctx.nextId('ses'), ctx.dt(-2, '10:00'), {
+      caregiverId: owner,
+      psychologistId: psy.id,
+      slotId,
+      startAt: ctx.at(date, hour),
+      durationMin: 60,
+      modality: spec.modality,
+      ...(spec.modality === 'in_person_coworking' ? { roomId: ROOM.girassol } : {}),
+      kind: 'psychotherapy',
+      status: spec.status,
+      priceCents: sessionPriceCents(s.singletons.settings.sessionBasePriceCents, discount),
+      discountPercent: discount,
+    }),
+  );
 }

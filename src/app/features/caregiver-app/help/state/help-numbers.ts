@@ -41,4 +41,3 @@ export const HELP_NUMBERS: Readonly<Record<HelpNumberKey, HelpNumber>> = {
 export const NO_CALL_IN_PROTOTYPE =
   'No protótipo, a ligação não é feita. Em uma emergência de verdade, ligue do seu telefone.';
 
-export const COPY_DENIED = 'Não foi possível copiar. Segure sobre o número e escolha Copiar.';

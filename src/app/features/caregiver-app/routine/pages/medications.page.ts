@@ -70,10 +70,6 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
     .routine-block .cg-actions {
       margin-top: 0;
     }
-    .routine-block {
-      display: grid;
-      gap: 0.75rem;
-    }
     .routine-block > h2 {
       margin: 0;
     }
@@ -92,13 +88,6 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
       font-size: var(--cg-fs-small);
       font-weight: var(--fw-semibold);
     }
-    .routine-doses {
-      display: grid;
-      gap: var(--cg-gap-stack);
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
     .routine-dose {
       display: grid;
       gap: 0.25rem;
@@ -106,14 +95,6 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
     }
     .routine-dose > app-cg-dose {
       justify-self: stretch;
-    }
-    .routine-tag {
-      padding: 0 0.5rem;
-      border-radius: var(--cg-radius-pill);
-      background: var(--brand-soft);
-      color: var(--cg-heading);
-      font-size: var(--cg-fs-caption);
-      font-weight: var(--fw-semibold);
     }
     .routine-form {
       display: grid;
@@ -171,11 +152,11 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
       border: 2px solid var(--cg-border-control);
       border-radius: 0.375rem;
       background: var(--cg-surface);
-      color: #fff;
     }
     .routine-time.is-selected .routine-time__box {
       border-color: var(--cg-action);
       background: var(--cg-action);
+      color: #fff;
     }
     .routine-other {
       display: flex;
@@ -185,10 +166,6 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
     }
     .routine-other app-form-field {
       flex: 1 1 10rem;
-    }
-    .routine-muted {
-      margin: 0;
-      color: var(--cg-text-soft);
     }
   `,
   template: `
@@ -208,7 +185,7 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
           <button type="button" class="btn btn--primary" (click)="openNew()">Cadastrar um remédio</button>
         </app-empty-state>
       } @else {
-        <section class="routine-block" aria-labelledby="routine-today-title">
+        <section class="routine-block cg-stack cg-stack--tight" aria-labelledby="routine-today-title">
           <div class="routine-head">
             <h2 class="cg-section__title" id="routine-today-title">Hoje</h2>
             @if (progress().total > 0) {
@@ -216,10 +193,10 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
             }
           </div>
           @if (slots().length > 0) {
-            <ul class="routine-doses">
+            <ul class="cg-plain-list">
               @for (slot of slots(); track slot.key) {
                 <li class="routine-dose">
-                  <app-cg-dose [slot]="slot" (dei)="dei($event)" (undo)="undo($event)" />
+                  <app-cg-dose [slot]="slot" [size]="ctx.doseSize()" (dei)="dei($event)" (undo)="undo($event)" />
                   @if (slot.given) {
                     <button type="button" class="cg-link-btn" (click)="openTime(slot)">
                       Dei em outro horário<span class="sr-only">: {{ slot.medicationName }} das {{ slot.time }}</span>
@@ -239,7 +216,7 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
       </app-cg-note>
 
       @if (hasAny()) {
-        <section class="routine-block" aria-labelledby="routine-all-title">
+        <section class="routine-block cg-stack cg-stack--tight" aria-labelledby="routine-all-title">
           <h2 class="cg-section__title" id="routine-all-title">Todos os remédios</h2>
           @if (inUse().length > 0) {
             <ul class="cg-list">
@@ -266,7 +243,7 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
         </section>
 
         @if (paused().length > 0) {
-          <section class="routine-block" aria-labelledby="routine-paused-title">
+          <section class="routine-block cg-stack cg-stack--tight" aria-labelledby="routine-paused-title">
             <h2 class="cg-section__title" id="routine-paused-title">Em pausa</h2>
             <div>
               <button type="button" class="cg-link-btn" [attr.aria-expanded]="showPaused()" (click)="showPaused.set(!showPaused())">
@@ -283,7 +260,7 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
                       icon="pill"
                       (activated)="openEdit(med.id)"
                     >
-                      <span cgRowEnd class="routine-tag">Em pausa</span>
+                      <span cgRowEnd class="cg-tag">Em pausa</span>
                     </app-cg-row>
                   </li>
                 }
@@ -362,7 +339,7 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
 
     <app-cg-sheet heading="Dei em outro horário" [(open)]="timeOpen">
       @if (timeSlot(); as slot) {
-        <p class="routine-muted">{{ slot.medicationName }}, previsto para as {{ slot.time }}.</p>
+        <p class="cg-muted">{{ slot.medicationName }}, previsto para as {{ slot.time }}.</p>
       }
       <app-form-field label="Hora" controlId="dose-time" [error]="timeError()">
         <input appInput type="time" [formControl]="givenTime" />
@@ -375,7 +352,7 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
   `,
 })
 export class MedicationsPage {
-  private readonly ctx = inject(CaregiverContextService);
+  protected readonly ctx = inject(CaregiverContextService);
   private readonly doses = inject(DoseCheckService);
   private readonly meds = inject(MedicationService);
   private readonly toasts = inject(ToastService);

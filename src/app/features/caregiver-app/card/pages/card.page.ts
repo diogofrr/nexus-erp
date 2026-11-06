@@ -1,17 +1,18 @@
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { Clock } from '../../../../core/clock/clock.service';
 import { SubscriptionService } from '../../../../core/commerce/subscription.service';
 import { Database } from '../../../../core/data/database';
 import { formatMoney, formatNumber } from '../../../../core/format/format';
 import { PartnerCategory } from '../../../../core/models';
 import { cardSavings, partnersForCard } from '../../../../core/rules/benefit-card';
-import { copyToClipboard } from '../../../../shared/ui/util/clipboard';
+import { copyOrSelect } from '../../../../shared/ui/util/clipboard';
 import { ToastService } from '../../../../shared/ui/overlay/toast.service';
 import { IconComponent } from '../../../../shared/ui/display/icon.component';
 import { EmptyStateComponent } from '../../../../shared/ui/display/empty-state.component';
 import { RouterLink } from '@angular/router';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
+import { COPY_NUMBER_FAILED, NUMBER_COPIED } from '../../state/copy-feedback';
 import { dayMonth, formatDayShort } from '../../state/day-format';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
@@ -28,7 +29,6 @@ const PARTNER_CATEGORY: Readonly<Record<PartnerCategory, string>> = {
 };
 
 /** Frase do plano B quando o navegador não deixa copiar: o número fica selecionável (`user-select: all`). */
-export const COPY_FALLBACK = 'Não foi possível copiar. Segure sobre o número e escolha Copiar.';
 
 interface PartnerRow {
   id: string;
@@ -84,7 +84,7 @@ interface UsageRow {
             <app-cg-plan-tag [plan]="ctx.planId()" />
           </div>
           <p class="nx-card__name">{{ ctx.caregiver()?.fullName }}</p>
-          <p class="nx-card__number" data-role="card-number">{{ c.number }}</p>
+          <p class="nx-card__number" data-role="card-number" #numberEl>{{ c.number }}</p>
         </section>
 
         <div class="cg-stack cg-stack--tight">
@@ -170,8 +170,9 @@ export class CardPage {
   private readonly doc = inject(DOCUMENT);
   protected readonly ctx = inject(CaregiverContextService);
 
-  protected readonly fallback = COPY_FALLBACK;
+  protected readonly fallback = COPY_NUMBER_FAILED;
   protected readonly copyFailed = signal(false);
+  private readonly numberEl = viewChild<ElementRef<HTMLElement>>('numberEl');
   protected readonly openPartner = signal<string | null>(null);
 
   /** O cartão ativo, só para quem tem plano pago e a assinatura vigente (RN-CRT-02 e 03). */
@@ -244,10 +245,10 @@ export class CardPage {
   }
 
   protected async copy(number: string): Promise<void> {
-    const ok = await copyToClipboard(number, this.doc);
+    const ok = await copyOrSelect(number, this.numberEl()?.nativeElement, this.doc);
     this.copyFailed.set(!ok);
     if (ok) {
-      this.toast.show({ message: 'Número copiado.', durationMs: 8000 });
+      this.toast.show({ message: NUMBER_COPIED, durationMs: 8000 });
     }
   }
 }

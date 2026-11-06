@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { AuditLogService } from '../audit/audit-log.service';
 import { Clock } from '../clock/clock.service';
 import { Database } from '../data/database';
-import { DataSubjectRequest, DsrType, ID } from '../models';
+import { Channel, DataSubjectRequest, DsrType, ID } from '../models';
 import { isConsentActive } from '../rules/lgpd';
 import { DataSubjectRequestService } from './data-subject-request.service';
 
@@ -16,6 +16,16 @@ export type SelfRequestResult =
 
 export const WITHDRAWN_BY_SUBJECT = 'Retirado pelo titular.';
 
+/** Como a eliminação é pedida: o titular pelo aplicativo (padrão) ou a equipe em nome dele (CaregiverService.requestClosure). */
+export interface ErasureOptions {
+  /** Canal por onde o pedido chegou (padrão: o aplicativo). */
+  channel?: Channel | 'in_person';
+  /** O que o titular pediu, em palavras simples. */
+  description?: string;
+  /** Já havendo pedido de eliminação em andamento, reaproveita o pedido e leva o cadastro ao encerramento (a equipe faz assim). */
+  reuseOpen?: boolean;
+}
+
 /**
  * Os pedidos do titular feitos por ele mesmo, pelo aplicativo do cuidador (M12, RN-LGPD-18, 20, 21, 24):
  * pedir uma cópia dos dados, pedir a eliminação e retirar o pedido enquanto a equipe não concluiu. Usa o
@@ -26,8 +36,8 @@ export const WITHDRAWN_BY_SUBJECT = 'Retirado pelo titular.';
  * - Pedir a eliminação leva o cadastro a `closure_requested` e a pessoa continua usando o aplicativo; retirar o pedido
  *   devolve o cadastro ao estado de antes (`active`, ou `paused_by_consent_revocation` se a autorização de saúde
  *   continua retirada) e encerra o pedido como "retirado pelo titular". Nada é eliminado antes de a equipe concluir.
- * - Quem encerra o cadastro pela equipe (`CaregiverService.requestClosure`) usa a mesma regra: um pedido de
- *   eliminação aberto é reaproveitado.
+ * - Quem encerra o cadastro pela equipe (`CaregiverService.requestClosure`) usa este mesmo miolo, com
+ *   `reuseOpen`: um pedido de eliminação aberto é reaproveitado em vez de devolver "já existe".
  */
 @Injectable({ providedIn: 'root' })
 export class SubjectRightsService {
@@ -52,12 +62,21 @@ export class SubjectRightsService {
 
   /** Pede uma cópia dos dados (a equipe prepara o arquivo em até 15 dias corridos). */
   requestCopy(caregiverId: ID): SelfRequestResult {
-    return this.open(caregiverId, 'access', 'Cópia dos dados pedida pelo aplicativo.');
+    return this.open(caregiverId, 'access', 'Cópia dos dados pedida pelo aplicativo.', 'app');
   }
 
   /** Pede a eliminação dos dados: o cadastro vai a `closure_requested` (POP-10) e a pessoa continua usando o aplicativo. */
-  requestErasure(caregiverId: ID): SelfRequestResult {
-    const outcome = this.open(caregiverId, 'erasure', 'Eliminação dos dados pedida pelo aplicativo (POP-10).');
+  requestErasure(caregiverId: ID, options: ErasureOptions = {}): SelfRequestResult {
+    const opened = this.open(
+      caregiverId,
+      'erasure',
+      options.description ?? 'Eliminação dos dados pedida pelo aplicativo (POP-10).',
+      options.channel ?? 'app',
+    );
+    const outcome: SelfRequestResult =
+      !opened.ok && opened.reason === 'duplicate' && options.reuseOpen
+        ? { ok: true, request: opened.existing }
+        : opened;
     if (!outcome.ok) {
       return outcome;
     }
@@ -104,7 +123,12 @@ export class SubjectRightsService {
 
   // ===== Internos =====
 
-  private open(caregiverId: ID, type: SelfRequestType, description: string): SelfRequestResult {
+  private open(
+    caregiverId: ID,
+    type: SelfRequestType,
+    description: string,
+    channel: Channel | 'in_person',
+  ): SelfRequestResult {
     const caregiver = this.db.caregivers.get(caregiverId);
     if (!caregiver || caregiver.status === 'closed' || caregiver.erasedAt || caregiver.anonymizedAt) {
       return { ok: false, reason: 'not_allowed' };
@@ -114,7 +138,7 @@ export class SubjectRightsService {
       return { ok: false, reason: 'duplicate', existing };
     }
     const opened = this.dsr.open({ caregiverId, type });
-    const request = this.db.dataSubjectRequests.update(opened.id, { channel: 'app', description });
+    const request = this.db.dataSubjectRequests.update(opened.id, { channel, description });
     return { ok: true, request };
   }
 

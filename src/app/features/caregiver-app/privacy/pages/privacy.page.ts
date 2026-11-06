@@ -70,7 +70,6 @@ const CONSENT_ICONS: Readonly<Record<ConsentKey, IconName>> = {
       .priv__shared { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
       .priv__shared li { display: grid; gap: 0.125rem; padding: 0.75rem 1rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-control); }
       .priv__shared small { color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
-      .priv__policy { display: grid; gap: 0.75rem; }
       .priv__dpo { padding: 0.75rem 1rem; border-radius: var(--cg-radius-control); background: var(--brand-soft); }
     `,
   ],
@@ -78,6 +77,8 @@ const CONSENT_ICONS: Readonly<Record<ConsentKey, IconName>> = {
     <app-cg-page-header
       title="Privacidade e meus dados"
       description="Você decide o que a Nexus pode fazer com os seus dados. Pode mudar quando quiser. O plano Livre continua em qualquer caso."
+      backLink="/cuidador/mais"
+      backLabel="Mais"
     />
 
     <div class="cg-stack">
@@ -294,7 +295,7 @@ const CONSENT_ICONS: Readonly<Record<ConsentKey, IconName>> = {
     <!-- Política de privacidade -->
     <app-cg-sheet heading="Política de privacidade" [open]="is('policy')" (openChange)="onOpenChange('policy', $event)">
       @if (policy(); as doc) {
-        <div class="priv__policy" data-role="policy">
+        <div class="priv__policy cg-stack cg-stack--tight" data-role="policy">
           @for (paragraph of doc.paragraphs; track $index) {
             <p>{{ paragraph }}</p>
           }

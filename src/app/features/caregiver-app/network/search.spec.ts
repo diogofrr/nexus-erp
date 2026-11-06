@@ -135,9 +135,9 @@ describe('Buscar profissionais e serviços', () => {
       const monitored = result(app, 'Fisio em Casa Uberlândia');
       const normal = result(app, 'Dra. Sônia Peixoto');
       expect(monitored).toBeDefined();
-      const shape = (el: HTMLElement | undefined): string[] => Array.from(el?.querySelectorAll('[data-role], .nx-meta') ?? []).map((e) => e.getAttribute('data-role') ?? e.className);
-      expect(shape(monitored)).toEqual(['nx-meta', 'rating']);
-      expect(shape(normal)).toEqual(['nx-meta', 'rating']);
+      const shape = (el: HTMLElement | undefined): string[] => Array.from(el?.querySelectorAll('[data-role], .cg-meta') ?? []).map((e) => e.getAttribute('data-role') ?? e.className);
+      expect(shape(monitored)).toEqual(['cg-meta', 'rating']);
+      expect(shape(normal)).toEqual(['cg-meta', 'rating']);
       expect(norm(monitored?.textContent)).not.toMatch(/monitor|acompanh/i);
     });
 
@@ -183,7 +183,7 @@ describe('Buscar profissionais e serviços', () => {
     it('mostra nome, especialidade e cidade, "Atende em casa" e "Em destaque"; o cartão inteiro abre a ficha', async () => {
       const app = await bootCaregiverApp('cg_0002', { url: `${URL}?categoria=physiotherapy` });
       const card = result(app, 'Dra. Renata Sampaio') as HTMLElement;
-      expect(norm(card.querySelector('.nx-meta')?.textContent)).toBe('Fisioterapia geriátrica · Uberlândia');
+      expect(norm(card.querySelector('.cg-meta')?.textContent)).toBe('Fisioterapia geriátrica · Uberlândia');
       expect(norm(card.textContent)).toContain('Atende em casa');
       expect(norm(card.textContent)).toContain('Em destaque');
       expect(card.querySelector('a.nx-result__link')?.getAttribute('href')).toBe('/cuidador/rede/profissional/prv_01');
