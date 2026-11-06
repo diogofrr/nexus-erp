@@ -1,0 +1,1 @@
+var o=[{path:``,loadComponent:()=>import(`./chunk-CV1xbap4.js`).then(t=>t.ContentPage),data:{title:`Conteúdos`}}];export{o as ROUTES};

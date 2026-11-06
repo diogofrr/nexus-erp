@@ -1,1 +1,0 @@
-var o=[{path:``,loadComponent:()=>import(`./chunk-Cq8kCayU.js`).then(t=>t.TalkToNexusPage),data:{title:`Falar com a Nexus`}}];var a=[{path:``,loadComponent:()=>import(`./chunk-KZx9p1du.js`).then(t=>t.HelpNowPage),data:{title:`Ajuda agora`}}];export{a as HELP_NOW_ROUTES,o as ROUTES};

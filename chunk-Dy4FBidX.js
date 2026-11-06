@@ -1,0 +1,1 @@
+var o=[{path:``,loadComponent:()=>import(`./chunk-2YV4i0Sk.js`).then(t=>t.PlanPage),data:{title:`Meu plano`}}];export{o as ROUTES};

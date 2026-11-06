@@ -1,0 +1,1 @@
+import{Ca as or,c as A,h as B}from"./chunk-C7nEQwRK.js";var a=new B(`HARD_NAVIGATE`,{providedIn:`root`,factory:()=>{let o=A(or);return r=>{let t=o.defaultView;t&&t.location.assign(new URL(r.replace(/^\//,``),o.baseURI).toString())}}});export{a as t};

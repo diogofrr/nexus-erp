@@ -1,1 +1,0 @@
-var o=[{path:``,loadComponent:()=>import(`./chunk-C8Vh3qMP.js`).then(t=>t.ContentPage),data:{title:`Conteúdos`}}];export{o as ROUTES};
