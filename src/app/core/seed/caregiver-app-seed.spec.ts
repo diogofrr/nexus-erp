@@ -12,8 +12,8 @@ describe('Seed do aplicativo do cuidador', () => {
     expect(c.caregivers).toHaveLength(340);
     expect(c.elders).toHaveLength(340);
     expect(c.messages).toHaveLength(28);
-    // 60 do seed original + 2 conversas futuras de demonstração (Ana e Lourdes).
-    expect(c.careSessions).toHaveLength(62);
+    // 60 do seed original + 3 conversas futuras de demonstração (Ana, Lourdes e Elza; a de Elza veio com o docs/20).
+    expect(c.careSessions).toHaveLength(63);
     expect(c.consents).toHaveLength(340 * 6);
   });
 
@@ -95,15 +95,16 @@ describe('Seed do aplicativo do cuidador', () => {
     ).toBe(addDays(TODAY, 9));
   });
 
-  it('Ana e Lourdes têm uma conversa futura com o psicólogo, com a vaga ocupada e o preço do plano', () => {
+  it('Ana, Lourdes e Elza têm uma conversa futura com o psicólogo, com a vaga ocupada e incluída na cota do plano (docs/20)', () => {
     const slotOf = (id: string) => c.availabilitySlots.find((x) => x.id === id);
     const ana = c.careSessions.find((x) => x.caregiverId === caregiverId(1) && x.startAt.slice(0, 10) > TODAY);
     expect(ana).toMatchObject({
       psychologistId: 'psy_0001',
       status: 'scheduled',
       modality: 'online',
-      discountPercent: 15,
-      priceCents: 10200,
+      discountPercent: 0,
+      priceCents: 0,
+      includedInPlan: true,
     });
     // 3 dias úteis a partir de quarta, 04/11/2026: quinta, sexta e segunda, 09/11.
     expect(dateOf(ana?.startAt ?? '')).toBe('2026-11-09');
@@ -114,7 +115,8 @@ describe('Seed do aplicativo do cuidador', () => {
       psychologistId: 'psy_0003',
       status: 'confirmed',
       modality: 'in_person_coworking',
-      discountPercent: 20,
+      discountPercent: 0,
+      includedInPlan: true,
     });
     expect(c.rooms.find((r) => r.id === lourdes?.roomId)?.accessibility).toEqual({
       stepFreeAccess: true,
@@ -126,10 +128,10 @@ describe('Seed do aplicativo do cuidador', () => {
     [ana, lourdes].forEach((x) => expect(isWeekend(dateOf(x?.startAt ?? ''))).toBe(false));
   });
 
-  it('as duas conversas de demonstração não dividem o horário com nenhuma outra sessão do psicólogo', () => {
+  it('as três conversas de demonstração não dividem o horário com nenhuma outra sessão do psicólogo', () => {
     const futureOf = (n: number) =>
       c.careSessions.find((x) => x.caregiverId === caregiverId(n) && x.startAt.slice(0, 10) > TODAY);
-    [futureOf(1), futureOf(24)].forEach((demo) => {
+    [futureOf(1), futureOf(24), futureOf(27)].forEach((demo) => {
       const same = c.careSessions.filter(
         (x) => x.psychologistId === demo?.psychologistId && x.startAt === demo?.startAt,
       );
@@ -158,5 +160,18 @@ describe('Seed do aplicativo do cuidador', () => {
       expect(med?.times).toContain(d.time);
     });
     expect(new Set(c.doseChecks.map((d) => d.id)).size).toBe(c.doseChecks.length);
+  });
+});
+
+describe('Seed do aplicativo do cuidador: conversas futuras só no Cuida e no Sustenta (docs/20)', () => {
+  it('ninguém do Livre ou do Essencial tem conversa individual agendada ou confirmada; o histórico fica, avulso', () => {
+    const { collections: c } = generateSeed(TODAY);
+    const plans = new Map(c.subscriptions.map((s) => [s.caregiverId, s.planId] as const));
+    const future = c.careSessions.filter((s) => s.status === 'scheduled' || s.status === 'confirmed');
+    expect(future.length).toBeGreaterThan(0);
+    future.forEach((s) => expect(['cuida', 'sustenta'], s.id).toContain(plans.get(s.caregiverId)));
+    const history = c.careSessions.filter((s) => !['cuida', 'sustenta'].includes(plans.get(s.caregiverId) ?? 'livre'));
+    expect(history.length).toBeGreaterThan(0);
+    history.forEach((s) => expect(s.includedInPlan).toBe(false));
   });
 });

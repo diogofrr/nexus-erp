@@ -7,11 +7,11 @@ import { ConversationsService } from './conversations.service';
 export const HUB_CONVERSATION_DEFAULT = 'Escolha o formato e o horário.';
 export const HUB_WELLBEING_DEFAULT = 'Veja como o seu cansaço tem andado e conte como você está.';
 export const HUB_WELLBEING_PAUSED = 'Acompanhamento pausado.';
-export const HUB_GROUPS_DEFAULT = 'Encontros com outras pessoas que cuidam e aulas práticas.';
+export const HUB_GROUPS_DEFAULT = 'Rodas de conversa, capacitações e grupos com quem também cuida.';
 export const HUB_CONTENT_DEFAULT = 'Leituras curtas sobre cuidar e sobre cuidar de você.';
 
 function groups(n: number): string {
-  return n === 1 ? '1 grupo' : `${n} grupos`;
+  return n === 1 ? '1 encontro' : `${n} encontros`;
 }
 
 /**
@@ -35,7 +35,7 @@ export class CareHubService {
 
   readonly wellbeingPhrase = computed(() => (this.ctx.healthConsent() ? HUB_WELLBEING_DEFAULT : HUB_WELLBEING_PAUSED));
 
-  /** "Você está em 1 grupo." ou "Você está na lista de espera de 1 grupo." (grupos que ainda não acabaram). */
+  /** "Você está em 1 encontro." ou "Você está na lista de espera de 1 encontro." (encontros que ainda não acabaram). */
   readonly groupsPhrase = computed(() => {
     const id = this.ctx.caregiverId();
     if (!id) {

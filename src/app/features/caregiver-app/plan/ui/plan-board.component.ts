@@ -13,6 +13,8 @@ export interface BoardPlan {
   inherits: boolean;
   /** Os 3 destaques PRÓPRIOS do plano, nunca a lista inteira. */
   perks: Perk[];
+  /** As linhas de cota do docs/20 (atendimento individual, terapia de grupo, capacitações), iguais nos 4 cartões para comparar. */
+  quotas: { key: string; label: string; value: string }[];
   current: boolean;
   /** `true` quando a pessoa pode trocar para este plano (não é o atual e o plano não é da empresa). */
   canChoose: boolean;
@@ -58,6 +60,10 @@ export interface BoardPlan {
       .nx-perks li { display: flex; align-items: center; gap: 0.75rem; min-width: 0; animation: nx-rise var(--dur-3) var(--ease) both; animation-delay: 140ms; }
       .nx-perk__icon { flex: none; display: grid; place-items: center; inline-size: 2rem; block-size: 2rem; border-radius: 50%; background: var(--tone-soft); color: var(--tone-text); }
       .nx-perk__text { min-width: 0; overflow-wrap: anywhere; font-size: var(--cg-fs-small); line-height: 1.35; }
+      .nx-quotas { display: grid; gap: 0.5rem; margin: 0 0 1rem; padding: 0.75rem; border-radius: var(--cg-radius-control); background: var(--tone-soft); }
+      .nx-quota { display: grid; gap: 0.125rem; }
+      .nx-quota dt { font-size: var(--cg-fs-small); color: var(--tone-text); }
+      .nx-quota dd { margin: 0; font-weight: var(--fw-semibold); color: var(--tone-text); }
       .nx-tier .btn { margin-top: auto; inline-size: 100%; }
       .nx-fine { display: grid; gap: 0.5rem; margin: 0.25rem 0 0; padding: 0; list-style: none; color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
       .nx-fine li { display: flex; align-items: flex-start; gap: 0.5rem; }
@@ -87,6 +93,14 @@ export interface BoardPlan {
                 @if (plan.inherits) {
                   <p class="nx-plan__more">Tudo do plano anterior, mais:</p>
                 }
+                <dl class="nx-quotas" data-role="quotas">
+                  @for (q of plan.quotas; track q.key) {
+                    <div class="nx-quota" [attr.data-quota]="q.key">
+                      <dt>{{ q.label }}</dt>
+                      <dd>{{ q.value }}</dd>
+                    </div>
+                  }
+                </dl>
                 <ul class="nx-perks nx-items">
                   @for (perk of plan.perks; track perk.key) {
                     <li>

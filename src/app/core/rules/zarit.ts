@@ -3,9 +3,11 @@
  * Instrumento de ACOMPANHAMENTO: nunca diagnóstico, e o ERP não fala em "eficácia" (RN-ZRT-18, 22).
  */
 import { addMonths, compareDates, daysBetween } from '../clock/date-utils';
+import { PlanId } from '../models/plans';
 import { ISODate } from '../models/primitives';
 import { ZaritBand } from '../models/zarit';
 import { roundHalfUp } from './numbers';
+import { PLAN_QUOTAS } from './plan-quotas';
 
 export const ZARIT_ITEM_COUNT = 22;
 export const ZARIT_MIN_ITEM_SCORE = 0;
@@ -41,14 +43,31 @@ export interface ZaritBandInfo {
   alert: 'yellow' | 'red' | null;
 }
 
-/** Faixas inclusivas: 0 a 20, 21 a 40, 41 a 60, 61 a 88 (RN-ZRT-08). */
+/**
+ * Conduta por grupo de plano nas faixas 21 a 60 (docs/20-regras-planos-v2.md): o atendimento psicológico da equipe não é
+ * vendido a quem está no Livre ou no Essencial; para esses planos a conduta é conteúdos, rodas abertas, capacitações e
+ * encaminhamento à rede pública ou a clínicas-escola (Quadro 15). Para Cuida e Sustenta, oferta de atendimento psicológico
+ * e convite para a terapia de grupo. O alerta vermelho é igual para todos. Nenhum texto sugere troca de plano (RN-PLN-19).
+ */
+export const ZARIT_CONDUCT_BY_PLAN: Readonly<Record<'moderate' | 'moderate_to_severe', { free: string; paid: string }>> = {
+  moderate: {
+    free: 'Conteúdos de orientação, rodas de conversa abertas, capacitações e encaminhamento à rede pública ou a clínicas-escola.',
+    paid: 'Oferta de atendimento psicológico e convite para a terapia de grupo e as capacitações.',
+  },
+  moderate_to_severe: {
+    free: 'Alerta amarelo: acompanhamento com conteúdos, rodas de conversa abertas e capacitações, encaminhamento à rede pública ou a clínicas-escola e revisão da rede de apoio da família.',
+    paid: 'Alerta amarelo: acompanhamento psicológico prioritário, com foco no manejo do estresse, convite para a terapia de grupo e revisão da rede de apoio da família.',
+  },
+};
+
+/** Faixas inclusivas: 0 a 20, 21 a 40, 41 a 60, 61 a 88 (RN-ZRT-08). A conduta aqui é a genérica; por plano, `zaritConductFor`. */
 export const ZARIT_BANDS: readonly ZaritBandInfo[] = [
   {
     band: 'absent_or_small',
     min: 0,
     max: 20,
     label: 'Sobrecarga ausente ou pequena',
-    conduct: 'Conteúdos de orientação e convite para os grupos de apoio.',
+    conduct: 'Conteúdos de orientação e convite para as rodas de conversa abertas.',
     alert: null,
   },
   {
@@ -56,7 +75,7 @@ export const ZARIT_BANDS: readonly ZaritBandInfo[] = [
     min: 21,
     max: 40,
     label: 'Sobrecarga moderada',
-    conduct: 'Oferta de atendimento psicológico e convite para os grupos e as capacitações.',
+    conduct: `Livre e Essencial: ${ZARIT_CONDUCT_BY_PLAN.moderate.free} Cuida e Sustenta: ${ZARIT_CONDUCT_BY_PLAN.moderate.paid}`,
     alert: null,
   },
   {
@@ -64,8 +83,7 @@ export const ZARIT_BANDS: readonly ZaritBandInfo[] = [
     min: 41,
     max: 60,
     label: 'Sobrecarga moderada a severa',
-    conduct:
-      'Alerta amarelo: acompanhamento psicológico prioritário, com foco no manejo do estresse, e revisão da rede de apoio da família.',
+    conduct: `Livre e Essencial: ${ZARIT_CONDUCT_BY_PLAN.moderate_to_severe.free} Cuida e Sustenta: ${ZARIT_CONDUCT_BY_PLAN.moderate_to_severe.paid}`,
     alert: 'yellow',
   },
   {
@@ -155,9 +173,22 @@ export function zaritAlertLevel(total: number): 'yellow' | 'red' | null {
   return zaritBandInfo(total).alert;
 }
 
-/** Conduta da equipe para o total (A.5). */
+/** Conduta da equipe para o total (A.5), genérica (as duas variantes nas faixas 21 a 60). */
 export function zaritConduct(total: number): string {
   return zaritBandInfo(total).conduct;
+}
+
+/**
+ * Conduta da equipe para o total E o plano do cuidador (docs/20): nas faixas 21 a 60 muda entre Livre/Essencial e
+ * Cuida/Sustenta; nas outras é igual para todos. Nunca sugere troca de plano (RN-PLN-19).
+ */
+export function zaritConductFor(total: number, planId: PlanId): string {
+  const info = zaritBandInfo(total);
+  if (info.band === 'moderate' || info.band === 'moderate_to_severe') {
+    const variants = ZARIT_CONDUCT_BY_PLAN[info.band];
+    return PLAN_QUOTAS[planId].individualSessionsPerMonth > 0 ? variants.paid : variants.free;
+  }
+  return info.conduct;
 }
 
 // ===== Evolução =====

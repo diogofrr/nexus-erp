@@ -18,7 +18,8 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { Clock } from '../../../core/clock/clock.service';
 import { Database } from '../../../core/data/database';
 import { DateBrPipe } from '../../../core/format/pipes';
-import { GuidanceContent } from '../../../core/models/governance';
+import { GuidanceCategory, GuidanceContent } from '../../../core/models/governance';
+import { GUIDANCE_CATEGORIES, GUIDANCE_CATEGORY_LABELS } from '../../../core/rules/guidance-content';
 import { DialogService } from '../../../shared/ui/overlay/dialog.service';
 import { DrawerComponent } from '../../../shared/ui/overlay/drawer.component';
 import { IconComponent } from '../../../shared/ui/display/icon.component';
@@ -177,6 +178,14 @@ const STATUS_TEXT: Record<GuidanceContent['status'], string> = {
               >
             }
           </div>
+          <div class="field">
+            <label class="field__label" for="nx-content-category">Categoria</label>
+            <select id="nx-content-category" class="input" formControlName="category" data-role="category">
+              @for (category of categories; track category) {
+                <option [value]="category">{{ categoryLabels[category] }}</option>
+              }
+            </select>
+          </div>
           <label class="switch">
             <input type="checkbox" formControlName="exclusive" />
             <span>Só para planos pagos</span>
@@ -247,9 +256,13 @@ export class ContentsPageComponent {
     return status ? STATUS_TEXT[status] : 'Novo rascunho';
   });
 
+  protected readonly categories = GUIDANCE_CATEGORIES;
+  protected readonly categoryLabels = GUIDANCE_CATEGORY_LABELS;
+
   protected readonly form = this.fb.group({
     title: this.fb.control('', [Validators.required, Validators.maxLength(120)]),
     body: this.fb.control('', [Validators.required, Validators.minLength(10)]),
+    category: this.fb.control<GuidanceCategory>('routine_organization'),
     exclusive: this.fb.control(false),
   });
 
@@ -277,7 +290,7 @@ export class ContentsPageComponent {
   protected openNew(): void {
     this.creating.set(true);
     this.selectedId.set(null);
-    this.form.reset({ title: '', body: '', exclusive: false });
+    this.form.reset({ title: '', body: '', category: 'routine_organization', exclusive: false });
     this.form.enable();
     this.drawerOpen.set(true);
   }
@@ -285,7 +298,7 @@ export class ContentsPageComponent {
   protected edit(item: GuidanceContent): void {
     this.creating.set(false);
     this.selectedId.set(item.id);
-    this.form.reset({ title: item.title, body: item.body, exclusive: item.exclusive });
+    this.form.reset({ title: item.title, body: item.body, category: item.category, exclusive: item.exclusive });
     if (item.status === 'published') {
       this.form.disable();
     } else {

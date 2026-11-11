@@ -11,57 +11,63 @@ import { PageChromeService } from '../../../../layout/state/page-chrome.service'
 import { IconComponent, IconName } from '../../../../shared/ui/display/icon.component';
 import { CheckboxComponent } from '../../../../shared/ui/forms/checkbox.component';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
-import { ContactDialogService } from '../../state/contact-dialog.service';
 import { relativeDateTime } from '../../state/day-format';
 import { activityFormatLabel } from '../../state/format-labels';
 import { CgEmptyComponent } from '../../ui/cg-empty.component';
+import { CgEventBadgeComponent } from '../../ui/cg-event-badge.component';
 import { CgHeroComponent } from '../../ui/cg-hero.component';
 import { CgIllustrationName } from '../../ui/cg-illustration.component';
 import { CgNoteComponent, CgNoteVariant } from '../../ui/cg-note.component';
-import { CgPlanLockComponent } from '../../ui/cg-plan-lock.component';
 import { CgRowComponent } from '../../ui/cg-row.component';
-import { CgSealComponent, CgSealTone } from '../../ui/cg-seal.component';
+import { CgSealComponent } from '../../ui/cg-seal.component';
+import { CgSectionComponent } from '../../ui/cg-section.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import {
   CHARACTER_LABELS,
   CHARACTER_TEXT,
   KIND_LABELS,
+  KIND_ORDER,
+  KIND_SECTION_TITLES,
   KIND_TEXT,
   THEME_LABELS,
   leaderLine,
+  offerLine,
+  paidDetail,
   placeOf,
   roomAccessibility,
   seatsText,
 } from '../state/group-copy';
 
-/**
- * Cada tipo de atividade tem a sua cor calma, o seu ícone e o seu desenho: grupo de apoio em azul, capacitação em dourado,
- * grupo com psicólogo na tinta da seção, roda aberta em verde. O tipo nunca depende só da cor: o nome vem escrito na etiqueta.
- */
-const KIND_LOOK: Readonly<Record<ActivityKind, { tone: CgSealTone; icon: IconName; art: CgIllustrationName }>> = {
-  support_group: { tone: 'care', icon: 'users-round', art: 'group' },
-  training: { tone: 'gold', icon: 'award', art: 'book' },
-  group_therapy: { tone: 'accent', icon: 'heart', art: 'heart' },
-  open_conversation_circle: { tone: 'ok', icon: 'messages-square', art: 'chat' },
+/** O desenho e o ícone de cada tipo de encontro (a cor vem do selo do kit, `app-cg-event-badge`). */
+const KIND_LOOK: Readonly<Record<ActivityKind, { icon: IconName; art: CgIllustrationName; rowIcon: IconName }>> = {
+  open_circle: { icon: 'messages-square', art: 'chat', rowIcon: 'messages-square' },
+  training: { icon: 'book-open', art: 'book', rowIcon: 'book-open' },
+  group_therapy: { icon: 'heart-handshake', art: 'heart', rowIcon: 'heart-handshake' },
 };
 
 interface ActivityCard {
   id: string;
+  kind: ActivityKind;
   title: string;
-  kind: string;
   look: (typeof KIND_LOOK)[ActivityKind];
-  /** O ícone do formato (on-line ou presencial). */
   formatIcon: IconName;
-  /** Do plano Cuida em diante, e a pessoa ainda não tem acesso: a linha diz o plano, sem pressão (CXC-021). */
-  planTag: string | null;
   character: string;
   next: string;
   format: string;
   seats: string;
+  /** "Incluída no seu plano", "R$ 40,00 por encontro" ou nada (roda aberta). */
+  offer: string | null;
+}
+
+interface KindSection {
+  kind: ActivityKind;
+  title: string;
+  cards: ActivityCard[];
 }
 
 interface MineRow {
   id: string;
+  kind: ActivityKind;
   title: string;
   line: string;
 }
@@ -82,6 +88,8 @@ interface ActivityDetail {
   seats: string;
   standing: ActivityStanding;
   place: ReturnType<typeof placeOf>;
+  offer: string | null;
+  paid: string | null;
 }
 
 interface Banner {
@@ -90,48 +98,43 @@ interface Banner {
 }
 
 /**
- * Grupos e capacitações (UX C10, `/cuidador/cuidar-de-mim/grupos`). A programação do mês em cartões (tipo, caráter,
- * próximo encontro, formato e vagas), "Minhas inscrições" quando houver, e o detalhe em folha de tela cheia com
- * `?atividade=` (S-21). A ação principal é **Quero participar**; ela abre a folha do contrato de sigilo (aceite com
- * data e hora, RN-GRP-09). Lotada, vira **Entrar na lista de espera** (S-20: a posição é visível). Grupo de apoio e
- * capacitação são do plano Cuida em diante e aparecem com o bloqueio calmo, IGUAL para todo o mesmo plano, no lugar da
- * ação; as rodas abertas valem para todos. Terapia de grupo só com a indicação do psicólogo, sem dizer o motivo
- * clínico (RN-GRP-14). Nada aqui nasce de pontuação, faixa ou alerta, e nenhum texto promete resultado (RN-PLN-19).
+ * Encontros (docs/20-regras-planos-v2.md; UX C10, `/cuidador/cuidar-de-mim/grupos`). A programação organizada por tipo, cada um
+ * em uma seção com título, ícone e cor próprios, nesta ordem: Minhas inscrições, Rodas de conversa abertas, Capacitações e
+ * Terapia de grupo. Filtro por tipo quando há mais de um. Cada cartão: o tipo (selo), data e hora, local (on-line ou coworking),
+ * vagas ou "Lista de espera" e, na capacitação, "Incluída no seu plano" ou o valor avulso. O detalhe abre em folha de tela cheia
+ * com `?atividade=` (S-21).
+ *
+ * - **Regra de exibição 2 do dono**: o que o plano não dá acesso NÃO aparece (nem como vitrine, nem com cadeado). Livre e
+ *   Essencial veem rodas abertas e capacitações; Cuida e Sustenta veem tudo. A seção "Terapia de grupo" só existe para eles.
+ * - A ação principal é **Quero participar**; ela abre a folha do contrato de sigilo (aceite com data e hora, RN-GRP-09). Lotado,
+ *   vira **Entrar na lista de espera** (S-20: a posição é visível). A capacitação incluída e a terapia de grupo consomem a cota
+ *   do mês; a avulsa diz o valor por encontro antes de entrar (pagamento simulado, sem campo de cartão).
+ * - Nada aqui nasce de pontuação, faixa ou alerta, e nenhum texto promete resultado (RN-PLN-19).
  */
 @Component({
   selector: 'app-cg-groups-page',
-  imports: [
-    RouterLink,
-    IconComponent,
-    CheckboxComponent,
-    CgEmptyComponent,
-    CgHeroComponent,
-    CgNoteComponent,
-    CgPlanLockComponent,
-    CgRowComponent,
-    CgSealComponent,
-    CgSheetComponent,
-  ],
+  imports: [RouterLink, IconComponent, CheckboxComponent, CgEmptyComponent, CgEventBadgeComponent, CgHeroComponent, CgNoteComponent, CgRowComponent, CgSealComponent, CgSectionComponent, CgSheetComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
+      .nx-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+      .nx-chip { min-block-size: var(--cg-target); padding: 0.375rem 1rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-pill); background: var(--cg-surface); color: var(--cg-text); font: inherit; font-weight: var(--fw-semibold); cursor: pointer; }
+      .nx-chip[aria-pressed='true'] { background: var(--cg-acc-solid); border-color: var(--cg-acc-solid); color: #ffffff; }
       .nx-cards { display: grid; gap: var(--cg-gap-stack); margin: 0; padding: 0; list-style: none; grid-template-columns: minmax(0, 1fr); }
       @media (min-width: 64rem) { .nx-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-      /* Emblema, título e seta na primeira linha; etiquetas e datas embaixo, na largura toda (no celular a coluna do texto era estreita). */
       .nx-cards .cg-card { height: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 0.75rem; row-gap: 0.5rem; align-items: center; align-content: start; }
       .nx-cards .cg-card__main { display: contents; }
       .nx-cards .cg-card__title { grid-column: 2; grid-row: 1; margin: 0; }
       .nx-cards .cg-card__text { grid-column: 1 / -1; }
       .nx-cards .cg-card__chevron { grid-column: 3; grid-row: 1; }
       .nx-cards .nx-kind { grid-column: 1; grid-row: 1; }
-      /* O emblema de cada tipo: a cor calma do tipo (as mesmas dos selos do kit). */
-      .nx-kind { display: grid; place-items: center; flex: none; inline-size: 3rem; block-size: 3rem; border-radius: 50%; }
-      .nx-kind--care { background: var(--cg-care-bg); color: var(--cg-care-fg); box-shadow: inset 0 0 0 1px var(--cg-care-border); }
-      .nx-kind--gold { background: var(--nx-gold-100); color: var(--nx-gold-800); box-shadow: inset 0 0 0 1px var(--nx-gold-200); }
-      .nx-kind--ok { background: var(--cg-ok-bg); color: var(--cg-ok-fg); box-shadow: inset 0 0 0 1px var(--cg-ok-border); }
-      .nx-kind--accent { background: var(--cg-acc-strong); color: var(--cg-acc-ink); }
+      .nx-kind { display: grid; place-items: center; flex: none; inline-size: 3rem; block-size: 3rem; border-radius: 50%; background: var(--cg-acc-strong); color: var(--cg-acc-ink); }
+      [data-kind='open_circle'] .nx-kind { background: var(--cg-sec-rotina-strong); color: var(--cg-sec-rotina-ink); }
+      [data-kind='training'] .nx-kind { background: var(--cg-sec-hoje-strong); color: var(--cg-sec-hoje-ink); }
+      [data-kind='group_therapy'] .nx-kind { background: var(--cg-sec-cuidar-strong); color: var(--cg-sec-cuidar-ink); }
       .nx-meta { display: flex; align-items: center; gap: 0.5rem; margin: 0; color: var(--cg-text-soft); font-size: var(--cg-fs-small); line-height: 1.4; }
       .nx-meta .icon { flex: none; color: var(--cg-acc-ink); }
+      .nx-offer { margin: 0; font-weight: var(--fw-semibold); color: var(--cg-heading); }
       .nx-facts { display: grid; gap: 1.25rem; margin: 0; }
       @media (min-width: 64rem) { .nx-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 2rem; } }
       .nx-fact dt { display: flex; align-items: center; gap: 0.75rem; font-weight: var(--fw-semibold); color: var(--cg-heading); }
@@ -144,7 +147,7 @@ interface Banner {
   ],
   template: `
     @if (detail(); as d) {
-      <app-cg-hero [title]="d.activity.title" [illustration]="d.look.art" backLink="/cuidador/cuidar-de-mim/grupos" backLabel="Grupos e capacitações" />
+      <app-cg-hero [title]="d.activity.title" [illustration]="d.look.art" backLink="/cuidador/cuidar-de-mim/grupos" backLabel="Encontros" />
       <div class="cg-stack">
         @if (banner(); as b) {
           <app-cg-note [variant]="b.variant" data-role="result">{{ b.text }}</app-cg-note>
@@ -152,11 +155,14 @@ interface Banner {
 
         <div class="cg-stack cg-stack--tight">
           <p class="cg-tags">
-            <app-cg-seal [tone]="d.look.tone" [icon]="d.look.icon" data-role="kind">{{ d.kind }}</app-cg-seal>
+            <app-cg-event-badge [type]="d.activity.kind" data-role="kind" />
             <app-cg-seal tone="neutral" data-role="character">{{ d.character }}</app-cg-seal>
           </p>
           <p>{{ d.about }}</p>
           <p data-role="character-text">{{ d.characterText }}</p>
+          @if (d.offer; as offer) {
+            <p class="nx-offer" data-role="offer">{{ offer }}</p>
+          }
         </div>
 
         <dl class="nx-facts">
@@ -200,11 +206,6 @@ interface Banner {
         </dl>
 
         @switch (d.standing.kind) {
-          @case ('plan_locked') {
-            <app-cg-plan-lock feature="groups" description="Grupos de apoio e capacitações fazem parte do plano Cuida.">
-              As rodas de conversa abertas são para todos.
-            </app-cg-plan-lock>
-          }
           @case ('enrolled') {
             <app-cg-note variant="ok" data-role="standing">
               Você está {{ d.place.inside }}.
@@ -220,12 +221,6 @@ interface Banner {
           @case ('in_progress') {
             <app-cg-note variant="soft" data-role="standing">Em andamento. As inscrições estão encerradas.</app-cg-note>
           }
-          @case ('needs_indication') {
-            <app-cg-note variant="soft" icon="info" data-role="standing">
-              Esta atividade começa com a indicação do seu psicólogo. Fale com a gente.
-              <button cgNoteActions type="button" class="cg-link-btn" (click)="talk()">Falar com a gente</button>
-            </app-cg-note>
-          }
           @case ('can_join') {
             <div class="cg-action-bar">
               <button type="button" class="btn btn--primary" data-role="join" (click)="openJoin()">
@@ -238,6 +233,11 @@ interface Banner {
 
       <app-cg-sheet heading="Contrato de sigilo do grupo" [(open)]="joinOpen">
         <p data-role="confidentiality">{{ d.activity.confidentialityText }}</p>
+        @if (d.paid; as paid) {
+          <app-cg-note variant="soft" icon="info" data-role="paid">{{ paid }}</app-cg-note>
+        } @else if (d.offer; as offer) {
+          <p class="nx-offer" data-role="sheet-offer">{{ offer }}.</p>
+        }
         @if (canJoinFull()) {
           <app-cg-note variant="soft" icon="hourglass" data-role="queue">
             Você entra na posição {{ joinPosition() }}. Se abrir uma vaga, você entra automaticamente e a gente avisa.
@@ -274,58 +274,68 @@ interface Banner {
         </ng-container>
       </app-cg-sheet>
     } @else {
-      <app-cg-hero title="Grupos e capacitações" description="A programação do mês." illustration="group" backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
+      <app-cg-hero title="Encontros" description="Rodas de conversa, capacitações e terapia de grupo." illustration="group" backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
 
       @if (missing()) {
         <app-cg-note variant="soft" icon="info">
-          Não encontramos esta atividade.
+          Não encontramos este encontro.
           <a cgNoteActions class="cg-link-btn" routerLink="/cuidador/cuidar-de-mim/grupos">Voltar</a>
         </app-cg-note>
       }
 
-      @if (cards().length === 0) {
-        <app-cg-empty illustration="group" [headingLevel]="2" title="Ainda não há grupos neste mês" text="A programação é montada todo mês. Volte em breve." />
+      @if (sections().length === 0 && mine().length === 0) {
+        <app-cg-empty illustration="group" [headingLevel]="2" title="Ainda não há encontros neste mês" text="A programação é montada todo mês. Volte em breve." />
       } @else {
-        @if (mine().length > 0) {
-          <section class="cg-section" aria-labelledby="groups-mine">
-            <h2 class="cg-section__title" id="groups-mine">Minhas inscrições</h2>
+        @if (filterKinds().length > 1) {
+          <ul class="nx-chips" data-role="filter" aria-label="Filtrar por tipo">
+            <li><button type="button" class="nx-chip" [attr.aria-pressed]="filter() === null" (click)="filter.set(null)">Todos</button></li>
+            @for (kind of filterKinds(); track kind) {
+              <li><button type="button" class="nx-chip" [attr.aria-pressed]="filter() === kind" [attr.data-kind]="kind" (click)="filter.set(kind)">{{ kindLabel(kind) }}</button></li>
+            }
+          </ul>
+        }
+
+        @if (mine().length > 0 && filter() === null) {
+          <app-cg-section class="cg-section" title="Minhas inscrições" [count]="mine().length" data-role="mine">
             <ul class="cg-list">
               @for (row of mine(); track row.id) {
                 <li>
-                  <app-cg-row icon="users-round" [title]="row.title" [description]="row.line" (activated)="open(row.id)" />
+                  <app-cg-row [icon]="look(row.kind).rowIcon" [title]="row.title" [description]="row.line" (activated)="open(row.id)" />
                 </li>
               }
             </ul>
-          </section>
+          </app-cg-section>
         }
 
-        <section class="cg-section" aria-labelledby="groups-all">
-          <h2 class="cg-section__title" id="groups-all">{{ mine().length > 0 ? 'Outros grupos' : 'Programação' }}</h2>
-          <ul class="nx-cards">
-            @for (card of cards(); track card.id) {
-              <li>
-                <a class="cg-card cg-card--link" [routerLink]="[]" [queryParams]="{ atividade: card.id }" data-role="activity">
-                  <span [class]="'nx-kind nx-kind--' + card.look.tone" aria-hidden="true"><svg [appIcon]="card.look.icon" size="lg"></svg></span>
-                  <div class="cg-card__main">
-                    <h3 class="cg-card__title">{{ card.title }}</h3>
-                    <div class="cg-card__text">
-                      <p class="cg-tags">
-                        <app-cg-seal [tone]="card.look.tone">{{ card.kind }}</app-cg-seal>
-                        <app-cg-seal tone="neutral">{{ card.character }}</app-cg-seal>
-                        @if (card.planTag; as plan) {
-                          <app-cg-seal tone="neutral" icon="lock" data-role="plan-tag">{{ plan }}</app-cg-seal>
+        @for (section of sections(); track section.kind) {
+          <app-cg-section class="cg-section" [title]="section.title" [count]="section.cards.length" [attr.data-kind]="section.kind">
+            <app-cg-event-badge cgSectionEnd [type]="section.kind" size="sm" />
+            <ul class="nx-cards">
+              @for (card of section.cards; track card.id) {
+                <li>
+                  <a class="cg-card cg-card--link" [routerLink]="[]" [queryParams]="{ atividade: card.id }" data-role="activity" [attr.data-kind]="card.kind">
+                    <span class="nx-kind" aria-hidden="true"><svg [appIcon]="card.look.icon" size="lg"></svg></span>
+                    <div class="cg-card__main">
+                      <h3 class="cg-card__title">{{ card.title }}</h3>
+                      <div class="cg-card__text">
+                        <p class="cg-tags">
+                          <app-cg-event-badge [type]="card.kind" size="sm" />
+                          <app-cg-seal tone="neutral">{{ card.character }}</app-cg-seal>
+                        </p>
+                        <p class="nx-meta"><svg appIcon="calendar-days" size="sm"></svg>{{ card.next }}</p>
+                        <p class="nx-meta"><svg [appIcon]="card.formatIcon" size="sm"></svg>{{ card.format }} · {{ card.seats }}</p>
+                        @if (card.offer; as offer) {
+                          <p class="nx-offer" data-role="card-offer">{{ offer }}</p>
                         }
-                      </p>
-                      <p class="nx-meta"><svg appIcon="calendar-days" size="sm"></svg>{{ card.next }}</p>
-                      <p class="nx-meta"><svg [appIcon]="card.formatIcon" size="sm"></svg>{{ card.format }} · {{ card.seats }}</p>
+                      </div>
                     </div>
-                  </div>
-                  <svg class="cg-card__chevron" appIcon="chevron-right"></svg>
-                </a>
-              </li>
-            }
-          </ul>
-        </section>
+                    <svg class="cg-card__chevron" appIcon="chevron-right"></svg>
+                  </a>
+                </li>
+              }
+            </ul>
+          </app-cg-section>
+        }
       }
     }
   `,
@@ -336,46 +346,73 @@ export class GroupsPage {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly chrome = inject(PageChromeService);
-  private readonly contact = inject(ContactDialogService);
   private readonly activities = inject(CaregiverActivitiesService);
   protected readonly ctx = inject(CaregiverContextService);
 
   private readonly params = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });
   private readonly requestedId = computed(() => this.params().get('atividade'));
 
+  /** O filtro por tipo (`null` = todos). */
+  protected readonly filter = signal<ActivityKind | null>(null);
+
+  protected look(kind: ActivityKind): (typeof KIND_LOOK)[ActivityKind] {
+    return KIND_LOOK[kind];
+  }
+
+  protected kindLabel(kind: ActivityKind): string {
+    return KIND_LABELS[kind];
+  }
+
   // ===== Lista =====
 
-  protected readonly cards = computed<ActivityCard[]>(() => {
-    const today = this.clock.today();
-    const mineIds = new Set(this.mine().map((row) => row.id));
-    const locked = !this.ctx.canUse('groups');
-    const planTag = locked ? `Plano ${this.neededPlan()}` : null;
-    const listed = this.activities.programme().filter((a) => !mineIds.has(a.id));
-    // Sem acesso aos grupos do plano, a roda aberta (que é para todos) vem primeiro (CXC-021).
-    const ordered = locked
-      ? [...listed.filter((a) => a.kind === 'open_conversation_circle'), ...listed.filter((a) => a.kind !== 'open_conversation_circle')]
-      : listed;
-    return ordered.map((a) => {
-      const next = this.activities.nextMeeting(a);
-      return {
-        id: a.id,
-        title: a.title,
-        kind: KIND_LABELS[a.kind],
-        look: KIND_LOOK[a.kind],
-        formatIcon: a.mode === 'in_person' ? 'map-pin' : 'video',
-        planTag: a.kind === 'open_conversation_circle' ? null : planTag,
-        character: CHARACTER_LABELS[a.character],
-        next: next ? `Próximo encontro: ${relativeDateTime(next.startAt, today)}` : 'Sem encontros marcados',
-        format: activityFormatLabel(a.mode),
-        seats: a.status === 'in_progress' ? 'Em andamento' : seatsText(this.activities.seatsFree(a)),
-      };
-    });
+  /** Os tipos que a pessoa pode ver (docs/20, regra 2), na ordem das seções. */
+  private readonly visibleKinds = computed<ActivityKind[]>(() => {
+    const id = this.ctx.caregiverId();
+    return id ? KIND_ORDER.filter((kind) => this.activities.visibleKinds(id).includes(kind)) : [];
   });
 
-  /** O menor plano que libera grupos e capacitações ("Cuida"). */
-  private readonly neededPlan = computed(() => {
-    const min = this.ctx.access('groups').minPlan;
-    return this.ctx.plans().find((p) => p.id === min)?.name.replace(/^Nexus\s+/, '') ?? 'Cuida';
+  /** Os tipos com algum encontro na programação visível (o filtro só aparece com mais de um). */
+  protected readonly filterKinds = computed<ActivityKind[]>(() => {
+    const present = new Set(this.allCards().map((c) => c.kind));
+    return KIND_ORDER.filter((kind) => present.has(kind));
+  });
+
+  private readonly allCards = computed<ActivityCard[]>(() => {
+    const id = this.ctx.caregiverId();
+    if (!id) {
+      return [];
+    }
+    const today = this.clock.today();
+    const planId = this.ctx.planId();
+    const mineIds = new Set(this.mine().map((row) => row.id));
+    return this.activities
+      .visibleProgramme(id)
+      .filter((a) => !mineIds.has(a.id))
+      .map((a) => {
+        const next = this.activities.nextMeeting(a);
+        return {
+          id: a.id,
+          kind: a.kind,
+          title: a.title,
+          look: KIND_LOOK[a.kind],
+          formatIcon: a.mode === 'in_person' ? 'map-pin' : 'video',
+          character: CHARACTER_LABELS[a.character],
+          next: next ? `Próximo encontro: ${relativeDateTime(next.startAt, today)}` : 'Sem encontros marcados',
+          format: activityFormatLabel(a.mode),
+          seats: a.status === 'in_progress' ? 'Em andamento' : seatsText(this.activities.seatsFree(a)),
+          offer: offerLine(a.kind, this.activities.offerFor(id, a), planId),
+        };
+      });
+  });
+
+  /** As seções por tipo, na ordem do docs/20, só as que têm encontro e passam no filtro. */
+  protected readonly sections = computed<KindSection[]>(() => {
+    const cards = this.allCards();
+    const filter = this.filter();
+    return this.visibleKinds()
+      .filter((kind) => filter === null || kind === filter)
+      .map((kind) => ({ kind, title: KIND_SECTION_TITLES[kind], cards: cards.filter((c) => c.kind === kind) }))
+      .filter((section) => section.cards.length > 0);
   });
 
   protected readonly mine = computed<MineRow[]>(() => {
@@ -386,6 +423,7 @@ export class GroupsPage {
           const next = this.activities.nextMeeting(activity);
           return {
             id: activity.id,
+            kind: activity.kind,
             title: activity.title,
             line:
               enrollment.status === 'waitlist'
@@ -403,12 +441,15 @@ export class GroupsPage {
   protected readonly detail = computed<ActivityDetail | null>(() => {
     const requested = this.requestedId();
     const id = this.ctx.caregiverId();
-    const activity = requested ? this.activities.visible(requested) : undefined;
+    // O que o plano não dá acesso não existe para a pessoa, nem por endereço direto (docs/20, regra 2).
+    const activity = requested && id ? this.activities.visibleTo(id, requested) : undefined;
     if (!activity || !id) {
       return null;
     }
     const today = this.clock.today();
     const room = activity.roomId ? this.db.rooms.get(activity.roomId) : undefined;
+    const standing = this.activities.standingOf(id, activity);
+    const offer = standing.kind === 'can_join' ? standing.offer : null;
     return {
       activity,
       kind: KIND_LABELS[activity.kind],
@@ -428,8 +469,10 @@ export class GroupsPage {
       partnerOrg: activity.partnerOrg ?? null,
       leaders: activity.leaders.map(leaderLine),
       seats: activity.status === 'in_progress' ? 'Em andamento' : seatsText(this.activities.seatsFree(activity)),
-      standing: this.activities.standingOf(id, activity),
+      standing,
       place: placeOf(activity.kind),
+      offer: offer ? offerLine(activity.kind, offer, this.ctx.planId()) : null,
+      paid: offer ? paidDetail(activity.kind, offer) : null,
     };
   });
   protected readonly missing = computed(() => !!this.requestedId() && this.detail() === null);
@@ -459,7 +502,7 @@ export class GroupsPage {
   private lastShown: string | null = null;
 
   constructor() {
-    // O foco vai ao título ao abrir e ao fechar o detalhe, e o aviso do resultado some ao trocar de atividade.
+    // O foco vai ao título ao abrir e ao fechar o detalhe, e o aviso do resultado some ao trocar de encontro.
     effect(() => {
       const current = this.detail()?.activity.id ?? (this.missing() ? 'missing' : null);
       untracked(() => {
@@ -479,10 +522,6 @@ export class GroupsPage {
 
   protected open(id: string): void {
     void this.router.navigate([], { relativeTo: this.route, queryParams: { atividade: id }, queryParamsHandling: 'merge' });
-  }
-
-  protected talk(): void {
-    this.contact.open();
   }
 
   // ===== Entrar =====

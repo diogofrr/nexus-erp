@@ -154,6 +154,7 @@ describe('Rotina (UX C5 e C6)', () => {
     const busy = new Set<string>([
       ...app.db.careAppointments.list().map((a) => a.at.slice(0, 10)),
       ...app.db.careSessions.list().map((x) => x.startAt.slice(0, 10)),
+      ...app.db.activities.list().flatMap((a) => a.meetings.map((m) => m.startAt.slice(0, 10))),
     ]);
     let date = from;
     while (busy.has(date)) {
@@ -243,6 +244,8 @@ describe('Rotina (UX C5 e C6)', () => {
       app.db.careAppointments.removeWhere((a) => a.elderId === app.context.elderId());
       // A conversa com o psicólogo que o seed deixa para a Ana também é compromisso.
       app.db.careSessions.removeWhere((x) => x.caregiverId === app.context.caregiverId());
+      // Os encontros em que a pessoa está inscrita também entram na agenda (docs/20).
+      app.db.activityEnrollments.removeWhere((e) => e.caregiverId === app.context.caregiverId());
       await flush();
       expect(q('app-cg-calendar')).not.toBeNull();
       expect(q('.cg-cal__legend')).toBeNull();
@@ -603,6 +606,8 @@ describe('Rotina (UX C5 e C6)', () => {
       app.db.careAppointments.removeWhere((a) => a.elderId === app.context.elderId());
       // A conversa com o psicólogo que o seed deixa para a Ana também é compromisso.
       app.db.careSessions.removeWhere((x) => x.caregiverId === app.context.caregiverId());
+      // Os encontros em que a pessoa está inscrita também entram na agenda (docs/20).
+      app.db.activityEnrollments.removeWhere((e) => e.caregiverId === app.context.caregiverId());
       await flush();
       expect(text(q('.empty__title'))).toBe('Nenhum compromisso por aqui');
       expect(text(q('.empty__text'))).toBe('Quando você adicionar uma consulta ou uma sessão, ela aparece nesta lista.');

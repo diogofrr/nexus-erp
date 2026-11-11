@@ -1,7 +1,7 @@
 /**
  * Agenda (5.2): resumo dos 2 meses fechados por psicólogo e 60 sessões em D-14 a D+14
  * (24 `done`, 3 `no_show`, 4 canceladas, 8 `confirmed`, 21 `scheduled`; 50% on-line, 35% coworking, 15% em
- * domicílio; 85% psicoterapia), 20 anotações assinadas e 4 em rascunho, 12 vagas abertas e 3 bloqueadas
+ * domicílio; 85% psicoterapia; preço pela cota mensal do plano, docs/20), 20 anotações assinadas e 4 em rascunho, 12 vagas abertas e 3 bloqueadas
  * nas próximas duas semanas (4 prioritárias).
  */
 import { addDays, addMonthsToYearMonth, isWeekend, yearMonthOf } from '../clock/date-utils';
@@ -12,7 +12,7 @@ import {
   SessionNote,
   SessionModality,
 } from '../models';
-import { sessionPriceCents } from '../rules/plans';
+import { PLAN_QUOTAS, QUOTA_SESSION_STATUSES, SINGLE_PRICES_CENTS, monthOf } from '../rules/plan-quotas';
 import { PSYCHOLOGIST, PsychologistKey, ROOM } from './refs';
 import { SeedState } from './state';
 
@@ -53,9 +53,6 @@ export function buildSessions(s: SeedState): void {
   const planOfCaregiver = new Map(
     c.subscriptions.map((sub) => [sub.caregiverId, sub.planId] as const),
   );
-  const discountOf = (planId: string): number =>
-    (c.plans.find((p) => p.id === planId) as { psychSessionDiscountPercent: number })
-      .psychSessionDiscountPercent;
 
   // ===== Meses fechados =====
   const month1 = addMonthsToYearMonth(yearMonthOf(ctx.today), -1);
@@ -191,7 +188,7 @@ export function buildSessions(s: SeedState): void {
     const cgId = pool[cursor % pool.length] as string;
     const modality = modalities[i] as SessionModality;
     const planId = planOfCaregiver.get(cgId) ?? 'livre';
-    const discount = discountOf(planId);
+
     const startAt = ctx.at(p.date, p.hour);
     const slotId = ctx.nextId('slot');
     const sessionId = ctx.nextId('ses');
@@ -229,8 +226,8 @@ export function buildSessions(s: SeedState): void {
       ...(modality === 'online' && p.status === 'done'
         ? { remoteFormatConfirmedPertinent: true }
         : {}),
-      priceCents: sessionPriceCents(s.singletons.settings.sessionBasePriceCents, discount),
-      discountPercent: discount,
+      priceCents: 0,
+      discountPercent: 0,
       ...(p.status === 'cancelled_by_user'
         ? { cancelledAt: ctx.at(addDays(p.date, -2), '10:00') }
         : {}),
@@ -243,6 +240,11 @@ export function buildSessions(s: SeedState): void {
       doneSessions.push(session);
     }
   });
+
+
+  // ===== Preço pela cota do plano (docs/20): as primeiras N sessões do mês de quem é Cuida ou Sustenta ficam incluídas
+  // (R$ 0,00); as demais, e todas as de Livre e Essencial (histórico anterior à regra), ficam avulsas a R$ 120,00. =====
+  applySessionQuotas(s);
 
   // ===== Anotações: 24 sessões realizadas, 20 assinadas e 4 em rascunho (as mais recentes) =====
   const byDate = [...doneSessions].sort((a, b) => (a.startAt < b.startAt ? -1 : 1));
@@ -283,4 +285,30 @@ export function buildSessions(s: SeedState): void {
       }),
     );
   });
+}
+
+/**
+ * Marca `includedInPlan` e o preço de cada sessão pela cota mensal do plano (docs/20), em ordem de data: por cuidador e mês,
+ * as primeiras `individualSessionsPerMonth` que ocupam vaga (agendada, confirmada, realizada ou falta) são incluídas e custam
+ * R$ 0,00; o resto é avulso. Sem sorteio: pode rodar de novo (o seed do aplicativo chama depois de acrescentar as suas).
+ */
+export function applySessionQuotas(s: SeedState): void {
+  const { c } = s;
+  const planOf = new Map(c.subscriptions.map((sub) => [sub.caregiverId, sub.planId] as const));
+  const used = new Map<string, number>();
+  const base = s.singletons.settings.sessionBasePriceCents ?? SINGLE_PRICES_CENTS.individual_session;
+  [...c.careSessions]
+    .sort((a, b) => a.startAt.localeCompare(b.startAt) || a.id.localeCompare(b.id))
+    .forEach((session) => {
+      const limit = PLAN_QUOTAS[planOf.get(session.caregiverId) ?? 'livre'].individualSessionsPerMonth;
+      const key = `${session.caregiverId}|${monthOf(session.startAt)}`;
+      const count = used.get(key) ?? 0;
+      const included = QUOTA_SESSION_STATUSES.includes(session.status) && count < limit;
+      if (included) {
+        used.set(key, count + 1);
+      }
+      session.includedInPlan = included;
+      session.priceCents = included ? 0 : base;
+      session.discountPercent = 0;
+    });
 }

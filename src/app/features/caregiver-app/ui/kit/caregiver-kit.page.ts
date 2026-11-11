@@ -13,7 +13,8 @@ import { CgIconBadgeComponent } from '../cg-icon-badge.component';
 import { CG_ILLUSTRATION_NAMES, CgIllustrationComponent } from '../cg-illustration.component';
 import { CgMoodComponent, MoodValue } from '../cg-mood.component';
 import { CgNoteComponent } from '../cg-note.component';
-import { CgPlanLockComponent } from '../cg-plan-lock.component';
+import { CgEventBadgeComponent } from '../cg-event-badge.component';
+import { CgSectionComponent } from '../cg-section.component';
 import { CgPlanTagComponent } from '../cg-plan-tag.component';
 import { CgProgressRingComponent } from '../cg-progress-ring.component';
 import { CgRatingPairComponent } from '../cg-rating-pair.component';
@@ -51,8 +52,9 @@ import { CgTrendComponent, CgTrendItem } from '../cg-trend.component';
     CgIllustrationComponent,
     CgMoodComponent,
     CgNoteComponent,
-    CgPlanLockComponent,
+    CgEventBadgeComponent,
     CgPlanTagComponent,
+    CgSectionComponent,
     CgProgressRingComponent,
     CgRatingPairComponent,
     CgRowComponent,
@@ -169,8 +171,19 @@ import { CgTrendComponent, CgTrendItem } from '../cg-trend.component';
     <section class="cg-section"><h2 class="cg-section__title">Plano</h2>
       <div class="cg-stack cg-stack--tight">
         <p><app-cg-plan-tag plan="livre" /> <app-cg-plan-tag plan="essencial" /> <app-cg-plan-tag plan="cuida" /> <app-cg-plan-tag plan="sustenta" /></p>
-        <app-cg-plan-lock feature="groups" description="Grupos e capacitações fazem parte do plano Cuida.">As rodas de conversa abertas são para todos.</app-cg-plan-lock>
       </div>
+    </section>
+
+    <section class="cg-section"><h2 class="cg-section__title">Encontros: tipo e seção</h2>
+      <app-cg-section title="Encontros" [count]="3" [headingLevel]="3">
+        <button cgSectionEnd type="button" class="cg-link-btn">Ver todos</button>
+        <p class="cg-tags">
+          <app-cg-event-badge type="open_circle" />
+          <app-cg-event-badge type="training" />
+          <app-cg-event-badge type="group_therapy" />
+          <app-cg-event-badge type="training" size="sm" />
+        </p>
+      </app-cg-section>
     </section>
 
     <section class="cg-section"><h2 class="cg-section__title">Avaliar</h2>

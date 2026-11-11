@@ -4,8 +4,9 @@ import { Clock } from '../clock/clock.service';
 import { compareDateTimes } from '../clock/date-utils';
 import { Database } from '../data/database';
 import { planIdOfCaregiver } from '../data/plan-lookup';
-import { Activity, ActivityEnrollment, ID } from '../models';
+import { Activity, ActivityEnrollment, ID, YearMonth } from '../models';
 import { canAccessActivity } from '../rules/plans';
+import { EnrollmentOffer, QuotaUsage, enrollmentOffer, groupTherapyQuota, monthOf, trainingQuota } from '../rules/plan-quotas';
 
 export interface MembershipChange {
   /** Inscrição que foi cancelada. */
@@ -21,8 +22,10 @@ export interface MembershipChange {
  *
  * - A turma lotada abre lista de espera; vaga liberada promove o primeiro da fila (promoção automática).
  * - `Activity.status` vai de `open` a `full` e volta conforme as vagas.
- * - Cuidador que cai de plano e perde o acesso sai das turmas que ainda não começaram; as turmas em andamento
- *   no ciclo já pago permanecem (AC-M07-09).
+ * - Cuidador que cai de plano e perde o acesso (terapia de grupo, docs/20) sai das turmas que ainda não começaram; as turmas
+ *   em andamento no ciclo já pago permanecem (AC-M07-09, RN-GRP-17). A capacitação já inscrita fica (incluída ou avulsa).
+ * - As cotas mensais (terapia de grupo e capacitação incluída) e a oferta de cada inscrição (`offerFor`) também ficam
+ *   aqui, para a equipe e o cuidador decidirem pelo mesmo cálculo.
  *
  * O módulo de assinaturas (M04) chama `reconcilePlanLoss(caregiverId)` quando uma descida de plano ou um
  * cancelamento passa a valer (`SubscriptionService.applyDueChanges`), e o de empresas (M09) quando o contrato
@@ -60,6 +63,46 @@ export class GroupMembershipService {
   /** Posição que a próxima pessoa teria na lista de espera. */
   nextWaitlistPosition(activityId: ID): number {
     return this.waitlist(activityId).length + 1;
+  }
+
+  // ===== Cotas do plano (docs/20) =====
+
+  /** O mês de referência da inscrição: o do próximo encontro que ainda não aconteceu (senão, o de hoje). */
+  referenceMonth(activity: Pick<Activity, 'meetings'>): YearMonth {
+    const now = this.clock.now();
+    const next = [...activity.meetings]
+      .filter((m) => !m.done && compareDateTimes(m.startAt, now) >= 0)
+      .sort((a, b) => a.startAt.localeCompare(b.startAt))[0];
+    return monthOf(next?.startAt ?? this.clock.today());
+  }
+
+  private enrollmentsOf(caregiverId: ID): ActivityEnrollment[] {
+    return this.db.activityEnrollments.query((e) => e.caregiverId === caregiverId);
+  }
+
+  /** Cota de encontros de terapia de grupo do cuidador no mês (padrão: o mês de hoje). */
+  groupTherapyQuotaOf(caregiverId: ID, month: YearMonth = monthOf(this.clock.today())): QuotaUsage {
+    return groupTherapyQuota(planIdOfCaregiver(this.db, caregiverId), month, this.enrollmentsOf(caregiverId), this.db.activities.all());
+  }
+
+  /** Cota de encontros de capacitação incluídos do cuidador no mês (padrão: o mês de hoje). */
+  trainingQuotaOf(caregiverId: ID, month: YearMonth = monthOf(this.clock.today())): QuotaUsage {
+    return trainingQuota(planIdOfCaregiver(this.db, caregiverId), month, this.enrollmentsOf(caregiverId), this.db.activities.all());
+  }
+
+  /**
+   * O que a inscrição custa e se consome cota, pela regra do docs/20 (a MESMA para a equipe e para o cuidador): roda aberta
+   * grátis; terapia de grupo só Cuida e Sustenta (incluída na cota, senão avulsa); capacitação incluída quando cabe na cota,
+   * senão avulsa a R$ 40,00 o encontro, em qualquer plano.
+   */
+  offerFor(activity: Activity, caregiverId: ID): EnrollmentOffer {
+    return enrollmentOffer(
+      planIdOfCaregiver(this.db, caregiverId),
+      activity,
+      this.referenceMonth(activity),
+      this.enrollmentsOf(caregiverId),
+      this.db.activities.all(),
+    );
   }
 
   /** Confere `open` e `full` com as vagas (volta a `open` se uma vaga abre). Outros estados não mudam. */

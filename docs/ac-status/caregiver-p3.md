@@ -1,5 +1,7 @@
 # Aplicativo do cuidador: status do Dev P3 (Rede, Cartão, Plano, Grupos e Conteúdos)
 
+> **Regras de plano v2 (docs/20, 11/11/2026).** C10 virou **Encontros** (seções por tipo com `app-cg-section` e `app-cg-event-badge`, filtro por tipo, terapia de grupo só para Cuida e Sustenta e invisível para os outros, capacitação incluída ou avulsa); C11 por categoria, sem o cartão de bloqueio do Livre; C16 redireciona o Livre para a Rede; C18 com as cotas do docs/20 e a cota do mês no herói; C8 (área `care`) com a cota e o avulso, e redireciona Livre e Essencial para a porta. AC-CG-103, 104, 105, 110, 142, 143, 149, 150 e 79, 80 foram reescritos no UX (docs/10) e estão **atendidos** com os testes em `groups.spec.ts`, `content.spec.ts`, `card.spec.ts`, `plan.spec.ts` e `care.spec.ts`. Os textos "Disponível no plano Cuida" e "Disponível no plano Essencial" citados abaixo ficaram só como histórico. Detalhes em `docs/21-regras-v2-dev.md`.
+
 Status: PRONTO. Telas de C10, C11, C12, C13, C14, C15, C16 e C18 implementadas, sem `ng serve` (validação por testes, typecheck e build). 19 arquivos de teste e 252 testes próprios, todos verdes.
 
 Áreas em `src/app/features/caregiver-app/`: `network` (porta de Rede, Buscar, Profissional, Meus pedidos), `card` (Cartão Nexus), `plan` (Meu plano), `groups` (Grupos e capacitações), `content` (Conteúdos).
@@ -73,9 +75,9 @@ Erro "Não foi possível abrir a programação. Tente de novo.": **não implemen
 
 | AC | Status | Onde ver / teste |
 |---|---|---|
-| AC-CG-113 | atendido | `/cuidador/rede`: 3 cartões na ordem Buscar, Meus pedidos, Cartão Nexus, cada um à sua rota, na grade de 1 coluna do kit. `network.spec.ts` |
-| AC-CG-114 | atendido | Seis pessoas de planos diferentes: 3 cartões, sem cadeado e sem preço; Livre: "Um benefício dos planos pagos."; Elza: "Seu número e onde usar." |
-| AC-CG-115 | atendido | Aviso literal "A Nexus organiza a rede. O serviço é feito e pago direto com o profissional." |
+| AC-CG-113 | atendido (UX v2, 11/11) | `/cuidador/rede`: ladrilhos da mesma altura (`cg-tiles cg-equal`) na ordem Buscar, Meus pedidos e, só para quem tem o Cartão, Cartão Nexus, cada um à sua rota. `network.spec.ts` |
+| AC-CG-114 | atendido (UX v2, 11/11) | Essencial em diante: 3 ladrilhos; Livre: 2, sem nada sobre cartão, sem cadeado, sem convite e sem preço (docs/20, regra 1). Elza: "Seu número e onde usar." |
+| AC-CG-115 | atendido (UX v2, 11/11) | A frase literal é a linha do herói ("A Nexus organiza a rede. O serviço é feito e pago direto com o profissional."), sem nota solta no fim. |
 | AC-CG-116 | atendido | h1 "Buscar", campo "Buscar pelo nome", 10 necessidades, `?categoria=` e "5 opções em Fisioterapia." `search.spec.ts` |
 | AC-CG-117 | atendido | Home care, enfermagem, psicologia e advocacia: "Única opção disponível no momento." e a opção aparece; clínica, nutrição e serviço especializado: "Nenhuma opção em ... por enquanto" com **Falar com a gente** |
 | AC-CG-118 | atendido | Suspenso, descredenciado, reprovado e candidato nunca aparecem (varredura das 10 necessidades); nenhuma etiqueta de monitoramento, risco de saída, recusa ou comissão; o tipo `ProviderPublicView` do núcleo nem carrega esses campos |
@@ -83,10 +85,10 @@ Erro "Não foi possível abrir a programação. Tente de novo.": **não implemen
 | AC-CG-120 | atendido | "Nota 4,5 (N avaliações)" com 5 ou mais; "Ainda sem nota (menos de 5 avaliações)" com menos |
 | AC-CG-121 | atendido | 1 caixa: sem barra; 2: "Comparar escolhidos (2)" e folha "Lado a lado"; 3: as outras caixas ficam sem uso com "Você já escolheu 3. Desmarque um para comparar outro." A folha usa colunas lado a lado em grade; no celular as colunas empilham (a UX A.3 sugere um profissional por vez com abas: **parcial só no layout** do celular, o critério está atendido). Ver S-P3-07 |
 | AC-CG-122 | atendido | "Só quem atende em casa" com `aria-pressed`, contagem acompanha, `casa=1` na URL; o texto digitado não vai à URL |
-| AC-CG-123 | atendido | Livre compara, mas a linha de condições diz "Condições especiais: a partir do plano Essencial." |
+| AC-CG-123 | atendido (UX v2, 11/11) | Livre compara **sem** a linha de condições (nem na tabela, nem em "Igual nas duas opções"); do Essencial em diante as condições aparecem. Nada de "a partir do plano" (docs/20, regra 1). `search.spec.ts` |
 | AC-CG-124 | atendido | Ficha: nome, especialidade, cidade, registro e conselho (com "(fictício)"), em destaque, atende em casa, nota, condições (Essencial em diante), aviso. Sem faixa, taxa de recusa, comissão, disponibilidade nem comentários (S-18, S-30). `provider.spec.ts` |
 | AC-CG-125 | atendido | **Pedir serviço** (todos os planos) cria o pedido `requested`, mostra "Pedido enviado. A equipe avisa você quando o profissional responder." com **Ver meus pedidos**; 7 toques a partir de Hoje (Rede, Buscar, necessidade, profissional, Pedir serviço, local, Enviar) |
-| AC-CG-126 | atendido | Livre tem o botão como os demais, a linha de condições muda, o pedido não carrega nada além do essencial, e o telefone com **Copiar número** aparece para todos |
+| AC-CG-126 | atendido (UX v2, 11/11) | Livre tem o botão como os demais; a seção "Condições para quem é da Nexus" **não existe** para ele (docs/20, regra 1); o pedido não carrega nada além do essencial, e o telefone com **Copiar número** aparece para todos. `provider.spec.ts` |
 | AC-CG-127 | atendido | Prestador sem a cláusula de proteção de dados (Cuidadora Rosimeire Tavares, `prv_20`): sem botão, nota neutra e **Falar com a gente**; assinada a cláusula, o botão volta |
 | AC-CG-128 | atendido | Suspenso, descredenciado, candidato, reprovado e inexistente: a MESMA tela "Não encontramos este profissional." (teste confere que as seis telas são idênticas) |
 | AC-CG-129 | atendido | João com pedido em andamento: "Você já tem um pedido em andamento com este profissional." e **Ver pedido** (leva a `?pedido=`) no lugar de Pedir serviço |

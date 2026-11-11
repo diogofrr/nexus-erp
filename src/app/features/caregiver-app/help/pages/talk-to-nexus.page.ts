@@ -21,6 +21,8 @@ import { MESSAGE_SENT_NOTE, MESSAGE_SUBJECTS, NexusMessagesService } from '../st
  * abrem o diálogo "Como falar com a gente" (nenhum `tel:` nem `wa.me`); a mensagem pelo aplicativo grava para a
  * equipe com o prazo de 24 horas úteis. Nenhuma função essencial depende só do app (RN-CAN-05): fora do horário o
  * telefone avisa quando abre e a tela sugere WhatsApp ou mensagem. O aplicativo não detecta risco no texto (S-24).
+ * O aviso escrito de que os canais não substituem atendimento de saúde e de que emergência é o SAMU 192 é regra dos
+ * canais (RN-CAN-06, AC-CG-165) e fica logo abaixo da lista deles, como parte da seção, e não solto no fim da tela.
  */
 @Component({
   selector: 'app-talk-to-nexus-page',
@@ -75,6 +77,7 @@ import { MESSAGE_SENT_NOTE, MESSAGE_SUBJECTS, NexusMessagesService } from '../st
           </li>
         }
       </ul>
+      <app-cg-emergency-note />
 
       @if (showCompose()) {
         <section class="cg-stack cg-stack--tight cg-reading" aria-labelledby="talk-compose" data-role="compose">
@@ -119,8 +122,6 @@ import { MESSAGE_SENT_NOTE, MESSAGE_SUBJECTS, NexusMessagesService } from '../st
           </ul>
         }
       </section>
-
-      <app-cg-emergency-note />
     </div>
   `,
 })

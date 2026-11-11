@@ -6,6 +6,7 @@ import { ContactDialogService } from '../state/contact-dialog.service';
 import { BootedCaregiverApp, bootCaregiverApp, settleCaregiver } from '../testing';
 import { ROUTES } from './today.routes';
 import { withArticle } from '../state/people-format';
+import { enrolledMeetingsOf } from '../state/event-type';
 import { greetingFor, inviteKindFor } from './state/today-rules';
 import { WellbeingCheckService, WellbeingError } from '../../../core/care/wellbeing-check.service';
 
@@ -52,17 +53,19 @@ describe('Hoje (UX C4)', () => {
       expect(greetingFor(at('18:00'))).toBe('Boa noite');
     });
 
-    it('o convite do dia é rodízio por calendário e só pula o item que não existe (S-11)', () => {
-      const kinds = ['conversation', 'circle', 'reading'] as const;
-      const dates = ['2026-11-04', '2026-11-05', '2026-11-06'];
+    it('o convite do dia é rodízio por calendário e só pula o item que a pessoa não tem (S-11, docs/20)', () => {
+      const kinds = ['conversation', 'circle', 'training', 'reading'] as const;
+      const dates = ['2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07'];
       const picked = dates.map((d) => inviteKindFor(d, [...kinds]));
-      expect(new Set(picked).size).toBe(3);
+      expect(new Set(picked).size).toBe(4);
       // O mesmo dia dá sempre o mesmo convite.
       expect(inviteKindFor('2026-11-04', [...kinds])).toBe(picked[0]);
-      // Sem roda e sem leitura, a conversa com o psicólogo é sempre possível.
-      dates.forEach((d) => expect(inviteKindFor(d, [])).toBe('conversation'));
+      // Sem nada disponível não há convite: a conversa só entra quando o plano a inclui.
+      dates.forEach((d) => expect(inviteKindFor(d, [])).toBeNull());
+      dates.forEach((d) => expect(inviteKindFor(d, ['reading'])).toBe('reading'));
       // Sem roda, o dia da roda vira o próximo da ordem.
       const circleDay = dates[picked.indexOf('circle')] as string;
+      expect(inviteKindFor(circleDay, ['training', 'reading'])).toBe('training');
       expect(inviteKindFor(circleDay, ['reading'])).toBe('reading');
       expect(toDayNumber(circleDay)).toBeGreaterThan(0);
     });
@@ -205,6 +208,8 @@ describe('Hoje (UX C4)', () => {
       app.db.careAppointments.removeWhere((a) => a.elderId === app.context.elderId());
       // A conversa com o psicólogo que o seed deixa para a Ana também é compromisso.
       app.db.careSessions.removeWhere((x) => x.caregiverId === app.context.caregiverId());
+      // Os encontros em que a pessoa está inscrita também entram na agenda (docs/20).
+      app.db.activityEnrollments.removeWhere((e) => e.caregiverId === app.context.caregiverId());
       await flush();
       expect(text(q('main'))).toContain('Nenhum compromisso nos próximos dias.');
       expect(buttonByText('Adicionar compromisso')?.getAttribute('href')).toContain('/cuidador/rotina/agenda');
@@ -219,7 +224,7 @@ describe('Hoje (UX C4)', () => {
   describe('AC-CG-46 a 49: remédios de hoje', () => {
     it('mostra "2 de 4 dados" e as 4 linhas de Ana, sem "Ver todos"', async () => {
       await open('cg_0001');
-      expect(q('.today-progress app-cg-progress-ring')?.getAttribute('aria-label')).toBe('2 de 4 dados');
+      expect(q('[data-role="meds"] app-cg-progress-ring')?.getAttribute('aria-label')).toBe('2 de 4 dados');
       expect(all('app-cg-dose')).toHaveLength(4);
       expect(buttonByText('Ver todos (4)')).toBeUndefined();
       expect(all('.cg-dose.is-given')).toHaveLength(2);
@@ -237,7 +242,7 @@ describe('Hoje (UX C4)', () => {
       expect(check?.medicationId).toBeTruthy();
       expect(check?.date).toBe('2026-11-04');
       expect(check?.givenAt).toBe('2026-11-04T12:05:00-03:00');
-      expect(q('.today-progress app-cg-progress-ring')?.getAttribute('aria-label')).toBe('3 de 4 dados');
+      expect(q('[data-role="meds"] app-cg-progress-ring')?.getAttribute('aria-label')).toBe('3 de 4 dados');
       expect(all('.cg-dose.is-given')).toHaveLength(3);
       expect(all('app-cg-dose').map((d) => text(d.querySelector('.cg-dose__name')))).toEqual(before);
       expect(text(q('.cg-dose.is-given'))).toContain('Dado às');
@@ -253,7 +258,7 @@ describe('Hoje (UX C4)', () => {
       const undo = all<HTMLButtonElement>('app-cg-dose button').find((b) => b.getAttribute('aria-label')?.startsWith('Desfazer'));
       await click(undo);
       expect(app.db.doseChecks.size()).toBe(countBefore - 1);
-      expect(q('.today-progress app-cg-progress-ring')?.getAttribute('aria-label')).toBe('1 de 4 dados');
+      expect(q('[data-role="meds"] app-cg-progress-ring')?.getAttribute('aria-label')).toBe('1 de 4 dados');
       expect(app.root.querySelector('dialog[open]')).toBeNull();
     });
 
@@ -322,6 +327,7 @@ describe('Hoje (UX C4)', () => {
       app.db.medications.removeWhere((m) => m.elderId === elderId);
       app.db.careAppointments.removeWhere((a) => a.elderId === elderId);
       app.db.careSessions.removeWhere((s) => s.caregiverId === 'cg_0001');
+      app.db.activityEnrollments.removeWhere((e) => e.caregiverId === 'cg_0001');
       await flush();
       expect(text(q('main'))).toContain('Ainda não há nada para hoje');
       expect(text(q('main'))).toContain('Comece pelos remédios ou por um compromisso.');
@@ -427,9 +433,9 @@ describe('Hoje (UX C4)', () => {
       const seen = new Set<string>();
       for (const day of ['2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07']) {
         TestBed.resetTestingModule();
-        app = await bootCaregiverApp('cg_0003', { url: '/cuidador/hoje', today: day });
-        const card = all('h2').find((h) => text(h) === 'Para você')?.parentElement;
-        expect(card, day).toBeDefined();
+        app = await bootCaregiverApp('cg_0027', { url: '/cuidador/hoje', today: day });
+        const card = q('[data-role="for-you"]');
+        expect(card, day).not.toBeNull();
         seen.add(text(card?.querySelector('h3')));
         expect(text(card), day).not.toMatch(/R\$|\bplano\b|Essencial|Sustenta|bloque|assine|desconto/i);
         const link = card?.querySelector('a.btn');
@@ -440,13 +446,17 @@ describe('Hoje (UX C4)', () => {
       expect(seen.size).toBeGreaterThanOrEqual(2);
     });
 
-    it('o convite não muda pela pontuação nem pelo plano: o mesmo dia dá o mesmo convite para quem tem planos diferentes', async () => {
+    it('o convite não muda pela pontuação: no mesmo dia, quem tem o mesmo plano e as mesmas inscrições recebe o mesmo convite', async () => {
       const titles: string[] = [];
-      for (const id of ['cg_0003', 'cg_0027', 'cg_0012', 'cg_0026']) {
+      // Terezinha e Marcos são do Essencial, com pontuações diferentes; sem inscrições, o rodízio é o mesmo.
+      for (const id of ['cg_0012', 'cg_0026']) {
         await open(id);
-        const card = all('h2').find((h) => text(h) === 'Para você')?.parentElement;
-        titles.push(text(card?.querySelector('h3')));
+        app.db.activityEnrollments.removeWhere((e) => e.caregiverId === id);
+        app.db.serviceRequests.removeWhere((r) => r.caregiverId === id);
+        await flush();
+        titles.push(text(q('[data-role="for-you"] h3')));
       }
+      expect(titles[0]).not.toBe('');
       expect(new Set(titles).size).toBe(1);
     });
   });
@@ -457,9 +467,12 @@ describe('Hoje (UX C4)', () => {
       const card = all('h2').find((h) => text(h) === 'Prefere falar com a gente?')?.closest('app-cg-card');
       expect(card).toBeDefined();
       expect(text(card?.querySelector('.today-phone'))).toBe('(34) 90000-0000');
-      // CXC-025: o cartão sobe para o alto (antes do compromisso) e a frase do protótipo só aparece no toque.
-      expect(card?.compareDocumentPosition(q('.today-cols') as Node) ?? 0).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      // CXC-025: o cartão sobe para o alto do dia (antes do compromisso) e a frase do protótipo só aparece no toque.
+      expect(card?.closest('.today-main')).not.toBeNull();
+      expect(card?.compareDocumentPosition(q('[data-role="next"]') as Node) ?? 0).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
       expect(text(card)).not.toContain('No protótipo');
+      // Quem já tem o telefone no alto não vê um segundo cartão de contato embaixo.
+      expect(all('[data-role="contact-card"]')).toHaveLength(0);
       await click(card?.querySelector('button'));
       expect(TestBed.inject(ContactDialogService).isOpen()).toBe(true);
       expect(text(q('app-cg-contact-dialog'))).toContain('No protótipo, a ligação não é feita.');
@@ -477,7 +490,7 @@ describe('Hoje (UX C4)', () => {
   });
 
   describe('AC-CG-55: duas colunas em tela larga', () => {
-    it('compromisso e remédios na coluna principal; humor e convite na lateral; a nota ocupa a largura toda acima', async () => {
+    it('o dia à esquerda (contato da equipe, compromisso, remédios); você à direita (humor, "Para você", falar com a gente)', async () => {
       await open('cg_0003', { layout: 'full' });
       const main = q('.today-main');
       const side = q('.today-side');
@@ -485,9 +498,114 @@ describe('Hoje (UX C4)', () => {
       expect(text(main)).toContain('Remédios de hoje');
       expect(text(side)).toContain('Como você está hoje?');
       expect(text(side)).toContain('Para você');
+      // Fora das duas colunas não sobra nenhum bloco de texto: tudo é herói, seção ou cartão.
+      expect(all('.cg-stack > p, .cg-stack > div:not(.today-cols)')).toHaveLength(0);
       await open('cg_0001', { layout: 'full' });
       const note = q('app-cg-note.cg-note--care');
-      expect(note?.closest('.today-cols')).toBeNull();
+      expect(note?.closest('.today-main')).not.toBeNull();
+      expect(note?.compareDocumentPosition(q('[data-role="next"]') as Node) ?? 0).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      // Quem não prefere telefone fecha o dia com o cartão "Quer falar com a gente?" na coluna de você.
+      expect(q('[data-role="contact-card"]')?.closest('.today-side')).not.toBeNull();
+    });
+  });
+
+  describe('docs/20, regras de exibição 1 a 3: o plano decide o que "Para você" convida, nunca aparece', () => {
+    /** Quatro dias seguidos: o rodízio passa por todos os itens disponíveis para a pessoa. */
+    const DAYS = ['2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07'];
+    interface Seen { day: string; title: string; type: string | null; href: string }
+    /** O convite de cada dia. Com `clear`, a pessoa fica sem inscrições (o convite não repete o que já é dela). */
+    const invites = async (id: string, clear = false): Promise<Seen[]> => {
+      const seen: Seen[] = [];
+      for (const day of DAYS) {
+        TestBed.resetTestingModule();
+        app = await bootCaregiverApp(id, { url: '/cuidador/hoje', today: day });
+        if (clear) {
+          // Sem inscrições e sem serviço a avaliar (que ocuparia o lugar do convite).
+          app.db.activityEnrollments.removeWhere((e) => e.caregiverId === id);
+          app.db.serviceRequests.removeWhere((r) => r.caregiverId === id);
+          await flush();
+        }
+        seen.push({
+          day,
+          title: text(q('[data-role="for-you"] h3')),
+          type: q('[data-role="for-you"] app-cg-event-badge')?.getAttribute('data-type') ?? null,
+          href: q('[data-role="for-you"] a.btn')?.getAttribute('href') ?? '',
+        });
+        expect(text(q('main')), `${id} ${day}`).not.toMatch(NEVER_IN_TODAY);
+        expect(all('app-cg-event-badge[data-type="group_therapy"]'), `${id} ${day}`).toHaveLength(0);
+      }
+      return seen;
+    };
+    const titlesOf = (kind: string): string[] =>
+      app.db.activities.query((a) => a.kind === kind).map((a) => a.title);
+
+    it('Livre (João, Raimunda) e Essencial (Sônia): nunca a conversa nem terapia de grupo; roda aberta e leitura entram', async () => {
+      for (const id of ['cg_0003', 'cg_0018', 'cg_0016']) {
+        const seen = await invites(id, true);
+        const therapy = titlesOf('group_therapy');
+        expect(seen.map((x) => x.title), id).not.toContain('Uma conversa só para você');
+        seen.forEach((x) => expect(therapy, `${id} ${x.day}`).not.toContain(x.title));
+        expect(seen.some((x) => x.type === 'open_circle'), id).toBe(true);
+        expect(seen.some((x) => /Leitura de \d+ minuto/.test(x.title)), id).toBe(true);
+      }
+    });
+
+    it('Livre: a capacitação não é convite (o plano não a inclui); Essencial e Sustenta podem receber a capacitação incluída', async () => {
+      const livre = await invites('cg_0003', true);
+      expect(livre.some((x) => x.type === 'training')).toBe(false);
+      const sustenta = await invites('cg_0027', true);
+      expect(sustenta.map((x) => x.title)).toContain('Uma conversa só para você');
+      expect(sustenta.some((x) => x.type === 'open_circle')).toBe(true);
+      sustenta.filter((x) => x.type === 'training').forEach((x) => expect(text(q('main'))).not.toContain('R$'));
+    });
+
+    it('o convite de roda aberta leva o selo do tipo, com o nome escrito, e leva à atividade', async () => {
+      const seen = await invites('cg_0016', true);
+      const circle = seen.find((x) => x.type === 'open_circle');
+      expect(circle).toBeDefined();
+      TestBed.resetTestingModule();
+      app = await bootCaregiverApp('cg_0016', { url: '/cuidador/hoje', today: circle?.day ?? DAYS[0] });
+      app.db.activityEnrollments.removeWhere((e) => e.caregiverId === 'cg_0016');
+      app.db.serviceRequests.removeWhere((r) => r.caregiverId === 'cg_0016');
+      await flush();
+      const badge = q('[data-role="for-you"] app-cg-event-badge');
+      expect(badge?.getAttribute('data-type')).toBe('open_circle');
+      expect(text(badge)).toBe('Roda de conversa aberta');
+      expect(text(q('[data-role="for-you"]'))).toContain('Aberta a todos.');
+      expect(circle?.href).toMatch(/^\/cuidador\/cuidar-de-mim\/grupos\?atividade=act_\d+$/);
+    });
+
+    it('encontro em que a pessoa já está inscrita não é convite', async () => {
+      const seen = await invites('cg_0003');
+      const mine = new Set(
+        app.db.activityEnrollments.query((e) => e.caregiverId === 'cg_0003' && e.status === 'enrolled').map((e) => e.activityId),
+      );
+      seen.forEach((x) => {
+        const id = /atividade=(act_\d+)/.exec(x.href)?.[1];
+        expect(id ? mine.has(id) : false, x.day).toBe(false);
+      });
+    });
+
+    it('o encontro em que a pessoa está inscrita entra em "Próximo compromisso" com o selo do tipo e leva a Encontros', async () => {
+      await open('cg_0027', { layout: 'full' });
+      app.db.careAppointments.removeWhere((a) => a.elderId === app.context.elderId());
+      app.db.careSessions.removeWhere((x) => x.caregiverId === 'cg_0027');
+      await flush();
+      const expected = enrolledMeetingsOf(app.db.activities.list(), app.db.activityEnrollments.list(), 'cg_0027', app.clock.now())[0];
+      expect(expected).toBeDefined();
+      const next = q('[data-role="next"]');
+      expect(text(next)).toContain(expected?.title ?? '??');
+      expect(next?.querySelector('app-cg-event-badge')?.getAttribute('data-type')).toBe(expected?.type);
+      expect(next?.querySelector('a.cg-card--link')?.getAttribute('href')).toBe(`/cuidador/cuidar-de-mim/grupos?atividade=${expected?.activityId}`);
+      expect(text(next)).not.toMatch(NEVER_IN_TODAY);
+    });
+
+    it('nenhuma pessoa de demonstração vê "Disponível no plano", cadeado, "a partir do plano" ou "premium" em Hoje', async () => {
+      for (const id of ['cg_0001', 'cg_0002', 'cg_0003', 'cg_0027', 'cg_0024', 'cg_0016', 'cg_0004']) {
+        await open(id);
+        expect(text(q('main')), id).not.toMatch(/Disponível no plano|a partir do plano|premium|Ver os planos/i);
+        expect(all('app-cg-plan-lock, .cg-plan-lock, svg[data-icon="lock"]'), id).toHaveLength(0);
+      }
     });
   });
 

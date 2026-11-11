@@ -5,7 +5,7 @@ import { AuthService } from '@core/auth';
 import { Database } from '@core/data';
 import { planIdOfCaregiver } from '@core/data/plan-lookup';
 import { formatMoney } from '@core/format';
-import { REFERRAL_TABLE, EMERGENCY_NOTICE } from '@core/rules';
+import { REFERRAL_TABLE, EMERGENCY_NOTICE, quotaSentence } from '@core/rules';
 import {
   BadgeComponent,
   CheckboxComponent,
@@ -236,9 +236,10 @@ export class SessionDetailPageComponent {
     if (!s) {
       return '';
     }
-    return s.discountPercent > 0
-      ? `${formatMoney(s.priceCents)} (desconto de ${s.discountPercent}% do plano)`
-      : `${formatMoney(s.priceCents)} (sem desconto)`;
+    // docs/20: dentro da cota do mês a sessão é incluída no plano (R$ 0,00); fora dela, avulsa.
+    const base = s.includedInPlan ? `${formatMoney(s.priceCents)} (incluída na cota do plano)` : `${formatMoney(s.priceCents)} (avulsa)`;
+    const quota = this.svc.quote(s.caregiverId, s.startAt.slice(0, 10)).quota;
+    return quota.limit === 0 ? base : `${base}. ${quotaSentence(quota, 'sessões')}.`;
   });
 
   protected readonly canChange = computed(() => {

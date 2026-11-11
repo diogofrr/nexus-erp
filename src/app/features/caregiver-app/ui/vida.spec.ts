@@ -401,12 +401,12 @@ describe('Vida visual: as telas', () => {
     const app = await bootCaregiverApp('cg_0001', { url: '/cuidador/hoje' });
     await settleCaregiver(app.fixture);
     expect(app.root.querySelector('main app-cg-hero [data-illustration="day"]')).not.toBeNull();
-    expect(app.root.querySelector('.today-progress app-cg-progress-ring')?.getAttribute('aria-label')).toBe('2 de 4 dados');
+    expect(app.root.querySelector('[data-role="meds"] app-cg-progress-ring')?.getAttribute('aria-label')).toBe('2 de 4 dados');
     expect(text(app.root.querySelector('app-cg-card a.cg-card--link .cg-bignum'))).toMatch(/^\d{2}:\d{2}$/);
   });
 
   it('as portas de Cuidar de mim e da Rede são ladrilhos com desenho', async () => {
-    const care = await bootCaregiverApp('cg_0002', { url: '/cuidador/cuidar-de-mim' });
+    const care = await bootCaregiverApp('cg_0008', { url: '/cuidador/cuidar-de-mim' });
     await settleCaregiver(care.fixture);
     const tiles = Array.from(care.root.querySelectorAll('[data-role="care-cards"] a.cg-card--tile'));
     expect(tiles).toHaveLength(4);
@@ -433,7 +433,7 @@ describe('Vida visual: as telas', () => {
     expect(avatar?.getAttribute('aria-hidden')).toBe('true');
     expect(text(avatar)).toBe('AF');
     const sections = Array.from(app.root.querySelectorAll('main .cg-list > li')).map((li) => Array.from(li.classList).find((c) => c.startsWith('cg-sec--')));
-    expect(sections).toEqual(['cg-sec--cuidar', 'cg-sec--hoje', 'cg-sec--rotina', 'cg-sec--rede', 'cg-sec--mais']);
+    expect(sections).toEqual(['cg-sec--cuidar', 'cg-sec--mais', 'cg-sec--rotina', 'cg-sec--hoje', 'cg-sec--hoje', 'cg-sec--rede']);
   });
 
   it('Buscar: as necessidades são ladrilhos com ícone, a tinta agrupa e o nome continua escrito', async () => {

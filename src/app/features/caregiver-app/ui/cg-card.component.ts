@@ -34,7 +34,7 @@ export type CgCardLayout = 'row' | 'tile';
   host: { class: 'cg-card-host' },
   template: `
     @if (link(); as href) {
-      <a [class]="classes()" [routerLink]="href">
+      <a [class]="classes()" [routerLink]="href" [queryParams]="linkQuery()">
         <ng-container [ngTemplateOutlet]="body" />
         <span class="cg-card__go"><svg class="cg-card__chevron" appIcon="chevron-right"></svg></span>
       </a>
@@ -77,6 +77,8 @@ export class CgCardComponent {
   readonly headingLevel = input<2 | 3 | 4>(2);
   /** Rota absoluta: o cartão inteiro vira um link. */
   readonly link = input<string | null>(null);
+  /** A consulta da URL do `link` (`{ atividade: 'act_0004' }`), quando o destino precisa dela. */
+  readonly linkQuery = input<Record<string, string> | null>(null);
   /** Força a tinta de uma seção; sem ela o cartão herda a da seção corrente. */
   readonly accent = input<CgAccent | null>(null);
   readonly layout = input<CgCardLayout>('row');

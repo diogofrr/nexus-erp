@@ -140,9 +140,10 @@ describe('Profissional: a ficha e o pedido de serviço', () => {
   });
 
   describe('condições por plano (AC-CG-126)', () => {
-    it('Essencial em diante vê as condições do profissional; o Livre vê "Condições especiais: a partir do plano Essencial."', async () => {
+    it('Essencial em diante vê as condições do profissional; para o Livre a seção não existe (sem "a partir do plano", docs/20)', async () => {
       const livre = await bootCaregiverApp('cg_0003', { url: url('prv_01') });
-      expect(norm(livre.root.querySelector('[data-role="conditions"]')?.textContent)).toBe('Condições especiais: a partir do plano Essencial.');
+      expect(livre.root.querySelector('[data-role="conditions"]')).toBeNull();
+      expect(mainText(livre)).not.toMatch(/Condições para quem é da Nexus|a partir do plano|Essencial/);
       TestBed.resetTestingModule();
       const essencial = await bootCaregiverApp('cg_0002', { url: url('prv_01') });
       expect(norm(essencial.root.querySelector('[data-role="conditions"]')?.textContent)).toContain('Horário prioritário');

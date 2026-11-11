@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ChangeQuote } from '../../../../core/commerce/subscription.service';
 import { DEFAULT_PLANS } from '../../../../core/rules/plans';
-import { actionLabelFor, changeCopy, ownBenefits, planPerks, priceLine, priceParts, scheduledNote } from './plan-copy';
+import { actionLabelFor, allBenefits, changeCopy, planLines, planPerks, priceLine, priceParts, quotaLines, scheduledNote } from './plan-copy';
 
 const plans = DEFAULT_PLANS;
 const price = (id: string): string => (id === 'cuida' ? 'R$ 119,90' : id === 'sustenta' ? 'R$ 149,90' : 'R$ 49,90');
@@ -19,19 +19,40 @@ function quote(partial: Partial<ChangeQuote> & Pick<ChangeQuote, 'from' | 'to' |
   };
 }
 
-describe('textos de Meu plano (UX C18 e B9)', () => {
-  it('os destaques de cada plano: 4 no herói, os 3 primeiros no quadro, sempre com ícone e só o que o plano inclui', () => {
-    expect(planPerks('cuida', plans, 4).map((p) => p.label)).toEqual(['Grupos de apoio', 'Capacitações', 'Maior suporte à organização', 'Descontos exclusivos do Cartão Nexus']);
-    expect(planPerks('cuida', plans, 3).map((p) => p.label)).toEqual(['Grupos de apoio', 'Capacitações', 'Maior suporte à organização']);
-    expect(planPerks('livre', plans, 4).map((p) => p.icon)).toEqual(['calendar-days', 'clipboard-check', 'book-open', 'handshake']);
-    // O catálogo é editável: sem o benefício, ele não aparece; completa com os outros do plano.
-    const trimmed = plans.map((p) => (p.id === 'cuida' ? { ...p, benefits: p.benefits.filter((b) => b !== 'trainings') } : p));
-    expect(planPerks('cuida', trimmed, 4).map((p) => p.label)).toEqual([
-      'Grupos de apoio',
-      'Maior suporte à organização',
-      'Descontos exclusivos do Cartão Nexus',
-      'Acesso ao aplicativo',
+describe('textos de Meu plano (docs/20; UX C18 e B9)', () => {
+  it('os destaques: 4 no herói, 3 no quadro; Cuida e Sustenta começam pelo atendimento e pela terapia de grupo', () => {
+    expect(planPerks('cuida', plans, 4).map((p) => p.label)).toEqual([
+      'Atendimento psicológico individual: 2 sessões por mês',
+      'Terapia de grupo: 2 encontros por mês',
+      'Todas as capacitações do mês',
+      'Maior suporte à organização da rotina',
     ]);
+    expect(planPerks('sustenta', plans, 3).map((p) => p.label)).toEqual([
+      'Atendimento psicológico individual: 4 sessões por mês',
+      'Terapia de grupo: 2 encontros por mês',
+      'Rede credenciada, com benefícios diferenciados',
+    ]);
+    expect(planPerks('essencial', plans, 3).map((p) => p.label)).toEqual([
+      'Organização ampliada da rotina',
+      'Cartão Nexus, com descontos nos parceiros',
+      'Conteúdos abertos e exclusivos',
+    ]);
+  });
+
+  it('o Livre não tem o Cartão como destaque nem em lugar nenhum; nenhum plano cita Zarit', () => {
+    const livre = planLines('livre').map((p) => p.label).join(' ');
+    expect(livre).not.toMatch(/cart[ãa]o/i);
+    expect(livre).toContain('Capacitações avulsas (R$ 40,00 por encontro)');
+    (['livre', 'essencial', 'cuida', 'sustenta'] as const).forEach((id) =>
+      expect(allBenefits(id, plans).join(' ')).not.toMatch(/zarit|pontua|alerta|arbe/i),
+    );
+  });
+
+  it('as linhas de cota do quadro (docs/20)', () => {
+    expect(quotaLines('livre').map((l) => l.value)).toEqual(['Não inclui', 'Não inclui', 'Avulsas, R$ 40,00 por encontro']);
+    expect(quotaLines('essencial').map((l) => l.value)).toEqual(['Não inclui', 'Não inclui', '2 capacitações por mês']);
+    expect(quotaLines('cuida').map((l) => l.value)).toEqual(['2 sessões por mês', '2 encontros por mês', 'Todas as do mês']);
+    expect(quotaLines('sustenta').map((l) => l.value)).toEqual(['4 sessões por mês', '2 encontros por mês', 'Todas as do mês']);
   });
 
   it('o preço em duas partes e a faixa da mudança agendada', () => {
@@ -44,13 +65,6 @@ describe('textos de Meu plano (UX C18 e B9)', () => {
       title: 'Cancelamento agendado',
       text: 'Seu plano volta a ser o Livre em 18/11/2026.',
     });
-  });
-
-  it('cada plano traz só o que é dele além do anterior (Figura 1)', () => {
-    expect(ownBenefits('livre', plans)).toEqual(['Acesso ao aplicativo', 'Organização básica', 'Agenda e lembretes', 'Conteúdos', 'Acesso inicial à rede']);
-    expect(ownBenefits('essencial', plans)).toEqual(['Organização ampliada', 'Descontos exclusivos do Cartão Nexus', 'Conteúdos exclusivos', 'Condições especiais na rede']);
-    expect(ownBenefits('cuida', plans)).toEqual(['Maior suporte à organização', 'Grupos de apoio', 'Capacitações']);
-    expect(ownBenefits('sustenta', plans)).toEqual(['Acompanhamento organizacional mais próximo', 'Maior nível de suporte', 'Benefícios diferenciados na rede']);
   });
 
   it('o preço sai em reais por mês', () => {
@@ -87,8 +101,8 @@ describe('textos de Meu plano (UX C18 e B9)', () => {
     );
     expect(copy.heading).toBe('Mudar para o Essencial no fim do ciclo?');
     expect(copy.lines).toEqual([
-      'Vale no fim do ciclo, em 18/11/2026. Até lá, o Cuida continua, inclusive os grupos.',
-      'Você sai dos grupos que começam depois dessa data: Sobrecarga e autocuidado (03/12). Os grupos em andamento continuam até o fim do ciclo.',
+      'Vale no fim do ciclo, em 18/11/2026. Até lá, o Cuida continua, inclusive a terapia de grupo.',
+      'Você sai das turmas de terapia de grupo que começam depois dessa data: Sobrecarga e autocuidado (03/12). As turmas em andamento continuam até o fim do ciclo.',
       'Se mudar de ideia, é só mudar de plano de novo.',
     ]);
     expect(copy.showNotice).toBe(false);

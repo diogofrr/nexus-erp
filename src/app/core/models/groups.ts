@@ -1,7 +1,11 @@
-import { Audited, ID, ISODateTime } from './primitives';
+import { Audited, Cents, ID, ISODateTime } from './primitives';
 
-export type ActivityKind =
-  'support_group' | 'training' | 'group_therapy' | 'open_conversation_circle';
+/**
+ * Os três tipos de encontro (docs/20-regras-planos-v2.md, "Tipos de atividade"): roda de conversa aberta (todos, inclusive
+ * sem plano), capacitação (todos os cadastrados; incluída conforme o plano, senão avulsa) e terapia de grupo (só Cuida e
+ * Sustenta). O antigo `support_group` virou `group_therapy` e `open_conversation_circle` virou `open_circle` (migração v2).
+ */
+export type ActivityKind = 'open_circle' | 'training' | 'group_therapy';
 export type ActivityStatus = 'draft' | 'open' | 'full' | 'in_progress' | 'finished' | 'cancelled';
 
 /** Temas dos grupos (RN-GRP-05). */
@@ -54,8 +58,9 @@ export interface Activity extends Audited {
   /** Padrão 12 (editável). */
   capacity: number;
   status: ActivityStatus;
-  /** `null` = aberta a todos os planos. */
+  /** `cuida` na terapia de grupo (Cuida e Sustenta); `null` = aberta a todos (roda aberta e capacitação). */
   minPlan: 'cuida' | null;
+  /** Compatibilidade: a terapia de grupo não exige mais indicação do psicólogo (docs/20). Sempre `false` nos dados novos. */
   requiresEligibility: boolean;
   confidentialityText: string;
 }
@@ -74,6 +79,13 @@ export interface ActivityEnrollment extends Audited {
   waitlistPosition?: number;
   /** Aceite do contrato de sigilo, com data e hora (RN-GRP-09). */
   confidentialityAcceptedAt?: ISODateTime;
+  /** Compatibilidade (RN-GRP-14 antiga): marcação do psicólogo do caso; não é mais exigida. */
   eligibleForGroupTherapy?: boolean;
+  /** A inscrição consome a cota mensal do plano (terapia de grupo e capacitação incluída). Roda aberta nunca. */
+  includedInPlan?: boolean;
+  /** Avulsa: paga por encontro (pagamento simulado). */
+  paid?: boolean;
+  /** Valor da inscrição avulsa (0 quando incluída ou roda aberta). */
+  priceCents?: Cents;
   attendance: ActivityAttendance[];
 }

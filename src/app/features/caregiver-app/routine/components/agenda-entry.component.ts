@@ -1,18 +1,20 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ID } from '../../../../core/models';
 import { IconComponent } from '../../../../shared/ui/display/icon.component';
+import { CgEventBadgeComponent } from '../../ui/cg-event-badge.component';
 import { CgRowComponent } from '../../ui/cg-row.component';
 import { AgendaEntry } from '../state/agenda-entry';
 
 /**
  * Uma linha da Agenda (UX C5), a mesma no calendário (os compromissos do dia escolhido) e na lista: hora e título, o
- * apoio ("onde ou com quem") e, no fim, a etiqueta "Já passou" (compromisso de hoje cuja hora passou) ou "Para você"
- * (a conversa do próprio cuidador com o psicólogo, que leva a Conversar com um psicólogo). Tocar num compromisso
- * pede o detalhe (`open`). Com `plain`, é só texto: os dias que já passaram não se mexem.
+ * apoio ("onde ou com quem") e, no fim, a etiqueta "Já passou" (compromisso de hoje cuja hora passou), "Para você"
+ * (a conversa do próprio cuidador com o psicólogo, que leva a Conversar com um psicólogo) ou o selo do tipo do encontro
+ * em que a pessoa está inscrita (que leva a Encontros). Tocar num compromisso pede o detalhe (`open`). Com `plain`, é
+ * só texto: os dias que já passaram não se mexem.
  */
 @Component({
   selector: 'app-agenda-entry',
-  imports: [CgRowComponent, IconComponent],
+  imports: [CgEventBadgeComponent, CgRowComponent, IconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .routine-late {
@@ -48,9 +50,14 @@ import { AgendaEntry } from '../state/agenda-entry';
       <app-cg-row
         [title]="entry().time + ' ' + entry().title"
         [icon]="entry().icon"
-        link="/cuidador/cuidar-de-mim/atendimento"
+        [link]="entry().link ?? '/cuidador/cuidar-de-mim/atendimento'"
+        [linkQuery]="entry().linkQuery"
       >
-        <span cgRowEnd class="cg-tag">Para você</span>
+        @if (entry().eventType; as type) {
+          <app-cg-event-badge cgRowEnd [type]="type" size="sm" />
+        } @else {
+          <span cgRowEnd class="cg-tag">Para você</span>
+        }
       </app-cg-row>
     } @else {
       <app-cg-row

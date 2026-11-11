@@ -68,10 +68,10 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
     });
   });
 
-  describe('A porta de Cuidar de mim (C7)', () => {
-    it('AC-CG-72: exatamente 4 cartões, na ordem, cada um na rota certa, numa grade que vira 2 x 2 em tela larga', async () => {
-      // Maria não tem conversa marcada no seed: o cartão de conversa fala do primeiro passo.
-      await boot('cg_0002', '/cuidador/cuidar-de-mim');
+  describe('A porta de Cuidar de mim (C7, docs/20 regras de exibição 1 e 4)', () => {
+    it('AC-CG-72: para Cuida e Sustenta, 4 ladrilhos na ordem, cada um na rota certa, numa grade de ladrilhos da mesma altura', async () => {
+      // Rita (Cuida) não tem conversa marcada no seed: o ladrilho da conversa fala do primeiro passo.
+      await boot('cg_0008', '/cuidador/cuidar-de-mim');
       expect(text(q('main h1'))).toBe('Cuidar de mim');
       expect(text(q('.cg-page-header__desc'))).toBe('Um tempo para você, no seu ritmo.');
       const cards = all('[data-role="care-cards"] a.cg-card--link');
@@ -79,7 +79,7 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(cards.map((c) => text(c.querySelector('.cg-card__title')))).toEqual([
         'Conversar com um psicólogo',
         'Como estou',
-        'Grupos e capacitações',
+        'Encontros',
         'Conteúdos',
       ]);
       expect(cards.map((c) => c.getAttribute('href'))).toEqual([
@@ -88,43 +88,62 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
         '/cuidador/cuidar-de-mim/grupos',
         '/cuidador/cuidar-de-mim/conteudos',
       ]);
-      expect(q('[data-role="care-cards"]')?.classList.contains('cg-grid')).toBe(true);
+      const grid = q('[data-role="care-cards"]');
+      expect(grid?.classList.contains('cg-tiles')).toBe(true);
+      expect(grid?.classList.contains('cg-equal')).toBe(true);
+      expect(grid?.classList.contains('cg-tiles--3')).toBe(false);
       expect(text(q('[data-role="care-conversation"]'))).toBe('Escolha o formato e o horário.');
       expect(text(q('[data-role="care-wellbeing"]'))).toBe('Veja como o seu cansaço tem andado e conte como você está.');
       expect(text(q('[data-role="care-content"]'))).toBe('Leituras curtas sobre cuidar e sobre cuidar de você.');
-      expect(text(q('main'))).toContain('Em emergência, ligue 192 (SAMU).');
+      // A porta é só herói e ladrilhos: o aviso de emergência fica em Ajuda agora, Conversar e Como estou.
+      expect(text(q('main'))).not.toContain('Em emergência, ligue 192 (SAMU).');
+      expect(all('main app-cg-note, main .cg-stack > p')).toHaveLength(0);
     });
 
-    it('AC-CG-73: para qualquer pessoa e plano os 4 cartões estão lá, sem cadeado, preço, selo de plano nem número', async () => {
-      for (const id of ['cg_0001', 'cg_0002', 'cg_0003', 'cg_0027', 'cg_0024', 'cg_0016', 'cg_0026']) {
+    it('AC-CG-72: para Livre e Essencial, 3 ladrilhos (sem "Conversar com um psicólogo"), numa linha só em tela larga', async () => {
+      for (const id of ['cg_0003', 'cg_0004', 'cg_0002', 'cg_0016', 'cg_0026', 'cg_0012']) {
         await boot(id, '/cuidador/cuidar-de-mim');
-        expect(all('[data-role="care-cards"] a.cg-card--link'), id).toHaveLength(4);
-        const cards = text(q('[data-role="care-cards"]'));
-        expect(all('.cg-plan-lock, svg[data-icon="lock"], .cg-plan-tag')).toHaveLength(0);
-        expect(/R\$|plano|Plano|\d+ pontos/.test(cards), id).toBe(false);
+        const cards = all('[data-role="care-cards"] a.cg-card--link');
+        expect(cards.map((c) => text(c.querySelector('.cg-card__title'))), id).toEqual(['Como estou', 'Encontros', 'Conteúdos']);
+        expect(q('[data-role="care-cards"]')?.classList.contains('cg-tiles--3'), id).toBe(true);
+        expect(text(q('main')), id).not.toMatch(/psicólogo|Disponível no plano|a partir do plano|Ver os planos/);
         TestBed.resetTestingModule();
       }
     });
 
-    it('AC-CG-74: com uma conversa marcada o cartão 1 diz o dia e a hora; sem autorização de saúde o cartão 2 diz "Acompanhamento pausado."', async () => {
-      // Raimunda tem uma conversa confirmada para sex, 06/11, às 14:00 no seed.
-      await boot('cg_0018', '/cuidador/cuidar-de-mim');
-      expect(text(q('[data-role="care-conversation"]'))).toBe('Você tem uma conversa marcada: sex, 06/11, às 14:00.');
+    it('AC-CG-73: para qualquer pessoa e plano, nenhum ladrilho tem cadeado, preço, selo de plano ou número', async () => {
+      for (const id of ['cg_0001', 'cg_0002', 'cg_0003', 'cg_0027', 'cg_0024', 'cg_0016', 'cg_0026']) {
+        await boot(id, '/cuidador/cuidar-de-mim');
+        const count = all('[data-role="care-cards"] a.cg-card--link').length;
+        expect([3, 4], id).toContain(count);
+        const cards = text(q('[data-role="care-cards"]'));
+        expect(all('.cg-plan-lock, app-cg-plan-lock, svg[data-icon="lock"], .cg-plan-tag')).toHaveLength(0);
+        expect(/R\$|plano|Plano|\d+ pontos|premium/i.test(cards), id).toBe(false);
+        TestBed.resetTestingModule();
+      }
+    });
+
+    it('AC-CG-74: com uma conversa marcada o ladrilho da conversa diz o dia e a hora; sem autorização de saúde o de Como estou diz "Acompanhamento pausado."', async () => {
+      // Lourdes (Sustenta) tem uma conversa confirmada para sex, 06/11, no seed.
+      await boot('cg_0024', '/cuidador/cuidar-de-mim');
+      expect(text(q('[data-role="care-conversation"]'))).toMatch(/^Você tem uma conversa marcada: sex, 06\/11, às \d{2}:\d{2}\.$/);
       TestBed.resetTestingModule();
       await boot('cg_0016', '/cuidador/cuidar-de-mim');
       expect(text(q('[data-role="care-wellbeing"]'))).toBe('Acompanhamento pausado.');
-      expect(text(q('[data-role="care-conversation"]'))).toBe('Escolha o formato e o horário.');
+      expect(q('[data-role="care-conversation"]')).toBeNull();
     });
 
-    it('AC-CG-75: quem está na lista de espera lê "Você está na lista de espera de 1 grupo."; nenhum cartão mostra pontuação, faixa ou alerta', async () => {
+    it('AC-CG-75: quem está na lista de espera lê "Você está na lista de espera de 1 encontro."; nenhum ladrilho mostra pontuação, faixa ou alerta', async () => {
       await boot('cg_0024', '/cuidador/cuidar-de-mim');
-      expect(text(q('[data-role="care-groups"]'))).toBe('Você está na lista de espera de 1 grupo.');
+      expect(text(q('[data-role="care-groups"]'))).toMatch(/na lista de espera de 1 encontro.$/);
       const cards = text(q('[data-role="care-cards"]')).toLowerCase();
       ['pontos', 'sobrecarga', 'alerta', 'faixa'].forEach((w) => expect(cards.includes(w)).toBe(false));
       TestBed.resetTestingModule();
       // Maria (Essencial): a frase padrão, sem cadeado.
       await boot('cg_0002', '/cuidador/cuidar-de-mim');
-      expect(text(q('[data-role="care-groups"]'))).toBe('Encontros com outras pessoas que cuidam e aulas práticas.');
+      app.db.activityEnrollments.removeWhere((e) => e.caregiverId === 'cg_0002');
+      await settleCaregiver(app.fixture);
+      expect(text(q('[data-role="care-groups"]'))).toBe('Rodas de conversa, capacitações e grupos com quem também cuida.');
       expect(all('.cg-plan-lock')).toHaveLength(0);
     });
 
@@ -140,18 +159,18 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(card).toContain('Confirmada');
     });
 
-    it('quem está em grupos lê quantos são (Ana)', async () => {
+    it('quem está em encontros lê quantos são (Ana)', async () => {
       await boot('cg_0001', '/cuidador/cuidar-de-mim');
       const live = new Set(app.db.activities.query((a) => ['open', 'full', 'in_progress'].includes(a.status)).map((a) => a.id));
       const enrolled = app.db.activityEnrollments.query((e) => e.caregiverId === 'cg_0001' && e.status === 'enrolled' && live.has(e.activityId)).length;
       expect(enrolled).toBeGreaterThan(0);
-      expect(text(q('[data-role="care-groups"]'))).toBe(enrolled === 1 ? 'Você está em 1 grupo.' : `Você está em ${enrolled} grupos.`);
+      expect(text(q('[data-role="care-groups"]'))).toBe(enrolled === 1 ? 'Você está em 1 encontro.' : `Você está em ${enrolled} encontros.`);
     });
   });
 
   describe('Conversar com um psicólogo (C8)', () => {
-    it('AC-CG-76: sem nenhuma conversa mostra o vazio acolhedor com "Marcar uma conversa" e o aviso de emergência', async () => {
-      await boot('cg_0002');
+    it('AC-CG-76: sem nenhuma conversa mostra o vazio acolhedor com "Marcar uma conversa" e o aviso de emergência (Rita, Cuida)', async () => {
+      await boot('cg_0008');
       expect(text(q('main h1'))).toBe('Conversar com um psicólogo');
       expect(text(q('.cg-page-header__desc'))).toBe('As conversas são com psicólogos da Nexus, com registro no conselho de Psicologia.');
       expect(text(q('main'))).toContain('Você ainda não marcou nenhuma conversa');
@@ -160,14 +179,14 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
     });
 
     it('AC-CG-76: havendo conversa futura, o cartão "Sua próxima conversa" vem antes do botão, com dia, hora, quem e a situação', async () => {
-      await boot('cg_0018');
+      await boot('cg_0024');
       const card = q('[data-role="next-conversation"]');
       const start = q('[data-role="start-booking"]');
       expect(card).not.toBeNull();
       expect(card!.compareDocumentPosition(start!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(text(q('main'))).toContain('Sua próxima conversa');
       expect(text(card)).toContain('sex, 06/11, às 14:00');
-      expect(text(card)).toContain('Orientação psicológica');
+      expect(text(card)).toContain('Psicoterapia');
       expect(text(card)).toContain('No espaço de coworking');
       expect(text(q('[data-role="next-status"]'))).toBe('Confirmada');
     });
@@ -226,7 +245,8 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(body).toContain('Como: On-line.');
       expect(body).toContain('O que você procura?');
       expect(body).toContain('O psicólogo confirma se o formato on-line serve para você. Se não servir, combina outro formato.');
-      expect(body).toContain('O pagamento é combinado direto no atendimento. No protótipo não há cobrança.');
+      expect(text(q('[data-role="summary-included"]'))).toBe('Incluída no seu plano (2 de 2 neste mês).');
+      expect(text(q('[data-role="summary-total"]'))).toBe('Total: R$ 0,00.');
       expect(all<HTMLInputElement>('app-cg-sheet .cg-choice__input').some((i) => i.checked)).toBe(false);
       expect(all('app-cg-sheet .cg-choice__label').map(text)).toEqual(['Psicoterapia', 'Orientação psicológica', 'Não sei']);
       await click(q('[data-role="confirm-booking"]'));
@@ -235,25 +255,39 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(isOpen('Confirme a conversa')).toBe(true);
     });
 
-    it('AC-CG-79: o Livre vê só "Total: R$ 120,00"; o Cuida vê o desconto de 15% e R$ 102,00; o Essencial 10%; o Sustenta 20%', async () => {
-      const expected: [string, string | null, string][] = [
-        ['cg_0003', null, 'Total: R$ 120,00.'],
-        ['cg_0001', 'Desconto do plano Cuida (15%): menos R$ 18,00.', 'Total: R$ 102,00.'],
-        ['cg_0002', 'Desconto do plano Essencial (10%): menos R$ 12,00.', 'Total: R$ 108,00.'],
-        ['cg_0027', 'Desconto do plano Sustenta (20%): menos R$ 24,00.', 'Total: R$ 96,00.'],
-      ];
-      for (const [id, discount, total] of expected) {
+    it('AC-CG-79 (docs/20): dentro da cota a conversa é incluída (R$ 0,00); além dela, avulsa com o valor e o aviso', async () => {
+      await boot('cg_0001');
+      expect(text(q('[data-role="quota"]'))).toBe('Neste mês: 1 de 2 sessões usadas');
+      await goToSummary();
+      expect(text(q('[data-role="summary-included"]'))).toBe('Incluída no seu plano (2 de 2 neste mês).');
+      expect(text(sheet('Confirme a conversa'))).not.toMatch(/desconto/i);
+      TestBed.resetTestingModule();
+      // Ana com as 2 do mês usadas: a próxima de novembro é avulsa.
+      await boot('cg_0001');
+      const booking = TestBed.inject(SessionBookingService);
+      const extra = booking.freeSlots('psy_0002', true).find((s) => s.date.startsWith('2026-11'))!;
+      app.db.careSessions.create({
+        caregiverId: 'cg_0001', psychologistId: extra.psychologistId, slotId: extra.id, startAt: booking.startOf(extra),
+        durationMin: 60, modality: 'online', kind: 'guidance', status: 'scheduled', priceCents: 0, discountPercent: 0, includedInPlan: true,
+      });
+      app.db.availabilitySlots.update(extra.id, { status: 'booked' });
+      await flush();
+      expect(text(q('[data-role="quota"]'))).toBe('Neste mês: 2 de 2 sessões usadas');
+      await goToSummary();
+      const slotDate = q('[data-role="summary-when"]')?.textContent ?? '';
+      if (/\/11/.test(slotDate)) {
+        expect(text(q('[data-role="summary-quota"]'))).toBe('Você já usou as 2 sessões do mês incluídas no plano. Esta conversa é avulsa: R$ 120,00.');
+        expect(text(q('[data-role="summary-total"]'))).toBe('Total: R$ 120,00.');
+        expect(text(sheet('Confirme a conversa'))).toContain('O pagamento é combinado direto no atendimento. No protótipo não há cobrança.');
+      }
+    });
+
+    it('docs/20 e decisão do líder: no Livre e no Essencial a rota /atendimento redireciona para a porta de Cuidar de mim', async () => {
+      for (const id of ['cg_0003', 'cg_0016', 'cg_0002']) {
         await boot(id);
-        await goToSummary();
-        expect(text(q('[data-role="summary-total"]')), id).toBe(total);
-        if (discount) {
-          expect(text(q('[data-role="summary-discount"]')), id).toBe(discount);
-          expect(text(q('[data-role="summary-price"]'))).toContain('Conversa de 1 hora: R$ 120,00.');
-        } else {
-          expect(q('[data-role="summary-discount"]')).toBeNull();
-          expect(text(q('[data-role="summary-price"]'))).not.toContain('Desconto');
-          expect(text(sheet('Confirme a conversa'))).not.toMatch(/plano/i);
-        }
+        expect(app.router.url, id).toBe('/cuidador/cuidar-de-mim');
+        expect(text(q('main h1'))).toBe('Cuidar de mim');
+        expect(q('[data-role="start-booking"]')).toBeNull();
         TestBed.resetTestingModule();
       }
     });
@@ -274,8 +308,9 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
         modality: 'online',
         kind: 'psychotherapy',
         status: 'scheduled',
-        priceCents: 10200,
-        discountPercent: 15,
+        priceCents: 0,
+        discountPercent: 0,
+        includedInPlan: true,
         durationMin: 60,
       });
       expect(created.startAt.startsWith(slot.date)).toBe(true);
@@ -391,8 +426,8 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
     });
 
     it('AC-CG-82 e 83: cancelar a 24 horas ou mais diz que libera o horário sem custo, com Remarcar em vez de cancelar e Voltar; ao confirmar, a vaga volta a abrir', async () => {
-      await boot('cg_0018');
-      const session = app.db.careSessions.find((s) => s.caregiverId === 'cg_0018' && s.status === 'confirmed')!;
+      await boot('cg_0024');
+      const session = app.db.careSessions.find((s) => s.caregiverId === 'cg_0024' && s.status === 'confirmed')!;
       await click(q('[data-role="next-conversation"]')?.closest('app-cg-card')?.querySelector('button'));
       expect(isOpen('Sua conversa')).toBe(true);
       await click(q('[data-role="cancel"]'));
@@ -410,10 +445,10 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
     });
 
     it('AC-CG-82 e CXC-006: a menos de 24 horas a folha diz o efeito (a conversa conta como perdida, sem cobrança), sem "Remarcar em vez de cancelar"', async () => {
-      await boot('cg_0018');
+      await boot('cg_0024');
       app.clock.setSimulated('2026-11-06', '08:00');
       await flush();
-      const session = app.db.careSessions.find((s) => s.caregiverId === 'cg_0018' && s.status === 'confirmed')!;
+      const session = app.db.careSessions.find((s) => s.caregiverId === 'cg_0024' && s.status === 'confirmed')!;
       await click(q('[data-role="next-conversation"]')?.closest('app-cg-card')?.querySelector('button'));
       await click(q('[data-role="cancel"]'));
       expect(text(q('[data-role="cancel-effect"]'))).toBe('Faltam menos de 24 horas. Se cancelar agora, a conversa conta como perdida. Não há cobrança.');
@@ -426,8 +461,8 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
     });
 
     it('"Voltar" na folha de cancelar não muda nada', async () => {
-      await boot('cg_0018');
-      const session = app.db.careSessions.find((s) => s.caregiverId === 'cg_0018' && s.status === 'confirmed')!;
+      await boot('cg_0024');
+      const session = app.db.careSessions.find((s) => s.caregiverId === 'cg_0024' && s.status === 'confirmed')!;
       await click(q('[data-role="next-conversation"]')?.closest('app-cg-card')?.querySelector('button'));
       await click(q('[data-role="cancel"]'));
       await click(button('Voltar', sheet('Cancelar a conversa?')));
@@ -436,12 +471,12 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
     });
 
     it('AC-CG-83: remarcar escolhe o horário novo e só então libera o antigo; a conversa muda de horário', async () => {
-      await boot('cg_0018');
-      const old = app.db.careSessions.find((s) => s.caregiverId === 'cg_0018' && s.status === 'confirmed')!;
+      await boot('cg_0024');
+      const old = app.db.careSessions.find((s) => s.caregiverId === 'cg_0024' && s.status === 'confirmed')!;
       await click(q('[data-role="next-conversation"]')?.closest('app-cg-card')?.querySelector('button'));
       await click(q('[data-role="reschedule"]'));
       expect(text(q('[data-step-heading]'))).toBe('Qual horário?');
-      // O formato (coworking) e o tipo (orientação) ficam como estavam.
+      // O formato (coworking) e o tipo (psicoterapia) ficam como estavam.
       expect(text(q('[data-role="room"]'))).toContain('Sala');
       await click(all('[data-role="slot"]')[0]);
       expect(isOpen('Confirme o novo horário')).toBe(true);
@@ -450,14 +485,14 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(app.db.availabilitySlots.get(old.slotId)?.status).toBe('booked');
       await click(button('Salvar novo horário'));
       const created = app.db.careSessions.all().at(-1)!;
-      expect(created).toMatchObject({ caregiverId: 'cg_0018', status: 'scheduled', kind: 'guidance', modality: 'in_person_coworking' });
+      expect(created).toMatchObject({ caregiverId: 'cg_0024', status: 'scheduled', kind: 'psychotherapy', modality: 'in_person_coworking' });
       expect(app.db.careSessions.require(old.id)).toMatchObject({ status: 'cancelled_by_user', rescheduledToId: created.id });
       expect(app.db.availabilitySlots.get(old.slotId)?.status).toBe('open');
       expect(text(q('[data-role="confirmation"]'))).toBe('Pedido enviado. O psicólogo confirma até 24 horas antes da conversa.');
     });
 
     it('remarcar a menos de 24 horas avisa antes que a conversa atual conta como perdida (CXC-006)', async () => {
-      await boot('cg_0018');
+      await boot('cg_0024');
       app.clock.setSimulated('2026-11-06', '09:00');
       await flush();
       await click(q('[data-role="next-conversation"]')?.closest('app-cg-card')?.querySelector('button'));
@@ -485,21 +520,19 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       const slots = all<HTMLButtonElement>('[data-role="slot"]');
       expect(new Set(slots.map((b) => b.className)).size).toBe(1);
       expect(slots.every((b) => b.getAttribute('title') === null && b.getAttribute('aria-describedby') === null)).toBe(true);
-      // O Livre sem acompanhamento prioritário (Marlene) vê menos horários e também sem etiqueta.
-      const rita = all('[data-role="slot"]').length;
-      TestBed.resetTestingModule();
-      await boot('cg_0004');
-      await click(q('[data-role="start-booking"]'));
-      await click(all('[data-role="formats"] .cg-row')[0]);
-      expect(all('[data-role="slot"]').length).toBeLessThan(rita);
+      // Quem não tem o direito (sem prioridade de agenda) veria menos horários, e também sem etiqueta.
+      expect(booking.freeSlots(withPriority[0]!.psychologistId, false).some((s) => s.id === withPriority[0]!.id)).toBe(false);
     });
 
-    it('quem retirou a autorização de saúde marca a conversa normalmente (Sônia): a agenda não depende dela', async () => {
-      await boot('cg_0016');
+    it('quem retirou a autorização de saúde marca a conversa normalmente: a agenda não depende dela (Lourdes sem o consentimento)', async () => {
+      await boot('cg_0024');
+      const consent = app.db.consents.find((c) => c.caregiverId === 'cg_0024' && c.key === 'health_data');
+      app.db.consents.update(consent?.id ?? '', { status: 'revoked' });
+      await flush();
       await goToSummary();
       await chooseKind('Psicoterapia');
       await click(q('[data-role="confirm-booking"]'));
-      expect(app.db.careSessions.all().at(-1)).toMatchObject({ caregiverId: 'cg_0016', status: 'scheduled' });
+      expect(app.db.careSessions.all().at(-1)).toMatchObject({ caregiverId: 'cg_0024', status: 'scheduled' });
     });
 
     it('AC-CG-86: a tela inteira não mostra pontuação, faixa, alerta nem a palavra paciente, nem travessão ou exclamação', async () => {

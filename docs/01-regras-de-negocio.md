@@ -50,6 +50,8 @@ Total: **384 regras**. Anexos: A (tabelas numéricas), B (inconsistências), C (
 
 ## 1. PLN: planos e assinatura
 
+> **Regras de plano v2 (11/11/2026).** RN-PLN-04 a 11 foram substituídas: cada plano tem cotas mensais que não acumulam (atendimento individual 0, 0, 2 e 4 sessões; terapia de grupo 0, 0, 2 e 2 encontros; capacitações nenhuma, 2, todas e todas); o Cartão, os conteúdos exclusivos e as condições na rede são do Essencial em diante. O aviso da RN-PLN-22 passou a ser "A mensalidade não inclui os serviços da rede." (o atendimento psicológico agora entra no Cuida e no Sustenta). RN-PLN-19 continua: nada de Zarit vira convite de plano. Onde esta seção conflitar com `docs/20-regras-planos-v2.md`, vale o docs/20. Implementação e decisões em `docs/21-regras-v2-dev.md`.
+
 - **RN-PLN-01** `[doc §4.4.1, Fig.1]` Existem quatro planos: **Nexus Livre** (R$ 0,00, gratuito), **Nexus Essencial** (R$ 49,90 por mês), **Nexus Cuida** (R$ 119,90 por mês) e **Nexus Sustenta** (R$ 149,90 por mês). Os preços são os da Figura 1 e do texto 4.4.3. Não existe plano "Integral" (ver Anexo B, I-07).
 - **RN-PLN-02** `[doc §4.4.1, 6.3]` O plano gratuito é a porta de entrada e é permanente: qualquer família o usa sem custo, sem prazo e sem exigir cartão. Ele é mantido mesmo quando o cuidador não pode custear acompanhamento (ver RN-ENC-08).
 - **RN-PLN-03** `[doc §4.4.1, Fig.1]` Os benefícios são progressivos: cada plano pago inclui "tudo do plano anterior, mais" os itens próprios. Ordem de progressão: Livre, Essencial, Cuida, Sustenta.
@@ -113,6 +115,8 @@ Total: **384 regras**. Anexos: A (tabelas numéricas), B (inconsistências), C (
 
 ## 4. ATD: atendimento psicológico
 
+> **Regras de plano v2 (11/11/2026).** RN-ATD-03 a 05 foram substituídas: só Cuida e Sustenta agendam atendimento individual; dentro da cota do mês a sessão custa R$ 0,00 e, além dela, é avulsa (R$ 120,00); o desconto por plano deixou de existir. Cancelar com menos de 24 h consome a cota (RN-ATD-16). O contato do alerta vermelho e o POP-05 continuam para todos os planos. Onde esta seção conflitar com `docs/20-regras-planos-v2.md`, vale o docs/20. Implementação e decisões em `docs/21-regras-v2-dev.md`.
+
 - **RN-ATD-01** `[doc §4.1, §4.4]` O atendimento psicológico é realizado pelos **psicólogos da própria Nexus**, não pela rede credenciada. Os demais serviços são da rede.
 - **RN-ATD-02** `[doc §4.1, §4.4.1]` Modalidades: **on-line** ou **presencial**. O presencial ocorre **em domicílio** ou **nas salas do espaço de coworking**. Matriz: online (sem local), presencial_coworking (sala), presencial_domicílio (endereço do cuidador).
 - **RN-ATD-03** `[doc §4.4.1, §4.5.1]` O agendamento é feito pelo aplicativo. A etapa "agenda psicólogo ou consulta a rede" (Fig.2, etapa 6) está na fase "atendimento psicológico e rede", disponível a todos os planos.
@@ -135,6 +139,8 @@ Total: **384 regras**. Anexos: A (tabelas numéricas), B (inconsistências), C (
 - **RN-ATD-20** `[doc §6.4]` Nenhuma decisão técnica do atendimento (frequência, duração, encaminhamento) usa critério comercial, nem o plano do cuidador como motivo de recusa de atendimento ou de priorização clínica (a prioridade de agenda do RN-ATD-05 é só de disponibilidade de vaga, nunca de decisão clínica).
 
 ## 5. GRP: grupos de apoio e capacitações
+
+> **Regras de plano v2 (11/11/2026).** RN-GRP-01 a 03 foram substituídas: só existem três tipos de encontro, roda de conversa aberta (todos, inclusive sem cadastro, sem cota), capacitação (todos os cadastrados; incluída conforme o plano, senão avulsa a R$ 40,00 o encontro) e terapia de grupo (só Cuida e Sustenta, 2 encontros por mês na cota, avulsa a R$ 60,00 além dela). O antigo grupo de apoio virou terapia de grupo. A indicação do psicólogo (RN-GRP-14) deixou de ser exigida; marcá-la continua possível. RN-GRP-17 continua: rebaixar de plano mantém o já inscrito no ciclo pago. Onde esta seção conflitar com `docs/20-regras-planos-v2.md`, vale o docs/20. Implementação e decisões em `docs/21-regras-v2-dev.md`.
 
 - **RN-GRP-01** `[doc §4.3.4, §6.4]` Tipos de atividade: **grupo de apoio** (orientação e psicoeducação), **capacitação** (orientação e psicoeducação aplicada), **terapia de grupo** (psicoterapia, "quando oferecida"), e **roda de conversa aberta** à comunidade.
 - **RN-GRP-02** `[doc Fig.1, §4.5.1, Q.8, Apêndice A]` Acesso a grupos de apoio e capacitações: planos **Cuida e Sustenta**. Livre e Essencial não se inscrevem.
@@ -597,6 +603,8 @@ Fontes de capital: aporte dos sócios de cerca de R$ 26.500,00 (R$ 17.200,00 de 
 Anual: R$ 2.355,00 × 12 = R$ 28.260,00. Despesas anuais do site: manutenção R$ 400,00 por ano; hospedagem Locaweb anual, valor a confirmar (não incluída). Gasto recorrente conhecido: R$ 28.660,00 por ano.
 
 ## A.5 Faixas da Escala de Zarit e conduta da equipe
+
+> **Regras de plano v2.** Nas faixas 21 a 60 a conduta depende do plano (`zaritConductFor` em `core/rules/zarit.ts`): Livre e Essencial, conteúdos, rodas abertas, capacitações e encaminhamento à rede pública ou a clínicas-escola; Cuida e Sustenta, oferta de atendimento psicológico e convite para a terapia de grupo. O alerta vermelho é igual para todos. Nenhum texto sugere troca de plano.
 
 | Pontuação | Classificação | Conduta da equipe |
 |---|---|---|

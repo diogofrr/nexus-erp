@@ -383,9 +383,9 @@ describe('QAC varredura: minimização de dados (RN-LGPD-08) e planos na rede', 
     expect(text).not.toContain('Condições especiais: a partir do plano Essencial.');
   });
 
-  it('o bloqueio por plano é idêntico para duas pessoas do mesmo plano, com alertas diferentes (Maria x Terezinha, Essencial)', async () => {
+  it('a tela de um encontro é idêntica para duas pessoas do mesmo plano, com alertas diferentes (Maria x Terezinha, Essencial; docs/20)', async () => {
     const lock = async (id: string): Promise<string> => {
-      const app = await bootCaregiverApp(id, { url: '/cuidador/cuidar-de-mim/grupos?atividade=act_0002' });
+      const app = await bootCaregiverApp(id, { url: '/cuidador/cuidar-de-mim/grupos?atividade=act_0004' });
       const text = norm(app.root.querySelector('main')?.textContent);
       TestBed.resetTestingModule();
       return text;

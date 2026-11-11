@@ -127,7 +127,7 @@ interface ParticipantRow {
           <dl class="dl">
             <dt>Tema</dt><dd>{{ themeText() }}</dd>
             <dt>Modalidade</dt><dd>{{ modeText() }}</dd>
-            <dt>Quem pode participar</dt><dd data-role="min-plan">{{ a.minPlan ? 'A partir do plano Cuida' : 'Todos os planos' }}</dd>
+            <dt>Quem pode participar</dt><dd data-role="min-plan">{{ a.minPlan ? 'Planos Cuida e Sustenta' : a.kind === 'training' ? 'Todos os planos (incluída conforme o plano, senão avulsa)' : 'Todos, inclusive sem cadastro' }}</dd>
             <dt>Vagas</dt><dd>{{ a.capacity }}</dd>
             @if (a.partnerOrg) {
               <dt>Em parceria com</dt><dd>{{ a.partnerOrg }}</dd>
@@ -266,7 +266,7 @@ export class ActivityDetailPageComponent {
 
   protected readonly activity = computed(() => this.db.activities.get(this.params().get('id') ?? ''));
   protected readonly status = computed(() => ACTIVITY_STATUS_VIEW[this.activity()?.status ?? 'draft']);
-  protected readonly kindText = computed(() => KIND_LABELS[this.activity()?.kind ?? 'support_group']);
+  protected readonly kindText = computed(() => KIND_LABELS[this.activity()?.kind ?? 'group_therapy']);
   protected readonly characterText = computed(() => CHARACTER_LABELS[this.activity()?.character ?? 'guidance']);
   protected readonly themeText = computed(() => THEME_LABELS[this.activity()?.theme ?? 'self_care']);
   protected readonly modeText = computed(() => {
@@ -346,7 +346,7 @@ export class ActivityDetailPageComponent {
       enrollment,
       name,
       code: caregiver?.code ?? '',
-      plan: caregiver ? PLAN_NAMES[planIdOfCaregiver(this.db, caregiver.id)] : 'Roda aberta',
+      plan: caregiver ? `${PLAN_NAMES[planIdOfCaregiver(this.db, caregiver.id)]}${enrollmentPlanNote(enrollment)}` : 'Roda aberta',
     };
   }
 
@@ -494,4 +494,12 @@ export class ActivityDetailPageComponent {
         : { message: result.errors[0]?.message ?? 'Não foi possível encerrar.', tone: 'danger' },
     );
   }
+}
+
+/** ", incluída no plano" ou ", avulsa" na coluna Plano (docs/20); a roda aberta não leva nota. */
+function enrollmentPlanNote(enrollment: ActivityEnrollment): string {
+  if (enrollment.paid) {
+    return ', avulsa';
+  }
+  return enrollment.includedInPlan ? ', incluída no plano' : '';
 }

@@ -15,6 +15,7 @@ import {
   Plan,
   PlanId,
   Subscription,
+  YearMonth,
 } from '../../../core/models';
 import { ConsentService } from '../../../core/privacy/consent.service';
 import { DEFAULT_PLANS } from '../../../core/rules/plans';
@@ -27,6 +28,13 @@ import {
   featureAccess,
   planShortName,
 } from '../../../core/rules/plan-features';
+import {
+  QuotaUsage,
+  groupTherapyQuota,
+  individualSessionQuota,
+  monthOf,
+  trainingQuota,
+} from '../../../core/rules/plan-quotas';
 import { FontScale, FontScaleService } from './font-scale.service';
 import { firstNameOf } from './people-format';
 
@@ -40,6 +48,18 @@ export interface CaregiverConsentView {
   consent?: Consent;
 }
 
+/** As cotas do mês de hoje (docs/20): o que o plano dá, o que já foi usado e o que resta. */
+export interface CaregiverQuotas {
+  /** O mês de hoje, `YYYY-MM`, pelo `Clock`. */
+  month: YearMonth;
+  /** Sessões de atendimento individual (Cuida 2, Sustenta 4). */
+  individualSessions: QuotaUsage;
+  /** Encontros de terapia de grupo (Cuida e Sustenta, 2). */
+  groupTherapy: QuotaUsage;
+  /** Encontros de capacitação incluídos (Essencial 2; Cuida e Sustenta todos). */
+  trainings: QuotaUsage;
+}
+
 /**
  * O cuidador atual e tudo o que as telas do aplicativo precisam saber dele, em signals: o cadastro, a pessoa
  * idosa, a assinatura e o plano, os consentimentos, o canal preferido, o tamanho da letra e "hoje" (do `Clock`).
@@ -47,8 +67,10 @@ export interface CaregiverConsentView {
  *
  * - Fora de uma sessão de cuidador (cadastro de quem é novo, Ajuda agora) os signals valem `null` e o plano vale
  *   `livre`; dentro do shell com sessão, `caregiver()` nunca é `null`.
- * - **Acesso por plano**: `canUse('groups')` e `access('groups')` usam `core/rules/plan-features.ts` (que usa
- *   `plans.ts`). A tela não decide plano por conta própria.
+ * - **Acesso por plano** (docs/20): `canUse('group_therapy')`, `canUse('individual_session')`, `canUse('training_included')`,
+ *   `canUse('card')`... usam `core/rules/plan-features.ts` (que lê a tabela de cotas). `quotas()` traz a cota do mês de
+ *   hoje (usada e restante). A tela não decide plano por conta própria e NÃO anuncia o que o plano não inclui fora de
+ *   Meu plano (regra de exibição 1): o que a pessoa não pode usar simplesmente não aparece.
  * - O cuidador vê os próprios dados sem máscara (decisão 2 do contexto).
  * - Nada de `new Date()`: `today()` vem do `Clock` (reativo ao relógio simulado).
  *
@@ -56,8 +78,8 @@ export interface CaregiverConsentView {
  * const ctx = inject(CaregiverContextService);
  * ctx.firstName();                    // 'Ana'
  * ctx.planName();                     // 'Cuida'
- * ctx.canUse('groups');               // true no Cuida e no Sustenta
- * ctx.access('card').reason;          // 'Disponível a partir do plano Essencial.'
+ * ctx.canUse('group_therapy');        // true no Cuida e no Sustenta
+ * ctx.quotas().individualSessions;    // { limit: 2, used: 1, left: 1 } na Ana (Cuida), no mês de hoje
  * ctx.hasConsent('health_data');      // consentimento de saúde vigente?
  * ctx.today();                        // '2026-11-04'
  * ```
@@ -162,15 +184,31 @@ export class CaregiverContextService {
 
   // ===== Acesso por plano =====
 
-  /** O plano libera o recurso? Use no `@if` que mostra ou troca o conteúdo pelo `<app-cg-plan-lock>`. */
+  /** O plano libera o recurso? Use no `@if` que mostra ou esconde o bloco (sem cadeado, docs/20). */
   canUse(feature: CaregiverFeature): boolean {
     return canUseFeature(this.planId(), feature, this.plans());
   }
 
-  /** Acesso com o menor plano e a frase do bloqueio (RN-PLN-19: só fala do plano). */
+  /** Acesso com o menor plano (`reason` existe só por compatibilidade: não mostre em tela). */
   access(feature: CaregiverFeature): FeatureAccess {
     return featureAccess(this.planId(), feature, this.plans());
   }
+
+  /** As cotas do mês de hoje (docs/20), reativas ao relógio e ao banco. Fora de uma sessão, as do Livre (tudo zero). */
+  readonly quotas = computed<CaregiverQuotas>(() => {
+    const id = this.caregiverId();
+    const planId = this.planId();
+    const month = monthOf(this.clock.today());
+    const sessions = id ? this.db.careSessions.query((s) => s.caregiverId === id) : [];
+    const enrollments = id ? this.db.activityEnrollments.query((e) => e.caregiverId === id) : [];
+    const activities = this.db.activities.all();
+    return {
+      month,
+      individualSessions: individualSessionQuota(planId, month, sessions),
+      groupTherapy: groupTherapyQuota(planId, month, enrollments, activities),
+      trainings: trainingQuota(planId, month, enrollments, activities),
+    };
+  });
 
   // ===== Letra e tempo =====
 

@@ -5,14 +5,15 @@
  */
 import { ChangeQuote, LostGroup, PLAN_SHORT_NAMES, ScheduledChange } from '../../../../core/commerce/subscription.service';
 import { formatDate, formatMoney } from '../../../../core/format/format';
-import { BenefitKey, PlanId } from '../../../../core/models';
+import { PlanId } from '../../../../core/models';
 import {
-  BENEFIT_LABELS,
+
   PLAN_NOT_INCLUDED_NOTICE,
-  PLAN_ORDER,
+
   PlanDefinition,
-  canAccessGroupsAndTrainings,
+  canAccessGroupTherapy,
 } from '../../../../core/rules/plans';
+import { PLAN_QUOTAS, limitText, singlePriceText } from '../../../../core/rules/plan-quotas';
 import { IconName } from '../../../../shared/ui/display/icon.component';
 import { dayMonth } from '../../state/day-format';
 
@@ -31,66 +32,101 @@ export function priceLine(plan: Pick<PlanDefinition, 'monthlyPriceCents'>): stri
   return `${formatMoney(plan.monthlyPriceCents)} por mês`;
 }
 
-/** O que o plano traz que o anterior não traz ("Tudo do plano anterior, mais:"). O Livre traz tudo o que é dele. */
-export function ownBenefits(planId: PlanId, plans: readonly PlanDefinition[]): string[] {
-  const plan = plans.find((p) => p.id === planId);
-  const index = PLAN_ORDER.indexOf(planId);
-  const previous = index > 0 ? plans.find((p) => p.id === PLAN_ORDER[index - 1]) : undefined;
-  const already = new Set(previous?.benefits ?? []);
-  return (plan?.benefits ?? []).filter((b) => !already.has(b)).map((b) => BENEFIT_LABELS[b]);
-}
-
 /** Tudo o que o plano inclui, inclusive o que vem dos planos anteriores (CXC-010): "Seu plano agora" não esconde o que continua valendo. */
-export function allBenefits(planId: PlanId, plans: readonly PlanDefinition[]): string[] {
-  return (plans.find((p) => p.id === planId)?.benefits ?? []).map((b) => BENEFIT_LABELS[b]);
+export function allBenefits(planId: PlanId, _plans: readonly PlanDefinition[]): string[] {
+  return planLines(planId).map((l) => l.label);
 }
 
-/** Ícone de cada benefício (um por linha, só para dar o que olhar; o texto é quem diz). */
-export const BENEFIT_ICONS: Readonly<Record<BenefitKey, IconName>> = {
-  app_access: 'house',
-  basic_organization: 'clipboard-check',
-  agenda_reminders: 'calendar-days',
-  content: 'book-open',
-  network_initial_access: 'handshake',
-  extended_organization: 'layout-list',
-  card_discounts: 'credit-card',
-  exclusive_content: 'star',
-  network_special_conditions: 'handshake',
-  greater_organization_support: 'life-buoy',
-  support_groups: 'users-round',
-  trainings: 'award',
-  close_organizational_follow_up: 'heart-handshake',
-  higher_support_level: 'hand-heart',
-  network_differentiated_benefits: 'badge-check',
-};
-
-/**
- * Os destaques de cada plano, na ordem em que aparecem: os três primeiros são os que o quadro mostra (o que é DO plano),
- * o quarto é o que o cartão do plano atual acrescenta (no Cuida, o Cartão Nexus). A lista completa fica atrás de
- * "Ver tudo que inclui".
- */
-const HIGHLIGHT_ORDER: Readonly<Record<PlanId, readonly BenefitKey[]>> = {
-  livre: ['agenda_reminders', 'basic_organization', 'content', 'network_initial_access'],
-  essencial: ['extended_organization', 'card_discounts', 'exclusive_content', 'network_special_conditions'],
-  cuida: ['support_groups', 'trainings', 'greater_organization_support', 'card_discounts'],
-  sustenta: ['close_organizational_follow_up', 'higher_support_level', 'network_differentiated_benefits', 'support_groups'],
-};
-
+/** Uma linha do que o plano inclui (docs/20), com ícone (um por linha, só para dar o que olhar; o texto é quem diz). */
 export interface Perk {
-  key: BenefitKey;
+  key: string;
   icon: IconName;
   label: string;
 }
 
+const line = (key: string, icon: IconName, label: string): Perk => ({ key, icon, label });
+
 /**
- * Os `count` destaques do plano, com ícone. Só entra o que o plano de fato inclui (o catálogo é editável): se faltar algum
- * dos escolhidos, completa com os outros benefícios do plano.
+ * Tudo o que cada plano inclui, na voz do cuidador, lido da tabela do docs/20 (cotas em `PLAN_QUOTAS`). A ordem é a da
+ * importância para a pessoa: o que é novo no plano vem primeiro. Nenhuma linha fala do que o plano NÃO inclui (RN-PLN-22
+ * continua valendo pelo quadro inteiro, que mostra os quatro lado a lado), e nenhuma cita pontuação, faixa ou alerta
+ * (RN-PLN-19).
  */
-export function planPerks(planId: PlanId, plans: readonly PlanDefinition[], count: number): Perk[] {
-  const has = plans.find((p) => p.id === planId)?.benefits ?? [];
-  const chosen = HIGHLIGHT_ORDER[planId].filter((key) => has.includes(key));
-  const rest = has.filter((key) => !chosen.includes(key));
-  return [...chosen, ...rest].slice(0, count).map((key) => ({ key, icon: BENEFIT_ICONS[key], label: BENEFIT_LABELS[key] }));
+export function planLines(planId: PlanId): Perk[] {
+  const q = PLAN_QUOTAS[planId];
+  const sessions = line('individual_session', 'heart-handshake', `Atendimento psicológico individual: ${limitText(q.individualSessionsPerMonth, 'sessões')}`);
+  const therapy = line('group_therapy', 'users-round', `Terapia de grupo: ${limitText(q.groupTherapyPerMonth, 'encontros')}`);
+  const trainings = line(
+    'trainings',
+    'book-open',
+    q.trainingsPerMonth === 'all'
+      ? 'Todas as capacitações do mês'
+      : q.trainingsPerMonth === 0
+        ? `Capacitações avulsas (${singlePriceText('training')})`
+        : `${limitText(q.trainingsPerMonth, 'capacitações')} incluídas`,
+  );
+  const circles = line('open_circle', 'messages-square', 'Rodas de conversa abertas');
+  const card = line('card', 'credit-card', 'Cartão Nexus, com descontos nos parceiros');
+  switch (planId) {
+    case 'livre':
+      return [
+        line('organization', 'clipboard-check', 'Organização básica da rotina: agenda, lembretes e remédios'),
+        line('content', 'book-open', 'Conteúdos abertos'),
+        line('network', 'handshake', 'Rede credenciada: consultar, comparar e pedir serviço'),
+        circles,
+        trainings,
+      ];
+    case 'essencial':
+      return [
+        line('organization', 'layout-list', 'Organização ampliada da rotina'),
+        card,
+        line('content', 'star', 'Conteúdos abertos e exclusivos'),
+        line('network', 'handshake', 'Rede credenciada, com condições especiais'),
+        trainings,
+        circles,
+      ];
+    case 'cuida':
+      return [
+        sessions,
+        therapy,
+        trainings,
+        line('organization', 'life-buoy', 'Maior suporte à organização da rotina'),
+        card,
+        line('content', 'star', 'Conteúdos abertos e exclusivos'),
+        line('network', 'handshake', 'Rede credenciada, com condições especiais'),
+        circles,
+      ];
+    case 'sustenta':
+      return [
+        sessions,
+        therapy,
+        line('network', 'badge-check', 'Rede credenciada, com benefícios diferenciados'),
+        line('organization', 'hand-heart', 'Acompanhamento próximo da organização da rotina'),
+        trainings,
+        card,
+        line('content', 'star', 'Conteúdos abertos e exclusivos'),
+        circles,
+      ];
+  }
+}
+
+/** Os `count` destaques do plano (4 no herói, 3 no quadro): as primeiras linhas de `planLines`. */
+export function planPerks(planId: PlanId, _plans: readonly PlanDefinition[], count: number): Perk[] {
+  return planLines(planId).slice(0, count);
+}
+
+/** As três linhas de cota que o quadro compara entre os planos (docs/20): atendimento individual, terapia de grupo e capacitações. */
+export function quotaLines(planId: PlanId): { key: string; label: string; value: string }[] {
+  const q = PLAN_QUOTAS[planId];
+  return [
+    { key: 'individual_session', label: 'Atendimento individual', value: limitText(q.individualSessionsPerMonth, 'sessões') },
+    { key: 'group_therapy', label: 'Terapia de grupo', value: limitText(q.groupTherapyPerMonth, 'encontros') },
+    {
+      key: 'trainings',
+      label: 'Capacitações',
+      value: q.trainingsPerMonth === 0 ? `Avulsas, ${singlePriceText('training')}` : limitText(q.trainingsPerMonth, 'capacitações'),
+    },
+  ];
 }
 
 /** O preço em duas partes ("R$ 119,90" e "por mês"), para dar peso ao valor e deixar a unidade pequena. */
@@ -127,7 +163,7 @@ function lostGroupsLine(lost: readonly LostGroup[]): string {
     return '';
   }
   const list = lost.map((g) => `${g.title} (${dayMonth(g.startDate)})`).join(', ');
-  return `Você sai dos grupos que começam depois dessa data: ${list}. Os grupos em andamento continuam até o fim do ciclo.`;
+  return `Você sai das turmas de terapia de grupo que começam depois dessa data: ${list}. As turmas em andamento continuam até o fim do ciclo.`;
 }
 
 /** Texto do botão de cada plano no quadro e na folha, pelo tipo de troca. `null` quando não há troca (mesmo plano). */
@@ -178,7 +214,7 @@ export function changeCopy(quote: ChangeQuote, priceOf: (plan: PlanId) => string
       showNotice: false,
     };
   }
-  const groups = canAccessGroupsAndTrainings(quote.from) ? ', inclusive os grupos' : '';
+  const groups = canAccessGroupTherapy(quote.from) ? ', inclusive a terapia de grupo' : '';
   return {
     kind: quote.kind,
     heading: `Mudar para o ${to} no fim do ciclo?`,
@@ -190,4 +226,12 @@ export function changeCopy(quote: ChangeQuote, priceOf: (plan: PlanId) => string
     ],
     showNotice: false,
   };
+}
+
+/** As chaves das linhas que o quadro já mostra como cota (para os destaques do quadro não repetirem). */
+const QUOTA_KEYS = new Set(['individual_session', 'group_therapy', 'trainings']);
+
+/** Os destaques do quadro de comparação: os `count` primeiros que NÃO são cota (as cotas têm linhas próprias). */
+export function boardPerks(planId: PlanId, count = 3): Perk[] {
+  return planLines(planId).filter((l) => !QUOTA_KEYS.has(l.key)).slice(0, count);
 }

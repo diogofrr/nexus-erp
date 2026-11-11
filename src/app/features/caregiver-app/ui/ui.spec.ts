@@ -15,13 +15,14 @@ import {
   CgChoiceGroupComponent,
   CgDoseComponent,
   CgEmergencyNoteComponent,
+  CgEventBadgeComponent,
   CgMoodComponent,
   CgNoteComponent,
   CgPageHeaderComponent,
-  CgPlanLockComponent,
   CgPlanTagComponent,
   CgRatingPairComponent,
   CgRowComponent,
+  CgSectionComponent,
   CgSheetComponent,
   CgSwitchComponent,
   CgTrendComponent,
@@ -50,13 +51,14 @@ const text = (el: Element | null | undefined): string =>
     CgChoiceGroupComponent,
     CgDoseComponent,
     CgEmergencyNoteComponent,
+    CgEventBadgeComponent,
     CgMoodComponent,
     CgNoteComponent,
     CgPageHeaderComponent,
-    CgPlanLockComponent,
     CgPlanTagComponent,
     CgRatingPairComponent,
     CgRowComponent,
+    CgSectionComponent,
     CgSheetComponent,
     CgSwitchComponent,
     CgTrendComponent,
@@ -78,14 +80,16 @@ const text = (el: Element | null | undefined): string =>
     @for (slot of slots(); track slot.key) {
       <app-cg-dose [slot]="slot" (dei)="dei.set([...dei(), $event.time])" (undo)="undone.set([...undone(), $event.time])" />
     }
-    <app-cg-plan-lock feature="groups" description="Grupos e capacitações fazem parte do plano Cuida.">
-      As rodas de conversa abertas são para todos.
-    </app-cg-plan-lock>
-    <app-cg-plan-lock feature="agenda_reminders" description="não deve aparecer" />
+    <app-cg-section title="Encontros" [count]="2" data-role="events">
+      <button cgSectionEnd type="button" class="cg-link-btn" data-role="events-end">Ver todos</button>
+      <app-cg-event-badge type="open_circle" />
+      <app-cg-event-badge type="training" size="sm" />
+      <app-cg-event-badge type="group_therapy" />
+    </app-cg-section>
     <section data-role="nested">
       <h2>Seção com título</h2>
       <app-cg-card [headingLevel]="3" title="Cartão dentro da seção">Texto.</app-cg-card>
-      <app-cg-plan-lock [headingLevel]="3" feature="groups" description="Dentro da seção." />
+      <app-cg-section [headingLevel]="3" title="Dentro da seção."><p>Corpo.</p></app-cg-section>
     </section>
     <app-cg-rating-pair [(quality)]="quality" [(punctuality)]="punctuality" />
     <app-cg-trend [items]="trend" />
@@ -175,11 +179,11 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
     expect(text(link)).toContain('Anote como você está.');
   });
 
-  it('QAC-009: dentro de uma seção com h2, o cartão e o bloqueio de plano usam h3 (headingLevel), sem pular de h1 para h3', () => {
+  it('QAC-009: dentro de uma seção com h2, o cartão e a seção do kit usam h3 (headingLevel), sem pular de h1 para h3', () => {
     const f = mountKit('cg_0002');
     const nested = root(f).querySelector('[data-role="nested"]');
     expect(nested?.querySelector('app-cg-card .cg-card__title')?.tagName).toBe('H3');
-    expect(nested?.querySelector('app-cg-plan-lock .cg-card__title')?.tagName).toBe('H3');
+    expect(nested?.querySelector('app-cg-section .cg-section__title')?.tagName).toBe('H3');
     // Fora da seção o padrão é h2: nenhum h3 solto antes de um h2.
     const levels = all(f, 'h1, h2, h3').map((h) => Number(h.tagName.slice(1)));
     levels.forEach((level, index) => {
@@ -374,21 +378,30 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
     expect(doses[2]?.classList.contains('is-late')).toBe(false);
   });
 
-  it('bloqueio por plano: só aparece quando o plano não libera, diz o plano e o plano atual, sem preço nem "assine"', () => {
-    const essencial = mountKit('cg_0002');
-    const locks = all(essencial, '.cg-plan-lock').filter((el) => el.closest('[data-role="nested"]') === null);
-    expect(locks).toHaveLength(1);
-    const lock = locks[0];
-    expect(text(lock?.querySelector('h2'))).toBe('Disponível no plano Cuida');
-    expect(text(lock)).toContain('Grupos e capacitações fazem parte do plano Cuida. Seu plano agora é o Essencial.');
-    expect(text(lock)).toContain('As rodas de conversa abertas são para todos.');
-    expect(lock?.querySelector('a.cg-link-btn')?.getAttribute('href')).toBe('/cuidador/mais/plano');
-    expect(text(lock)).not.toMatch(/R\$|assine|desconto|zarit|alerta/i);
-    // O recurso liberado para todos nunca bloqueia (a segunda trava não aparece).
-    expect(text(root(essencial))).not.toContain('não deve aparecer');
-    TestBed.resetTestingModule();
-    const cuida = mountKit('cg_0001');
-    expect(all(cuida, '.cg-plan-lock')).toHaveLength(0);
+  it('seção do kit: h2 com a contagem entre parênteses, o detalhe à direita e o corpo embaixo; region com aria-labelledby', () => {
+    const f = mountKit('cg_0002');
+    const section = root(f).querySelector('[data-role="events"]');
+    expect(section?.getAttribute('role')).toBe('region');
+    const title = section?.querySelector('h2.cg-section__title');
+    expect(text(title)).toBe('Encontros (2)');
+    expect(section?.getAttribute('aria-labelledby')).toBe(title?.id);
+    expect(section?.querySelector('.cg-section-head [data-role="events-end"]')).not.toBeNull();
+    expect(section?.querySelectorAll('.cg-section__body app-cg-event-badge')).toHaveLength(3);
+  });
+
+  it('selo do tipo de encontro: nome escrito, ícone e classe por tipo (nunca só cor); sem cadeado, preço nem plano', () => {
+    const f = mountKit('cg_0003');
+    const badges = all(f, 'app-cg-event-badge');
+    expect(badges.map(text)).toEqual(['Roda de conversa aberta', 'Capacitação', 'Terapia de grupo']);
+    expect(badges.map((b) => b.getAttribute('data-type'))).toEqual(['open_circle', 'training', 'group_therapy']);
+    badges.forEach((b) => {
+      expect(b.classList.contains(`cg-event--${b.getAttribute('data-type')}`)).toBe(true);
+      expect(b.querySelector('svg')).not.toBeNull();
+      expect(text(b)).not.toMatch(/R\$|plano|assine|bloque/i);
+    });
+    expect(badges[1]?.classList.contains('cg-event--sm')).toBe(true);
+    // O kit público não tem mais o bloqueio por plano (docs/20, regra de exibição 1).
+    expect(all(f, '.cg-plan-lock, app-cg-plan-lock')).toHaveLength(0);
   });
 
   it('nota de 1 a 5: duas notas, cinco botões numerados cada, e a frase do que falta', () => {

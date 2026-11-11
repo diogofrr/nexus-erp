@@ -14,7 +14,15 @@ import {
   Room,
   SessionModality,
 } from '../models';
-import { canSeePrioritySlots, sessionPriceCents } from '../rules/plans';
+import { canSeePrioritySlots } from '../rules/plans';
+import {
+  QuotaUsage,
+  SINGLE_PRICES_CENTS,
+  canBookIndividualSession,
+  individualSessionQuota,
+  monthOf,
+} from '../rules/plan-quotas';
+import { ISODate, YearMonth } from '../models/primitives';
 import { NAME_MAX_CHARS, isTooLong, tooLongText } from '../rules/text-limits';
 import {
   RoomBooking,
@@ -54,13 +62,30 @@ export interface BookingInput {
   kind: CareSession['kind'] | null;
 }
 
+/**
+ * O que a conversa vai custar (docs/20): dentro da cota mensal do plano, R$ 0,00 e `included`; além dela, o valor avulso.
+ * Livre e Essencial não agendam (`allowed` falso). `baseCents` é o valor avulso de referência (editável em M15).
+ */
 export interface BookingQuote {
   planId: PlanId;
+  /** O plano permite agendar sessão individual (Cuida e Sustenta). */
+  allowed: boolean;
+  /** Esta sessão cabe na cota do mês (`totalCents` 0). */
+  included: boolean;
+  /** Mês de referência (`YYYY-MM`) da vaga, ou de hoje quando ainda não há vaga escolhida. */
+  month: YearMonth;
+  /** A cota do mês ANTES desta sessão. */
+  quota: QuotaUsage;
   baseCents: number;
+  /** Compatibilidade (RN-ATD-05 antiga): sempre 0. */
   discountPercent: number;
+  /** Compatibilidade: o que a cota cobre (igual a `baseCents` quando incluída). */
   discountCents: number;
   totalCents: number;
 }
+
+/** Frase do domínio quando o plano não inclui o atendimento individual (a tela do cuidador tem a sua página calma). */
+export const SESSION_PLAN_BLOCKED = 'O atendimento psicológico individual faz parte dos planos Cuida e Sustenta.';
 
 /** Duração da sessão (hoje sempre 1 hora). */
 const SESSION_MINUTES = 60;
@@ -75,7 +100,8 @@ const ACTIVE_STATUSES: readonly CareSession['status'][] = ['scheduled', 'confirm
  *
  * - Quem chama é responsável pela permissão de PERFIL (a equipe confere na borda dela). Com a sessão de um cuidador aberta,
  *   este serviço também confere a POSSE: o cuidador só agenda, cancela e remarca a própria conversa (QAC-001).
- * - Prazos usam o `Clock`; o desconto do plano vem do quadro de planos (RN-ATD-05); a vaga de prioridade só
+ * - Prazos usam o `Clock`; o preço vem da cota mensal do plano (docs/20: dentro dela R$ 0,00, fora o avulso); Livre e
+ *   Essencial não agendam (`SESSION_PLAN_BLOCKED`); a vaga de prioridade só
  *   existe para quem tem direito (RN-ATD-12) e a tela não diz o motivo.
  * - O log de auditoria só grava quando há uma pessoa da equipe na sessão: o cuidador não gera linha própria.
  */
@@ -165,13 +191,34 @@ export class SessionBookingService {
       .sort((a, b) => this.startOf(a).localeCompare(this.startOf(b)));
   }
 
-  /** Valor da sessão com o desconto do plano (RN-ATD-05): base e descontos vêm do quadro de planos (M15). */
-  quote(caregiverId: ID): BookingQuote {
+  /** As sessões do cuidador que contam na cota (as que ocupam vaga; a de `exceptSessionId` fica de fora, na remarcação). */
+  private sessionsForQuota(caregiverId: ID, exceptSessionId?: ID): CareSession[] {
+    return this.db.careSessions.query((s) => s.caregiverId === caregiverId && s.id !== exceptSessionId);
+  }
+
+  /** A cota de sessões individuais do cuidador no mês (docs/20): limite do plano, usadas e o que resta. */
+  quotaFor(caregiverId: ID, month: YearMonth = monthOf(this.clock.today()), exceptSessionId?: ID): QuotaUsage {
+    return individualSessionQuota(planIdOfCaregiver(this.db, caregiverId), month, this.sessionsForQuota(caregiverId, exceptSessionId));
+  }
+
+  /** O plano do cuidador permite agendar sessão individual (Cuida e Sustenta)? */
+  canBook(caregiverId: ID): boolean {
+    return canBookIndividualSession(planIdOfCaregiver(this.db, caregiverId));
+  }
+
+  /**
+   * Valor da sessão (docs/20): dentro da cota do mês da vaga, R$ 0,00; além dela, o avulso (`settings.sessionBasePriceCents`,
+   * R$ 120,00). Sem vaga escolhida, vale o mês de hoje. `exceptSessionId` deixa de contar a sessão que está sendo remarcada.
+   */
+  quote(caregiverId: ID, slotDate?: ISODate, exceptSessionId?: ID): BookingQuote {
     const planId = planIdOfCaregiver(this.db, caregiverId);
-    const baseCents = this.db.settings.get().sessionBasePriceCents;
-    const discountPercent = this.db.plans.get(planId)?.psychSessionDiscountPercent ?? 0;
-    const totalCents = sessionPriceCents(baseCents, discountPercent);
-    return { planId, baseCents, discountPercent, discountCents: baseCents - totalCents, totalCents };
+    const month = monthOf(slotDate ?? this.clock.today());
+    const quota = this.quotaFor(caregiverId, month, exceptSessionId);
+    const allowed = canBookIndividualSession(planId);
+    const included = allowed && quota.left !== 'all' && quota.left > 0;
+    const baseCents = this.db.settings.get().sessionBasePriceCents ?? SINGLE_PRICES_CENTS.individual_session;
+    const totalCents = included ? 0 : baseCents;
+    return { planId, allowed, included, month, quota, baseCents, discountPercent: 0, discountCents: baseCents - totalCents, totalCents };
   }
 
   /** Horas até o início da sessão (negativo = já começou). */
@@ -195,7 +242,7 @@ export class SessionBookingService {
 
   // ===== Agendar =====
 
-  schedule(input: BookingInput): BookingResult<CareSession> {
+  schedule(input: BookingInput, options: { rescheduleOf?: ID } = {}): BookingResult<CareSession> {
     // Com a sessão de um cuidador aberta, só se agenda a própria conversa (QAC-001).
     if (!this.ownership.ownsCaregiver(input.caregiverId)) {
       return fail('caregiver', NOT_OWNER_TEXT);
@@ -204,6 +251,9 @@ export class SessionBookingService {
     const caregiver = this.db.caregivers.get(input.caregiverId);
     if (!caregiver || caregiver.status === 'closed') {
       errors.push({ field: 'caregiver', message: 'Escolha o cuidador da sessão.' });
+    } else if (!this.canBook(caregiver.id)) {
+      // docs/20: o atendimento individual da equipe não é vendido a quem está no Livre ou no Essencial.
+      errors.push({ field: 'plan', message: SESSION_PLAN_BLOCKED });
     }
     const psychologist = this.db.psychologists.get(input.psychologistId);
     if (!psychologist || psychologist.crpStatus !== 'active') {
@@ -261,7 +311,7 @@ export class SessionBookingService {
     if (errors.length > 0 || !slot || !caregiver || !input.modality || !input.kind) {
       return { ok: false, errors };
     }
-    const quote = this.quote(caregiver.id);
+    const quote = this.quote(caregiver.id, slot.date, options.rescheduleOf);
     const draft: NewEntity<CareSession> = {
       caregiverId: caregiver.id,
       psychologistId: input.psychologistId,
@@ -272,7 +322,8 @@ export class SessionBookingService {
       kind: input.kind,
       status: 'scheduled',
       priceCents: quote.totalCents,
-      discountPercent: quote.discountPercent,
+      discountPercent: 0,
+      includedInPlan: quote.included,
       ...(room ? { roomId: room.id } : {}),
       ...(input.modality === 'in_person_home'
         ? { homeAddress: (input.homeAddress as string).trim(), homeVisitConfirmedSafe: input.homeSafe === true }
@@ -280,7 +331,13 @@ export class SessionBookingService {
     };
     const session = this.db.careSessions.create(draft);
     this.db.availabilitySlots.update(slot.id, { status: 'booked' });
-    this.audit.write('create', 'care_session', session.id, caregiver.id, 'sessão agendada');
+    this.audit.write(
+      'create',
+      'care_session',
+      session.id,
+      caregiver.id,
+      quote.included ? 'sessão agendada (incluída na cota do plano)' : 'sessão agendada (avulsa)',
+    );
     return { ok: true, value: session };
   }
 
@@ -344,11 +401,12 @@ export class SessionBookingService {
     if (input.slotId === session.slotId) {
       return fail('slot', 'Escolha um horário diferente do atual.');
     }
-    const created = this.schedule(input);
+    // A sessão antiga deixa de contar na cota só se for liberada sem falta; a menos de 24 h ela continua ocupando (RN-ATD-16).
+    const late = by === 'user' && this.isLateCancellation(session);
+    const created = this.schedule(input, late ? {} : { rescheduleOf: session.id });
     if (!created.ok) {
       return created;
     }
-    const late = by === 'user' && this.isLateCancellation(session);
     const status: CareSession['status'] = late
       ? 'no_show'
       : by === 'user'

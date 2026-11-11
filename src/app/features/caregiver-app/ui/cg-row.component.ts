@@ -26,7 +26,7 @@ import { IconComponent, IconName } from '../../../shared/ui/display/icon.compone
   host: { class: 'cg-row-host' },
   template: `
     @if (link(); as href) {
-      <a class="cg-row" [routerLink]="href" [attr.aria-current]="current() ? 'true' : null">
+      <a class="cg-row" [routerLink]="href" [queryParams]="linkQuery()" [attr.aria-current]="current() ? 'true' : null">
         <ng-container [ngTemplateOutlet]="body" />
       </a>
     } @else {
@@ -68,6 +68,8 @@ export class CgRowComponent {
   readonly icon = input<IconName>();
   /** Rota absoluta. Sem ela, a linha é um botão. */
   readonly link = input<string | null>(null);
+  /** A consulta da URL do `link` (`{ atividade: 'act_0004' }`), quando o destino precisa dela. */
+  readonly linkQuery = input<Record<string, string> | null>(null);
   /** Linha selecionada (`aria-current="true"`, fundo suave e `check`). */
   readonly current = input(false);
   /** Seta à direita (padrão). Desligue em ação que não leva a outra tela. */

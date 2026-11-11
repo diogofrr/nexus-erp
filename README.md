@@ -13,7 +13,7 @@ Requisitos: Node 22 ou mais novo e pnpm.
 ```bash
 pnpm install
 pnpm start          # http://localhost:4200
-pnpm test:ci        # 2255 testes em 160 arquivos (Vitest)
+pnpm test:ci        # 2268 testes em 161 arquivos (Vitest)
 pnpm typecheck      # app e testes
 pnpm check:core     # regras de código e de texto (sem any, sem travessão, sem Date direto...)
 pnpm check:a11y     # contraste e alvos de toque do aplicativo do cuidador
@@ -145,6 +145,7 @@ docs/         regras, escopo, design, UX, arquitetura, QA, CS/CX e o aplicativo 
 | `docs/15-correcoes-cuidador-a.md` e `docs/15-correcoes-cuidador-b.md` | Aplicativo do cuidador: o que foi corrigido depois do QA e do CS/CX |
 | `docs/16-cliques-e-entrada.md` e `docs/16-calendario-agenda.md` | Aplicativo do cuidador: cliques corrigidos, a Entrada e o calendário da Agenda |
 | `docs/17-vida-kit.md`, `docs/17-vida-v1.md` e `docs/17-vida-v2.md` | Aplicativo do cuidador: o sistema visual (ilustrações, cor por seção, herói, anel de progresso) e o que mudou em cada tela, incluindo o Meu plano com foco |
+| `docs/20-regras-planos-v2.md` e `docs/21-*.md` | Aplicativo do cuidador: regras de plano versão 2 (atendimento e terapia de grupo só no Cuida e no Sustenta, cotas mensais, três tipos de encontro) e a reorganização de UX |
 | `docs/ac-status/` | Situação de cada critério de aceite por módulo; `caregiver-p1.md`, `caregiver-p2.md` e `caregiver-p3.md` são as do aplicativo do cuidador |
 
 ## Como foi feito

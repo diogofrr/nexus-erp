@@ -79,10 +79,10 @@ Legenda: **atendido** (testado), **parcial** (com o motivo), **não atendido** (
 
 | AC | Status | Onde ver / observação |
 |---|---|---|
-| AC-CG-72 | atendido | 4 cartões `--link` na ordem e nas rotas certas, em `.cg-grid` (1 coluna, 2 x 2 de 768 px em diante: CSS da Base). |
-| AC-CG-73 | atendido | Testado com 7 pessoas e 4 planos: nenhum cadeado, preço, selo de plano ou número. |
-| AC-CG-74 | atendido | Raimunda: "Você tem uma conversa marcada: sex, 06/11, às 14:00."; Sônia: "Acompanhamento pausado." |
-| AC-CG-75 | atendido | Lourdes: "Você está na lista de espera de 1 grupo."; nenhum cartão com pontuação, faixa ou alerta. |
+| AC-CG-72 | atendido (UX v2, 11/11) | Cuida e Sustenta: 4 ladrilhos (Conversar com um psicólogo, Como estou, Encontros, Conteúdos) em grade da mesma altura; Livre e Essencial: 3, sem o da conversa, em uma linha em tela larga (docs/20, regra 1). Só herói e ladrilhos: sem aviso de emergência. `care.spec.ts` |
+| AC-CG-73 | atendido (UX v2, 11/11) | Testado com 7 pessoas e 4 planos: nenhum cadeado, preço, selo de plano, "premium" ou número. |
+| AC-CG-74 | atendido (UX v2, 11/11) | Lourdes (Sustenta): "Você tem uma conversa marcada: sex, 06/11, às ..."; Sônia (Essencial): "Acompanhamento pausado." e sem ladrilho de conversa. |
+| AC-CG-75 | atendido (UX v2, 11/11) | Lourdes: "Você está na lista de espera de 1 encontro."; Maria: "Rodas de conversa, capacitações e grupos com quem também cuida."; nenhum ladrilho com pontuação, faixa ou alerta. |
 
 ### Conversar com um psicólogo (C8), `care/care.spec.ts`
 

@@ -43,7 +43,7 @@ describe('M05 agenda e agendamento (F04)', () => {
     expect(app.root.textContent).not.toMatch(FORBIDDEN_WORDS);
   });
 
-  it('o atendimento abre o diálogo Agendar sessão e vê valor e desconto do plano (AC-M05-14)', async () => {
+  it('o atendimento abre o diálogo Agendar sessão e vê o valor pela cota do plano (AC-M05-14, docs/20)', async () => {
     const app = await bootApp({ userId: 'u7', url: '/app/atendimento/agenda' });
     const { q, dialog } = helpers(app);
     click(q('[data-role="open-schedule"]'));
@@ -56,10 +56,14 @@ describe('M05 agenda e agendamento (F04)', () => {
     select.dispatchEvent(new Event('change', { bubbles: true }));
     await settle(app.fixture);
     const summary = drawer.querySelector('[data-role="price-summary"]')?.textContent ?? '';
-    // Cuida: 15% de R$ 120,00.
-    expect(summary).toContain('R$ 120,00');
-    expect(summary).toContain('Cuida 15%');
-    expect(summary).toContain('R$ 102,00');
+    // Cuida: 2 sessões por mês; Ana usou 1 em novembro, então a próxima é incluída (R$ 0,00).
+    expect(summary).toContain('Incluída na cota do plano Cuida: total R$ 0,00');
+    expect(summary).toContain('Neste mês: 1 de 2 sessões usadas');
+    // docs/20: o ERP não oferece agendamento de sessão para Livre e Essencial.
+    const options = Array.from(select.options).map((o) => o.value).filter(Boolean);
+    expect(options).toContain('cg_0001');
+    expect(options).not.toContain('cg_0004');
+    expect(options).not.toContain('cg_0002');
     // Sem nenhuma opção pré-marcada no tipo de atendimento do psicólogo; o atendimento recebe o do histórico.
     expect(drawer.textContent).toContain('Mostrando as vagas disponíveis para este cuidador.');
   });
@@ -67,7 +71,8 @@ describe('M05 agenda e agendamento (F04)', () => {
   it('quando o atendimento agenda, o tipo de atendimento vem do histórico e a ajuda manda confirmar com o psicólogo (U-09, A-22)', async () => {
     const app = await bootApp({ userId: 'u7', url: '/app/atendimento/agenda' });
     const { q, svc } = helpers(app);
-    const session = app.db.careSessions.list().find((x) => x.kind === 'guidance');
+    // docs/20: só quem é do Cuida ou do Sustenta aparece no agendamento.
+    const session = app.db.careSessions.list().find((x) => x.kind === 'guidance' && svc().quote(x.caregiverId).allowed);
     expect(session).toBeTruthy();
     const caregiverId = session?.caregiverId ?? '';
     expect(svc().lastKind(caregiverId)).not.toBeNull();
@@ -86,13 +91,16 @@ describe('M05 agenda e agendamento (F04)', () => {
     expect(drawer.querySelector('#sched-kind')?.parentElement?.textContent ?? drawer.textContent).toContain('confirme com o psicólogo do caso');
   });
 
-  it('o valor da sessão acompanha o desconto de cada plano: 0%, 10%, 15% e 20%', async () => {
+  it('o valor da sessão vem da cota do plano (docs/20): Livre e Essencial não agendam; Cuida 2 e Sustenta 4 por mês', async () => {
     const app = await bootApp({ userId: 'u7', url: '/app/atendimento/agenda' });
     const { svc } = helpers(app);
-    expect(svc().quote('cg_0004').totalCents).toBe(12000); // Livre
-    expect(svc().quote('cg_0006').totalCents).toBe(10800); // Essencial 10%
-    expect(svc().quote('cg_0001').totalCents).toBe(10200); // Cuida 15%
-    expect(svc().quote('cg_0009').totalCents).toBe(9600); // Sustenta 20%
+    expect(svc().quote('cg_0004')).toMatchObject({ allowed: false }); // Livre
+    expect(svc().quote('cg_0006')).toMatchObject({ allowed: false }); // Essencial
+    expect(svc().quote('cg_0001')).toMatchObject({ allowed: true, included: true, totalCents: 0 }); // Cuida, 1 de 2
+    expect(svc().quote('cg_0009').quota.limit).toBe(4); // Sustenta
+    const slot = svc().freeSlots('psy_0001', true)[0];
+    const refused = svc().schedule({ caregiverId: 'cg_0004', psychologistId: 'psy_0001', slotId: slot?.id ?? '', modality: 'online', kind: 'guidance' });
+    expect(refused.ok === false && refused.errors[0]?.message).toBe('O atendimento psicológico individual faz parte dos planos Cuida e Sustenta.');
   });
 
   it('vaga reservada não recebe outra sessão e a vaga some das opções (F04, passo 5)', async () => {
@@ -101,7 +109,7 @@ describe('M05 agenda e agendamento (F04)', () => {
     const slot = svc().freeSlots('psy_0001', false)[0];
     expect(slot).toBeTruthy();
     const input = {
-      caregiverId: 'cg_0004',
+      caregiverId: 'cg_0021',
       psychologistId: 'psy_0001',
       slotId: slot?.id ?? '',
       modality: 'online' as const,
@@ -110,7 +118,7 @@ describe('M05 agenda e agendamento (F04)', () => {
     const first = svc().schedule(input);
     expect(first.ok).toBe(true);
     expect(app.db.availabilitySlots.get(slot?.id ?? '')?.status).toBe('booked');
-    const second = svc().schedule({ ...input, caregiverId: 'cg_0005' });
+    const second = svc().schedule({ ...input, caregiverId: 'cg_0022' });
     expect(second.ok).toBe(false);
     expect(second.ok === false && second.errors[0]?.message).toContain('Essa vaga acabou de ser reservada');
   });
@@ -120,7 +128,7 @@ describe('M05 agenda e agendamento (F04)', () => {
     const { svc } = helpers(app);
     const slot = svc().freeSlots('psy_0001', false)[0];
     const result = svc().schedule({
-      caregiverId: 'cg_0004',
+      caregiverId: 'cg_0021',
       psychologistId: 'psy_0001',
       slotId: slot?.id ?? '',
       modality: 'in_person_coworking',
@@ -130,7 +138,7 @@ describe('M05 agenda e agendamento (F04)', () => {
     expect(result.ok).toBe(false);
     expect(result.ok === false && result.errors[0]?.message).toContain('Falta sanitário adaptado (3 de 4 itens de acessibilidade)');
     const ok = svc().schedule({
-      caregiverId: 'cg_0004',
+      caregiverId: 'cg_0021',
       psychologistId: 'psy_0001',
       slotId: slot?.id ?? '',
       modality: 'in_person_coworking',
@@ -194,7 +202,7 @@ describe('M05 estados da sessão (SCR-M05-04)', () => {
     const near = open('2026-11-05');
     const far = open('2026-11-12');
     const make = (slotId: string) =>
-      svc().schedule({ caregiverId: 'cg_0004', psychologistId: 'psy_0001', slotId, modality: 'online', kind: 'psychotherapy' });
+      svc().schedule({ caregiverId: 'cg_0021', psychologistId: 'psy_0001', slotId, modality: 'online', kind: 'psychotherapy' });
     const sooner = make(near.id);
     const farther = make(far.id);
     expect(sooner.ok).toBe(true);

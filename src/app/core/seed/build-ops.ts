@@ -1,6 +1,6 @@
 /**
- * Grupos e capacitações (5.10: G1 a G8), governança (5.14: 10 POPs, 12 riscos, formação, conteúdos, normas)
- * e piloto (5.15: 15 cuidadores com TCLE).
+ * Encontros (docs/20: rodas de conversa abertas, capacitações e terapia de grupo; G1 a G11), governança (5.14: 10 POPs,
+ * 12 riscos, formação, conteúdos, normas) e piloto (5.15: 15 cuidadores com TCLE).
  */
 import { addMonths } from '../clock/date-utils';
 import {
@@ -19,6 +19,7 @@ import {
   TrainingEvent,
 } from '../models';
 import { popReviewState } from '../rules/governance';
+import { SINGLE_PRICES_CENTS, meetingsInMonth, monthOf } from '../rules/plan-quotas';
 import { POP05_STEPS, POP07_STEPS } from '../rules/pop05';
 import { PSYCHOLOGIST, ROOM, USER, activityId, caregiverId, providerId } from './refs';
 import { SCENARIO_PILOT_NUMBERS } from './scenarios';
@@ -27,6 +28,26 @@ import { SeedState } from './state';
 const CONFIDENTIALITY =
   'Contrato de sigilo: o que for dito no grupo fica no grupo. Não compartilhamos relatos com familiares ou terceiros sem autorização. A atividade não promete resultado terapêutico.';
 
+/**
+ * A programação do seed (docs/20; relativa a hoje, D0):
+ *
+ * | Id | Tipo | Título | Situação | Inscritos |
+ * |---|---|---|---|---|
+ * | G1 | terapia de grupo | Sobrecarga e autocuidado (presencial, 6 vagas, quinzenal: D+3, D+17, D+31) | lotada | Ana, Rita e mais 4 (Cuida e Sustenta); Lourdes e Elza na lista de espera |
+ * | G2 | capacitação | Prevenção de quedas (presencial, 12 vagas, D+10 e D+17) | aberta | 7 do Cuida e Sustenta (incluída) e Maria (Essencial, incluída: 2 encontros cabem na cota de 2) |
+ * | G3 | terapia de grupo | Lidar com as perdas, em grupo (presencial, 8 vagas, quinzenal desde D-21) | em andamento | Lourdes, Elza e mais 2 (Sustenta) |
+ * | G4 | roda aberta | Roda de conversa: cuidar de quem cuida (presencial, CRAS, D+15) | aberta | João e mais 6 do Livre; 4 participantes externos |
+ * | G5 | capacitação | Comunicação com pessoas com demência (on-line, D-60) | encerrada | 9 presentes, 2 ausentes |
+ * | G6 | capacitação | Administração segura de medicamentos (on-line) | cancelada | 3 inscrições canceladas |
+ * | G7 | terapia de grupo | Prevenção de conflitos familiares (on-line) | rascunho | ninguém |
+ * | G8 | terapia de grupo | Organização da rotina (on-line, 12 vagas, quinzenal: D+6, D+20, D+34) | aberta | ninguém (12 vagas) |
+ * | G9 | capacitação | Primeiros socorros em casa (on-line, 12 vagas, D+8) | aberta | 2 do Cuida |
+ * | G10 | capacitação | Higiene e banho no leito (presencial, 10 vagas, D+12 e D+19) | lotada | 10 do Livre (avulsa, R$ 40,00 por encontro); 2 na lista de espera |
+ * | G11 | roda aberta | Roda de conversa: a rede de apoio da família (on-line, UBS, D+22) | aberta | João e mais 2 do Livre |
+ *
+ * As cotas do mês (docs/20) ficam coerentes: Ana usa os 2 encontros de terapia de grupo de novembro na G1 (a G8 fica
+ * avulsa para ela); Lourdes e Elza usam os 2 na G3; Maria usa as 2 capacitações do Essencial na G2; João só está em rodas abertas.
+ */
 export function buildGroups(s: SeedState): void {
   const { ctx, c } = s;
 
@@ -71,8 +92,8 @@ export function buildGroups(s: SeedState): void {
         meetings: meetingList,
         capacity,
         status,
-        minPlan: kind === 'support_group' || kind === 'training' ? 'cuida' : null,
-        requiresEligibility: kind === 'group_therapy',
+        minPlan: kind === 'group_therapy' ? 'cuida' : null,
+        requiresEligibility: false,
         confidentialityText: CONFIDENTIALITY,
         ...(mode === 'in_person' ? { roomId: ROOM.girassol } : {}),
         ...extra,
@@ -86,17 +107,7 @@ export function buildGroups(s: SeedState): void {
     professionalRegistration: `${PSYCHOLOGIST[key].crp} (fictício)`,
   });
 
-  activity(
-    1,
-    'support_group',
-    'Sobrecarga e autocuidado',
-    'caregiver_burden',
-    psy('rafael'),
-    'in_person',
-    8,
-    'full',
-    meetings(1, 3, 4, 0),
-  );
+  activity(1, 'group_therapy', 'Sobrecarga e autocuidado', 'caregiver_burden', psy('rafael'), 'in_person', 6, 'full', meetings(1, 3, 3, 0, '14:00', 14));
   activity(
     2,
     'training',
@@ -109,30 +120,12 @@ export function buildGroups(s: SeedState): void {
     meetings(2, 10, 2, 0),
     { roomId: ROOM.ipe },
   );
-  activity(
-    3,
-    'group_therapy',
-    'Lidar com as perdas, em grupo',
-    'emotional_health',
-    psy('leticia'),
-    'in_person',
-    8,
-    'in_progress',
-    meetings(3, -21, 8, 3, '16:00'),
-    { roomId: ROOM.ipe },
-  );
-  activity(
-    4,
-    'open_conversation_circle',
-    'Roda de conversa: cuidar de quem cuida',
-    'self_care',
-    psy('beatriz'),
-    'in_person',
-    30,
-    'open',
-    meetings(4, 15, 1, 0, '15:00'),
-    { partnerOrg: 'CRAS' },
-  );
+  activity(3, 'group_therapy', 'Lidar com as perdas, em grupo', 'emotional_health', psy('leticia'), 'in_person', 8, 'in_progress', meetings(3, -21, 6, 2, '16:00', 14), {
+    roomId: ROOM.ipe,
+  });
+  activity(4, 'open_circle', 'Roda de conversa: cuidar de quem cuida', 'self_care', psy('beatriz'), 'in_person', 30, 'open', meetings(4, 15, 1, 0, '15:00'), {
+    partnerOrg: 'CRAS',
+  });
   activity(
     5,
     'training',
@@ -155,34 +148,47 @@ export function buildGroups(s: SeedState): void {
     'cancelled',
     meetings(6, 20, 2, 0, '19:00'),
   );
+  activity(7, 'group_therapy', 'Prevenção de conflitos familiares', 'family_conflict_prevention', psy('beatriz'), 'online', 12, 'draft', meetings(7, 30, 4, 0, '19:00'));
+  activity(8, 'group_therapy', 'Organização da rotina', 'routine_organization', psy('tiago'), 'online', 12, 'open', meetings(8, 6, 3, 0, '19:00', 14));
   activity(
-    7,
-    'support_group',
-    'Prevenção de conflitos familiares',
-    'family_conflict_prevention',
-    psy('beatriz'),
-    'online',
-    12,
-    'draft',
-    meetings(7, 30, 4, 0, '19:00'),
-  );
-  activity(
-    8,
-    'support_group',
-    'Organização da rotina',
-    'routine_organization',
-    psy('tiago'),
+    9,
+    'training',
+    'Primeiros socorros em casa',
+    'first_aid',
+    { type: 'provider', id: providerId(7), name: 'Enf. Priscila Gouveia' },
     'online',
     12,
     'open',
-    meetings(8, 6, 4, 0, '19:00'),
+    meetings(9, 8, 1, 0, '19:00'),
   );
+  activity(
+    10,
+    'training',
+    'Higiene e banho no leito',
+    'bed_bath_hygiene',
+    { type: 'provider', id: providerId(7), name: 'Enf. Priscila Gouveia' },
+    'in_person',
+    10,
+    'full',
+    meetings(10, 12, 2, 0, '09:00'),
+    { roomId: ROOM.ipe },
+  );
+  activity(11, 'open_circle', 'Roda de conversa: a rede de apoio da família', 'basic_care_guidance', psy('beatriz'), 'online', 30, 'open', meetings(11, 22, 1, 0, '19:00'), {
+    partnerOrg: 'UBS Centro',
+  });
+
+  /** Encontros da atividade no mês do primeiro encontro (o que a cota cobre ou o que se paga avulso). */
+  const monthMeetings = (act: Activity): number => {
+    const first = [...act.meetings].sort((a, b) => a.startAt.localeCompare(b.startAt))[0];
+    return first ? meetingsInMonth(act, monthOf(first.startAt)) : 0;
+  };
 
   const enroll = (
     n: number,
     who: { caregiver: number } | { external: { name: string; email: string } },
     status: ActivityEnrollment['status'],
     extra: Partial<ActivityEnrollment> = {},
+    paid = false,
   ): void => {
     const act = c.activities.find((a) => a.id === activityId(n)) as Activity;
     const done = act.meetings.filter((m) => m.done);
@@ -192,6 +198,9 @@ export function buildGroups(s: SeedState): void {
         : status === 'absent'
           ? act.meetings.map((m) => ({ meetingId: m.id, present: false }))
           : done.map((m) => ({ meetingId: m.id, present: true }));
+    // Roda aberta e participante externo: sem cota e sem valor. Terapia de grupo e capacitação: incluída, salvo quando avulsa.
+    const counts = 'caregiver' in who && act.kind !== 'open_circle';
+    const unit = act.kind === 'group_therapy' ? SINGLE_PRICES_CENTS.group_therapy : SINGLE_PRICES_CENTS.training;
     c.activityEnrollments.push(
       ctx.entity<ActivityEnrollment>(ctx.nextId('enr'), ctx.dt(-30), {
         activityId: act.id,
@@ -201,17 +210,20 @@ export function buildGroups(s: SeedState): void {
         status,
         confidentialityAcceptedAt: ctx.dt(-30, '10:00'),
         attendance,
+        ...(counts ? { includedInPlan: !paid, paid, priceCents: paid ? monthMeetings(act) * unit : 0 } : { includedInPlan: false, paid: false, priceCents: 0 }),
         ...extra,
       }),
     );
   };
-  [1, 8, 9, 11, 17, 21, 22, 23].forEach((n) => enroll(1, { caregiver: n }, 'enrolled'));
+  // G1 lotada (6 vagas): Cuida e Sustenta; Lourdes e Elza na fila.
+  [1, 8, 9, 21, 22, 23].forEach((n) => enroll(1, { caregiver: n }, 'enrolled'));
   enroll(1, { caregiver: 24 }, 'waitlist', { waitlistPosition: 1 });
   enroll(1, { caregiver: 27 }, 'waitlist', { waitlistPosition: 2 });
-  [1, 8, 9, 21, 22, 23, 27].forEach((n) => enroll(2, { caregiver: n }, 'enrolled'));
-  [4, 5, 13, 14, 15].forEach((n) =>
-    enroll(3, { caregiver: n }, 'enrolled', { eligibleForGroupTherapy: true }),
-  );
+  // G2 capacitação: 7 do Cuida e Sustenta e Maria (Essencial), todas incluídas.
+  [1, 8, 9, 21, 22, 23, 27, 2].forEach((n) => enroll(2, { caregiver: n }, 'enrolled'));
+  // G3 em andamento: só Sustenta (Lourdes e Elza entre elas).
+  [11, 17, 24, 27].forEach((n) => enroll(3, { caregiver: n }, 'enrolled'));
+  // G4 roda aberta: Livre e externos.
   [3, 4, 5, 10, 15, 19, 25].forEach((n) => enroll(4, { caregiver: n }, 'enrolled'));
   ['Ana Cláudia Ramos', 'Bento Siqueira', 'Cida Nogueira', 'Dario Esteves'].forEach((name, k) =>
     enroll(
@@ -220,10 +232,19 @@ export function buildGroups(s: SeedState): void {
       'enrolled',
     ),
   );
+  // G5 encerrada: presenças e ausências (histórico).
   [1, 8, 9, 11, 21, 22, 23, 24, 27].forEach((n) => enroll(5, { caregiver: n }, 'attended'));
   [17, 26].forEach((n) => enroll(5, { caregiver: n }, 'absent'));
+  // G6 cancelada.
   [8, 9, 21].forEach((n) => enroll(6, { caregiver: n }, 'cancelled'));
-  [8, 9, 11, 23].forEach((n) => enroll(8, { caregiver: n }, 'enrolled'));
+  // G9 capacitação on-line: 2 do Cuida.
+  [21, 22].forEach((n) => enroll(9, { caregiver: n }, 'enrolled'));
+  // G10 capacitação lotada: 10 do Livre (avulsa) e 2 na fila.
+  [30, 31, 32, 33, 34, 35, 36, 37, 38, 39].forEach((n) => enroll(10, { caregiver: n }, 'enrolled', {}, true));
+  enroll(10, { caregiver: 40 }, 'waitlist', { waitlistPosition: 1 }, true);
+  enroll(10, { caregiver: 41 }, 'waitlist', { waitlistPosition: 2 }, true);
+  // G11 roda aberta on-line: João e mais 2 do Livre.
+  [3, 13, 14].forEach((n) => enroll(11, { caregiver: n }, 'enrolled'));
 }
 
 interface PopDef {
@@ -677,17 +698,19 @@ export function buildGovernance(s: SeedState): void {
       });
     });
 
-  // ===== Conteúdos de orientação (8: 5 publicados, 2 em revisão, 1 rascunho; 1 exclusivo) =====
+  // ===== Conteúdos de orientação (10: 7 publicados, 2 em revisão, 1 rascunho; 1 exclusivo), cada um numa categoria (docs/20) =====
   const content = (
     title: string,
     body: string,
     status: GuidanceContent['status'],
+    category: GuidanceContent['category'],
     exclusive = false,
   ): void => {
     c.guidanceContents.push(
       ctx.entity<GuidanceContent>(ctx.nextId('gdc'), ctx.dt(-70), {
         title,
         body,
+        category,
         status,
         exclusive,
         ...(status === 'published'
@@ -700,42 +723,62 @@ export function buildGovernance(s: SeedState): void {
     'Como organizar os medicamentos da semana',
     'Separe os remédios por dia e horário em uma caixa organizadora. Anote mudanças de dose junto da data e confirme com o profissional que prescreveu.',
     'published',
+    'medication_health',
   );
   content(
     'Pausas curtas para quem cuida',
     'Reserve momentos de descanso ao longo do dia, mesmo que de poucos minutos. Peça ajuda a alguém da família para cobrir uma tarefa por semana.',
     'published',
+    'self_care',
   );
   content(
     'Conversar com a pessoa idosa sobre as decisões do dia a dia',
     'Explique o que vai fazer antes de fazer e ouça a preferência dela. Organizar o cuidado não significa decidir por quem é cuidado.',
     'published',
+    'communication_with_elder',
   );
   content(
     'Prevenção de quedas em casa',
     'Mantenha os caminhos livres, use tapetes antiderrapantes e boa iluminação. Revise o calçado e o apoio no banheiro.',
     'published',
+    'medication_health',
   );
   content(
     'Planilha de rotina semanal ampliada',
     'Modelo com horários de medicamentos, consultas, refeições e revezamento da família, disponível para assinantes.',
     'published',
+    'routine_organization',
     true,
   );
   content(
     'Rotina de sono e descanso de quem cuida',
     'Orientações gerais sobre horários regulares e ambiente tranquilo para dormir. Em caso de insônia persistente, procure um profissional de saúde.',
     'in_review',
+    'self_care',
   );
   content(
     'Direitos da pessoa idosa: o que saber',
     'Resumo em linguagem simples sobre benefícios, atendimento prioritário e canais de denúncia, como o Disque 100.',
     'in_review',
+    'rights_public_network',
   );
   content(
     'Alimentação e prevenção de engasgo',
     'Cuidados básicos na hora da refeição: postura, ritmo e alimentos mais seguros.',
     'draft',
+    'medication_health',
+  );
+  content(
+    'Um dia por vez: montar a rotina da semana',
+    'Comece pelo que não muda: remédios, refeições e consultas. Depois encaixe o descanso e o que a pessoa idosa gosta de fazer. Uma rotina simples, escrita e visível para toda a família, evita esquecimentos e discussões.',
+    'published',
+    'routine_organization',
+  );
+  content(
+    'Onde buscar apoio na rede pública',
+    'O CRAS orienta sobre benefícios e serviços da assistência social. A UBS do bairro acompanha a saúde da pessoa idosa e pode fazer visita domiciliar. Clínicas-escola de Psicologia atendem a baixo custo. Leve um documento com foto e o cartão do SUS.',
+    'published',
+    'rights_public_network',
   );
 
   // ===== Normas citadas (6), sem "vigência confirmada em" =====

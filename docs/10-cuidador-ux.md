@@ -344,7 +344,8 @@ Todos são standalone, `OnPush`, com signals (convenção do projeto) e vivem em
 - **Regra**: três tipos: primeiro uso ("Você ainda não tem remédios cadastrados"), sem resultado ("Nenhuma opção encontrada"), sem acesso (consentimento retirado, plano não inclui).
 - **Texto**: ver cada tela.
 
-### A.2.15 Bloqueio por plano (`app-cg-plan-lock`)
+### A.2.15 Bloqueio por plano (`app-cg-plan-lock`): DESCONTINUADO (11/11/2026)
+**Revogado por `docs/20-regras-planos-v2.md`, regra de exibição 1**: o app não anuncia o que o plano não inclui fora de Meu plano. O que a pessoa não pode usar simplesmente não aparece; o que pode usar aparece inteiro. O componente saiu do kit público e do catálogo; o arquivo só existe enquanto `groups/` e `content/` o importam. O texto abaixo fica como histórico.
 - **Serve para**: dizer, sem pressão, que um recurso é de outro plano.
 - **Anatomia**: cartão `soft`, ícone `lock` (24, cinza), título "**Disponível no plano {Cuida}**", uma frase do que é e o plano atual da pessoa, botão de texto "Ver os planos". **Sem preço em destaque, sem "Assine agora", sem contagem, sem selo colorido, sem foto de gente feliz.**
 - **Regras**: (1) o cartão aparece **igual para todo mundo** do mesmo plano, **nunca** por causa de pontuação, faixa, alerta ou ARBE (RN-PLN-19); (2) nunca bloqueia o que é para todos: atendimento psicológico, rodas abertas, conteúdos básicos, ajuda e privacidade; (3) mostra sempre uma alternativa gratuita quando existir ("As rodas de conversa abertas são para todos").
@@ -417,6 +418,17 @@ Todos são standalone, `OnPush`, com signals (convenção do projeto) e vivem em
 - **Movimento**: o fundo muda em `var(--cg-dur)` (0 com `prefers-reduced-motion`); nada pisca nem desliza. Em modo de alto contraste as marcas mantêm as cores e hoje ganha contorno.
 - **Fonte de verdade**: regras puras em `core/rules/calendar-grid.ts` (grade, nomes, mês anterior e seguinte, teclado, marcas); "hoje" vem do `Clock`.
 
+### A.2.26 Selo do tipo de encontro (`app-cg-event-badge`)
+- **Serve para**: dizer de cara o que é um encontro (docs/20, regra de exibição 3): **roda de conversa aberta** (sálvia, `messages-square`), **capacitação** (azul-céu, `book-open`) ou **terapia de grupo** (areia dourada, `heart-handshake`). Sempre com o nome escrito; a cor só reforça.
+- **Anatomia**: pílula com ícone e texto, `md` (padrão) ou `sm` (dentro de uma linha de lista). `data-type` com a chave do tipo.
+- **Onde**: Hoje (convite do dia e próximo compromisso), Agenda (linha do encontro inscrito), Encontros (cada cartão e cada seção).
+- **Regras**: nunca aparece para um tipo que o plano não dá acesso, porque esse encontro não é listado (regra 2); exceção: a pessoa já inscrita.
+
+### A.2.27 Seção de página (`app-cg-section`)
+- **Serve para**: toda tela ser cabeçalho, seções com título e cartões (docs/20, regra 4): nenhum parágrafo órfão, nenhuma instrução solta.
+- **Anatomia**: `region` com `aria-labelledby`; `h2` (ou `h3` com `headingLevel`) com a contagem opcional entre parênteses ("Encontros (3)"); à direita, o detalhe projetado com `cgSectionEnd` (o anel de progresso, um botão de texto); o corpo embaixo, em pilha.
+- **Onde**: Hoje (Remédios de hoje com o anel, Como você está hoje?, Para você), Mais (Conta, Ajuda, Privacidade), e o que o agente Regras usar em Encontros.
+
 ## A.3 Responsivo: 360, 768 e 1280
 
 | Elemento | 360 (celular) | 768 (tablet) | 1280 (tela larga) |
@@ -438,7 +450,7 @@ Nenhuma tela tem **rolagem horizontal da página** (AC-GL-06). Letra **Bem grand
 
 ## A.4 Movimento
 
-Mínimo e funcional (`--cg-dur` 120 ms, `--cg-dur-sheet` 200 ms). Só se move: a folha de baixo (deslize e escurecimento), a barra de progresso do cadastro (largura) e a troca de cor de hover e foco. **Sem** coreografia de entrada, sem confete, sem pulso, sem rolagem animada, sem carrossel automático, sem esqueleto com brilho, sem vibração do aparelho. `prefers-reduced-motion: reduce` zera tudo (`--cg-dur: 0ms`): a folha aparece sem deslizar e o giro de "ocupado" fica estático (o `aria-busy` continua).
+Mínimo e funcional (`--cg-dur` 120 ms, `--cg-dur-sheet` 200 ms). (v2: a entrada em cascata de docs/17 só roda enquanto a coluna tem `is-entering`, aplicada pelo shell por 800 ms a cada tela nova; o estado padrão de todo bloco é visível, então a página nunca fica em branco com a aba em segundo plano.) Só se move: a folha de baixo (deslize e escurecimento), a barra de progresso do cadastro (largura) e a troca de cor de hover e foco. **Sem** coreografia de entrada, sem confete, sem pulso, sem rolagem animada, sem carrossel automático, sem esqueleto com brilho, sem vibração do aparelho. `prefers-reduced-motion: reduce` zera tudo (`--cg-dur: 0ms`): a folha aparece sem deslizar e o giro de "ocupado" fica estático (o `aria-busy` continua).
 
 ## A.5 Ícones
 
@@ -771,6 +783,8 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-40** Dado o rodapé, então contém o texto literal de que os canais não substituem atendimento de saúde nem orientação sobre remédios (RN-CAN-06).
 
 ## C4. `/cuidador/hoje`: Hoje (P1, `today`)
+**Revisão UX v2 (11/11/2026, `docs/20-regras-planos-v2.md` e `docs/21-ux-v2-dev.md`)**: herói (saudação e data) e duas colunas em 1024 px ou mais. **O dia**, à esquerda: nota de cuidado quando houver, cartão do telefone para quem prefere ligar ou WhatsApp, Próximo compromisso (inclui o encontro em que a pessoa está inscrita, com o selo do tipo `app-cg-event-badge`), Remédios de hoje (seção com o anel). **Você**, à direita: Como você está hoje?, Para você, cartão "Quer falar com a gente?". "Para você" só convida para o que a pessoa pode usar: roda aberta e leitura (todos), capacitação incluída (texto "Sem custo para você."), conversa com psicólogo (só Cuida e Sustenta); terapia de grupo nunca; sem nada disponível a seção some. Nenhuma frase solta; o plano nunca aparece.
+
 **Propósito.** Mostrar o que importa **hoje** para a pessoa e para quem ela cuida, sem painel.
 **Ação principal.** Tocar **Dei** no próximo remédio (ou, sem remédio, abrir o próximo compromisso).
 **Desenho (360 px, esquema).**
@@ -848,10 +862,11 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-49** Dados mais de 4 remédios no dia, então aparecem 4 linhas e "Ver todos (N)" que abre a aba Remédios; dado nenhum cadastrado, então aparece o vazio com "Cadastrar um remédio".
 - **AC-CG-50** Dado o humor, quando se toca uma das 5 opções, então grava **um registro por dia** (tocar de novo em "Mudar" substitui), nada vem pré-marcado e as 5 opções têm o mesmo visual (sem cor de semáforo); dado "Muito mal" ou "Mal", então aparece a nota "Dias difíceis acontecem..." com "Falar com a gente".
 - **AC-CG-51** Dado consentimento de saúde retirado (Sônia), então o bloco de humor **não aparece** em Hoje e a nota de cuidado também não.
-- **AC-CG-52** Dado o convite do dia, então ele é sempre de item **aberto a todos os planos** (conversa com psicólogo, roda aberta ou conteúdo livre), muda por regra de calendário, **nunca** depende de pontuação, faixa, alerta ou ARBE, e **nunca** mostra preço, plano nem bloqueio.
+- **AC-CG-52** (v2) Dado o convite do dia, então ele é sempre de item que a pessoa **pode usar** (roda aberta e conteúdo livre para todos; capacitação incluída no plano; conversa com psicólogo só para Cuida e Sustenta; terapia de grupo nunca), com o selo do tipo quando é encontro, muda por regra de calendário, **nunca** depende de pontuação, faixa, alerta ou ARBE, e **nunca** mostra preço, plano nem bloqueio.
 - **AC-CG-53** Dado um serviço da rede concluído e ainda sem avaliação, então "Para você" mostra "Como foi o atendimento de {nome}?" com **Avaliar**, que leva a `/cuidador/rede/pedidos?avaliar=<id do pedido>`, onde abre a folha de A.2.22 (a folha é de Meus pedidos, não de Hoje).
 - **AC-CG-54** Dada a pessoa com canal preferido telefone ou familiaridade digital baixa (João), então o cartão "Prefere falar com a gente?" com o telefone `(34) 90000-0000` em destaque **sobe para logo depois da saudação** quando o canal preferido é telefone ou WhatsApp (CXC-025; "No protótipo, a ligação não é feita." só aparece ao tocar); para os demais o fechamento é o botão de texto "Como falar com a gente".
-- **AC-CG-55** Dado Hoje em 1280 px, então os blocos ficam em duas colunas (compromisso e remédios à esquerda; humor e convite à direita) e a nota de cuidado ocupa a largura toda acima.
+- **AC-CG-55** (v2) Dado Hoje em 1280 px, então os blocos ficam em duas colunas: o dia à esquerda (nota de cuidado, telefone de quem prefere ligar, compromisso, remédios) e você à direita (humor, Para você, Quer falar com a gente?); nenhum bloco fora das colunas além do herói.
+- **AC-CG-55b** (v2) Dado um encontro em que a pessoa está inscrita, então ele entra em Próximo compromisso e na Agenda com o selo do tipo e leva a `/cuidador/cuidar-de-mim/grupos?atividade=<id>`; encontro de tipo sem acesso nunca aparece (salvo inscrito).
 - **AC-CG-56** Dado Hoje, então não aparece plano, preço, desconto, pontuação, faixa, ARBE nem a palavra "alerta" para nenhuma pessoa de demonstração.
 
 ## C5. `/cuidador/rotina/agenda`: Rotina, aba Agenda (P1, `routine`)
@@ -960,6 +975,8 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-71** Dada uma dose cujo horário passou, então a linha mostra "Ainda não anotado" (neutro; âmbar suave só na primeira linha em atraso, sem vermelho) e **Dei** continua disponível; a etiqueta do compromisso de hoje que já passou é "Já passou".
 
 ## C7. `/cuidador/cuidar-de-mim`: Cuidar de mim, a porta (P2, `care`, `[P-02]`)
+**Revisão UX v2 (11/11/2026, `docs/20-regras-planos-v2.md` e `docs/21-ux-v2-dev.md`)**: só herói e ladrilhos da mesma altura. Cuida e Sustenta: 4 (Conversar com um psicólogo, Como estou, **Encontros**, Conteúdos). Livre e Essencial: 3 (sem Conversar com um psicólogo; nada no lugar). Sem aviso de emergência (fica em Ajuda agora, Conversar e Como estou). Frases de Encontros: "Rodas de conversa, capacitações e grupos com quem também cuida.", "Você está em 1 encontro.", "Você está na lista de espera de 1 encontro.". O que segue abaixo vale onde não conflitar.
+
 **Propósito.** Levar a pessoa a um dos quatro cuidados com ela mesma, sem dado e sem pressão.
 **Ação principal.** Tocar no cartão que combina com o momento.
 **Desenho (360 px, esquema).**
@@ -995,12 +1012,14 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 **Por pessoa.** Lourdes: "Você está na lista de espera de 1 grupo." Maria: Grupos com a frase padrão (sem cadeado). Sônia: "Acompanhamento pausado." em Como estou.
 **RN.** RN-ATD-03, 04, RN-PLN-04, 19, RN-ETICA-15.
 **Critérios de aceite.**
-- **AC-CG-72** Dada a rota, então há exatamente 4 cartões na ordem Conversar com um psicólogo, Como estou, Grupos e capacitações, Conteúdos, cada um leva à rota certa (`atendimento`, `como-estou`, `grupos`, `conteudos`), em 1 coluna abaixo de 768 px e em 2 x 2 de 768 px em diante.
-- **AC-CG-73** Dada qualquer pessoa e qualquer plano, então os 4 cartões estão presentes e **nenhum** tem cadeado, preço, selo de plano ou número.
+- **AC-CG-72** (v2) Dada a rota, então Cuida e Sustenta veem 4 ladrilhos na ordem Conversar com um psicólogo, Como estou, Encontros, Conteúdos (2 x 2 de 768 px em diante) e Livre e Essencial veem 3, Como estou, Encontros, Conteúdos (uma linha de 1024 px em diante), cada um na rota certa, todos da mesma altura.
+- **AC-CG-73** (v2) Dada qualquer pessoa e qualquer plano, então **nenhum** ladrilho tem cadeado, preço, selo de plano, "Disponível no plano" ou número.
 - **AC-CG-74** Dada uma conversa marcada, então o cartão 1 mostra "Você tem uma conversa marcada: {dia}, às {hora}."; dado consentimento de saúde retirado, o cartão 2 mostra "Acompanhamento pausado."
 - **AC-CG-75** Dado o cartão 3 de uma pessoa em lista de espera, então mostra "Você está na lista de espera de 1 grupo.", e nenhum cartão mostra pontuação, faixa ou alerta.
 
 ## C8. `/cuidador/cuidar-de-mim/atendimento`: Conversar com um psicólogo (P2, `care`)
+> **Regras de plano v2 (docs/20, 11/11/2026).** Só Cuida e Sustenta. No Livre e no Essencial a rota redireciona para a porta de Cuidar de mim (decisão do líder). Abaixo do herói, a cota do mês ("Neste mês: 1 de 2 sessões usadas"). O resumo não tem mais desconto: dentro da cota, "Incluída no seu plano (1 de 2 neste mês)." e "Total: R$ 0,00."; além dela, "Você já usou as 2 sessões do mês incluídas no plano. Esta conversa é avulsa: R$ 120,00.", o total e o aviso de pagamento. Cancelar com menos de 24 h consome a cota. AC-CG-79 passa a ser: "Dentro da cota, o resumo diz Incluída no seu plano (N de M neste mês) e Total: R$ 0,00; além da cota, o valor avulso com o aviso; o Livre e o Essencial não chegam à tela." AC-CG-80: a sessão grava `priceCents` 0 e `includedInPlan` quando cabe na cota.
+
 **Propósito.** Marcar, ver, remarcar e cancelar conversas com os psicólogos da Nexus.
 **Ação principal.** **Marcar uma conversa**.
 **De cara.** `h1` "Conversar com um psicólogo"; apoio "As conversas são com psicólogos da Nexus, com registro no conselho de Psicologia."; se houver, o cartão **Sua próxima conversa** (dia, hora, com quem, formato, situação); botão primário **Marcar uma conversa**; aviso de emergência compacto.
@@ -1133,7 +1152,9 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-97** Dada a tela inteira, então **não há** convite de grupo, plano, desconto ou upgrade, para nenhuma faixa nem alerta (RN-PLN-19).
 - **AC-CG-98** Dado o humor, então vale o mesmo comportamento de Hoje (AC-CG-50) e o humor da semana aparece em lista na folha "Ver os últimos 7 dias".
 
-## C10. `/cuidador/cuidar-de-mim/grupos`: Grupos e capacitações (P3, `groups`)
+## C10. `/cuidador/cuidar-de-mim/grupos`: Encontros (P3, `groups`)
+> **Regras de plano v2 (docs/20, 11/11/2026).** A tela se chama **Encontros** e é organizada por tipo, cada um numa seção (`app-cg-section`, com a contagem) e com o selo do tipo (`app-cg-event-badge`): Minhas inscrições, Rodas de conversa abertas, Capacitações e Terapia de grupo, com filtro por tipo quando há mais de um. A terapia de grupo só existe para Cuida e Sustenta: para os outros a seção não aparece e os encontros desse tipo não abrem nem por endereço direto ("Não encontramos este encontro."). Não há mais bloqueio por plano, cadeado nem "Disponível no plano". Cada cartão: tipo, data e hora, local, vagas ou "Lista de espera" e, na capacitação e na terapia de grupo, "Incluída no seu plano" (com a cota quando há limite) ou o valor avulso ("R$ 40,00 por encontro"; no Livre, "Você pode participar pagando por encontro"). A folha do sigilo diz o valor avulso antes de entrar (pagamento simulado, sem campo de cartão). A indicação do psicólogo não é mais exigida. AC-CG-103 e 104 passam a ser: "Dado Livre ou Essencial, a terapia de grupo não aparece em lugar nenhum e nenhum texto anuncia plano; a capacitação aparece com o valor ou incluída." AC-CG-105: "A terapia de grupo mostra Psicoterapia em grupo e quem conduz; Cuida e Sustenta entram com o sigilo."
+
 **Propósito.** Mostrar a programação do mês e deixar a pessoa entrar em um grupo ou capacitação, com o plano, o sigilo e a lista de espera claros.
 **Ação principal.** **Quero participar** (na página da atividade).
 **De cara.** `h1` "Grupos e capacitações"; apoio "A programação do mês."; se houver, o cartão **Minhas inscrições** (atividade, próximo encontro, situação); a lista da programação em cartões: título, tipo ("Grupo de apoio", "Capacitação", "Terapia de grupo", "Roda de conversa aberta"), **o caráter** em etiqueta ("Orientação e psicoeducação" ou "Psicoterapia"), próximo encontro (dia e hora), formato (On-line, No espaço de coworking) e vagas ("4 vagas" ou "Lotado").
@@ -1172,6 +1193,8 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-108** Dada a tela inteira, então **não aparece** nenhum convite derivado de pontuação, faixa ou alerta, e nenhum texto promete resultado ("vai melhorar", "vai aliviar").
 
 ## C11. `/cuidador/cuidar-de-mim/conteudos`: Conteúdos (P3, `content`)
+> **Regras de plano v2 (docs/20, 11/11/2026).** Os conteúdos são organizados por categoria (Rotina e organização, Cuidar de você, Remédios e saúde, Comunicação com a pessoa idosa, Direitos e rede pública), uma seção por categoria e filtro por categoria. O exclusivo entra na categoria dele com o selo "Do seu plano" para quem tem (Essencial em diante); para o Livre ele **não aparece** (sem cartão de bloqueio, sem cadeado). AC-CG-110 passa a ser: "Dado o Livre, nenhum exclusivo nem texto de plano; dado Essencial em diante, o exclusivo aparece na categoria dele."
+
 **Propósito.** Oferecer leituras curtas de orientação sobre cuidar da pessoa idosa e de si.
 **Ação principal.** Tocar numa leitura.
 **Desenho (360 px, esquema).**
@@ -1214,6 +1237,8 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-112** Dada a tela inteira, então a ordem e a seleção **não dependem** de pontuação, faixa, alerta ou ARBE.
 
 ## C12. `/cuidador/rede`: Rede, a porta (P3, `network`)
+**Revisão UX v2 (11/11/2026, `docs/20-regras-planos-v2.md` e `docs/21-ux-v2-dev.md`)**: a linha do herói é o aviso "A Nexus organiza a rede. O serviço é feito e pago direto com o profissional." (sem nota solta no fim). Ladrilhos da mesma altura: Buscar e Meus pedidos para todos; Cartão Nexus só para quem tem o cartão (Essencial em diante). O Livre não vê nada sobre o cartão aqui.
+
 **Propósito.** Levar a pessoa a buscar um profissional ou serviço, ver os pedidos ou usar o cartão.
 **Ação principal.** **Buscar profissionais e serviços**.
 **Desenho (360 px, esquema).**
@@ -1247,11 +1272,13 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 **Por pessoa.** Elza (Sustenta): "Seu número e onde usar." João (Livre): "Um benefício dos planos pagos."
 **RN.** RN-REDE-17, 25, RN-CRT-02, RN-ENC-10.
 **Critérios de aceite.**
-- **AC-CG-113** Dada a rota, então há 3 cartões na ordem Buscar profissionais e serviços, Meus pedidos, Cartão Nexus, cada um leva à sua rota (`buscar`, `pedidos`, `cartao`), em 1 coluna abaixo de 768 px.
-- **AC-CG-114** Dada qualquer pessoa, então os 3 cartões aparecem, **sem cadeado e sem preço**; para o Livre, o cartão do Cartão Nexus diz "Um benefício dos planos pagos."
-- **AC-CG-115** Dada a tela, então aparece o aviso literal "A Nexus organiza a rede. O serviço é feito e pago direto com o profissional."
+- **AC-CG-113** (v2) Dada a rota, então há os ladrilhos Buscar profissionais e serviços, Meus pedidos e, só para quem tem o cartão, Cartão Nexus, nessa ordem, cada um na sua rota, da mesma altura, em 1 coluna abaixo de 768 px.
+- **AC-CG-114** (v2) Dada a pessoa do Livre, então a porta tem 2 ladrilhos e nenhuma menção ao Cartão Nexus; do Essencial em diante, 3. Nunca cadeado, preço nem convite de plano.
+- **AC-CG-115** (v2) Dada a tela, então o aviso literal "A Nexus organiza a rede. O serviço é feito e pago direto com o profissional." é a linha do herói.
 
 ## C13. `/cuidador/rede/buscar`: Buscar profissionais e serviços (P3, `network`)
+**Revisão UX v2 (11/11/2026, `docs/20-regras-planos-v2.md` e `docs/21-ux-v2-dev.md`)**: no Livre a linha de condições **não existe** (nem na tabela da comparação, nem em "Igual nas duas opções"); nada de "a partir do plano Essencial".
+
 **Propósito.** Achar e comparar profissionais e serviços por necessidade, sempre com mais de uma opção quando existir.
 **Ação principal.** Escolher uma necessidade e tocar num profissional.
 **De cara.** `h1` "Buscar"; campo "Buscar pelo nome" (opcional); h2 "O que você procura?" com as 10 categorias em botões de 56 px (Fisioterapia, Cuidador(a), Home care, Enfermagem, Farmácia, Clínica, Psicologia, Nutrição, Advocacia, Serviço especializado); ao escolher (`?categoria=` na URL), a **lista de resultados** em cartões.
@@ -1280,9 +1307,11 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-120** Dado um profissional com 5 avaliações ou mais, então o cartão mostra "Nota 4,8 (12 avaliações)"; com menos de 5, mostra "Ainda sem nota (menos de 5 avaliações)".
 - **AC-CG-121** Dadas 2 ou 3 caixas "Comparar" marcadas, então aparece a barra "Comparar escolhidos (N)" e a folha lado a lado; com 1 caixa, a barra não aparece; com 3 marcadas, as outras caixas ficam sem uso com o motivo escrito.
 - **AC-CG-122** Dado o filtro "Só quem atende em casa" ligado, então a lista mostra só quem atende em casa, `aria-pressed="true"`, e a contagem acompanha; o texto da busca **não** vai para a URL.
-- **AC-CG-123** Dada a pessoa do plano Livre, então ela vê a lista e compara, mas a frase "Condições especiais: a partir do plano Essencial." aparece uma vez, em vez das condições. A comparação é uma **tabela curta** (nota, atende em casa, condições) que só mostra o que **muda**; o que é igual vem em "Igual nas duas opções" (CXC-012). Escolher uma necessidade leva a tela até os resultados (CXC-011).
+- **AC-CG-123** (v2) Dada a pessoa do plano Livre, então ela vê a lista e compara, **sem** a linha de condições (sem condições, sem linha); do Essencial em diante as condições aparecem. A comparação é uma **tabela curta** (nota, atende em casa, condições) que só mostra o que **muda**; o que é igual vem em "Igual nas duas opções" (CXC-012). Escolher uma necessidade leva a tela até os resultados (CXC-011).
 
 ## C14. `/cuidador/rede/profissional/:id`: Profissional (P3, `network`)
+**Revisão UX v2 (11/11/2026, `docs/20-regras-planos-v2.md` e `docs/21-ux-v2-dev.md`)**: a seção "Condições para quem é da Nexus" só existe do Essencial em diante; para o Livre ela não aparece (sem "a partir do plano").
+
 **Propósito.** Conhecer um profissional e, se a pessoa quiser, pedir o serviço.
 **Ação principal.** **Pedir serviço** (todos os planos; decisão do líder, ver S-09).
 **De cara.** `h1` com o nome; "Fisioterapia · Uberlândia"; etiquetas "Em destaque", "Atende em casa"; "Registro: CREFITO-4/00000-F (fictício)"; nota; o aviso "A Nexus organiza a rede. O serviço é feito e pago direto com o profissional."; **Condições para quem é da Nexus** (texto do prestador); botão primário **Pedir serviço** fixo embaixo.
@@ -1303,7 +1332,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 **Critérios de aceite.**
 - **AC-CG-124** Dado um profissional ativo ou em monitoramento, então a ficha mostra nome, especialidade, registro e conselho, cidade, se atende em casa, nota (ou "Ainda sem nota"), "Em destaque" quando for o caso, as condições (Essencial e acima) e o aviso de que a Nexus organiza e o pagamento é direto; **não mostra** faixa de monitoramento, taxa de recusa, comissão nem disponibilidade.
 - **AC-CG-125** Dada qualquer pessoa (todos os planos), quando se toca **Pedir serviço**, escolhe o local e toca **Enviar pedido**, então cria um pedido `requested`, mostra "Pedido enviado. A equipe avisa você quando o profissional responder." e o pedido aparece em Meus pedidos; em no máximo 7 toques a partir de Hoje.
-- **AC-CG-126** Dada a pessoa do plano Livre, então a ficha **tem** o botão **Pedir serviço** como as demais, a linha de condições mostra "Condições especiais: a partir do plano Essencial." e o pedido criado não carrega condições especiais; o telefone do profissional aparece com **Copiar número** para todos os planos.
+- **AC-CG-126** Dada a pessoa do plano Livre, então a ficha **tem** o botão **Pedir serviço** como as demais, a seção de condições **não aparece** (v2) e o pedido criado não carrega condições especiais; o telefone do profissional aparece com **Copiar número** para todos os planos.
 - **AC-CG-127** Dado um profissional sem a cláusula de proteção de dados assinada, então o botão **Pedir serviço** não aparece e a nota diz "No momento não é possível pedir este profissional pelo app. A equipe pode ajudar."
 - **AC-CG-128** Dado um profissional suspenso, descredenciado ou inexistente, então a rota mostra "Não encontramos este profissional." sem confirmar nem negar que ele existe.
 - **AC-CG-129** Dado um pedido em andamento com o mesmo profissional, então a ficha mostra "Você já tem um pedido em andamento com este profissional." e **Ver pedido**.
@@ -1346,6 +1375,8 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-138** Dada a tela inteira, então **não aparece** faixa de monitoramento, taxa de recusa nem qualquer dado interno do profissional.
 
 ## C16. `/cuidador/rede/cartao`: Cartão Nexus (P3, `card`)
+> **Regras de plano v2 (docs/20, 11/11/2026).** No Livre a rota redireciona para a porta de Rede (decisão do líder); não há mais convite nem desenho do cartão vazio, e nenhuma tela convida para o cartão. AC-CG-142 passa a ser: "Dado o Livre, /cartao leva à porta de Rede." AC-CG-143: "No dia em que a assinatura deixa de valer, o cartão é inativado e a rota leva à Rede."
+
 **Propósito.** Mostrar o número do cartão e onde usar os descontos; para quem está no Livre, mostrar com calma que o benefício existe.
 **Ação principal.** **Copiar número** (assinante). O Livre não tem ação principal.
 **De cara (assinante).** `h1` "Cartão Nexus"; o **cartão**, que PARECE cartão (proporção 1,586:1, a **cor do plano**, o símbolo da marca, o chip, o número `NX-0000-0000` grande e tabular, o nome em caixa alta e a etiqueta do plano; vida em `docs/17-vida-v2.md`); "Mostre o número no balcão do parceiro."; **Copiar número**.
@@ -1375,6 +1406,8 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-144** Dada a tela inteira, então nenhum dado de pontuação, alerta ou ARBE influencia o que aparece (RN-PLN-19).
 
 ## C17. `/cuidador/mais`: Mais (Base, shell, `[P-02]`)
+**Revisão UX v2 (11/11/2026, `docs/20-regras-planos-v2.md` e `docs/21-ux-v2-dev.md`)**: os itens ficam em grupos com título, **Conta** (Meu plano, Meu perfil, Família), **Ajuda** (Falar com a Nexus, Ajuda agora) e **Privacidade** (Privacidade e meus dados), depois o painel Tamanho da letra e Sair. Meu plano é item comum, com informação neutra e sem chamada. O tamanho da letra fica só aqui (saiu de Meu perfil).
+
 **Propósito.** Reunir o que não é do dia a dia: plano, ajuda, família, privacidade, perfil, tamanho da letra e sair.
 **Ação principal.** Tocar no item que a pessoa procura (não há ação primária de destaque).
 **Desenho (360 px, esquema).**
@@ -1416,12 +1449,14 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 **Por pessoa.** Marcos: "Muda para o Livre em 13/11". João (Livre): "Livre · sem custo". Todos: o mesmo conjunto de 5 itens.
 **RN.** RN-USR-18, RN-PLN-13, 14, RN-LGPD-20.
 **Critérios de aceite.**
-- **AC-CG-145** Dada a rota, então aparecem `h1` "Mais", o nome da pessoa com a etiqueta do plano, os 5 itens na ordem Meu plano, Falar com a Nexus, Família, Privacidade e meus dados, Meu perfil, o seletor de tamanho da letra e o botão **Sair**.
+- **AC-CG-145** (v2) Dada a rota, então aparecem `h1` "Mais", o nome da pessoa com a etiqueta do plano, os grupos Conta (Meu plano, Meu perfil, Família), Ajuda (Falar com a Nexus, Ajuda agora) e Privacidade (Privacidade e meus dados), o seletor de tamanho da letra e o botão **Sair**.
 - **AC-CG-146** Dado o seletor de tamanho da letra, então aplica o que A.2.20 e AC-CG-13 descrevem, na própria tela e sem botão Salvar.
 - **AC-CG-147** Dado **Sair**, então a sessão `nexus-erp:caregiver-session` é apagada, a rota é `/login` e a faixa "Você saiu. Até a próxima." aparece; voltar com o botão do navegador **não** reabre `/cuidador/**`.
 - **AC-CG-148** Dada a tela inteira, então não há contador, ponto de notificação nem selo de novidade nos itens.
 
 ## C18. `/cuidador/mais/plano`: Meu plano (P3, `plan`)
+> **Regras de plano v2 (docs/20, 11/11/2026).** Meu plano é o único lugar que explica os planos. O herói mostra 4 destaques tirados da tabela do docs/20 (Cuida: "Atendimento psicológico individual: 2 sessões por mês", "Terapia de grupo: 2 encontros por mês", "Todas as capacitações do mês", "Maior suporte à organização da rotina"; o Livre não tem o Cartão como destaque) e, só para Cuida e Sustenta, a cota do mês ("Neste mês: 1 de 2 sessões usadas"). O quadro mostra em cada plano as 3 linhas de cota (atendimento individual, terapia de grupo, capacitações) e 3 destaques que não repetem a cota, sem "Tudo do plano anterior, mais:". O aviso fixo passou a "A mensalidade não inclui os serviços da rede.". Nenhuma menção a Zarit. A troca continua em um passo; descer de plano tira só das turmas futuras de terapia de grupo.
+
 **Propósito.** Mostrar o plano da pessoa e deixar trocar ou cancelar com o efeito dito antes, sem letra miúda.
 **Ação principal.** **Ver outros planos** (no Livre, **Ver os planos**).
 **De cara.** `h1` "Meu plano"; **um único herói**, o plano atual num cartão com a **cor do plano** (Figura 1): "Seu plano agora", o **nome em serifa grande**, o preço ("R$ 119,90 por mês"; Livre, "Sem custo, sem prazo"; pago pela empresa, "Pago pela empresa"), a situação ("Próxima cobrança em 18/11/2026") e **4 destaques com ícone** (Cuida: Grupos de apoio, Capacitações, Maior suporte à organização, Descontos exclusivos do Cartão Nexus); o link **Ver tudo que inclui** abre a lista completa numa folha (a lista longa não aparece de cara); o único botão cheio, **Ver outros planos**; o link de texto calmo **Cancelar plano**, no fim (só plano pago). Mudança agendada: faixa clara acima do herói, "Seu plano muda para o Essencial em 18/11/2026." (ou "Seu plano volta a ser o Livre em 18/11/2026.") com **Manter meu plano**. Vida e decisões em `docs/17-vida-v2.md`.

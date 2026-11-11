@@ -6,7 +6,7 @@
  */
 
 /** Versão atual do esquema dos dados (também gravada nas exportações JSON). */
-export const SCHEMA_VERSION = '1';
+export const SCHEMA_VERSION = '2';
 
 /** Acesso restrito que uma migração recebe para ler e reescrever coleções. */
 export interface MigrationContext {
@@ -23,8 +23,69 @@ export interface Migration {
   run(ctx: MigrationContext): void;
 }
 
-/** Cadeia de migrações. Vazia enquanto o esquema é a versão 1. */
-export const MIGRATIONS: readonly Migration[] = [];
+type Row = Record<string, unknown>;
+
+function rows(ctx: MigrationContext, name: string): Row[] | null {
+  const value = ctx.read(name);
+  return Array.isArray(value) ? (value as Row[]) : null;
+}
+
+/** Categoria padrão dos conteúdos antigos (sem categoria): rotina e organização. */
+const DEFAULT_CONTENT_CATEGORY = 'routine_organization';
+
+/**
+ * v1 para v2 (docs/20-regras-planos-v2.md): os tipos de atividade viram `open_circle | training | group_therapy`
+ * (`support_group` vira `group_therapy`, `open_conversation_circle` vira `open_circle`); a terapia de grupo é do Cuida em
+ * diante e a capacitação passa a valer para todos (`minPlan` refeito, `requiresEligibility` falso); as inscrições e as
+ * sessões ganham `includedInPlan` (sessão de R$ 0,00 = incluída); os conteúdos ganham `category`.
+ */
+export const MIGRATION_V1_TO_V2: Migration = {
+  from: '1',
+  to: '2',
+  description: 'Tipos de encontro, cotas por plano e categorias de conteúdo (docs/20).',
+  run(ctx) {
+    const activities = rows(ctx, 'activities');
+    const kindOf = new Map<string, string>();
+    if (activities) {
+      ctx.write(
+        'activities',
+        activities.map((a) => {
+          const kind = a['kind'] === 'support_group' ? 'group_therapy' : a['kind'] === 'open_conversation_circle' ? 'open_circle' : a['kind'];
+          kindOf.set(String(a['id']), String(kind));
+          return { ...a, kind, minPlan: kind === 'group_therapy' ? 'cuida' : null, requiresEligibility: false };
+        }),
+      );
+    }
+    const enrollments = rows(ctx, 'activityEnrollments');
+    if (enrollments) {
+      ctx.write(
+        'activityEnrollments',
+        enrollments.map((e) => {
+          const kind = kindOf.get(String(e['activityId']));
+          const counts = kind === 'group_therapy' || kind === 'training';
+          return e['includedInPlan'] === undefined ? { ...e, includedInPlan: counts && e['paid'] !== true } : e;
+        }),
+      );
+    }
+    const sessions = rows(ctx, 'careSessions');
+    if (sessions) {
+      ctx.write(
+        'careSessions',
+        sessions.map((s) => (s['includedInPlan'] === undefined ? { ...s, includedInPlan: s['priceCents'] === 0 } : s)),
+      );
+    }
+    const contents = rows(ctx, 'guidanceContents');
+    if (contents) {
+      ctx.write(
+        'guidanceContents',
+        contents.map((c) => (c['category'] === undefined ? { ...c, category: DEFAULT_CONTENT_CATEGORY } : c)),
+      );
+    }
+  },
+};
+
+/** Cadeia de migrações. */
+export const MIGRATIONS: readonly Migration[] = [MIGRATION_V1_TO_V2];
 
 export type MigrationPlan =
   | { kind: 'none' }

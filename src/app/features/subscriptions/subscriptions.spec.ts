@@ -54,7 +54,7 @@ describe('M04 Planos, assinaturas e Cartão Nexus', () => {
       expect(all('.plan-card__price').map((p) => text(p).replace(/gratuito|por mês/g, '').trim())).toEqual(['R$ 0,00', 'R$ 49,90', 'R$ 119,90', 'R$ 149,90']);
       expect(all('.plan-card__head').map((h) => text(h))).toEqual(['Livre', 'Essencial', 'Cuida', 'Sustenta']);
       expect(text(q('main'))).toContain(PLAN_NOT_INCLUDED_NOTICE);
-      expect(PLAN_NOT_INCLUDED_NOTICE).toBe('A mensalidade não inclui serviços da rede nem atendimento psicológico.');
+      expect(PLAN_NOT_INCLUDED_NOTICE).toBe('A mensalidade não inclui os serviços da rede.');
     });
 
     it('não mostra "R$ 169,90" nem plano "Integral" em lugar nenhum (AC-M04-02)', async () => {
@@ -64,15 +64,15 @@ describe('M04 Planos, assinaturas e Cartão Nexus', () => {
       expect(content).not.toMatch(/Integral/i);
     });
 
-    it('grupos e capacitações a partir do Cuida: o cartão do Essencial não os mostra (AC-M04-03)', async () => {
+    it('terapia de grupo a partir do Cuida (docs/20): o cartão do Essencial não a mostra (AC-M04-03)', async () => {
       await open('u7', '/app/assinaturas/planos');
       const cards = all('.plan-card');
-      expect(text(cards[1] ?? null)).not.toContain('Grupos de apoio');
-      expect(text(cards[1] ?? null)).not.toContain('Capacitações');
-      expect(text(cards[2] ?? null)).toContain('Grupos de apoio');
+      expect(text(cards[1] ?? null)).not.toContain('Terapia de grupo');
+      expect(text(cards[1] ?? null)).not.toContain('2 sessões');
+      expect(text(cards[2] ?? null)).toContain('Terapia de grupo');
       expect(text(cards[2] ?? null)).toContain('Capacitações');
       // A tabela de comparação diz em texto, não só por cor.
-      const row = all('tbody tr').find((r) => text(r).startsWith('Grupos de apoio'));
+      const row = all('tbody tr').find((r) => text(r).startsWith('Terapia de grupo'));
       expect(row).toBeTruthy();
       expect(text(row ?? null)).toContain('Não inclui');
       expect(text(row ?? null)).toContain('Inclui');

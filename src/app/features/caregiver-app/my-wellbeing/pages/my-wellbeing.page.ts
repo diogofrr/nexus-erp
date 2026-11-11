@@ -8,6 +8,7 @@ import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { CARE_INVITE, CARE_TODAY_TEXT, careTodayHeading } from '../../state/care-note';
 import { ContactDialogService } from '../../state/contact-dialog.service';
 import { CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
+import { CgEmergencyNoteComponent } from '../../ui/cg-emergency-note.component';
 import { CgHeroComponent } from '../../ui/cg-hero.component';
 import { CgIconBadgeComponent } from '../../ui/cg-icon-badge.component';
 import { CgIllustrationComponent } from '../../ui/cg-illustration.component';
@@ -54,6 +55,7 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
     CgTrendComponent,
     CgSheetComponent,
     CgChoiceGroupComponent,
+    CgEmergencyNoteComponent,
     IconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -173,7 +175,8 @@ type SheetView = 'bands' | 'week' | 'review' | 'arrange';
         <button type="button" class="cg-link-btn" data-role="review" (click)="openReview()">Pedir revisão de uma decisão</button>
       </div>
 
-      <p class="cg-muted" data-role="privacy-line">{{ privacyLine }}</p>
+      <app-cg-note variant="soft" icon="lock"><span data-role="privacy-line">{{ privacyLine }}</span></app-cg-note>
+      <app-cg-emergency-note />
     </div>
 
     <!-- Os últimos 7 dias do humor -->

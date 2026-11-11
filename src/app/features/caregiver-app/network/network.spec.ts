@@ -38,11 +38,12 @@ describe('Área network (Rede)', () => {
   });
 
   describe('a porta de Rede (AC-CG-113 a 115)', () => {
-    it('AC-CG-113: 3 cartões na ordem Buscar, Meus pedidos e Cartão Nexus, cada um leva à sua rota, em uma coluna no celular', async () => {
+    it('AC-CG-113: para quem tem o Cartão, 3 ladrilhos na ordem Buscar, Meus pedidos e Cartão Nexus, cada um na sua rota, da mesma altura', async () => {
       const app = await bootCaregiverApp('cg_0001', { url: '/cuidador/rede' });
       expect(app.root.querySelector('main h1')?.textContent?.trim()).toBe('Rede');
+      // A linha do herói é o aviso de que a Nexus organiza a rede (RN-REDE-17): nenhuma nota solta no fim.
       expect(norm(app.root.querySelector('.cg-page-header__desc')?.textContent)).toBe(
-        'Profissionais e serviços para o cuidado da pessoa idosa. A Nexus organiza e você escolhe.',
+        'A Nexus organiza a rede. O serviço é feito e pago direto com o profissional.',
       );
       const list = cards(app);
       expect(list.map((c) => norm(c.querySelector('.cg-card__title')?.textContent))).toEqual([
@@ -51,28 +52,45 @@ describe('Área network (Rede)', () => {
         'Cartão Nexus',
       ]);
       expect(list.map((c) => c.getAttribute('href'))).toEqual(['/cuidador/rede/buscar', '/cuidador/rede/pedidos', '/cuidador/rede/cartao']);
-      // A grade do kit é de 1 coluna e passa a 2 de 768 px em diante (CSS global `.cg-grid`).
-      expect(app.root.querySelector('main .cg-grid')?.querySelectorAll('a.cg-card--link').length).toBe(3);
+      const grid = app.root.querySelector('main [data-role="network-cards"]');
+      expect(grid?.classList.contains('cg-tiles')).toBe(true);
+      expect(grid?.classList.contains('cg-equal')).toBe(true);
+      expect(grid?.classList.contains('cg-tiles--3')).toBe(true);
+      expect(app.root.querySelectorAll('main app-cg-note')).toHaveLength(0);
     });
 
-    it('AC-CG-114: todos os planos veem os 3 cartões, sem cadeado e sem preço', async () => {
-      for (const id of ['cg_0001', 'cg_0002', 'cg_0003', 'cg_0027', 'cg_0026', 'cg_0016']) {
+    it('AC-CG-114: quem tem o Cartão (Essencial em diante) vê 3 ladrilhos; o Livre vê 2, sem cadeado, sem convite e sem preço', async () => {
+      const expected: Record<string, number> = {
+        cg_0001: 3,
+        cg_0002: 3,
+        cg_0027: 3,
+        cg_0026: 3,
+        cg_0016: 3,
+        cg_0003: 2,
+        cg_0004: 2,
+      };
+      for (const [id, count] of Object.entries(expected)) {
         const app = await bootCaregiverApp(id, { url: '/cuidador/rede' });
-        expect(cards(app).length).toBe(3);
-        const html = app.root.querySelector('main')?.innerHTML ?? '';
-        expect(html).not.toContain('i-lock');
-        expect(norm(app.root.querySelector('main')?.textContent)).not.toContain('R$');
+        expect(cards(app).length, id).toBe(count);
+        const main = norm(app.root.querySelector('main')?.textContent);
+        expect(app.root.querySelector('main')?.innerHTML ?? '').not.toContain('i-lock');
+        expect(main, id).not.toMatch(/R\$|plano|benefício dos planos|a partir do|premium/i);
+        if (count === 2) {
+          expect(main, id).not.toContain('Cartão Nexus');
+          expect(app.root.querySelector('main [data-role="network-cards"]')?.classList.contains('cg-tiles--3')).toBe(false);
+        }
         TestBed.resetTestingModule();
       }
     });
 
-    it('AC-CG-114: o cartão do Cartão Nexus diz "Seu número e onde usar." ao assinante e "Um benefício dos planos pagos." ao Livre', async () => {
+    it('AC-CG-114: o ladrilho do Cartão Nexus diz "Seu número e onde usar." ao assinante e não existe para o Livre', async () => {
       const elza = await bootCaregiverApp('cg_0027', { url: '/cuidador/rede' });
       expect(norm(elza.root.querySelector('[data-role="card-line"]')?.textContent)).toBe('Seu número e onde usar.');
+      expect(cards(elza)[2]?.getAttribute('href')).toBe('/cuidador/rede/cartao');
       TestBed.resetTestingModule();
       const joao = await bootCaregiverApp('cg_0003', { url: '/cuidador/rede' });
-      expect(norm(joao.root.querySelector('[data-role="card-line"]')?.textContent)).toBe('Um benefício dos planos pagos.');
-      expect(cards(joao)[2]?.getAttribute('href')).toBe('/cuidador/rede/cartao');
+      expect(joao.root.querySelector('[data-role="card-line"]')).toBeNull();
+      expect(cards(joao).map((c) => c.getAttribute('href'))).toEqual(['/cuidador/rede/buscar', '/cuidador/rede/pedidos']);
     });
 
     it('a frase de Meus pedidos muda com os fatos da pessoa', async () => {
@@ -106,9 +124,9 @@ describe('Área network (Rede)', () => {
       expect(norm(app.root.querySelector('[data-role="orders-line"]')?.textContent)).toBe('2 pedidos aguardando resposta.');
     });
 
-    it('AC-CG-115: o aviso "A Nexus organiza a rede. O serviço é feito e pago direto com o profissional." está na tela', async () => {
+    it('AC-CG-115: o aviso "A Nexus organiza a rede. O serviço é feito e pago direto com o profissional." está na tela, como a linha do herói', async () => {
       const app = await bootCaregiverApp('cg_0003', { url: '/cuidador/rede' });
-      expect(norm(app.root.querySelector('[data-role="notice"]')?.textContent)).toBe(
+      expect(norm(app.root.querySelector('.cg-hero .cg-page-header__desc')?.textContent)).toBe(
         'A Nexus organiza a rede. O serviço é feito e pago direto com o profissional.',
       );
     });

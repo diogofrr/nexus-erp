@@ -15,6 +15,7 @@ function content(id: string, status: GuidanceContent['status'], exclusive: boole
     body: 'texto',
     status,
     exclusive,
+    category: 'routine_organization',
     ...(approvedAt ? { approvedAt } : {}),
     createdAt: '2026-08-01T10:00:00-03:00',
     updatedAt: '2026-08-01T10:00:00-03:00',

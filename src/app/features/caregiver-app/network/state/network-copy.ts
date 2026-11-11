@@ -11,9 +11,6 @@ import { BadgeVariant } from '../../../../shared/ui/display/badge.component';
 /** Aviso fixo (RN-REDE-17): a Nexus organiza, o serviço é feito e pago direto com o profissional. */
 export const NETWORK_NOTICE = 'A Nexus organiza a rede. O serviço é feito e pago direto com o profissional.';
 
-/** Condições especiais na rede só valem do Essencial em diante (RN-REDE-25). */
-export const CONDITIONS_FROM_ESSENCIAL = 'Condições especiais: a partir do plano Essencial.';
-
 /** O que o pedido envia ao profissional (RN-LGPD-13): só nome, contato e o que a pessoa precisa. */
 export const REQUEST_SUMMARY = 'Enviamos ao profissional só o seu nome, o seu contato e o que você precisa.';
 

@@ -7,6 +7,7 @@ import { ActivityKind } from '../models/groups';
 import { BenefitKey, PaidPlanId, Plan, PlanId } from '../models/plans';
 import { Cents, ISODate } from '../models/primitives';
 import { roundHalfUp } from './numbers';
+import { PLAN_QUOTAS } from './plan-quotas';
 
 export const PLAN_ORDER: readonly PlanId[] = ['livre', 'essencial', 'cuida', 'sustenta'];
 export const PAID_PLAN_IDS: readonly PaidPlanId[] = ['essencial', 'cuida', 'sustenta'];
@@ -86,16 +87,18 @@ export const BENEFIT_LABELS: Readonly<Record<BenefitKey, string>> = {
   exclusive_content: 'Conteúdos exclusivos',
   network_special_conditions: 'Condições especiais na rede',
   greater_organization_support: 'Maior suporte à organização',
-  support_groups: 'Grupos de apoio',
+  support_groups: 'Terapia de grupo',
   trainings: 'Capacitações',
   close_organizational_follow_up: 'Acompanhamento organizacional mais próximo',
   higher_support_level: 'Maior nível de suporte',
   network_differentiated_benefits: 'Benefícios diferenciados na rede',
 };
 
-/** Aviso obrigatório na contratação (RN-PLN-22). */
-export const PLAN_NOT_INCLUDED_NOTICE =
-  'A mensalidade não inclui serviços da rede nem atendimento psicológico.';
+/**
+ * Aviso obrigatório na contratação (RN-PLN-22). Desde o docs/20 o atendimento psicológico individual FAZ parte dos planos
+ * Cuida e Sustenta (com cota mensal), então o aviso só fala dos serviços da rede.
+ */
+export const PLAN_NOT_INCLUDED_NOTICE = 'A mensalidade não inclui os serviços da rede.';
 
 function definition(
   planId: PlanId,
@@ -150,39 +153,41 @@ export function hasBenefitCard(planId: PlanId): boolean {
   return planHasBenefit(planId, 'card_discounts');
 }
 
-/** Grupos de apoio e capacitações: a partir do Cuida (RN-PLN-10, RN-GRP-02). */
-export function canAccessGroupsAndTrainings(planId: PlanId): boolean {
-  return planHasBenefit(planId, 'support_groups') && planHasBenefit(planId, 'trainings');
+/** Terapia de grupo: só Cuida e Sustenta (docs/20; RN-GRP-02 lida à luz do docs/20). */
+export function canAccessGroupTherapy(planId: PlanId): boolean {
+  return PLAN_QUOTAS[planId].groupTherapyPerMonth > 0;
 }
 
 export interface ActivityAccess {
   allowed: boolean;
-  /** Mensagem de bloqueio exibida ao usuário. */
+  /** Mensagem de bloqueio (só para a equipe e para o domínio; o app do cuidador não anuncia o que o plano não inclui). */
   reason?: string;
-  /** Terapia de grupo exige elegibilidade marcada pelo psicólogo do cuidador (RN-GRP-14). */
-  requiresEligibility: boolean;
+  /** Compatibilidade: a terapia de grupo não exige mais indicação do psicólogo (docs/20). Sempre `false`. */
+  requiresEligibility: false;
   /** Plano mínimo da atividade (`null` = qualquer plano). */
   minPlan: 'cuida' | null;
 }
 
-/** Plano mínimo por tipo de atividade (M07). */
+/** Plano mínimo por tipo de atividade (docs/20): só a terapia de grupo é do Cuida em diante. */
 export function activityMinPlan(kind: ActivityKind): 'cuida' | null {
-  return kind === 'support_group' || kind === 'training' ? 'cuida' : null;
+  return kind === 'group_therapy' ? 'cuida' : null;
 }
 
-/** Acesso do plano ao tipo de atividade: grupo de apoio e capacitação só Cuida e Sustenta (AC-M07-01). */
+/**
+ * Acesso do plano ao tipo de atividade (docs/20): roda aberta para todos; capacitação para todos os cadastrados (incluída
+ * ou avulsa, ver `enrollmentOffer`); terapia de grupo só Cuida e Sustenta.
+ */
 export function canAccessActivity(planId: PlanId, kind: ActivityKind): ActivityAccess {
   const minPlan = activityMinPlan(kind);
-  const requiresEligibility = kind === 'group_therapy';
-  if (minPlan === 'cuida' && !canAccessGroupsAndTrainings(planId)) {
+  if (minPlan === 'cuida' && !canAccessGroupTherapy(planId)) {
     return {
       allowed: false,
-      reason: 'Disponível a partir do plano Cuida.',
-      requiresEligibility,
+      reason: 'A terapia de grupo faz parte dos planos Cuida e Sustenta.',
+      requiresEligibility: false,
       minPlan,
     };
   }
-  return { allowed: true, requiresEligibility, minPlan };
+  return { allowed: true, requiresEligibility: false, minPlan };
 }
 
 export type PlanChangeKind = 'upgrade' | 'downgrade' | 'same';
@@ -261,7 +266,10 @@ export function averageNetPerSubscriberCents(
   return roundHalfUp(averageGrossPerSubscriberCents(prices, mix) * (1 - feesRate), 0);
 }
 
-/** Valor da sessão com o desconto do plano (RN-ATD-05): R$ 120,00 com 0%, 10%, 15% ou 20%. */
+/**
+ * Valor da sessão com um desconto percentual (RN-ATD-05 antiga). Desde o docs/20 o preço da sessão vem da cota
+ * (`plan-quotas.ts`): dentro dela R$ 0,00, fora dela o avulso. Mantida só como conta genérica.
+ */
 export function sessionPriceCents(baseCents: Cents, discountPercent: number): Cents {
   return roundHalfUp(baseCents * (1 - discountPercent / 100), 0);
 }

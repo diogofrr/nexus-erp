@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { AuditLogService } from '@core/audit';
 import { AuthService } from '@core/auth';
-import { SessionBookingService } from '@core/care/session-booking.service';
+import { BookingQuote, SessionBookingService } from '@core/care/session-booking.service';
 import {
   Clock,
   addDays,
@@ -61,13 +61,8 @@ export interface ScheduleInput {
   kind: CareSession['kind'] | null;
 }
 
-export interface PriceQuote {
-  planId: PlanId;
-  baseCents: number;
-  discountPercent: number;
-  discountCents: number;
-  totalCents: number;
-}
+/** O valor da sessão (docs/20): o mesmo do núcleo (incluída na cota do mês ou avulsa). */
+export type PriceQuote = BookingQuote;
 
 export type SlotState = 'none' | 'open' | 'priority' | 'blocked';
 
@@ -182,8 +177,8 @@ export class CareSessionsService {
   }
 
   /** Valor da sessão com o desconto do plano (RN-ATD-05, AC-M05-14): base e descontos vêm de M15. */
-  quote(caregiverId: ID): PriceQuote {
-    return this.booking.quote(caregiverId);
+  quote(caregiverId: ID, slotDate?: ISODate, exceptSessionId?: ID): PriceQuote {
+    return this.booking.quote(caregiverId, slotDate, exceptSessionId);
   }
 
   /** Tipo de atendimento da última sessão do cuidador, para pré-preencher quando o atendimento agenda (U-09). */

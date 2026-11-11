@@ -69,11 +69,13 @@ describe('Área plan (Meu plano)', () => {
       expect(norm(card.querySelector('[data-role="situation"]')?.textContent)).toBe('Próxima cobrança em 06/11/2026');
       // Só 4 destaques de cara: a lista longa fica atrás de "Ver tudo que inclui".
       expect(Array.from(card.querySelectorAll('[data-role="perks"] li')).map((li) => norm(li.textContent))).toEqual([
-        'Grupos de apoio',
-        'Capacitações',
-        'Maior suporte à organização',
-        'Descontos exclusivos do Cartão Nexus',
+        'Atendimento psicológico individual: 2 sessões por mês',
+        'Terapia de grupo: 2 encontros por mês',
+        'Todas as capacitações do mês',
+        'Maior suporte à organização da rotina',
       ]);
+      // docs/20: a cota do mês no herói, só para Cuida e Sustenta.
+      expect(norm(card.querySelector('[data-role="month-quota"]')?.textContent)).toBe('Neste mês: 1 de 2 sessões usadas');
       expect(openSheet(app)).toBeNull();
       const primary = byText(app, 'main button', 'Ver outros planos');
       expect(primary?.classList.contains('btn--primary')).toBe(true);
@@ -90,18 +92,14 @@ describe('Área plan (Meu plano)', () => {
       await click(app, app.root.querySelector('[data-role="see-all"]'));
       expect(openSheet(app)?.querySelector('.cg-sheet__title')?.textContent?.trim()).toBe('O que o plano Cuida inclui');
       expect(Array.from(openSheet(app)?.querySelectorAll('[data-role="all-benefits"] li') ?? []).map((li) => norm(li.textContent))).toEqual([
-        'Acesso ao aplicativo',
-        'Organização básica',
-        'Agenda e lembretes',
-        'Conteúdos',
-        'Acesso inicial à rede',
-        'Organização ampliada',
-        'Descontos exclusivos do Cartão Nexus',
-        'Conteúdos exclusivos',
-        'Condições especiais na rede',
-        'Maior suporte à organização',
-        'Grupos de apoio',
-        'Capacitações',
+        'Atendimento psicológico individual: 2 sessões por mês',
+        'Terapia de grupo: 2 encontros por mês',
+        'Todas as capacitações do mês',
+        'Maior suporte à organização da rotina',
+        'Cartão Nexus, com descontos nos parceiros',
+        'Conteúdos abertos e exclusivos',
+        'Rede credenciada, com condições especiais',
+        'Rodas de conversa abertas',
       ]);
       await click(app, openSheet(app)?.querySelector('[data-role="close-all"]'));
       expect(openSheet(app)).toBeNull();
@@ -109,9 +107,9 @@ describe('Área plan (Meu plano)', () => {
 
     it('cada plano tem a sua cor, o seu nome e os seus 4 destaques', async () => {
       const expected = [
-        ['cg_0003', 'livre', 'Plano Livre', ['Agenda e lembretes', 'Organização básica', 'Conteúdos', 'Acesso inicial à rede']],
-        ['cg_0002', 'essencial', 'Plano Essencial', ['Organização ampliada', 'Descontos exclusivos do Cartão Nexus', 'Conteúdos exclusivos', 'Condições especiais na rede']],
-        ['cg_0027', 'sustenta', 'Plano Sustenta', ['Acompanhamento organizacional mais próximo', 'Maior nível de suporte', 'Benefícios diferenciados na rede', 'Grupos de apoio']],
+        ['cg_0003', 'livre', 'Plano Livre', ['Organização básica da rotina: agenda, lembretes e remédios', 'Conteúdos abertos', 'Rede credenciada: consultar, comparar e pedir serviço', 'Rodas de conversa abertas']],
+        ['cg_0002', 'essencial', 'Plano Essencial', ['Organização ampliada da rotina', 'Cartão Nexus, com descontos nos parceiros', 'Conteúdos abertos e exclusivos', 'Rede credenciada, com condições especiais']],
+        ['cg_0027', 'sustenta', 'Plano Sustenta', ['Atendimento psicológico individual: 4 sessões por mês', 'Terapia de grupo: 2 encontros por mês', 'Rede credenciada, com benefícios diferenciados', 'Acompanhamento próximo da organização da rotina']],
       ] as const;
       for (const [id, tone, name, perks] of expected) {
         const app = await bootCaregiverApp(id, { url: URL });
@@ -119,6 +117,11 @@ describe('Área plan (Meu plano)', () => {
         expect(card.classList.contains(`cg-tone--${tone}`)).toBe(true);
         expect(norm(card.querySelector('h2')?.textContent)).toBe(name);
         expect(Array.from(card.querySelectorAll('[data-role="perks"] li')).map((li) => norm(li.textContent))).toEqual(perks);
+        // Só Cuida e Sustenta têm a cota do mês no herói; o Livre não tem o Cartão em lugar nenhum.
+        expect(card.querySelector('[data-role="month-quota"]') !== null).toBe(tone === 'sustenta');
+        if (tone === 'livre') {
+          expect(norm(card.textContent)).not.toMatch(/cart[ãa]o/i);
+        }
         TestBed.resetTestingModule();
       }
     });
@@ -137,11 +140,11 @@ describe('Área plan (Meu plano)', () => {
       expect(byText(joao, 'main button', 'Cancelar plano')).toBeUndefined();
       await click(joao, joao.root.querySelector('[data-role="see-all"]'));
       expect(Array.from(openSheet(joao)?.querySelectorAll('[data-role="all-benefits"] li') ?? []).map((li) => norm(li.textContent))).toEqual([
-        'Acesso ao aplicativo',
-        'Organização básica',
-        'Agenda e lembretes',
-        'Conteúdos',
-        'Acesso inicial à rede',
+        'Organização básica da rotina: agenda, lembretes e remédios',
+        'Conteúdos abertos',
+        'Rede credenciada: consultar, comparar e pedir serviço',
+        'Rodas de conversa abertas',
+        'Capacitações avulsas (R$ 40,00 por encontro)',
       ]);
     });
   });
@@ -166,18 +169,27 @@ describe('Área plan (Meu plano)', () => {
         ['Plano Cuida', 'R$ 119,90 por mês'],
         ['Plano Sustenta', 'R$ 149,90 por mês'],
       ]);
-      // Os 3 destaques PRÓPRIOS de cada plano, nunca a lista inteira.
-      expect(plans[0]?.items).toEqual(['Agenda e lembretes', 'Organização básica', 'Conteúdos']);
-      expect(plans[0]?.more).toBe('');
-      expect(plans[1]?.more).toBe('Tudo do plano anterior, mais:');
-      expect(plans[1]?.items).toEqual(['Organização ampliada', 'Descontos exclusivos do Cartão Nexus', 'Conteúdos exclusivos']);
-      expect(plans[2]?.items).toEqual(['Grupos de apoio', 'Capacitações', 'Maior suporte à organização']);
-      expect(plans[3]?.items).toEqual(['Acompanhamento organizacional mais próximo', 'Maior nível de suporte', 'Benefícios diferenciados na rede']);
+      // docs/20: as 3 linhas de cota, iguais nos 4 cartões para comparar, e 3 destaques que não repetem a cota.
+      const quotas = Array.from(app.root.querySelectorAll('[data-role="board-plan"]')).map((p) =>
+        Array.from(p.querySelectorAll('[data-role="quotas"] dd')).map((d) => norm(d.textContent)),
+      );
+      expect(quotas).toEqual([
+        ['Não inclui', 'Não inclui', 'Avulsas, R$ 40,00 por encontro'],
+        ['Não inclui', 'Não inclui', '2 capacitações por mês'],
+        ['2 sessões por mês', '2 encontros por mês', 'Todas as do mês'],
+        ['4 sessões por mês', '2 encontros por mês', 'Todas as do mês'],
+      ]);
+      expect(plans.every((p) => p.more === '')).toBe(true);
+      expect(plans[0]?.items).toEqual(['Organização básica da rotina: agenda, lembretes e remédios', 'Conteúdos abertos', 'Rede credenciada: consultar, comparar e pedir serviço']);
+      expect(plans[1]?.items).toEqual(['Organização ampliada da rotina', 'Cartão Nexus, com descontos nos parceiros', 'Conteúdos abertos e exclusivos']);
+      expect(plans[2]?.items).toEqual(['Maior suporte à organização da rotina', 'Cartão Nexus, com descontos nos parceiros', 'Conteúdos abertos e exclusivos']);
+      expect(plans[3]?.items).toEqual(['Rede credenciada, com benefícios diferenciados', 'Acompanhamento próximo da organização da rotina', 'Cartão Nexus, com descontos nos parceiros']);
+      expect(mainText(app)).not.toMatch(/zarit/i);
       expect(plans.map((p) => p.current)).toEqual(['', '', 'Seu plano', '']);
       // Cada cartão tem a sua cor.
       expect(Array.from(app.root.querySelectorAll('[data-role="board-plan"]')).map((p) => /cg-tone--(\w+)/.exec(p.className)?.[1])).toEqual(['livre', 'essencial', 'cuida', 'sustenta']);
       expect(norm(app.root.querySelector('[data-role="not-included"]')?.textContent)).toBe(
-        'A mensalidade não inclui serviços da rede nem atendimento psicológico.',
+        'A mensalidade não inclui os serviços da rede.',
       );
       expect(norm(app.root.querySelector('[data-role="cancel-any-month"]')?.textContent)).toBe('Você pode cancelar em qualquer mês, sem multa.');
       // Nada de letra miúda: nenhum elemento <small> na tela.
@@ -216,7 +228,7 @@ describe('Área plan (Meu plano)', () => {
       await choose(app, 'cuida');
       expect(openSheet(app)?.querySelector('.cg-sheet__title')?.textContent?.trim()).toBe('Mudar para o Cuida?');
       expect(paragraphs(openSheet(app)?.querySelector('[data-role="effect"]'))).toBe(
-        'Vale hoje. O Cartão Nexus é emitido agora. A cobrança de R$ 119,90 começa no próximo ciclo, em 04/12/2026. Se mudar de ideia, é só mudar de plano de novo. A mensalidade não inclui serviços da rede nem atendimento psicológico.',
+        'Vale hoje. O Cartão Nexus é emitido agora. A cobrança de R$ 119,90 começa no próximo ciclo, em 04/12/2026. Se mudar de ideia, é só mudar de plano de novo. A mensalidade não inclui os serviços da rede.',
       );
       expect(norm(confirmButton(app)?.textContent)).toBe('Mudar para o Cuida');
       expect(subOf(app, 'cg_0003').planId).toBe('livre');
@@ -292,7 +304,7 @@ describe('Área plan (Meu plano)', () => {
       await choose(app, 'essencial');
       expect(openSheet(app)?.querySelector('.cg-sheet__title')?.textContent?.trim()).toBe('Mudar para o Essencial no fim do ciclo?');
       expect(paragraphs(openSheet(app)?.querySelector('[data-role="effect"]'))).toBe(
-        'Vale no fim do ciclo, em 06/11/2026. Até lá, o Cuida continua, inclusive os grupos. Você sai dos grupos que começam depois dessa data: Sobrecarga e autocuidado (07/11), Prevenção de quedas (14/11). Os grupos em andamento continuam até o fim do ciclo. Se mudar de ideia, é só mudar de plano de novo.',
+        'Vale no fim do ciclo, em 06/11/2026. Até lá, o Cuida continua, inclusive a terapia de grupo. Você sai das turmas de terapia de grupo que começam depois dessa data: Sobrecarga e autocuidado (07/11). As turmas em andamento continuam até o fim do ciclo. Se mudar de ideia, é só mudar de plano de novo.',
       );
       expect(norm(confirmButton(app)?.textContent)).toBe('Agendar mudança para o Essencial');
       await click(app, confirmButton(app));

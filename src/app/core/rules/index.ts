@@ -8,6 +8,7 @@ export * from './pop05';
 export * from './plans';
 export * from './medication-doses';
 export * from './plan-features';
+export * from './plan-quotas';
 export * from './staff-contact';
 export * from './arp';
 export * from './eqp';

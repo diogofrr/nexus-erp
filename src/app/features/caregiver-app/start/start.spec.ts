@@ -580,7 +580,8 @@ describe('Começar e Meu perfil (UX C2 e C22)', () => {
       expect(text(cards[1])).toContain('Filha');
       expect(text(cards[2])).toContain(`${ana?.dailyCareHours}`);
       expect(text(cards[2])).toContain('Pelo aplicativo');
-      expect(all('.cg-text-size__input')).toHaveLength(3);
+      // O tamanho da letra fica só em Mais (docs/20, regra 4: nada repetido); o perfil são os 3 cartões.
+      expect(all('.cg-text-size__input')).toHaveLength(0);
       expect(all('app-cg-card').filter((c) => c.querySelector('button')).length).toBe(3);
     });
 

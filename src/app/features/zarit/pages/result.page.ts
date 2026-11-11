@@ -5,7 +5,8 @@ import { AuditLogService } from '@core/audit';
 import { SupervisionWindowService } from '@core/audit/supervision-window.service';
 import { Database } from '@core/data';
 import { formatDate, formatPercent } from '@core/format';
-import { ZARIT_BANDS, zaritBandInfo } from '@core/rules';
+import { canBookIndividualSession, zaritBandInfo, zaritConductFor } from '@core/rules';
+import { planIdOfCaregiver } from '@core/data/plan-lookup';
 import { BadgeComponent, EmptyStateComponent, PageHeaderComponent, ZaritBandBadgeComponent } from '@shared/ui';
 import { GaugeBandComponent } from '@shared/ui/charts';
 import { SupervisionGateComponent } from '@shared/ui/access/supervision-gate.component';
@@ -99,8 +100,8 @@ import { RESULT_SUPPORT_NOTE } from '../state/zarit-labels';
           <p>{{ conduct() }}</p>
           @switch (info().band) {
             @case ('absent_or_small') {
-              <p class="t-caption">O convite é informativo; grupos de apoio seguem o plano do cuidador.</p>
-              <div><a class="btn" routerLink="/app/grupos">Ver a programação de grupos</a></div>
+              <p class="t-caption">O convite é informativo: as rodas de conversa abertas valem para todos os planos.</p>
+              <div><a class="btn" routerLink="/app/grupos">Ver a programação de encontros</a></div>
             }
             @case ('moderate') {
               <div class="cluster">
@@ -109,7 +110,7 @@ import { RESULT_SUPPORT_NOTE } from '../state/zarit-labels';
                     Oferecer atendimento
                   </a>
                 }
-                <a class="btn" routerLink="/app/grupos">Ver grupos e capacitações</a>
+                <a class="btn" routerLink="/app/grupos">Ver os encontros</a>
               </div>
             }
             @default {
@@ -157,7 +158,8 @@ export class ZaritResultPageComponent {
   });
   private readonly caregiver = computed(() => this.db.caregivers.get(this.assessment()?.caregiverId ?? ''));
   protected readonly info = computed(() => zaritBandInfo(this.assessment()?.total ?? 0));
-  protected readonly conduct = computed(() => ZARIT_BANDS.find((b) => b.band === this.info().band)?.conduct ?? '');
+  /** A conduta pelo plano do cuidador (docs/20): nas faixas 21 a 60 muda entre Livre e Essencial e Cuida e Sustenta. */
+  protected readonly conduct = computed(() => zaritConductFor(this.assessment()?.total ?? 0, planIdOfCaregiver(this.db, this.assessment()?.caregiverId ?? '')));
   protected readonly alert = computed(() =>
     this.db.zaritAlerts.find((a) => a.assessmentId === this.assessment()?.id),
   );
@@ -165,7 +167,11 @@ export class ZaritResultPageComponent {
     const c = this.assessment()?.caregiverId;
     return !!c && this.access.mustJustify(c) && !this.unlocked();
   });
-  protected readonly canOffer = computed(() => this.access.canApply(this.assessment()?.caregiverId ?? ''));
+  /** Oferecer atendimento individual: quem aplica a escala e o plano tem a sessão (Cuida e Sustenta, docs/20). O POP-05 do alerta vermelho segue para todos. */
+  protected readonly canOffer = computed(() => {
+    const id = this.assessment()?.caregiverId ?? '';
+    return this.access.canApply(id) && canBookIndividualSession(planIdOfCaregiver(this.db, id));
+  });
   protected readonly subtitle = computed(() => {
     const a = this.assessment();
     const c = this.caregiver();

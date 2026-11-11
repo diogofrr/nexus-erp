@@ -13,25 +13,32 @@ export function greetingFor(now: ISODateTime): 'Bom dia' | 'Boa tarde' | 'Boa no
   return time < '18:00' ? 'Boa tarde' : 'Boa noite';
 }
 
-/** Os três convites do dia, todos abertos a todos os planos (S-11, RN-PLN-19). */
-export type InviteKind = 'conversation' | 'circle' | 'reading';
+/**
+ * Os convites do dia (S-11, docs/20 regra de exibição 1 e 2): a conversa com o psicólogo (só Cuida e Sustenta), a roda de
+ * conversa aberta (todos), a capacitação incluída no plano e uma leitura aberta (todos). Só entra no rodízio o que a
+ * pessoa pode usar de verdade: o que o plano não inclui não é convite.
+ */
+export type InviteKind = 'conversation' | 'circle' | 'training' | 'reading';
 
-const INVITE_ORDER: readonly InviteKind[] = ['conversation', 'circle', 'reading'];
+const INVITE_ORDER: readonly InviteKind[] = ['conversation', 'circle', 'training', 'reading'];
 
 /**
- * O convite do dia é um RODÍZIO POR CALENDÁRIO entre itens abertos a todos os planos: o dia decide, nunca a
- * pontuação, a faixa, o alerta, a ARBE nem o plano (RN-PLN-19, RN-LGPD-17). Se o item do dia não existe (não há
- * roda aberta nem leitura livre), vale o próximo da ordem. A conversa com o psicólogo sempre existe.
+ * O convite do dia é um RODÍZIO POR CALENDÁRIO entre os itens disponíveis para a pessoa: o dia decide, nunca a
+ * pontuação, a faixa, o alerta nem a ARBE (RN-PLN-19, RN-LGPD-17). Se o item do dia não está disponível (não há roda
+ * aberta, o plano não inclui a conversa), vale o próximo da ordem; sem nada disponível, `null` (a seção não aparece).
  */
-export function inviteKindFor(date: ISODate, available: readonly InviteKind[]): InviteKind {
+export function inviteKindFor(date: ISODate, available: readonly InviteKind[]): InviteKind | null {
+  if (available.length === 0) {
+    return null;
+  }
   const start = toDayNumber(date) % INVITE_ORDER.length;
   for (let step = 0; step < INVITE_ORDER.length; step += 1) {
     const kind = INVITE_ORDER[(start + step) % INVITE_ORDER.length] as InviteKind;
-    if (kind === 'conversation' || available.includes(kind)) {
+    if (available.includes(kind)) {
       return kind;
     }
   }
-  return 'conversation';
+  return null;
 }
 
 /** Primeira letra maiúscula ("hoje" vira "Hoje"). */

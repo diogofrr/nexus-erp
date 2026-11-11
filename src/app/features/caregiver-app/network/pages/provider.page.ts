@@ -19,8 +19,8 @@ import { CgIconBadgeComponent } from '../../ui/cg-icon-badge.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgSealComponent } from '../../ui/cg-seal.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
+import { hasNetworkConditions } from '../../state/plan-access';
 import {
-  CONDITIONS_FROM_ESSENCIAL,
   NETWORK_NOTICE,
   REQUEST_SUMMARY,
   ratingText,
@@ -110,13 +110,15 @@ const SENT_MESSAGE = 'Pedido enviado. A equipe avisa você quando o profissional
 
         <app-cg-note variant="info" data-role="notice">{{ notice }}</app-cg-note>
 
-        <section aria-labelledby="provider-conditions">
-          <div class="nx-head">
-            <app-cg-icon-badge icon="badge-check" />
-            <h2 class="cg-section__title" id="provider-conditions">Condições para quem é da Nexus</h2>
-          </div>
-          <p data-role="conditions">{{ conditions() }}</p>
-        </section>
+        @if (conditions(); as text) {
+          <section aria-labelledby="provider-conditions">
+            <div class="nx-head">
+              <app-cg-icon-badge icon="badge-check" />
+              <h2 class="cg-section__title" id="provider-conditions">Condições para quem é da Nexus</h2>
+            </div>
+            <p data-role="conditions">{{ text }}</p>
+          </section>
+        }
 
         @if (!p.canRequest) {
           <app-cg-note variant="soft" icon="info" data-role="no-request">
@@ -206,9 +208,12 @@ export class ProviderPage {
     return caregiverId ? this.network.openRequestWith(caregiverId, this.providerId()) : undefined;
   });
 
-  /** Condições para quem é da Nexus: do Essencial em diante; o Livre vê "a partir do plano Essencial". */
+  /**
+   * Condições para quem é da Nexus: só do Essencial em diante (RN-REDE-25). Para o Livre a seção não existe, sem
+   * cadeado nem "a partir do plano" (docs/20, regra de exibição 1).
+   */
   protected readonly conditions = computed(() =>
-    this.ctx.canUse('network_conditions') ? (this.provider()?.conditions ?? '') : CONDITIONS_FROM_ESSENCIAL,
+    hasNetworkConditions(this.ctx) ? (this.provider()?.conditions ?? '').trim() : '',
   );
 
   // ===== O pedido =====

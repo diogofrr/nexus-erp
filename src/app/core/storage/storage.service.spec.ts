@@ -192,8 +192,34 @@ describe('Versão de esquema e migrações', () => {
       reason: 'newer_than_app',
     });
     expect(planMigrations('0', '3', steps)).toEqual({ kind: 'unsupported', reason: 'no_path' });
-    expect(MIGRATIONS).toEqual([]);
+    expect(MIGRATIONS.map((m) => `${m.from}>${m.to}`)).toEqual(['1>2']);
     expect(compareVersions('1.2', '1.10')).toBeLessThan(0);
     expect(compareVersions('2', '1.9')).toBeGreaterThan(0);
+  });
+});
+
+describe('migração v1 para v2 (docs/20)', () => {
+  it('renomeia os tipos de atividade, refaz o plano mínimo, marca a cota das inscrições e sessões e dá categoria aos conteúdos', async () => {
+    const { MIGRATION_V1_TO_V2 } = await import('./migrations');
+    const store = new Map<string, unknown>([
+      ['activities', [{ id: 'a1', kind: 'support_group', minPlan: 'cuida', requiresEligibility: false }, { id: 'a2', kind: 'open_conversation_circle', minPlan: null }, { id: 'a3', kind: 'training', minPlan: 'cuida' }]],
+      ['activityEnrollments', [{ id: 'e1', activityId: 'a1' }, { id: 'e2', activityId: 'a2' }, { id: 'e3', activityId: 'a3' }]],
+      ['careSessions', [{ id: 's1', priceCents: 0 }, { id: 's2', priceCents: 10200 }]],
+      ['guidanceContents', [{ id: 'g1' }]],
+    ]);
+    MIGRATION_V1_TO_V2.run({
+      names: () => [...store.keys()],
+      read: (n) => store.get(n),
+      write: (n, v) => void store.set(n, v),
+      remove: (n) => void store.delete(n),
+    });
+    expect(store.get('activities')).toEqual([
+      { id: 'a1', kind: 'group_therapy', minPlan: 'cuida', requiresEligibility: false },
+      { id: 'a2', kind: 'open_circle', minPlan: null, requiresEligibility: false },
+      { id: 'a3', kind: 'training', minPlan: null, requiresEligibility: false },
+    ]);
+    expect((store.get('activityEnrollments') as { includedInPlan: boolean }[]).map((e) => e.includedInPlan)).toEqual([true, false, true]);
+    expect((store.get('careSessions') as { includedInPlan: boolean }[]).map((s) => s.includedInPlan)).toEqual([true, false]);
+    expect(store.get('guidanceContents')).toEqual([{ id: 'g1', category: 'routine_organization' }]);
   });
 });

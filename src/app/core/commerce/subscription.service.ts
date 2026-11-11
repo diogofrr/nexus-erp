@@ -20,7 +20,7 @@ import {
   Subscription,
 } from '../models';
 import {
-  canAccessGroupsAndTrainings,
+  canAccessGroupTherapy,
   cardDiscountCents,
   classifyPlanChange,
   formatCardNumber,
@@ -258,7 +258,7 @@ export class SubscriptionService {
     return {
       ...base,
       lostGroups,
-      effect: `Vale no fim do ciclo, em ${formatDate(cycle)}. Até lá, o ${PLAN_SHORT_NAMES[from]} continua${canAccessGroupsAndTrainings(from) ? ', inclusive os grupos' : ''}.${lostText}`,
+      effect: `Vale no fim do ciclo, em ${formatDate(cycle)}. Até lá, o ${PLAN_SHORT_NAMES[from]} continua${canAccessGroupTherapy(from) ? ', inclusive a terapia de grupo' : ''}.${lostText}`,
       actionLabel: `Agendar mudança para o ${PLAN_SHORT_NAMES[to]}`,
     };
   }
@@ -530,9 +530,9 @@ export class SubscriptionService {
     return null;
   }
 
-  /** Turmas (grupos e capacitações, a partir do Cuida) que o cuidador perde se mudar para `to`. */
+  /** Turmas de terapia de grupo (Cuida e Sustenta, docs/20) que o cuidador perde se mudar para `to` (RN-GRP-17). A capacitação já inscrita fica. */
   private groupsLostAfter(caregiverId: ID, effectiveAt: ISODate, to: PlanId): LostGroup[] {
-    if (canAccessGroupsAndTrainings(to)) {
+    if (canAccessGroupTherapy(to)) {
       return [];
     }
     return this.db.activityEnrollments

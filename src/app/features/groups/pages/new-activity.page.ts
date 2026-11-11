@@ -159,7 +159,7 @@ const DRAFT_FORM = 'activity';
               <app-radio-group [options]="roomOptions()" [value]="form().roomId || null" (valueChange)="set('roomId', $event ?? '')" />
             </app-form-field>
           }
-          @if (form().kind === 'open_conversation_circle') {
+          @if (form().kind === 'open_circle') {
             <app-form-field label="Em parceria com" controlId="na-partner" [optional]="true" hint="CRAS, unidade básica de saúde ou associação de bairro.">
               <input appInput [value]="form().partnerOrg" (input)="set('partnerOrg', valueOf($event))" />
             </app-form-field>

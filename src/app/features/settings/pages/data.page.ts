@@ -15,7 +15,7 @@ import { DemoDataService, IMPORT_REFUSED_TEXT, ImportPreview } from '../state/de
 import { downloadTextFile } from '../../../core/export/file-download';
 
 /** O que o seed gera (escopo, 5.15): usado no texto do diálogo de reset. */
-export const SEED_SUMMARY = '340 cuidadores, 20 prestadores e 62 sessões';
+export const SEED_SUMMARY = '340 cuidadores, 20 prestadores e 63 sessões';
 
 /** Lê o texto de um arquivo escolhido pela pessoa (sem enviar a lugar nenhum). */
 export function readFileText(file: File): Promise<string> {

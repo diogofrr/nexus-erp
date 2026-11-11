@@ -355,28 +355,30 @@ describe('Mais, a porta da Base (UX C17)', () => {
 
   afterEach(() => TestBed.resetTestingModule());
 
-  it('AC-CG-145: h1, nome com a etiqueta do plano, 5 itens na ordem, letra e Sair', async () => {
+  it('AC-CG-145: h1, nome com a etiqueta do plano, os grupos Conta, Ajuda e Privacidade com os itens na ordem, letra e Sair', async () => {
     app = await bootCaregiverApp('cg_0001', { url: '/cuidador/mais' });
     expect(text(q('main h1'))).toBe('Mais');
     expect(text(q('.cg-who'))).toContain('Ana Paula Ferraz');
     expect(text(q('.cg-who app-cg-plan-tag'))).toBe('Plano Cuida');
-    expect(all('.cg-list .cg-row__title').map(text)).toEqual([
-      'Meu plano',
-      'Falar com a Nexus',
-      'Família',
-      'Privacidade e meus dados',
-      'Meu perfil',
-    ]);
+    expect(all('app-cg-section h2.cg-section__title').map(text)).toEqual(['Conta', 'Ajuda', 'Privacidade']);
+    expect(all('[data-role="group-account"] .cg-row__title').map(text)).toEqual(['Meu plano', 'Meu perfil', 'Família']);
+    expect(all('[data-role="group-help"] .cg-row__title').map(text)).toEqual(['Falar com a Nexus', 'Ajuda agora']);
+    expect(all('[data-role="group-privacy"] .cg-row__title').map(text)).toEqual(['Privacidade e meus dados']);
     expect(all('.cg-list .cg-row').map((a) => a.getAttribute('href'))).toEqual([
       '/cuidador/mais/plano',
-      '/cuidador/mais/ajuda',
-      '/cuidador/mais/familia',
-      '/cuidador/mais/privacidade',
       '/cuidador/mais/perfil',
+      '/cuidador/mais/familia',
+      '/cuidador/mais/ajuda',
+      '/cuidador/ajuda-agora',
+      '/cuidador/mais/privacidade',
     ]);
+    // Meu plano é um item como os outros: informação neutra, sem chamada.
     expect(rows()[0]).toContain('Cuida · R$ 119,90 por mês');
+    expect(text(q('main'))).not.toMatch(/premium|assine|Ver os planos|Disponível no plano/i);
     expect(text(q('#cg-more-text'))).toBe('Tamanho da letra');
     expect(text(q('[data-role="sign-out"]'))).toBe('Sair');
+    // Fora do herói, dos grupos e do painel não sobra texto solto.
+    expect(all('main .more-cols > p, main .more-groups > p')).toHaveLength(0);
   });
 
   it('AC-CG-148: nunca há contador, ponto de notificação nem selo de novidade', async () => {
@@ -394,10 +396,10 @@ describe('Mais, a porta da Base (UX C17)', () => {
 
   it('pedido de dados em andamento muda o apoio de Privacidade (Raimunda)', async () => {
     app = await bootCaregiverApp('cg_0018', { url: '/cuidador/mais' });
-    expect(rows()[3]).toContain('Há um pedido em andamento');
+    expect(rows()[5]).toContain('Há um pedido em andamento');
     TestBed.resetTestingModule();
     app = await bootCaregiverApp('cg_0001', { url: '/cuidador/mais' });
-    expect(rows()[3]).toContain('Suas autorizações, cópia e eliminação dos dados');
+    expect(rows()[5]).toContain('Suas autorizações, cópia e eliminação dos dados');
   });
 
   it('"Como falar com a gente" abre o diálogo', async () => {

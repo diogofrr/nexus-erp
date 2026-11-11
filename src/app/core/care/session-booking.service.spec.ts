@@ -38,28 +38,56 @@ function input(slot: AvailabilitySlot, caregiverId: ID, extra: Partial<BookingIn
 describe('SessionBookingService (o miolo de agendar do núcleo, RN-ATD-02 a 05, 09, 10, 12, 16, 19)', () => {
   afterEach(() => TestBed.resetTestingModule());
 
-  it('o valor da conversa vem do plano: Livre 120, Essencial 108, Cuida 102, Sustenta 96 (RN-ATD-05)', () => {
+  it('o valor da conversa vem da cota do plano (docs/20): Livre e Essencial não agendam; Cuida e Sustenta incluída na cota, depois avulsa', () => {
     const { booking } = setup();
-    expect(booking.quote('cg_0004').totalCents).toBe(12000);
-    expect(booking.quote('cg_0006').totalCents).toBe(10800);
-    expect(booking.quote('cg_0001')).toMatchObject({ totalCents: 10200, discountCents: 1800, discountPercent: 15 });
-    expect(booking.quote('cg_0009').totalCents).toBe(9600);
+    expect(booking.quote('cg_0004')).toMatchObject({ allowed: false, included: false, totalCents: 12000 });
+    expect(booking.quote('cg_0006')).toMatchObject({ allowed: false, included: false });
+    expect(booking.quote('cg_0001')).toMatchObject({ allowed: true, discountPercent: 0 });
+    expect(booking.quote('cg_0001').quota.limit).toBe(2);
+    expect(booking.quote('cg_0009').quota.limit).toBe(4);
+    const livre = booking.schedule(input(farSlot(booking, 'cg_0001'), 'cg_0004'));
+    expect(livre.ok ? '' : livre.errors[0]?.field).toBe('plan');
   });
 
-  it('agenda a conversa: a vaga sai da lista, o preço é o do plano e o psicólogo precisa estar ativo', () => {
+  it('dentro da cota a sessão custa R$ 0,00; a terceira do mês no Cuida é avulsa; cancelar com menos de 24 h consome a cota (RN-ATD-16)', () => {
+    const { booking, db, clock } = setup();
+    // Ana (Cuida) usa as duas do mês de dezembro e a terceira já é avulsa.
+    const dec = (start: string, psy: string) =>
+      db.availabilitySlots.create({ psychologistId: psy, date: '2026-12-02', start, end: `${String(Number(start.slice(0, 2)) + 1).padStart(2, '0')}:00`, status: 'open', priorityOnly: false });
+    const s1 = booking.schedule(input(dec('09:00', 'psy_0001'), 'cg_0001'));
+    const s2 = booking.schedule(input(dec('10:00', 'psy_0001'), 'cg_0001'));
+    const s3 = booking.schedule(input(dec('11:00', 'psy_0001'), 'cg_0001'));
+    expect([s1, s2, s3].map((r) => (r.ok ? [r.value.priceCents, r.value.includedInPlan] : null))).toEqual([
+      [0, true],
+      [0, true],
+      [12000, false],
+    ]);
+    expect(booking.quotaFor('cg_0001', '2026-12')).toEqual({ limit: 2, used: 2, left: 0 });
+    // Cancelar com 24 horas ou mais devolve a cota; com menos, vira falta e continua contando.
+    if (s1.ok && s2.ok) {
+      booking.cancel(s1.value.id, 'user');
+      expect(booking.quotaFor('cg_0001', '2026-12').left).toBe(1);
+      clock.setSimulated('2026-12-02', '07:00');
+      expect(booking.cancel(s2.value.id, 'user').ok).toBe(true);
+      expect(db.careSessions.require(s2.value.id).status).toBe('no_show');
+      expect(booking.quotaFor('cg_0001', '2026-12').used).toBe(1);
+    }
+  });
+
+  it('agenda a conversa: a vaga sai da lista, o preço vem da cota e o psicólogo precisa estar ativo', () => {
     const { booking, db } = setup();
-    const slot = farSlot(booking, 'cg_0003');
-    const result = booking.schedule(input(slot, 'cg_0003'));
+    const slot = farSlot(booking, 'cg_0009');
+    const result = booking.schedule(input(slot, 'cg_0009'));
     expect(result.ok).toBe(true);
     if (!result.ok) {
       return;
     }
     expect(result.value).toMatchObject({
-      caregiverId: 'cg_0003',
+      caregiverId: 'cg_0009',
       status: 'scheduled',
       modality: 'online',
       kind: 'guidance',
-      priceCents: 12000,
+
       discountPercent: 0,
     });
     expect(db.availabilitySlots.get(slot.id)?.status).toBe('booked');
@@ -69,8 +97,8 @@ describe('SessionBookingService (o miolo de agendar do núcleo, RN-ATD-02 a 05, 
 
   it('vaga tomada, formato e tipo faltando e endereço e segurança do domicílio: erro por campo, nada grava', () => {
     const { booking, db } = setup();
-    const slot = farSlot(booking, 'cg_0003');
-    expect(booking.schedule(input(slot, 'cg_0003')).ok).toBe(true);
+    const slot = farSlot(booking, 'cg_0009');
+    expect(booking.schedule(input(slot, 'cg_0009')).ok).toBe(true);
     const taken = booking.schedule(input(slot, 'cg_0001'));
     expect(taken.ok ? [] : taken.errors.map((e) => e.field)).toEqual(['slot']);
     expect(taken.ok ? '' : taken.errors[0]?.message).toContain('acabou de ser reservada');
@@ -85,11 +113,11 @@ describe('SessionBookingService (o miolo de agendar do núcleo, RN-ATD-02 a 05, 
 
   it('a conversa em casa pedida pelo cuidador nasce com a segurança do local ainda não confirmada: o psicólogo confirma depois (RN-ATD-09)', () => {
     const { booking } = setup();
-    const slot = farSlot(booking, 'cg_0003');
-    const noAddress = booking.schedule(input(slot, 'cg_0003', { modality: 'in_person_home', homeSafetyPending: true }));
+    const slot = farSlot(booking, 'cg_0009');
+    const noAddress = booking.schedule(input(slot, 'cg_0009', { modality: 'in_person_home', homeSafetyPending: true }));
     expect(noAddress.ok ? [] : noAddress.errors.map((e) => e.field)).toEqual(['homeAddress']);
     const created = booking.schedule(
-      input(slot, 'cg_0003', { modality: 'in_person_home', homeSafetyPending: true, homeAddress: '  Rua das Flores, 45  ' }),
+      input(slot, 'cg_0009', { modality: 'in_person_home', homeSafetyPending: true, homeAddress: '  Rua das Flores, 45  ' }),
     );
     expect(created.ok && created.value).toMatchObject({
       modality: 'in_person_home',
@@ -105,8 +133,8 @@ describe('SessionBookingService (o miolo de agendar do núcleo, RN-ATD-02 a 05, 
 
   it('cancela com 24 horas ou mais: libera a vaga, sem falta; menos de 24 horas vira falta e a vaga fica ocupada', () => {
     const { booking, db, clock } = setup();
-    const slot = farSlot(booking, 'cg_0003');
-    const created = booking.schedule(input(slot, 'cg_0003'));
+    const slot = farSlot(booking, 'cg_0009');
+    const created = booking.schedule(input(slot, 'cg_0009'));
     expect(created.ok).toBe(true);
     if (!created.ok) {
       return;
@@ -116,8 +144,8 @@ describe('SessionBookingService (o miolo de agendar do núcleo, RN-ATD-02 a 05, 
     expect(cancelled.ok && cancelled.value.status).toBe('cancelled_by_user');
     expect(db.availabilitySlots.get(slot.id)?.status).toBe('open');
 
-    const again = farSlot(booking, 'cg_0003');
-    const second = booking.schedule(input(again, 'cg_0003'));
+    const again = farSlot(booking, 'cg_0009');
+    const second = booking.schedule(input(again, 'cg_0009'));
     expect(second.ok).toBe(true);
     if (!second.ok) {
       return;
@@ -131,17 +159,17 @@ describe('SessionBookingService (o miolo de agendar do núcleo, RN-ATD-02 a 05, 
 
   it('remarca: a nova nasce agendada, a antiga aponta para ela e libera a vaga; o mesmo horário é recusado', () => {
     const { booking, db } = setup();
-    const first = farSlot(booking, 'cg_0003');
-    const created = booking.schedule(input(first, 'cg_0003'));
+    const first = farSlot(booking, 'cg_0009');
+    const created = booking.schedule(input(first, 'cg_0009'));
     expect(created.ok).toBe(true);
     if (!created.ok) {
       return;
     }
-    const same = booking.reschedule(created.value.id, input(first, 'cg_0003'), 'user');
+    const same = booking.reschedule(created.value.id, input(first, 'cg_0009'), 'user');
     expect(same.ok ? '' : same.errors[0]?.field).toBe('slot');
 
-    const next = farSlot(booking, 'cg_0003', booking.startOf(first));
-    const moved = booking.reschedule(created.value.id, input(next, 'cg_0003'), 'user');
+    const next = farSlot(booking, 'cg_0009', booking.startOf(first));
+    const moved = booking.reschedule(created.value.id, input(next, 'cg_0009'), 'user');
     expect(moved.ok).toBe(true);
     if (!moved.ok) {
       return;
@@ -160,13 +188,13 @@ describe('SessionBookingService (o miolo de agendar do núcleo, RN-ATD-02 a 05, 
     const b = make('psy_0002');
     const c = make('psy_0003');
     expect(booking.freeRoomForSlot(a)?.id).toBe('room_0001'); // Girassol: a primeira reservável por nome
-    const first = booking.schedule(input(a, 'cg_0003', { modality: 'in_person_coworking', roomId: 'room_0001' }));
+    const first = booking.schedule(input(a, 'cg_0009', { modality: 'in_person_coworking', roomId: 'room_0001' }));
     expect(first.ok).toBe(true);
     // A mesma sala no mesmo horário é recusada com o campo da sala; a Ipê é a que está livre.
-    const clash = booking.schedule(input(b, 'cg_0004', { modality: 'in_person_coworking', roomId: 'room_0001' }));
+    const clash = booking.schedule(input(b, 'cg_0008', { modality: 'in_person_coworking', roomId: 'room_0001' }));
     expect(clash.ok ? '' : clash.errors[0]).toMatchObject({ field: 'room', message: 'Esta sala já está reservada nesse horário.' });
     expect(booking.freeRoomForSlot(b)?.id).toBe('room_0002');
-    expect(booking.schedule(input(b, 'cg_0004', { modality: 'in_person_coworking', roomId: 'room_0002' })).ok).toBe(true);
+    expect(booking.schedule(input(b, 'cg_0008', { modality: 'in_person_coworking', roomId: 'room_0002' })).ok).toBe(true);
     // Girassol e Ipê ocupadas: a Jacarandá não tem os 4 itens de acessibilidade, então não há sala para o terceiro.
     expect(booking.freeRoomForSlot(c)).toBeUndefined();
     // Em outro horário a Girassol volta a ficar livre; a conversa cancelada também libera a sala.

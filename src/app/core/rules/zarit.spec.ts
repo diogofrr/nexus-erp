@@ -12,6 +12,7 @@ import {
   zaritBand,
   zaritBandInfo,
   zaritConduct,
+  zaritConductFor,
   zaritEvolution,
   zaritEvolutionSeries,
   zaritStatusForSupport,
@@ -76,8 +77,18 @@ describe('Zarit: faixas e conduta (RN-ZRT-08 a 13, A.5)', () => {
     expect(ZARIT_BANDS).toHaveLength(4);
   });
 
-  it('a conduta da equipe segue a tabela A.5', () => {
-    expect(zaritConduct(10)).toContain('grupos de apoio');
+  it('a conduta da equipe segue a tabela A.5, por plano nas faixas 21 a 60 (docs/20)', () => {
+    expect(zaritConduct(10)).toContain('rodas de conversa abertas');
+    expect(zaritConductFor(30, 'livre')).toBe('Conteúdos de orientação, rodas de conversa abertas, capacitações e encaminhamento à rede pública ou a clínicas-escola.');
+    expect(zaritConductFor(30, 'essencial')).not.toContain('atendimento psicológico');
+    expect(zaritConductFor(30, 'cuida')).toContain('atendimento psicológico');
+    expect(zaritConductFor(30, 'sustenta')).toContain('terapia de grupo');
+    expect(zaritConductFor(50, 'essencial')).toContain('clínicas-escola');
+    expect(zaritConductFor(50, 'cuida')).toContain('acompanhamento psicológico prioritário');
+    expect(zaritConductFor(70, 'livre')).toBe(zaritConductFor(70, 'sustenta'));
+    (['livre', 'essencial', 'cuida', 'sustenta'] as const).forEach((p) =>
+      [10, 30, 50, 70].forEach((t) => expect(zaritConductFor(t, p)).not.toMatch(/plano|upgrade|assine/i)),
+    );
     expect(zaritConduct(30)).toContain('atendimento psicológico');
     expect(zaritConduct(45)).toContain('Alerta amarelo');
     expect(zaritConduct(45)).toContain('rede de apoio');

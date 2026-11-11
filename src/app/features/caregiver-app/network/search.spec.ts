@@ -266,14 +266,15 @@ describe('Buscar profissionais e serviços', () => {
       expect(app.root.querySelector('[data-role="compare-limit"]')).toBeNull();
     });
 
-    it('AC-CG-123: no Livre compara, mas a linha de condições diz "a partir do plano Essencial"; do Essencial em diante mostra as condições', async () => {
+    it('AC-CG-123: no Livre compara sem a linha de condições (nada de "a partir do plano"); do Essencial em diante mostra as condições', async () => {
       const joao = await bootCaregiverApp('cg_0003', { url: `${URL}?categoria=physiotherapy` });
       await click(joao, compareBoxes(joao)[0]);
       await click(joao, compareBoxes(joao)[1]);
       await click(joao, joao.root.querySelector('[data-role="compare"]'));
       const joaoText = norm(openSheet(joao)?.textContent);
-      expect(joaoText).toContain('Condições especiais: a partir do plano Essencial.');
+      expect(joaoText).not.toMatch(/a partir do plano|Condições|Essencial|plano/i);
       expect(joaoText).not.toContain('Horário prioritário');
+      expect(joaoText).toContain('Nota');
       TestBed.resetTestingModule();
       const maria = await bootCaregiverApp('cg_0002', { url: `${URL}?categoria=physiotherapy` });
       await click(maria, compareBoxes(maria)[0]);

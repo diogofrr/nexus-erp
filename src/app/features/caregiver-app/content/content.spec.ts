@@ -39,47 +39,66 @@ describe('Área content (Conteúdos)', () => {
     });
   });
 
-  it('AC-CG-109: "Para todos" lista só os publicados não exclusivos, do mais novo ao mais antigo, com o tempo de leitura', async () => {
+  const sectionTitles = (app: BootedCaregiverApp): string[] =>
+    Array.from(app.root.querySelectorAll('main section[data-category] h2')).map((h) => h.textContent?.trim() ?? '');
+  const allTitles = (app: BootedCaregiverApp): string[] =>
+    Array.from(app.root.querySelectorAll('main .nx-read__title')).map((t) => t.textContent?.trim() ?? '');
+
+  it('AC-CG-109 (docs/20): os publicados aparecem por categoria, em seções na ordem fixa, com o tempo de leitura', async () => {
     const app = await bootCaregiverApp('cg_0002', { url: URL });
     expect(app.root.querySelector('main h1')?.textContent?.trim()).toBe('Conteúdos');
-    expect(app.root.textContent).toContain('Leituras curtas. Escolha uma.');
-    expect(titles(app, 'Para todos')).toEqual([
-      'Prevenção de quedas em casa',
-      'Conversar com a pessoa idosa sobre as decisões do dia a dia',
-      'Pausas curtas para quem cuida',
-      'Como organizar os medicamentos da semana',
+    expect(sectionTitles(app)).toEqual([
+      'Rotina e organização',
+      'Cuidar de você',
+      'Remédios e saúde',
+      'Comunicação com a pessoa idosa',
+      'Direitos e rede pública',
     ]);
-    const descriptions = Array.from(app.root.querySelectorAll('.nx-read__time')).map((d) => d.textContent?.trim());
-    expect(descriptions.every((d) => /^Leitura de \d+ minutos?$/.test(d ?? ''))).toBe(true);
-    // Em revisão e rascunho nunca aparecem.
+    expect(titles(app, 'Remédios e saúde')).toEqual(['Prevenção de quedas em casa', 'Como organizar os medicamentos da semana']);
+    expect(titles(app, 'Direitos e rede pública')).toEqual(['Onde buscar apoio na rede pública']);
+    const times = Array.from(app.root.querySelectorAll('.nx-read__time')).map((d) => d.textContent?.trim());
+    expect(times.every((d) => /^Leitura de \d+ minutos?$/.test(d ?? ''))).toBe(true);
     const text = app.root.textContent ?? '';
     ['Rotina de sono e descanso de quem cuida', 'Direitos da pessoa idosa', 'Alimentação e prevenção de engasgo'].forEach((t) =>
       expect(text).not.toContain(t),
     );
   });
 
-  it('AC-CG-110: do Essencial em diante aparece "Do seu plano" desbloqueada, sem cadeado', async () => {
+  it('o filtro por categoria mostra só a seção escolhida; "Todas" volta', async () => {
+    const app = await bootCaregiverApp('cg_0002', { url: URL });
+    const chips = Array.from(app.root.querySelectorAll<HTMLButtonElement>('[data-role="filter"] button'));
+    expect(chips.map((c) => c.textContent?.trim())).toEqual([
+      'Todas',
+      'Rotina e organização',
+      'Cuidar de você',
+      'Remédios e saúde',
+      'Comunicação com a pessoa idosa',
+      'Direitos e rede pública',
+    ]);
+    await click(app, chips[3]);
+    expect(sectionTitles(app)).toEqual(['Remédios e saúde']);
+    expect(chips[3]?.getAttribute('aria-pressed')).toBe('true');
+    await click(app, chips[0]);
+    expect(sectionTitles(app)).toHaveLength(5);
+  });
+
+  it('AC-CG-110 (docs/20): do Essencial em diante o exclusivo aparece na categoria dele, com o selo "Do seu plano"', async () => {
     for (const id of ['cg_0001', 'cg_0002', 'cg_0027', 'cg_0024']) {
       const app = await bootCaregiverApp(id, { url: URL });
-      expect(titles(app, 'Do seu plano')).toEqual(['Planilha de rotina semanal ampliada']);
-      expect(app.root.querySelector('.cg-plan-lock')).toBeNull();
+      expect(titles(app, 'Rotina e organização')).toContain('Planilha de rotina semanal ampliada');
+      expect(app.root.querySelectorAll('[data-role="exclusive"]')).toHaveLength(1);
       TestBed.resetTestingModule();
     }
   });
 
-  it('AC-CG-110: o plano Livre vê UM cartão "Disponível no plano Essencial" e nenhum título exclusivo como isca', async () => {
+  it('AC-CG-110 (docs/20, regra 1): no Livre o exclusivo NÃO aparece, sem cadeado, sem cartão de bloqueio e sem "Ver os planos"', async () => {
     for (const id of ['cg_0003', 'cg_0004']) {
       const app = await bootCaregiverApp(id, { url: URL });
-      const locks = app.root.querySelectorAll('.cg-plan-lock');
-      expect(locks.length).toBe(1);
-      const lock = locks[0] as HTMLElement;
-      expect(lock.textContent).toContain('Disponível no plano Essencial');
-      expect(lock.textContent).toContain('Os conteúdos exclusivos fazem parte do plano Essencial. Seu plano agora é o Livre.');
-      expect(lock.textContent).toContain('Todas as leituras acima são para você.');
-      expect(lock.querySelector('a')?.textContent?.trim()).toBe('Ver os planos');
-      expect(lock.querySelector('a')?.getAttribute('href')).toBe('/cuidador/mais/plano');
-      expect(app.root.textContent).not.toContain('Planilha de rotina semanal ampliada');
-      expect(app.root.textContent).not.toContain('Do seu plano');
+      expect(allTitles(app)).not.toContain('Planilha de rotina semanal ampliada');
+      expect(allTitles(app)).toHaveLength(6);
+      const text = app.root.querySelector('main')?.textContent ?? '';
+      expect(text).not.toMatch(/Disponível no plano|Do seu plano|Ver os planos|exclusiv/i);
+      expect(app.root.querySelector('main svg[data-icon="lock"], .cg-plan-lock')).toBeNull();
       TestBed.resetTestingModule();
     }
   });
@@ -139,7 +158,7 @@ describe('Área content (Conteúdos)', () => {
     const lists: string[][] = [];
     for (const id of ['cg_0001', 'cg_0002', 'cg_0027', 'cg_0024']) {
       const app = await bootCaregiverApp(id, { url: URL });
-      lists.push(titles(app, 'Para todos'));
+      lists.push(allTitles(app));
       const text = (app.root.textContent ?? '').toLowerCase();
       expect(text).not.toMatch(/zarit|pontua|faixa|arbe|sobrecarga|risco/);
       TestBed.resetTestingModule();

@@ -75,9 +75,9 @@ describe('CaregiverContextService (o cuidador atual em signals)', () => {
     TestBed.resetTestingModule();
     const ana = boot('cg_0001').ctx;
     expect(ana.canUse('groups')).toBe(true);
-    expect(ana.canUse('network_benefits')).toBe(false);
+    expect(ana.canUse('network_differentiated')).toBe(false);
     TestBed.resetTestingModule();
-    expect(boot('cg_0027').ctx.canUse('network_benefits')).toBe(true);
+    expect(boot('cg_0027').ctx.canUse('network_differentiated')).toBe(true);
   });
 
   it('mudança de plano agendada (Marcos): o plano vigente segue e a frase pronta vem do núcleo', () => {

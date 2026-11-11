@@ -42,15 +42,15 @@ function therapyForm(svc: GroupsService, overrides: Partial<ActivityForm> = {}):
 }
 
 describe('M07 programação (SCR-M07-01, AC-M07-11, AC-M07-04)', () => {
-  it('lista as 8 atividades da seed com caráter e vagas; a lotada mostra a lista de espera', async () => {
+  it('lista os 11 encontros da seed (docs/20) com caráter e vagas; a lotada mostra a lista de espera', async () => {
     const app = await bootApp({ userId: 'u1', url: '/app/grupos' });
     const rows = Array.from(app.root.querySelectorAll('app-data-table tbody tr, app-data-table .table tbody tr'));
-    expect(rows.length).toBe(8);
+    expect(rows.length).toBe(11);
     const content = rows.map((r) => r.textContent?.replace(/\s+/g, ' ') ?? '');
     const g1 = content.find((c) => c.includes('Sobrecarga e autocuidado')) ?? '';
     expect(g1).toContain('Lotada');
-    expect(g1).toContain('Lotado: 8 de 8, 2 na lista de espera');
-    expect(g1).toContain('Orientação e psicoeducação');
+    expect(g1).toContain('Lotado: 6 de 6, 2 na lista de espera');
+    expect(g1).toContain('Psicoterapia');
     const g3 = content.find((c) => c.includes('Lidar com as perdas')) ?? '';
     expect(g3).toContain('Psicoterapia');
     expect(g3).toContain('Em andamento');
@@ -87,16 +87,16 @@ describe('M07 programação (SCR-M07-01, AC-M07-11, AC-M07-04)', () => {
 });
 
 describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
-  it('Essencial em grupo de apoio é bloqueado com a explicação "a partir do Cuida" (AC-M07-01)', async () => {
+  it('Essencial na terapia de grupo é bloqueado com a explicação "planos Cuida e Sustenta" (AC-M07-01, docs/20)', async () => {
     const app = await bootApp({ userId: 'u7', url: '/app/grupos/act_0008' });
     const svc = TestBed.inject(GroupsService);
     const checks = svc.checksFor(app.db.activities.require('act_0008'), { caregiverId: 'cg_0006' });
     const plan = checks.find((c) => c.id === 'plan');
     expect(plan?.state).toBe('fail');
-    expect(plan?.text).toContain('Cuida em diante');
+    expect(plan?.text).toContain('Cuida e Sustenta');
     const result = svc.enroll({ activityId: 'act_0008', caregiverId: 'cg_0006', ...accepted });
     expect(result.ok).toBe(false);
-    expect(result.ok === false && result.errors.some((e) => e.message.includes('Cuida em diante'))).toBe(true);
+    expect(result.ok === false && result.errors.some((e) => e.message.includes('Cuida e Sustenta'))).toBe(true);
     expect(app.db.activityEnrollments.count((e) => e.activityId === 'act_0008' && e.caregiverId === 'cg_0006')).toBe(0);
     // Pela tela: o diálogo mostra todas as checagens de uma vez e o botão diz o motivo.
     click(q(app, '[data-role="enroll"]'));
@@ -110,26 +110,26 @@ describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
     select.dispatchEvent(new Event('change', { bubbles: true }));
     await settle(app.fixture);
     const drawer = app.root.querySelector('app-enroll-drawer dialog') as HTMLDialogElement;
-    expect(drawer.textContent).toContain('Cuida em diante');
+    expect(drawer.textContent).toContain('Cuida e Sustenta');
     expect(drawer.querySelector('[data-role="enroll-submit"]')?.getAttribute('aria-disabled')).toBe('true');
-    expect(drawer.querySelector('[data-role="why-disabled"]')?.textContent).toContain('Cuida em diante');
+    expect(drawer.querySelector('[data-role="why-disabled"]')?.textContent).toContain('Cuida e Sustenta');
   });
 
   it('Cuida e Sustenta entram; sem o aceite do sigilo a inscrição não conclui; o aceite grava data e hora (AC-M07-02)', async () => {
-    const app = await bootApp({ userId: 'u7', url: '/app/grupos/act_0008' });
+    const app = await bootApp({ userId: 'u7', url: '/app/grupos/act_0009' });
     const svc = TestBed.inject(GroupsService);
-    const refused = svc.enroll({ activityId: 'act_0008', caregiverId: 'cg_0001', contractAccepted: false });
+    const refused = svc.enroll({ activityId: 'act_0009', caregiverId: 'cg_0001', contractAccepted: false });
     expect(refused.ok).toBe(false);
     expect(refused.ok === false && refused.errors.some((e) => e.field === 'contract')).toBe(true);
-    const ok = svc.enroll({ activityId: 'act_0008', caregiverId: 'cg_0001', ...accepted });
+    const ok = svc.enroll({ activityId: 'act_0009', caregiverId: 'cg_0001', ...accepted });
     expect(ok.ok && ok.value.enrollment.status).toBe('enrolled');
     expect(ok.ok && ok.value.enrollment.confidentialityAcceptedAt).toBe('2026-11-04T12:00:00-03:00');
     // Sustenta também (C17, Sustenta).
-    expect(svc.enroll({ activityId: 'act_0008', caregiverId: 'cg_0017', ...accepted }).ok).toBe(true);
+    expect(svc.enroll({ activityId: 'act_0009', caregiverId: 'cg_0017', ...accepted }).ok).toBe(true);
     // Duplicada não entra de novo.
-    expect(svc.enroll({ activityId: 'act_0008', caregiverId: 'cg_0001', ...accepted }).ok).toBe(false);
+    expect(svc.enroll({ activityId: 'act_0009', caregiverId: 'cg_0001', ...accepted }).ok).toBe(false);
     // O sigilo aparece no detalhe, com o carimbo.
-    await app.router.navigateByUrl('/app/grupos/act_0008');
+    await app.router.navigateByUrl('/app/grupos/act_0009');
     await settle(app.fixture);
     expect(text(app, '[data-role="enrolled"]')).toContain('04/11/2026 12:00');
   });
@@ -147,15 +147,15 @@ describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
     expect(app.db.activityEnrollments.count((e) => e.activityId === 'act_0004')).toBe(13);
   });
 
-  it('o grupo lotado tem 8 inscritos e 2 na fila; cancelar promove o primeiro e o estado acompanha as vagas (AC-M07-04)', async () => {
-    const app = await bootApp({ userId: 'u7', url: '/app/grupos/act_0001' });
+  it('o grupo lotado tem 6 inscritos e 2 na fila; cancelar promove o primeiro e o estado acompanha as vagas (AC-M07-04)', async () => {
+    const app = await bootApp({ userId: 'u3', url: '/app/grupos/act_0001' });
     const svc = TestBed.inject(GroupsService);
     const membership = TestBed.inject(GroupMembershipService);
     expect(app.db.activities.get('act_0001')?.status).toBe('full');
-    expect(membership.seatsTaken('act_0001')).toBe(8);
+    expect(membership.seatsTaken('act_0001')).toBe(6);
     expect(membership.waitlist('act_0001').map((e) => e.caregiverId)).toEqual(['cg_0024', 'cg_0027']);
     expect(q(app, '[data-role="enroll"]')?.textContent).toContain('Entrar na lista de espera');
-    expect(text(app)).toContain('Lotado: 8 de 8, 2 na lista de espera');
+    expect(text(app)).toContain('Lotado: 6 de 6, 2 na lista de espera');
     const enrollment = (cg: string) =>
       app.db.activityEnrollments.require(app.db.activityEnrollments.find((e) => e.activityId === 'act_0001' && e.caregiverId === cg)?.id ?? '');
     // O diálogo diz quem será promovida.
@@ -176,7 +176,7 @@ describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
     expect(app.db.activities.get('act_0001')?.status).toBe('open');
   });
 
-  it('terapia de grupo: selo de psicoterapia e só entra cuidador marcado elegível pelo psicólogo do caso (AC-M07-05)', async () => {
+  it('terapia de grupo: selo de psicoterapia; só Cuida e Sustenta entram, sem exigir a indicação do psicólogo (AC-M07-05, docs/20)', async () => {
     const partner = await bootApp({ userId: 'u1', url: '/app/grupos/novo' });
     const svc = TestBed.inject(GroupsService);
     const created = svc.save(therapyForm(svc), true);
@@ -186,31 +186,32 @@ describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
     }
     const id = created.value.id;
     expect(created.value.character).toBe('psychotherapy');
-    expect(created.value.requiresEligibility).toBe(true);
+    expect(created.value.requiresEligibility).toBe(false);
+    expect(created.value.minPlan).toBe('cuida');
     expect(created.value.status).toBe('open');
     await partner.router.navigateByUrl(`/app/grupos/${id}`);
     await settle(partner.fixture);
     expect(q(partner, '[data-role="character"]')?.textContent).toContain('Psicoterapia');
-    // O atendimento não marca elegibilidade: fica aguardando o psicólogo do caso.
+    // O atendimento: o Essencial é recusado pelo plano; a indicação não é exigida.
     TestBed.resetTestingModule();
     const support = await bootApp({ userId: 'u7', url: '/app/grupos/act_0003' });
     const svcSupport = TestBed.inject(GroupsService);
     const therapyId = cloneActivity(support, 'act_0003', { status: 'open', meetings: [] }).id;
-    const blocked = svcSupport.enroll({ activityId: therapyId, caregiverId: 'cg_0006', ...accepted, eligible: true });
-    expect(blocked.ok).toBe(false);
-    expect(svcSupport.checksFor(support.db.activities.require(therapyId), { caregiverId: 'cg_0006' }).find((c) => c.id === 'eligibility')?.text).toBe(
-      'Aguardando elegibilidade do psicólogo do caso.',
-    );
-    // Letícia (psicóloga do caso de C07, Essencial) marca a elegibilidade e inscreve.
+    expect(svcSupport.enroll({ activityId: therapyId, caregiverId: 'cg_0006', ...accepted, eligible: true }).ok).toBe(false);
+    expect(svcSupport.checksFor(support.db.activities.require(therapyId), { caregiverId: 'cg_0021' }).find((c) => c.id === 'eligibility')).toMatchObject({
+      state: 'na',
+      text: 'Não é exigida: a terapia de grupo vale para os planos Cuida e Sustenta.',
+    });
+    const sustenta = svcSupport.enroll({ activityId: therapyId, caregiverId: 'cg_0021', ...accepted });
+    expect(sustenta.ok && sustenta.value.enrollment.eligibleForGroupTherapy).toBeUndefined();
+    // Letícia (psicóloga do caso de C11, Sustenta) pode registrar a indicação; ela fica gravada.
     TestBed.resetTestingModule();
     const leticia = await bootApp({ userId: 'u5', url: '/app/grupos/act_0003' });
     const svcLeticia = TestBed.inject(GroupsService);
     const therapy = cloneActivity(leticia, 'act_0003', { status: 'open', meetings: [] });
-    expect(svcLeticia.enroll({ activityId: therapy.id, caregiverId: 'cg_0007', ...accepted, eligible: false }).ok).toBe(false);
-    const eligible = svcLeticia.enroll({ activityId: therapy.id, caregiverId: 'cg_0007', ...accepted, eligible: true });
-    expect(eligible.ok && eligible.value.enrollment.eligibleForGroupTherapy).toBe(true);
-    // Cuidador de outro psicólogo não pode ser marcado por ela.
-    expect(svcLeticia.enroll({ activityId: therapy.id, caregiverId: 'cg_0006', ...accepted, eligible: true }).ok).toBe(false);
+    const marked = svcLeticia.enroll({ activityId: therapy.id, caregiverId: 'cg_0011', ...accepted, eligible: true });
+    expect(marked.ok && marked.value.enrollment.eligibleForGroupTherapy).toBe(true);
+    expect(svcLeticia.enroll({ activityId: therapy.id, caregiverId: 'cg_0007', ...accepted, eligible: true }).ok).toBe(false);
   });
 });
 
@@ -220,7 +221,7 @@ describe('M07 nova atividade (SCR-M07-02, AC-M07-06, AC-M07-10)', () => {
     const svc = TestBed.inject(GroupsService);
     const base: ActivityForm = {
       ...svc.emptyForm(),
-      kind: 'support_group',
+      kind: 'group_therapy',
       title: 'Grupo de autocuidado às quartas',
       theme: 'self_care',
       leaderType: 'psychologist',
@@ -242,11 +243,11 @@ describe('M07 nova atividade (SCR-M07-02, AC-M07-06, AC-M07-10)', () => {
   it('só os 8 temas de grupo e os 6 de capacitação são oferecidos e aceitos (AC-M07-10)', async () => {
     const app = await bootApp({ userId: 'u1', url: '/app/grupos/novo' });
     const svc = TestBed.inject(GroupsService);
-    click(app.root.querySelectorAll<HTMLElement>('app-radio-group input[type="radio"]')[1]);
+    click(app.root.querySelectorAll<HTMLElement>('app-radio-group input[type="radio"]')[0]);
     await settle(app.fixture);
     const theme = q(app, '[data-role="theme"]') as HTMLSelectElement;
     expect(theme.querySelectorAll('option').length).toBe(1 + 6);
-    click(app.root.querySelectorAll<HTMLElement>('app-radio-group input[type="radio"]')[0]);
+    click(app.root.querySelectorAll<HTMLElement>('app-radio-group input[type="radio"]')[1]);
     await settle(app.fixture);
     expect((q(app, '[data-role="theme"]') as HTMLSelectElement).querySelectorAll('option').length).toBe(1 + 8);
     const form: ActivityForm = {
@@ -286,7 +287,7 @@ describe('M07 nova atividade (SCR-M07-02, AC-M07-06, AC-M07-10)', () => {
     const mine = svcPsy.save(
       {
         ...svcPsy.emptyForm(),
-        kind: 'support_group',
+        kind: 'group_therapy',
         title: 'Grupo de organização da rotina',
         theme: 'routine_organization',
         mode: 'online',
@@ -317,10 +318,10 @@ describe('M07 nova atividade (SCR-M07-02, AC-M07-06, AC-M07-10)', () => {
 describe('M07 detalhe, sigilo e privacidade (SCR-M07-03, AC-M07-07)', () => {
   it('mostra o caráter, o aviso de que não promete resultado e o número de inscrição profissional', async () => {
     const app = await bootApp({ userId: 'u3', url: '/app/grupos/act_0001' });
-    expect(q(app, '[data-role="character"]')?.textContent).toContain('Orientação e psicoeducação');
+    expect(q(app, '[data-role="character"]')?.textContent).toContain('Psicoterapia');
     expect(q(app, '[data-role="no-promise"]')?.textContent).toContain('não promete resultado terapêutico');
     expect(q(app, '[data-role="leader"]')?.textContent).toContain('CRP-04/00102 (fictício)');
-    expect(q(app, '[data-role="min-plan"]')?.textContent).toContain('A partir do plano Cuida');
+    expect(q(app, '[data-role="min-plan"]')?.textContent).toContain('Planos Cuida e Sustenta');
     expect(text(app, '[data-role="contract"]')).toContain('o que for dito no grupo fica no grupo');
     expect(text(app)).not.toMatch(FORBIDDEN_WORDS);
   });
@@ -333,12 +334,12 @@ describe('M07 detalhe, sigilo e privacidade (SCR-M07-03, AC-M07-07)', () => {
     expect(q(partner, '[data-role="enroll"]')).toBeTruthy();
     TestBed.resetTestingModule();
     const support = await bootApp({ userId: 'u7', url: '/app/grupos/act_0003' });
-    expect(text(support, '[data-role="enrolled"]')).not.toContain('Marlene Cardoso');
-    expect(text(support, '[data-role="enrolled"]')).not.toContain('CUI-0004');
-    expect(text(support, '[data-role="enrolled"]')).toContain('5 participantes inscritos');
+    expect(text(support, '[data-role="enrolled"]')).not.toContain('Lourdes Campos');
+    expect(text(support, '[data-role="enrolled"]')).not.toContain('CUI-0024');
+    expect(text(support, '[data-role="enrolled"]')).toContain('4 participantes inscritos');
     TestBed.resetTestingModule();
     const rt = await bootApp({ userId: 'u2', url: '/app/grupos/act_0003' });
-    expect(text(rt, '[data-role="enrolled"]')).toContain('Marlene Cardoso');
+    expect(text(rt, '[data-role="enrolled"]')).toContain('Lourdes Campos');
     expect(q(rt, '[data-role="enroll"]')).toBeNull();
     click(q(rt, '[data-role="validate-framing"]'));
     await settle(rt.fixture);
@@ -353,13 +354,13 @@ describe('M07 presença e indicadores (SCR-M07-05 e 06, AC-M07-08)', () => {
     const svc = TestBed.inject(GroupsService);
     const activity = app.db.activities.require('act_0003');
     expect(svc.statsOf(activity).presencePercent).toBe(100);
-    expect(svc.statsOf(activity).doneMeetings).toBe(3);
+    expect(svc.statsOf(activity).doneMeetings).toBe(2);
     const first = svc.holders('act_0003')[0];
     const meeting = activity.meetings[0];
     expect(svc.setAttendance(first?.id ?? '', meeting?.id ?? '', false).ok).toBe(true);
-    expect(svc.statsOf(app.db.activities.require('act_0003')).presencePercent).toBe(93.3);
+    expect(svc.statsOf(app.db.activities.require('act_0003')).presencePercent).toBe(87.5);
     await settle(app.fixture);
-    expect(text(app, '[data-role="kpi-rate"]')).toContain('93,3%');
+    expect(text(app, '[data-role="kpi-rate"]')).toContain('87,5%');
     // Encontro que ainda não começou não aceita presença.
     const future = activity.meetings.find((m) => !m.done);
     expect(svc.setAttendance(first?.id ?? '', future?.id ?? '', true).ok).toBe(future ? false : true);
@@ -371,19 +372,19 @@ describe('M07 presença e indicadores (SCR-M07-05 e 06, AC-M07-08)', () => {
   });
 
   it('marcar o encontro como realizado passa a atividade a em andamento; encerrar fecha e dá o estado final a cada inscrito', async () => {
-    const app = await bootApp({ userId: 'u1', url: '/app/grupos/act_0008/presenca', time: '23:00' });
+    const app = await bootApp({ userId: 'u1', url: '/app/grupos/act_0009/presenca', time: '23:00' });
     const svc = TestBed.inject(GroupsService);
-    const activity = app.db.activities.require('act_0008');
+    const activity = app.db.activities.require('act_0009');
     const first = activity.meetings[0];
-    // O primeiro encontro de G8 é daqui a 6 dias: ainda não começou.
-    expect(svc.markMeetingDone('act_0008', first?.id ?? '').ok).toBe(false);
-    app.clock.setSimulated('2026-11-11', '21:00');
-    expect(svc.markMeetingDone('act_0008', first?.id ?? '').ok).toBe(true);
-    expect(app.db.activities.get('act_0008')?.status).toBe('in_progress');
-    const holders = svc.holders('act_0008');
+    // O encontro de G9 é daqui a 8 dias: ainda não começou.
+    expect(svc.markMeetingDone('act_0009', first?.id ?? '').ok).toBe(false);
+    app.clock.setSimulated('2026-11-12', '21:00');
+    expect(svc.markMeetingDone('act_0009', first?.id ?? '').ok).toBe(true);
+    expect(app.db.activities.get('act_0009')?.status).toBe('in_progress');
+    const holders = svc.holders('act_0009');
     expect(svc.setAttendance(holders[0]?.id ?? '', first?.id ?? '', true).ok).toBe(true);
-    expect(svc.finishActivity('act_0008').ok).toBe(true);
-    expect(app.db.activities.get('act_0008')?.status).toBe('finished');
+    expect(svc.finishActivity('act_0009').ok).toBe(true);
+    expect(app.db.activities.get('act_0009')?.status).toBe('finished');
     expect(app.db.activityEnrollments.require(holders[0]?.id ?? '').status).toBe('attended');
     expect(app.db.activityEnrollments.require(holders[1]?.id ?? '').status).toBe('absent');
   });
@@ -392,7 +393,7 @@ describe('M07 presença e indicadores (SCR-M07-05 e 06, AC-M07-08)', () => {
     const app = await bootApp({ userId: 'u1', url: '/app/grupos/act_0001' });
     const svc = TestBed.inject(GroupsService);
     const result = svc.cancelActivity('act_0001');
-    expect(result.ok && result.value.affected).toBe(10);
+    expect(result.ok && result.value.affected).toBe(8);
     expect(app.db.activities.get('act_0001')?.status).toBe('cancelled');
     expect(app.db.activityEnrollments.count((e) => e.activityId === 'act_0001' && (e.status === 'enrolled' || e.status === 'waitlist'))).toBe(0);
     expect(svc.enroll({ activityId: 'act_0001', caregiverId: 'cg_0001', ...accepted }).ok).toBe(false);
@@ -400,7 +401,7 @@ describe('M07 presença e indicadores (SCR-M07-05 e 06, AC-M07-08)', () => {
 });
 
 describe('M07 mudança de plano (RN-GRP-17, AC-M07-09)', () => {
-  it('Cuida para Essencial tira o cuidador das turmas futuras e mantém a turma em andamento', async () => {
+  it('Cuida para Essencial tira o cuidador das turmas futuras de terapia de grupo; a capacitação e a turma em andamento ficam (docs/20)', async () => {
     const app = await bootApp({ userId: 'u1', url: '/app/grupos' });
     const membership = TestBed.inject(GroupMembershipService);
     // Turma em andamento (ciclo já pago) com a mesma pessoa: permanece.
@@ -410,18 +411,18 @@ describe('M07 mudança de plano (RN-GRP-17, AC-M07-09)', () => {
     app.db.subscriptions.update(sub?.id ?? '', { planId: 'essencial' });
     const changes = membership.reconcilePlanLoss('cg_0023');
     const touched = changes.map((c) => c.cancelled.activityId).sort();
-    expect(touched).toEqual(['act_0001', 'act_0002', 'act_0008']);
-    expect(app.db.activityEnrollments.count((e) => e.caregiverId === 'cg_0023' && e.status === 'enrolled' && ['act_0001', 'act_0002', 'act_0008'].includes(e.activityId))).toBe(0);
+    expect(touched).toEqual(['act_0001']);
+    expect(app.db.activityEnrollments.find((e) => e.caregiverId === 'cg_0023' && e.activityId === 'act_0002')?.status).toBe('enrolled');
     // A vaga aberta em G1 promoveu o primeiro da fila.
     expect(app.db.activityEnrollments.find((e) => e.activityId === 'act_0001' && e.caregiverId === 'cg_0024')?.status).toBe('enrolled');
     // Cuidador com plano baixado também sai sozinho quando alguém abre a programação (autocorreção).
     const sub8 = app.db.subscriptions.find((s) => s.caregiverId === 'cg_0008');
     app.db.subscriptions.update(sub8?.id ?? '', { planId: 'essencial' });
-    await app.router.navigateByUrl('/app/grupos/act_0008');
+    await app.router.navigateByUrl('/app/grupos/act_0001');
     await settle(app.fixture);
-    expect(app.db.activityEnrollments.find((e) => e.activityId === 'act_0008' && e.caregiverId === 'cg_0008')?.status).toBe('cancelled');
+    expect(app.db.activityEnrollments.find((e) => e.activityId === 'act_0001' && e.caregiverId === 'cg_0008')?.status).toBe('cancelled');
     expect(app.db.activityEnrollments.find((e) => e.activityId === running.id && e.caregiverId === 'cg_0008')?.status).toBe('enrolled');
-    expect(app.db.activityEnrollments.find((e) => e.activityId === 'act_0003' && e.caregiverId === 'cg_0004')?.status).toBe('enrolled');
+    expect(app.db.activityEnrollments.find((e) => e.activityId === 'act_0003' && e.caregiverId === 'cg_0024')?.status).toBe('enrolled');
   });
 });
 

@@ -28,7 +28,8 @@ import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import { ProviderAvatarComponent } from '../ui/provider-avatar.component';
 import { StarsComponent } from '../ui/stars.component';
-import { CATEGORIES, CONDITIONS_FROM_ESSENCIAL, categoryLabel, parseCategory, ratingShort, ratingText } from '../state/network-copy';
+import { CATEGORIES, categoryLabel, parseCategory, ratingShort, ratingText } from '../state/network-copy';
+import { hasNetworkConditions } from '../../state/plan-access';
 
 /**
  * O ícone e a tinta de cada necessidade (docs/17-vida-v1.md): saúde na sálvia, cuidado em casa na areia, mente e
@@ -66,8 +67,8 @@ interface CompareRow {
  * mais. NUNCA aparecem suspenso, descredenciado ou candidato, nem faixa de monitoramento, "risco de saída", taxa de recusa ou
  * comissão (RN-REDE-18 e 30): o núcleo só entrega a ficha pública. "Só quem atende em casa" filtra; "Comparar" põe 2 ou 3 lado a
  * lado numa tabela curta (nota, atende em casa, condições) que só mostra o que MUDA entre eles; o que é igual vem numa linha
- * "Igual nas duas opções". No Livre a linha de condições diz "a partir do plano Essencial". Escolher uma necessidade leva a tela
- * até os resultados (CXC-011).
+ * "Igual nas duas opções". No Livre a linha de condições NÃO existe (docs/20, regra de exibição 1: nada de "a partir do plano").
+ * Escolher uma necessidade leva a tela até os resultados (CXC-011).
  */
 @Component({
   selector: 'app-cg-search-page',
@@ -329,14 +330,20 @@ export class SearchPage {
     return this.network.searchable().filter((p) => ids.has(p.id));
   });
 
-  /** As linhas da comparação: nota, atende em casa e condições, uma célula por profissional. */
+  /**
+   * As linhas da comparação: nota, atende em casa e, só para quem tem condições especiais (Essencial em diante,
+   * RN-REDE-25), as condições; uma célula por profissional. No Livre a linha não existe (docs/20, regra 1).
+   */
   private readonly compareRows = computed<CompareRow[]>(() => {
     const list = this.compared();
-    return [
+    const rows: CompareRow[] = [
       { key: 'rating', label: 'Nota', cells: list.map((p) => ratingShort(p)) },
       { key: 'home', label: 'Atende em casa', cells: list.map((p) => (p.homeCare ? 'Sim' : 'Não')) },
-      { key: 'conditions', label: 'Condições', cells: list.map((p) => this.conditionsFor(p)) },
     ];
+    if (hasNetworkConditions(this.ctx)) {
+      rows.push({ key: 'conditions', label: 'Condições', cells: list.map((p) => p.conditions) });
+    }
+    return rows;
   });
   private static allEqual(cells: readonly string[]): boolean {
     return cells.every((cell) => cell === cells[0]);
@@ -347,9 +354,7 @@ export class SearchPage {
   protected readonly sameLines = computed(() =>
     this.compareRows()
       .filter((row) => this.compared().length > 0 && SearchPage.allEqual(row.cells))
-      .map((row) =>
-        row.key === 'conditions' && !this.ctx.canUse('network_conditions') ? CONDITIONS_FROM_ESSENCIAL : `${row.label}: ${row.cells[0]}`,
-      ),
+      .map((row) => `${row.label}: ${row.cells[0]}`),
   );
 
   private scrollToResults = false;
@@ -379,11 +384,6 @@ export class SearchPage {
 
   protected rating(p: ProviderPublicView): string {
     return ratingText(p);
-  }
-
-  /** Livre vê a lista e compara, mas a linha de condições diz "a partir do plano Essencial" (RN-REDE-25). */
-  protected conditionsFor(p: ProviderPublicView): string {
-    return this.ctx.canUse('network_conditions') ? p.conditions : CONDITIONS_FROM_ESSENCIAL;
   }
 
   protected onName(event: Event): void {

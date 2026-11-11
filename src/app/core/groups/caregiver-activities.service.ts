@@ -5,37 +5,43 @@ import { Clock } from '../clock/clock.service';
 import { compareDateTimes } from '../clock/date-utils';
 import { Database } from '../data/database';
 import { planIdOfCaregiver } from '../data/plan-lookup';
-import { Activity, ActivityEnrollment, ActivityMeeting, ID, ISODateTime } from '../models';
+import { Activity, ActivityEnrollment, ActivityKind, ActivityMeeting, ID, ISODateTime } from '../models';
+import { EnrollmentOffer } from '../rules/plan-quotas';
 import { canAccessActivity } from '../rules/plans';
 import { GroupMembershipService } from './group-membership.service';
 
-/** Situação da pessoa diante de uma atividade (para a tela decidir o botão, sem recalcular regra). */
+/** Situação da pessoa diante de um encontro (para a tela decidir o botão, sem recalcular regra). */
 export type ActivityStanding =
-  /** O plano não inclui (grupo de apoio e capacitação são do Cuida em diante, RN-GRP-02). */
+  /** O plano não inclui o tipo (terapia de grupo no Livre e no Essencial). A tela nem lista esses encontros. */
   | { kind: 'plan_locked' }
   /** Já está inscrita. */
   | { kind: 'enrolled'; enrollment: ActivityEnrollment }
   /** Está na lista de espera, com a posição (S-20). */
   | { kind: 'waitlist'; enrollment: ActivityEnrollment; position: number }
-  /** A atividade começou: as inscrições estão encerradas. */
+  /** O encontro começou: as inscrições estão encerradas. */
   | { kind: 'in_progress' }
-  /** Terapia de grupo: só entra com a indicação do psicólogo (RN-GRP-14); a tela não diz o motivo clínico. */
-  | { kind: 'needs_indication' }
-  /** Pode entrar; `full` diz se o botão é "Entrar na lista de espera", com a posição que a pessoa teria. */
-  | { kind: 'can_join'; full: boolean; position: number | null };
+  /** Pode entrar; `full` diz se o botão é "Entrar na lista de espera", com a posição que a pessoa teria; `offer` diz se é incluída, avulsa ou grátis. */
+  | { kind: 'can_join'; full: boolean; position: number | null; offer: EnrollmentOffer };
 
-export type EnrollOutcome = { ok: true; waitlisted: boolean; enrollment: ActivityEnrollment; position: number | null } | { ok: false; error: string };
+export type EnrollOutcome =
+  | { ok: true; waitlisted: boolean; enrollment: ActivityEnrollment; position: number | null; offer: EnrollmentOffer }
+  | { ok: false; error: string };
+
+/** Mensagem do domínio quando o plano não inclui a terapia de grupo. A tela do cuidador não a mostra (regra de exibição 1). */
+export const GROUP_THERAPY_PLAN_BLOCKED = 'A terapia de grupo faz parte dos planos Cuida e Sustenta.';
 
 /**
- * Grupos e capacitações vistos pelo cuidador (RN-GRP-01 a 03, 09, 13, 14, 16, 17, RN-PLN-10, RN-PLN-19). O miolo das
- * vagas, da lista de espera e da perda de acesso por plano continua sendo do `GroupMembershipService`; aqui ficam a
- * leitura "como o cuidador vê" e a inscrição feita por ele mesmo, sem a checagem de perfil da equipe.
+ * Encontros vistos pelo cuidador (docs/20-regras-planos-v2.md; RN-GRP-03, 09, 13, 17, RN-PLN-19). O miolo das vagas, da
+ * lista de espera, das cotas e da perda de acesso por plano é do `GroupMembershipService`; aqui ficam a leitura "como o
+ * cuidador vê" e a inscrição feita por ele mesmo, sem a checagem de perfil da equipe.
  *
- * - Só aparecem atividades abertas, lotadas ou em andamento (rascunho, cancelada e encerrada não).
- * - Grupo de apoio e capacitação exigem o plano Cuida ou acima; a roda aberta vale para todos (`canAccessActivity`).
+ * - Só aparecem encontros abertos, lotados ou em andamento (rascunho, cancelado e encerrado não).
+ * - **Regra de exibição 2 do docs/20**: o que o plano não dá acesso NÃO é listado (nem como vitrine). Livre e Essencial
+ *   veem rodas abertas e capacitações; Cuida e Sustenta veem tudo. Quem já está inscrita vê o que é dela (RN-GRP-17).
+ * - Roda aberta: todos, sem cota. Capacitação: todos os cadastrados, incluída quando cabe na cota, senão avulsa a R$ 40,00
+ *   o encontro (pagamento simulado). Terapia de grupo: só Cuida e Sustenta, 2 encontros por mês na cota, além dela avulsa.
  * - O aceite do contrato de sigilo é obrigatório e é gravado com data e hora (RN-GRP-09).
- * - Terapia de grupo só com a indicação do psicólogo do caso (RN-GRP-14): sem inscrição feita pelo psicólogo, o
- *   cuidador não entra sozinho. Nenhuma frase fala de pontuação, faixa ou alerta (RN-PLN-19).
+ * - Nenhuma frase fala de pontuação, faixa ou alerta (RN-PLN-19).
  */
 @Injectable({ providedIn: 'root' })
 export class CaregiverActivitiesService {
@@ -47,19 +53,42 @@ export class CaregiverActivitiesService {
 
   // ===== Leitura =====
 
-  /** A programação: atividades abertas, lotadas e em andamento, a mais próxima primeiro. */
+  /** Toda a programação: encontros abertos, lotados e em andamento, o mais próximo primeiro (sem filtro de plano). */
   programme(): Activity[] {
     return this.db.activities
       .query((a) => a.status === 'open' || a.status === 'full' || a.status === 'in_progress')
       .sort((a, b) => this.sortKey(a).localeCompare(this.sortKey(b)) || a.id.localeCompare(b.id));
   }
 
-  /** Uma atividade da programação; `undefined` para rascunho, cancelada, encerrada ou inexistente. */
+  /** A programação que ESTA pessoa pode ver (docs/20, regra 2): só os tipos que o plano dá acesso, mais o que ela já tem. */
+  visibleProgramme(caregiverId: ID): Activity[] {
+    const planId = planIdOfCaregiver(this.db, caregiverId);
+    const mine = new Set(this.myEnrollments(caregiverId).map((m) => m.activity.id));
+    return this.programme().filter((a) => mine.has(a.id) || canAccessActivity(planId, a.kind).allowed);
+  }
+
+  /** Os tipos de encontro que a pessoa pode ver (para a tela montar as seções e o filtro). */
+  visibleKinds(caregiverId: ID): ActivityKind[] {
+    const planId = planIdOfCaregiver(this.db, caregiverId);
+    return (['open_circle', 'training', 'group_therapy'] as const).filter((kind) => canAccessActivity(planId, kind).allowed);
+  }
+
+  /** Um encontro da programação; `undefined` para rascunho, cancelado, encerrado ou inexistente. */
   visible(activityId: ID): Activity | undefined {
     const activity = this.db.activities.get(activityId);
     return activity && (activity.status === 'open' || activity.status === 'full' || activity.status === 'in_progress')
       ? activity
       : undefined;
+  }
+
+  /** Um encontro que ESTA pessoa pode abrir: da programação e do tipo que o plano dá acesso (ou em que ela já está). */
+  visibleTo(caregiverId: ID, activityId: ID): Activity | undefined {
+    const activity = this.visible(activityId);
+    if (!activity) {
+      return undefined;
+    }
+    const enrolled = this.myEnrollments(caregiverId).some((m) => m.activity.id === activity.id);
+    return enrolled || canAccessActivity(planIdOfCaregiver(this.db, caregiverId), activity.kind).allowed ? activity : undefined;
   }
 
   /** Próximo encontro que ainda não aconteceu. */
@@ -74,7 +103,12 @@ export class CaregiverActivitiesService {
     return this.membership.seatsFree(activity);
   }
 
-  /** Inscrições ativas (inscrita ou em lista de espera) do cuidador, em atividades da programação. */
+  /** O que a inscrição custa para esta pessoa (incluída, avulsa, grátis ou bloqueada). */
+  offerFor(caregiverId: ID, activity: Activity): EnrollmentOffer {
+    return this.membership.offerFor(activity, caregiverId);
+  }
+
+  /** Inscrições ativas (inscrita ou em lista de espera) do cuidador, em encontros da programação. */
   myEnrollments(caregiverId: ID): { activity: Activity; enrollment: ActivityEnrollment }[] {
     if (!this.ownership.ownsCaregiver(caregiverId)) {
       return [];
@@ -88,7 +122,7 @@ export class CaregiverActivitiesService {
       .sort((a, b) => this.sortKey(a.activity).localeCompare(this.sortKey(b.activity)));
   }
 
-  /** A situação da pessoa nesta atividade. */
+  /** A situação da pessoa neste encontro. */
   standingOf(caregiverId: ID, activity: Activity): ActivityStanding {
     const mine = this.db.activityEnrollments.find(
       (e) => e.activityId === activity.id && e.caregiverId === caregiverId && (e.status === 'enrolled' || e.status === 'waitlist'),
@@ -105,18 +139,21 @@ export class CaregiverActivitiesService {
     if (!this.membership.acceptsEnrollment(activity)) {
       return { kind: 'in_progress' };
     }
-    if (activity.kind === 'group_therapy') {
-      return { kind: 'needs_indication' };
-    }
     const full = this.membership.seatsFree(activity) === 0;
-    return { kind: 'can_join', full, position: full ? this.membership.nextWaitlistPosition(activity.id) : null };
+    return {
+      kind: 'can_join',
+      full,
+      position: full ? this.membership.nextWaitlistPosition(activity.id) : null,
+      offer: this.membership.offerFor(activity, caregiverId),
+    };
   }
 
   // ===== Ações =====
 
   /**
-   * O cuidador entra na atividade (ou na lista de espera, se estiver lotada). `acceptedAt` é o instante em que a caixa
-   * do contrato de sigilo foi marcada; sem ele vale agora. Lotada, entra na fila sem tirar ninguém (RN-GRP-13).
+   * O cuidador entra no encontro (ou na lista de espera, se estiver lotado). `acceptedAt` é o instante em que a caixa do
+   * contrato de sigilo foi marcada; sem ele vale agora. Lotado, entra na fila sem tirar ninguém (RN-GRP-13). A inscrição
+   * grava se consome a cota (`includedInPlan`) ou se é avulsa (`paid`, com o valor; pagamento simulado).
    */
   enroll(caregiverId: ID, activityId: ID, options: { contractAccepted: boolean; acceptedAt?: ISODateTime }): EnrollOutcome {
     if (!this.ownership.ownsCaregiver(caregiverId)) {
@@ -125,31 +162,32 @@ export class CaregiverActivitiesService {
     const activity = this.visible(activityId);
     const caregiver = this.db.caregivers.get(caregiverId);
     if (!activity || !caregiver || caregiver.status === 'closed') {
-      return { ok: false, error: 'Não encontramos esta atividade.' };
+      return { ok: false, error: 'Não encontramos este encontro.' };
     }
     const standing = this.standingOf(caregiverId, activity);
     if (standing.kind === 'plan_locked') {
-      return { ok: false, error: 'Esta atividade faz parte do plano Cuida. Veja os planos para saber mais.' };
+      return { ok: false, error: GROUP_THERAPY_PLAN_BLOCKED };
     }
     if (standing.kind === 'enrolled' || standing.kind === 'waitlist') {
-      return { ok: false, error: 'Você já está nesta atividade.' };
+      return { ok: false, error: 'Você já está neste encontro.' };
     }
     if (standing.kind === 'in_progress') {
-      return { ok: false, error: 'Esta atividade já começou. As inscrições estão encerradas.' };
-    }
-    if (standing.kind === 'needs_indication') {
-      return { ok: false, error: 'Esta atividade começa com a indicação do seu psicólogo. Fale com a gente.' };
+      return { ok: false, error: 'Este encontro já começou. As inscrições estão encerradas.' };
     }
     if (!options.contractAccepted) {
       return { ok: false, error: 'Marque que você leu o contrato de sigilo para entrar.' };
     }
     const full = standing.full;
+    const offer = standing.offer;
     const enrollment = this.db.activityEnrollments.create({
       activityId: activity.id,
       caregiverId,
       status: full ? 'waitlist' : 'enrolled',
       ...(full ? { waitlistPosition: this.membership.nextWaitlistPosition(activity.id) } : {}),
       confidentialityAcceptedAt: options.acceptedAt ?? this.clock.now(),
+      includedInPlan: offer.kind === 'included',
+      paid: offer.kind === 'paid',
+      priceCents: offer.priceCents,
       attendance: [],
     });
     this.membership.syncStatus(activity.id);
@@ -158,19 +196,23 @@ export class CaregiverActivitiesService {
       'activity_enrollment',
       enrollment.id,
       caregiverId,
-      full ? 'entrada na lista de espera pelo cuidador' : 'inscrição feita pelo cuidador',
+      full
+        ? 'entrada na lista de espera pelo cuidador'
+        : offer.kind === 'paid'
+          ? 'inscrição avulsa feita pelo cuidador (pagamento simulado)'
+          : 'inscrição feita pelo cuidador',
     );
-    return { ok: true, waitlisted: full, enrollment, position: full ? (enrollment.waitlistPosition ?? null) : null };
+    return { ok: true, waitlisted: full, enrollment, position: full ? (enrollment.waitlistPosition ?? null) : null, offer };
   }
 
-  /** O cuidador sai da atividade ou da lista de espera; a vaga volta e o primeiro da fila é promovido (RN-GRP-13). */
+  /** O cuidador sai do encontro ou da lista de espera; a vaga volta e o primeiro da fila é promovido (RN-GRP-13). */
   leave(caregiverId: ID, enrollmentId: ID): { ok: true; promoted: ActivityEnrollment[] } | { ok: false; error: string } {
     const enrollment = this.db.activityEnrollments.get(enrollmentId);
     if (!enrollment || enrollment.caregiverId !== caregiverId || !this.ownership.ownsCaregiver(caregiverId)) {
       return { ok: false, error: 'Não encontramos esta inscrição.' };
     }
     if (enrollment.status !== 'enrolled' && enrollment.status !== 'waitlist') {
-      return { ok: false, error: 'Você já não está nesta atividade.' };
+      return { ok: false, error: 'Você já não está neste encontro.' };
     }
     const change = this.membership.cancelEnrollment(enrollmentId, 'saída pedida pelo cuidador');
     return { ok: true, promoted: change.promoted };
@@ -178,7 +220,7 @@ export class CaregiverActivitiesService {
 
   private sortKey(activity: Activity): string {
     const meeting = this.nextMeeting(activity);
-    // Em andamento sem encontro futuro vai para o fim; as demais pela data do próximo encontro.
+    // Em andamento sem encontro futuro vai para o fim; os demais pela data do próximo encontro.
     return meeting ? meeting.startAt : '9999';
   }
 }

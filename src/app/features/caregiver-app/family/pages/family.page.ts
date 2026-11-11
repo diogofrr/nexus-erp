@@ -14,6 +14,8 @@ import { FamilyShareService } from '../state/family-share.service';
 import { FamilyShareChoices, NO_FAMILY_CHOICES, anyChosen } from '../state/family-text';
 
 const COPIED = 'Texto copiado. Cole na conversa da sua família.';
+/** A garantia fica junto do botão de copiar (docs/14, seção 4), e não solta no fim da tela (docs/20, regra 4). */
+const GUARANTEE = 'Nada de conversa com psicólogo, grupo ou resultado da escala entra aqui.';
 
 /**
  * Família (UX C20, `/cuidador/mais/familia`): um texto com a rotina da pessoa idosa, para copiar e colar na conversa
@@ -92,6 +94,7 @@ const COPIED = 'Texto copiado. Cole na conversa da sua família.';
         @if (declined()) {
           <app-cg-note variant="soft" icon="info">Tudo bem. Nada foi compartilhado. Você pode autorizar quando quiser.</app-cg-note>
         }
+        <app-cg-note variant="soft" icon="lock">{{ guarantee }}</app-cg-note>
       } @else {
         <section class="cg-stack cg-stack--tight" aria-labelledby="family-items-title">
           <h2 class="cg-section__title" id="family-items-title">O que incluir?</h2>
@@ -131,6 +134,7 @@ const COPIED = 'Texto copiado. Cole na conversa da sua família.';
           @if (!anySelected()) {
             <p class="family-reason" id="family-reason">Escolha pelo menos um item.</p>
           }
+          <app-cg-note variant="soft" icon="lock">{{ guarantee }}</app-cg-note>
           <div class="family-actions">
             <button
               type="button"
@@ -145,8 +149,6 @@ const COPIED = 'Texto copiado. Cole na conversa da sua família.';
           }
         </section>
       }
-
-      <app-cg-note variant="soft" icon="lock">Nada de conversa com psicólogo, grupo ou resultado da escala entra aqui.</app-cg-note>
     </div>
   `,
 })
@@ -158,6 +160,7 @@ export class FamilyPage {
   private readonly box = viewChild<ElementRef<HTMLElement>>('box');
 
   protected readonly copy = CONSENT_COPY.family_sharing;
+  protected readonly guarantee = GUARANTEE;
   protected readonly choices = signal<FamilyShareChoices>(NO_FAMILY_CHOICES);
   protected readonly declined = signal(false);
   protected readonly status = signal<string | null>(null);

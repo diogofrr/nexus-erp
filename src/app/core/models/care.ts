@@ -72,9 +72,12 @@ export interface CareSession extends Audited {
   homeVisitConfirmedSafe?: boolean;
   /** Risco, violência ou urgência (abre POP-05). */
   riskFlag?: boolean;
-  /** Valor COBRADO (já com o desconto do plano, RN-ATD-05). */
+  /** Valor COBRADO: R$ 0,00 dentro da cota mensal do plano, senão o valor avulso (docs/20; RN-ATD-05 antiga). */
   priceCents: Cents;
+  /** Compatibilidade (RN-ATD-05 antiga): o desconto por plano deixou de valer; sempre 0 nos dados novos. */
   discountPercent: number;
+  /** A sessão está dentro da cota mensal do plano (consome a cota; cancelada com menos de 24 h continua consumindo). */
+  includedInPlan?: boolean;
   cancelledAt?: ISODateTime;
   /** Remarcação (CX-026): a sessão antiga aponta para a nova e guarda quem pediu para remarcar. */
   rescheduledToId?: ID;

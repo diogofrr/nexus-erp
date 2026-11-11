@@ -10,7 +10,7 @@
  *   para a tela mostrar o que já foi dado e o que falta.
  * - Rita (C08) tem um serviço da rede CONCLUÍDO e ainda sem avaliação (o cartão "Avaliar" de Hoje): é um pedido que já
  *   existia, de um cuidador de volume, reatribuído a ela, então as contagens de pedidos e as métricas da rede não mudam.
- * - Ana (C01) e Lourdes (C24) têm uma conversa FUTURA com o psicólogo (uma a mais em `careSessions` e uma vaga a mais em
+ * - Ana (C01), Lourdes (C24) e Elza (C27) têm uma conversa FUTURA com o psicólogo (uma a mais em `careSessions` e uma vaga a mais em
  *   `availabilitySlots`, `booked`), para o "Para você" de Hoje e a Agenda aparecerem na demonstração. Os meses fechados
  *   (`monthSummaries`, de onde vem a ocupação de Rafael, 86,3% e 91,3%) não são tocados.
  * - João (C03) não autorizou compartilhar com a família e Ana autorizou (`scenarios.ts`).
@@ -18,7 +18,8 @@
  */
 import { addDays, addMinutes } from '../clock/date-utils';
 import { AvailabilitySlot, CareAppointment, CareSession, DoseCheck, ISODate, Medication } from '../models';
-import { sessionPriceCents } from '../rules/plans';
+import { canBookIndividualSession } from '../rules/plan-quotas';
+import { applySessionQuotas } from './build-sessions';
 import { isBusinessDay } from '../rules/sla';
 import { PSYCHOLOGIST, PsychologistKey, ROOM, caregiverId, elderId } from './refs';
 import { SeedState } from './state';
@@ -146,6 +147,51 @@ export function buildCaregiverApp(s: SeedState): void {
     status: 'confirmed',
     modality: 'in_person_coworking',
   });
+  // Elza (Sustenta, 4 sessões por mês): uma conversa marcada dentro da cota do mês.
+  addDemoSession(s, {
+    caregiverNumber: 27,
+    psychologist: 'tiago',
+    businessDays: 4,
+    status: 'scheduled',
+    modality: 'online',
+    avoidBusyHours: true,
+  });
+
+  // docs/20 e decisão do líder: ninguém do Livre ou do Essencial tem conversa individual FUTURA (o atendimento é de Cuida e
+  // Sustenta). As futuras sorteadas para esses planos passam, em rodízio e sem sortear, a quem é do Cuida ou do Sustenta e não
+  // está na lista de demonstração; o histórico (realizadas, faltas, canceladas) fica como está, avulso. As contagens não mudam.
+  moveFutureSessionsToPaidPlans(s);
+
+  // O preço de todas as sessões (as do seed e as de demonstração) segue a cota do plano no mês (docs/20).
+  applySessionQuotas(s);
+}
+
+/** Reatribui as conversas futuras (agendada ou confirmada) de Livre e Essencial a pessoas do Cuida e do Sustenta. */
+function moveFutureSessionsToPaidPlans(s: SeedState): void {
+  const { c } = s;
+  const planOf = new Map(c.subscriptions.map((sub) => [sub.caregiverId, sub.planId] as const));
+  const demo = new Set(DEMO_CAREGIVER_NUMBERS.map((n) => caregiverId(n)));
+  const takers = c.caregivers
+    .filter((cg) => cg.status === 'active' && !demo.has(cg.id) && (planOf.get(cg.id) === 'cuida' || planOf.get(cg.id) === 'sustenta'))
+    .map((cg) => cg.id)
+    .sort();
+  if (takers.length === 0) {
+    return;
+  }
+  // Primeiro quem é acompanhado pelo mesmo psicólogo; sem ninguém dele, o rodízio geral.
+  const psyOf = new Map(c.caregivers.map((cg) => [cg.id, cg.assignedPsychologistId] as const));
+  const turns = new Map<string, number>();
+  [...c.careSessions]
+    .filter((x) => (x.status === 'scheduled' || x.status === 'confirmed') && !canBookIndividualSession(planOf.get(x.caregiverId) ?? 'livre'))
+    .sort((a, b) => a.startAt.localeCompare(b.startAt) || a.id.localeCompare(b.id))
+    .forEach((session) => {
+      const own = takers.filter((id) => psyOf.get(id) === session.psychologistId);
+      const pool = own.length > 0 ? own : takers;
+      const key = own.length > 0 ? session.psychologistId : '*';
+      const turn = turns.get(key) ?? 0;
+      session.caregiverId = pool[turn % pool.length] as string;
+      turns.set(key, turn + 1);
+    });
 }
 
 /** Horários que o psicólogo atende (os mesmos de `build-sessions`), na ordem em que a demonstração os escolhe. */
@@ -167,6 +213,8 @@ interface DemoSession {
   businessDays: number;
   status: 'scheduled' | 'confirmed';
   modality: 'online' | 'in_person_coworking';
+  /** Evita horários em que outro psicólogo já tem conversa (para a redistribuição da agenda nunca colidir). */
+  avoidBusyHours?: boolean;
 }
 
 /** O dia útil de número `n` depois de hoje: n = 1 é o primeiro dia útil seguinte. */
@@ -184,7 +232,7 @@ function businessDayAfter(today: ISODate, n: number): ISODate {
 
 /**
  * Uma conversa futura, sem sortear: o primeiro horário em que o psicólogo não tem nenhuma vaga (livre, ocupada ou
- * bloqueada) naquele dia. A vaga nasce `booked` e o preço já vem com o desconto do plano da pessoa (RN-ATD-05).
+ * bloqueada) naquele dia. A vaga nasce `booked`; o preço (incluída na cota ou avulsa) é refeito por `applySessionQuotas` (docs/20).
  */
 function addDemoSession(s: SeedState, spec: DemoSession): void {
   const { ctx, c } = s;
@@ -192,7 +240,7 @@ function addDemoSession(s: SeedState, spec: DemoSession): void {
   const date = businessDayAfter(ctx.today, spec.businessDays);
   const taken = new Set(
     c.availabilitySlots
-      .filter((x) => x.psychologistId === psy.id && x.date === date)
+      .filter((x) => x.date === date && (x.psychologistId === psy.id || (spec.avoidBusyHours === true && x.status === 'booked')))
       .map((x) => x.start),
   );
   const hour = SESSION_HOURS.find((h) => !taken.has(h));
@@ -201,8 +249,6 @@ function addDemoSession(s: SeedState, spec: DemoSession): void {
   }
   const end = `${String(Number(hour.slice(0, 2)) + 1).padStart(2, '0')}:00`;
   const owner = caregiverId(spec.caregiverNumber);
-  const planId = c.subscriptions.find((sub) => sub.caregiverId === owner)?.planId ?? 'livre';
-  const discount = c.plans.find((p) => p.id === planId)?.psychSessionDiscountPercent ?? 0;
 
   const slotId = ctx.nextId('slot');
   c.availabilitySlots.push(
@@ -226,8 +272,8 @@ function addDemoSession(s: SeedState, spec: DemoSession): void {
       ...(spec.modality === 'in_person_coworking' ? { roomId: ROOM.girassol } : {}),
       kind: 'psychotherapy',
       status: spec.status,
-      priceCents: sessionPriceCents(s.singletons.settings.sessionBasePriceCents, discount),
-      discountPercent: discount,
+      priceCents: 0,
+      discountPercent: 0,
     }),
   );
 }

@@ -26,6 +26,7 @@ import { CgIllustrationComponent } from '../../ui/cg-illustration.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgPageHeaderComponent } from '../../ui/cg-page-header.component';
 import { CgRowComponent } from '../../ui/cg-row.component';
+import { CgSealComponent } from '../../ui/cg-seal.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
 import {
   BOOKING_SENT,
@@ -50,10 +51,14 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
  * Conversar com um psicólogo (UX C8, B4; RN-ATD-02 a 05, 07, 09 a 12, 15, 16, 19, 20, RN-PLN-12 e 19). Marcar, ver, remarcar e
  * cancelar as conversas com os psicólogos da Nexus, em 2 passos mais a folha de resumo: o formato e o horário.
  *
- * - A confirmação (a folha de resumo, com o valor do plano) vem SEMPRE antes de gravar; "O que você procura?" vem sem nada
+ * - **docs/20**: só Cuida e Sustenta marcam. Dentro da cota do mês a conversa custa R$ 0,00 e o resumo diz "Incluída no seu
+ *   plano (1 de 2 neste mês)"; além da cota é avulsa, com o valor e o aviso. Para Livre e Essencial a tela não existe: a rota
+ *   redireciona para a porta de Cuidar de mim (`sessionPlanGuard`, decisão do líder). Quem mudou de plano depois de marcar
+ *   continua podendo cancelar o que já tinha (a tela nunca deixa marcar nem remarcar sem o plano).
+ * - A confirmação (a folha de resumo, com o valor) vem SEMPRE antes de gravar; "O que você procura?" vem sem nada
  *   marcado e não deixa gravar sem uma das 3 opções (RN-ATD-19, S-07).
  * - Os horários de prioridade de agenda aparecem como os outros, sem etiqueta e sem motivo (RN-ATD-12); quem não tem
- *   direito a eles nem os vê. No plano Livre o resumo mostra só o total, sem linha de desconto e sem convite de plano.
+ *   direito a eles nem os vê.
  * - Cancelar com 24 horas ou mais não tem custo; com menos, a folha diz ANTES que o horário fica registrado como falta
  *   (RN-ATD-16). Remarcar só libera o horário antigo depois de marcar o novo.
  * - O que a regra faz vem do núcleo (`SessionBookingService`); a tela só lê e confirma.
@@ -66,6 +71,7 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
     CgPageHeaderComponent,
     CgCardComponent,
     CgRowComponent,
+    CgSealComponent,
     CgNoteComponent,
     CgSheetComponent,
     CgChoiceGroupComponent,
@@ -137,7 +143,13 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
             </app-cg-note>
           }
 
+          <!-- Livre e Essencial nem chegam aqui: a rota redireciona para a porta (decisão do líder, docs/20). -->
+          @if (canBook()) {
+            <p class="cg-tags" data-role="quota"><app-cg-seal icon="calendar-check">{{ monthText() }}</app-cg-seal></p>
+          }
+
           @if (conversations.all().length === 0) {
+            @if (canBook()) {
             <app-cg-empty
               illustration="chat"
               [headingLevel]="2"
@@ -146,6 +158,7 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
             >
               <button type="button" class="btn btn--primary" data-role="start-booking" (click)="start()">Marcar uma conversa</button>
             </app-cg-empty>
+            }
           } @else {
             @if (conversations.next(); as next) {
               <app-cg-card title="Sua próxima conversa">
@@ -181,9 +194,11 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
                 </ul>
               </section>
             }
-            <div class="cg-actions">
-              <button type="button" class="btn btn--primary" data-role="start-booking" (click)="start()">Marcar uma conversa</button>
-            </div>
+            @if (canBook()) {
+              <div class="cg-actions">
+                <button type="button" class="btn btn--primary" data-role="start-booking" (click)="start()">Marcar uma conversa</button>
+              </div>
+            }
             @if (conversations.previous().length > 0) {
               <details class="conv__more" data-role="previous">
                 <summary>Conversas anteriores</summary>
@@ -300,13 +315,17 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
             </p>
           }
           <div class="conv__prices" data-role="summary-price">
-            @if (price().discountText; as discount) {
-              <p>Conversa de 1 hora: {{ price().baseText }}.</p>
-              <p data-role="summary-discount">Desconto do plano {{ planName() }} ({{ price().discountPercent }}%): menos {{ discount }}.</p>
+            @if (price().included) {
+              <p class="conv__total" data-role="summary-included">{{ price().quotaText }}.</p>
+              <p data-role="summary-total">Total: {{ price().totalText }}.</p>
+            } @else {
+              <p data-role="summary-quota">{{ price().quotaText }}</p>
+              <p class="conv__total" data-role="summary-total">Total: {{ price().totalText }}.</p>
             }
-            <p class="conv__total" data-role="summary-total">Total: {{ price().totalText }}.</p>
           </div>
-          <p>{{ paymentNote }}</p>
+          @if (!price().included) {
+            <p>{{ paymentNote }}</p>
+          }
           @if (formatNotice(); as notice) {
             <app-cg-note variant="info" icon="info"><span data-role="summary-notice">{{ notice }}</span></app-cg-note>
           }
@@ -343,7 +362,9 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
       }
       <ng-container cgSheetActions>
         @if (detail()?.upcoming) {
-          <button type="button" class="btn" data-role="reschedule" (click)="startReschedule()">Remarcar</button>
+          @if (canBook()) {
+            <button type="button" class="btn" data-role="reschedule" (click)="startReschedule()">Remarcar</button>
+          }
           <button type="button" class="btn btn--danger-quiet" data-role="cancel" (click)="askCancel()">Cancelar conversa</button>
         }
         <button type="button" class="cg-link-btn" (click)="detailOpen.set(false)">Voltar</button>
@@ -362,7 +383,7 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
         </div>
       }
       <ng-container cgSheetActions>
-        @if (!detail()?.late) {
+        @if (!detail()?.late && canBook()) {
           <button type="button" class="btn" data-role="reschedule-instead" (click)="startReschedule()">Remarcar em vez de cancelar</button>
         }
         <button type="button" class="btn btn--danger-quiet" data-role="confirm-cancel" (click)="confirmCancel()">Cancelar a conversa</button>
@@ -406,8 +427,11 @@ export class PsychologistPage {
   protected readonly reschedulingId = signal<string | null>(null);
   protected readonly confirmation = signal<{ text: string } | null>(null);
 
-  protected readonly price = this.conversations.price;
-  protected readonly planName = this.ctx.planName;
+  /** O plano permite marcar (Cuida e Sustenta); senão a tela é a página calma de apoio (docs/20). */
+  protected readonly canBook = this.conversations.canBook;
+  protected readonly monthText = this.conversations.monthText;
+  /** O valor da conversa no dia escolhido (na remarcação, a conversa atual não conta na cota). */
+  protected readonly price = computed(() => this.conversations.priceFor(this.picked()?.date, this.rescheduling()?.id));
   protected readonly days = computed(() => this.conversations.slotsFor(this.format()));
   protected readonly others = computed(() => this.conversations.upcoming().slice(1));
   protected readonly detail = computed<Conversation | null>(

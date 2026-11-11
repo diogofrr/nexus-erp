@@ -77,7 +77,7 @@ const CONSENT_ICONS: Readonly<Record<ConsentKey, IconName>> = {
   template: `
     <app-cg-hero
       title="Privacidade e meus dados"
-      description="Você decide o que a Nexus pode fazer com os seus dados. Pode mudar quando quiser. O plano Livre continua em qualquer caso."
+      description="Você decide o que a Nexus pode fazer com os seus dados e pode mudar quando quiser."
       illustration="privacy"
       backLink="/cuidador/mais"
       backLabel="Mais"

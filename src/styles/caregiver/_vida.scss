@@ -37,7 +37,12 @@
 
 // Os blocos de uma tela sobem e aparecem um depois do outro (cada filho direto da página, até o 8º). A tela de "Ajuda agora"
 // fica parada (`.cg-still`): "sem animação" é regra dela.
-.cg-app .cg-col > :not(.cg-still) > * {
+//
+// À prova de falha: o estado padrão de todo bloco é VISÍVEL; a animação só acrescenta. O shell põe `is-entering` na coluna
+// por um instante a cada tela nova e tira em seguida (`CaregiverShellComponent`): só enquanto a classe está lá os blocos
+// nascem transparentes e sobem (`backwards` segura o `from` durante o atraso escalonado). Com a aba em segundo plano a
+// animação não roda, mas a classe sai do mesmo jeito e a página aparece inteira; sem JavaScript nenhum bloco some.
+.cg-app .is-entering > :not(.cg-still) > * {
   animation: cg-rise 320ms var(--ease) backwards;
   &:nth-child(2) { animation-delay: 50ms; }
   &:nth-child(3) { animation-delay: 100ms; }
@@ -46,8 +51,8 @@
   &:nth-child(6) { animation-delay: 240ms; }
   &:nth-child(n + 7) { animation-delay: 280ms; }
 }
-// A mesma ideia para uma lista: `cg-enter` no pai escalona os filhos diretos.
-.cg-app .cg-enter > * {
+// A mesma ideia para uma lista: `cg-enter` no pai escalona os filhos diretos (só na entrada da tela, pela mesma classe).
+.cg-app .is-entering .cg-enter > * {
   animation: cg-rise 300ms var(--ease) backwards;
   &:nth-child(2) { animation-delay: 45ms; }
   &:nth-child(3) { animation-delay: 90ms; }
@@ -354,6 +359,40 @@
 }
 .cg-app .cg-bignum--sm { font-size: calc(1.75rem * min(var(--cg-zoom), 1.15)); }
 
+// ---------------------------------------------------------------------------
+// Selo do tipo de encontro (app-cg-event-badge): roda aberta (sálvia), capacitação (azul-céu), terapia de grupo (areia).
+// Sempre com o nome escrito; a cor só reforça. Pares de cor das seções, conferidos em scripts/check-caregiver-a11y.mjs.
+// ---------------------------------------------------------------------------
+.cg-event {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 1.75rem;
+  padding: 0.125rem 0.75rem;
+  border-radius: var(--cg-radius-pill);
+  background: var(--cg-sec-hoje-strong);
+  color: var(--cg-sec-hoje-ink);
+  font-size: var(--cg-fs-caption);
+  font-weight: var(--fw-semibold);
+  line-height: 1.15;
+  white-space: nowrap;
+  svg { flex-shrink: 0; }
+}
+.cg-event--sm { min-height: 1.5rem; padding-inline: 0.5rem; }
+.cg-event--open_circle { background: var(--cg-sec-rotina-strong); color: var(--cg-sec-rotina-ink); }
+.cg-event--training { background: var(--cg-sec-hoje-strong); color: var(--cg-sec-hoje-ink); }
+.cg-event--group_therapy { background: var(--cg-sec-cuidar-strong); color: var(--cg-sec-cuidar-ink); }
+
+// ---------------------------------------------------------------------------
+// Seção de página (app-cg-section): título, contagem opcional e detalhe à direita; o corpo em pilha.
+// ---------------------------------------------------------------------------
+.cg-app .cg-block { display: grid; gap: var(--cg-gap-stack); align-content: start; min-width: 0; }
+.cg-app .cg-block > .cg-section-head { margin-bottom: 0; }
+.cg-app .cg-block .cg-section__title { margin: 0; }
+.cg-app .cg-section__count { color: var(--cg-text-soft); font-family: var(--font-sans); font-size: var(--cg-fs-small); font-weight: var(--fw-semibold); }
+.cg-app .cg-section__body { display: grid; gap: var(--cg-gap-stack); min-width: 0; }
+.cg-app .cg-section__body:empty { display: none; }
+
 // Linha de seção: o título à esquerda e um detalhe (anel, selo) à direita.
 .cg-app .cg-section-head {
   display: flex;
@@ -395,10 +434,10 @@
   content: '';
   position: absolute;
   inset: 0 0 auto 0;
-  height: 0.5rem;
+  height: 0.1875rem;
   background: linear-gradient(90deg, var(--nx-blue-600), var(--nx-blue-300) 60%, var(--nx-gold-300));
 }
-.cg-door:not(.cg-door--staff) { padding-top: 1.75rem; }
+.cg-door:not(.cg-door--staff) { padding-top: 1.5rem; }
 .cg-door__person {
   position: relative;
   border-radius: 1rem;

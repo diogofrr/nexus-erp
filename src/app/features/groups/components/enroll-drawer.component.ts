@@ -77,7 +77,7 @@ const MAX_OPTIONS = 30;
 
         @if (showEligibility()) {
           <app-checkbox [checked]="eligible()" (checkedChange)="eligible.set($event)" data-role="eligible">
-            Marco este cuidador como elegível para a terapia de grupo
+            Indico este cuidador para a terapia de grupo (opcional)
           </app-checkbox>
         }
 
@@ -141,7 +141,7 @@ export class EnrollDrawerComponent {
 
   protected readonly activity = computed(() => this.db.activities.get(this.activityId()));
   protected readonly isPartner = computed(() => this.auth.role() === 'partner');
-  protected readonly canExternal = computed(() => this.activity()?.kind === 'open_conversation_circle');
+  protected readonly canExternal = computed(() => this.activity()?.kind === 'open_circle');
   protected readonly full = computed(() => {
     const a = this.activity();
     return !!a && this.membership.seatsFree(a) === 0;

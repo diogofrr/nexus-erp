@@ -10,7 +10,8 @@ import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { formatDayShort, relativeDateTime } from '../../state/day-format';
 import { psychologistRole, shortName } from '../../state/people-format';
 import { FORMAT_LABEL } from '../../state/format-labels';
-import { KIND_LABEL, KIND_TO_DEFINE, KindChoice, SLOT_TAKEN, kindFromChoice, statusText } from './care-labels';
+import { includedSentence, quotaSentence } from '@core/rules/plan-quotas';
+import { KIND_LABEL, KIND_TO_DEFINE, KindChoice, QUOTA_USED_UP, SLOT_TAKEN, kindFromChoice, statusText } from './care-labels';
 
 /** Quantos dias à frente a pessoa vê horários (UX B4: "próximos 14 dias"). */
 export const WINDOW_DAYS = 14;
@@ -60,12 +61,18 @@ export interface DayGroup {
   slots: SlotOption[];
 }
 
+/** O valor da conversa como a folha de resumo mostra (docs/20): incluída na cota do mês ou avulsa. */
 export interface PriceView {
+  /** O plano permite marcar (Cuida e Sustenta). */
+  allowed: boolean;
+  /** Cabe na cota do mês: R$ 0,00. */
+  included: boolean;
+  /** "Incluída no seu plano (1 de 2 neste mês)" quando incluída; senão a frase da cota esgotada. */
+  quotaText: string;
+  /** "Neste mês: 1 de 2 sessões usadas" (para o cabeçalho da tela). */
+  monthText: string;
   baseText: string;
-  /** Só quando o plano dá desconto; no Livre fica `null` e a tela mostra só o total. */
-  discountText: string | null;
   totalText: string;
-  discountPercent: number;
 }
 
 export interface BookRequest {
@@ -103,17 +110,19 @@ export function bookingErrorText(errors: readonly BookingFieldError[]): { field:
       return { field: 'kind', error: 'Escolha uma das opções para continuar.' };
     case 'modality':
       return { field: 'modality', error: 'Escolha como você prefere a conversa.' };
+    case 'plan':
+      return { field: 'plan', error: 'O seu plano não inclui as conversas com o psicólogo. Veja o que ele inclui em Meu plano.' };
     default:
       return { field: first.field, error: first.message };
   }
 }
 
 /**
- * As conversas do cuidador com os psicólogos da Nexus (UX C8, B4; RN-ATD-02 a 05, 07, 09, 10, 12, 15, 16, 19). Lê e grava pelo
- * núcleo (`SessionBookingService`, a MESMA regra da agenda da equipe): só os psicólogos com registro ativo, só salas com
- * os 4 itens de acessibilidade, o preço com o desconto do plano, cancelar com 24 horas ou mais sem custo. A tela
- * nunca recalcula regra e NUNCA mostra por que um horário existe (prioridade de agenda, RN-ATD-12): quem não tem
- * direito a esses horários nem os vê.
+ * As conversas do cuidador com os psicólogos da Nexus (docs/20; UX C8, B4; RN-ATD-02, 07, 09, 10, 12, 15, 16, 19). Lê e grava
+ * pelo núcleo (`SessionBookingService`, a MESMA regra da agenda da equipe): só Cuida e Sustenta marcam; dentro da cota do mês
+ * a conversa custa R$ 0,00, além dela é avulsa; cancelar com menos de 24 horas consome a cota (RN-ATD-16); só os psicólogos
+ * com registro ativo, só salas com os 4 itens de acessibilidade. A tela nunca recalcula regra e NUNCA mostra por que um
+ * horário existe (prioridade de agenda, RN-ATD-12): quem não tem direito a esses horários nem os vê.
  */
 @Injectable({ providedIn: 'root' })
 export class ConversationsService {
@@ -151,19 +160,31 @@ export class ConversationsService {
       .sort((a, b) => b.startAt.localeCompare(a.startAt)),
   );
 
-  /** O valor com o desconto do plano: no Livre só o total (sem convite de plano). */
-  readonly price = computed<PriceView>(() => {
+  /** O plano permite marcar conversas (Cuida e Sustenta, docs/20). Quem não pode vê a página calma, sem botão. */
+  readonly canBook = computed(() => this.ctx.canUse('individual_session'));
+
+  /** A cota do mês de hoje: "Neste mês: 1 de 2 sessões usadas". */
+  readonly monthText = computed(() => quotaSentence(this.ctx.quotas().individualSessions, 'sessões'));
+
+  /**
+   * O valor da conversa num dia (docs/20): dentro da cota do mês da vaga, R$ 0,00 e "Incluída no seu plano (1 de 2 neste mês)";
+   * além dela, o valor avulso. Sem dia, vale o mês de hoje. Na remarcação a conversa antiga não conta (`exceptSessionId`).
+   */
+  priceFor(slotDate?: ISODate, exceptSessionId?: ID): PriceView {
     const id = this.ctx.caregiverId();
-    const quote: BookingQuote = id
-      ? this.booking.quote(id)
-      : { planId: 'livre', baseCents: 0, discountPercent: 0, discountCents: 0, totalCents: 0 };
+    if (!id) {
+      return { allowed: false, included: false, quotaText: '', monthText: '', baseText: formatMoney(0), totalText: formatMoney(0) };
+    }
+    const quote: BookingQuote = this.booking.quote(id, slotDate, exceptSessionId);
     return {
+      allowed: quote.allowed,
+      included: quote.included,
+      quotaText: quote.included ? includedSentence(quote.quota) : QUOTA_USED_UP(quote.quota.limit, formatMoney(quote.baseCents)),
+      monthText: quotaSentence(quote.quota, 'sessões'),
       baseText: formatMoney(quote.baseCents),
-      discountText: quote.discountPercent > 0 ? formatMoney(quote.discountCents) : null,
       totalText: formatMoney(quote.totalCents),
-      discountPercent: quote.discountPercent,
     };
-  });
+  }
 
   /** A primeira sala reservável (4 itens de acessibilidade, RN-ATD-10): a que a tela cita antes de a pessoa escolher o horário. */
   readonly room = computed<Room | null>(() => {

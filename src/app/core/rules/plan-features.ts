@@ -1,29 +1,24 @@
 /**
- * O que cada plano libera para o cuidador no aplicativo (docs/10-cuidador-contexto.md, "Planos"). Funções PURAS,
- * em cima do quadro de planos de `plans.ts` (a fonte dos benefícios): nada aqui repete a regra, só dá nome de tela
- * a cada benefício.
+ * O que cada plano libera para o cuidador no aplicativo (docs/20-regras-planos-v2.md, tabela "O que cada plano inclui por
+ * mês"). Funções PURAS: a tabela de cotas (`plan-quotas.ts`) e o quadro de benefícios (`plans.ts`) são a fonte; aqui só
+ * se dá nome de tela a cada recurso.
  *
- * - RN-PLN-01 a 03: Livre = organização básica, agenda e lembretes, conteúdos e acesso inicial à rede;
- *   Essencial soma organização ampliada, Cartão Nexus, conteúdos exclusivos e condições especiais na rede;
- *   Cuida soma maior apoio à organização, grupos de apoio e capacitações; Sustenta soma acompanhamento
- *   organizacional mais próximo, maior nível de suporte e benefícios diferenciados na rede.
- * - RN-PLN-08 e RN-CRT-02: o Cartão Nexus só existe para assinante pago.
- * - RN-PLN-10 e RN-GRP-02: inscrição em grupo de apoio e capacitação só a partir do Cuida (as rodas abertas
- *   valem para todos: use `canAccessActivity`).
- * - RN-REDE-25 e decisão do líder sobre a suposição S-09 do UX: a jornada (etapas 5 a 8) não tem restrição de plano,
- *   então no Livre a pessoa também PEDE serviço pela rede (`request_service`, para todos os planos). O que o plano
- *   limita são as condições especiais da rede (`network_conditions`, do Essencial em diante).
- * - RN-ATD-03 a 05: agendar com o psicólogo da Nexus vale para todos os planos; o plano só muda as condições.
- * - RN-PLN-19: dado de Zarit, alerta ou ARBE nunca vira oferta, desconto nem convite de upgrade. Por isso nenhuma
- *   frase daqui (nem o `reason`) fala de pontuação, alerta ou risco: só do plano.
+ * - `individual_session` e `group_therapy`: só Cuida e Sustenta (2 ou 4 sessões e 2 encontros por mês).
+ * - `training_included`: há capacitação incluída no plano (Essencial 2 por mês; Cuida e Sustenta todas). `training_paid`:
+ *   qualquer pessoa cadastrada participa pagando avulsa (R$ 40,00 por encontro), em qualquer plano.
+ * - `open_circle`: as rodas de conversa abertas são ação de comunidade, para todos (RN-GRP-03).
+ * - `card`, `exclusive_content`, `network_conditions`: do Essencial em diante (RN-PLN-05, 08, RN-CRT-02);
+ *   `network_differentiated`: só o Sustenta (RN-PLN-07).
+ * - RN-REDE-25 e decisão do líder (S-09): a jornada não tem restrição de plano; no Livre a pessoa também PEDE serviço
+ *   (`request_service`, para todos).
+ * - RN-PLN-19: dado de Zarit, alerta ou ARBE nunca vira oferta. Nenhuma frase daqui fala de pontuação, alerta ou risco.
+ * - Regra de exibição 1 do docs/20: o app NÃO anuncia o que o plano não inclui fora de Meu plano. `featureAccess().reason`
+ *   continua existindo só por compatibilidade com código antigo; nenhuma tela nova deve mostrá-lo.
+ * - `groups`: chave antiga, igual a `group_therapy`; existe só enquanto o kit (`cg-plan-lock`) e testes antigos a usam.
  */
-import { BenefitKey, PlanId } from '../models/plans';
-import {
-  DEFAULT_PLANS,
-  PlanDefinition,
-  minimumPlanFor,
-  planHasBenefit,
-} from './plans';
+import { PlanId } from '../models/plans';
+import { DEFAULT_PLANS, PLAN_ORDER, PlanDefinition } from './plans';
+import { PLAN_QUOTAS } from './plan-quotas';
 
 /** Recursos que o aplicativo do cuidador abre ou fecha por plano. */
 export type CaregiverFeature =
@@ -32,57 +27,83 @@ export type CaregiverFeature =
   | 'content'
   | 'network_search'
   | 'request_service'
-  | 'psych_scheduling'
+  | 'open_circle'
+  | 'training_paid'
+  | 'training_included'
+  | 'group_therapy'
+  | 'individual_session'
   | 'extended_organization'
   | 'card'
   | 'exclusive_content'
   | 'network_conditions'
   | 'organization_support'
-  | 'groups'
   | 'close_follow_up'
-  | 'network_benefits';
+  | 'network_differentiated'
+  | 'groups';
 
-/** Benefício do quadro de planos que sustenta cada recurso (`null` = todos os planos). */
-export const FEATURE_BENEFIT: Readonly<Record<CaregiverFeature, BenefitKey | null>> = {
-  organization: 'basic_organization',
-  agenda_reminders: 'agenda_reminders',
-  content: 'content',
-  network_search: 'network_initial_access',
-  request_service: null,
-  psych_scheduling: null,
-  extended_organization: 'extended_organization',
-  card: 'card_discounts',
-  exclusive_content: 'exclusive_content',
-  network_conditions: 'network_special_conditions',
-  organization_support: 'greater_organization_support',
-  groups: 'support_groups',
-  close_follow_up: 'close_organizational_follow_up',
-  network_benefits: 'network_differentiated_benefits',
-};
-
-/** Nome do recurso em linguagem simples (para o bloqueio por plano e para o quadro de planos). */
+/** Nome do recurso em linguagem simples (para o quadro de planos). */
 export const FEATURE_LABELS: Readonly<Record<CaregiverFeature, string>> = {
   organization: 'Organização da rotina',
   agenda_reminders: 'Agenda e lembretes',
   content: 'Conteúdos',
   network_search: 'Busca na rede',
   request_service: 'Pedir um serviço da rede',
-  psych_scheduling: 'Conversar com um psicólogo',
+  open_circle: 'Rodas de conversa abertas',
+  training_paid: 'Capacitações avulsas',
+  training_included: 'Capacitações incluídas',
+  group_therapy: 'Terapia de grupo',
+  individual_session: 'Atendimento psicológico individual',
   extended_organization: 'Organização ampliada',
   card: 'Cartão Nexus',
   exclusive_content: 'Conteúdos exclusivos',
   network_conditions: 'Condições especiais na rede',
-  organization_support: 'Maior apoio à organização',
-  groups: 'Grupos e capacitações',
+  organization_support: 'Maior suporte à organização',
   close_follow_up: 'Acompanhamento mais próximo',
-  network_benefits: 'Benefícios diferenciados na rede',
+  network_differentiated: 'Benefícios diferenciados na rede',
+  groups: 'Terapia de grupo',
 };
+
+/** O plano libera o recurso? (a tabela do docs/20, lida das cotas; o quadro de planos editável de M15 não muda isto). */
+function allowedBy(planId: PlanId, feature: CaregiverFeature): boolean {
+  const q = PLAN_QUOTAS[planId];
+  switch (feature) {
+    case 'organization':
+    case 'agenda_reminders':
+    case 'content':
+    case 'network_search':
+    case 'request_service':
+    case 'open_circle':
+    case 'training_paid':
+      return true;
+    case 'training_included':
+      return q.trainingsPerMonth === 'all' || q.trainingsPerMonth > 0;
+    case 'group_therapy':
+    case 'groups':
+      return q.groupTherapyPerMonth > 0;
+    case 'individual_session':
+      return q.individualSessionsPerMonth > 0;
+    case 'card':
+      return q.card;
+    case 'exclusive_content':
+      return q.exclusiveContent;
+    case 'network_conditions':
+      return q.networkConditions;
+    case 'network_differentiated':
+      return q.networkDifferentiated;
+    case 'extended_organization':
+      return planId !== 'livre';
+    case 'organization_support':
+      return planId === 'cuida' || planId === 'sustenta';
+    case 'close_follow_up':
+      return planId === 'sustenta';
+  }
+}
 
 export interface FeatureAccess {
   allowed: boolean;
   /** Menor plano que libera o recurso (o Livre quando vale para todos). */
   minPlan: PlanId;
-  /** Frase do bloqueio, só quando `allowed` é falso: "Disponível a partir do plano Cuida." */
+  /** Compatibilidade: frase do bloqueio, só quando `allowed` é falso. Não mostre em tela (docs/20, regra 1). */
   reason?: string;
 }
 
@@ -96,21 +117,24 @@ export function planShortName(planId: PlanId, plans: readonly PlanDefinition[] =
 export function canUseFeature(
   planId: PlanId,
   feature: CaregiverFeature,
-  plans: readonly PlanDefinition[] = DEFAULT_PLANS,
+  _plans: readonly PlanDefinition[] = DEFAULT_PLANS,
 ): boolean {
-  const benefit = FEATURE_BENEFIT[feature];
-  return benefit === null || planHasBenefit(planId, benefit, plans);
+  return allowedBy(planId, feature);
 }
 
-/** Acesso ao recurso, com o menor plano e a frase do bloqueio (RN-PLN-19: só fala do plano). */
+/** O menor plano que libera o recurso. */
+export function minimumPlanForFeature(feature: CaregiverFeature): PlanId {
+  return PLAN_ORDER.find((p) => allowedBy(p, feature)) ?? 'sustenta';
+}
+
+/** Acesso ao recurso, com o menor plano (RN-PLN-19: a frase de compatibilidade só fala do plano). */
 export function featureAccess(
   planId: PlanId,
   feature: CaregiverFeature,
   plans: readonly PlanDefinition[] = DEFAULT_PLANS,
 ): FeatureAccess {
-  const benefit = FEATURE_BENEFIT[feature];
-  const minPlan: PlanId = benefit === null ? 'livre' : minimumPlanFor(benefit);
-  if (canUseFeature(planId, feature, plans)) {
+  const minPlan = minimumPlanForFeature(feature);
+  if (allowedBy(planId, feature)) {
     return { allowed: true, minPlan };
   }
   return {

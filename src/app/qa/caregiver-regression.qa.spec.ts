@@ -104,14 +104,14 @@ describe('QAC: autorização no nível do objeto (serviços chamados direto)', (
     expect(db.providerEvaluations.require('evl_0086').technicalQuality).not.toBe(1);
   });
 
-  it('grupos: sair da inscrição de outro cuidador é recusado; plano Essencial não entra em capacitação', () => {
+  it('grupos: sair da inscrição de outro cuidador é recusado; plano Essencial não entra na terapia de grupo (docs/20)', () => {
     const { db } = boot(MARIA);
     const activities = TestBed.inject(CaregiverActivitiesService);
     expect(activities.leave(MARIA, 'enr_0001').ok).toBe(false); // inscrição de Ana
     expect(db.activityEnrollments.require('enr_0001').status).toBe('enrolled');
-    const locked = activities.enroll(MARIA, 'act_0002', { contractAccepted: true }); // capacitação, plano Cuida
+    const locked = activities.enroll(MARIA, 'act_0008', { contractAccepted: true }); // terapia de grupo: Cuida e Sustenta
     expect(locked.ok).toBe(false);
-    expect(db.activityEnrollments.count((e) => e.caregiverId === MARIA)).toBe(0);
+    expect(db.activityEnrollments.count((e) => e.caregiverId === MARIA && e.activityId === 'act_0008')).toBe(0);
   });
 
   it('rascunho, cancelada e finalizada não aparecem como atividade visível', () => {
@@ -122,7 +122,7 @@ describe('QAC: autorização no nível do objeto (serviços chamados direto)', (
     expect(activities.programme().map((a) => a.id)).not.toContain('act_0007');
   });
 
-  it('terapia de grupo não aceita entrada do próprio cuidador (só pela indicação do psicólogo)', () => {
+  it('terapia de grupo em andamento não aceita entrada nova (as inscrições estão encerradas)', () => {
     const { db } = boot(ANA);
     const outcome = TestBed.inject(CaregiverActivitiesService).enroll(ANA, 'act_0003', { contractAccepted: true });
     expect(outcome.ok).toBe(false);
@@ -475,7 +475,7 @@ describe('QAC: plano', () => {
     expect(context.access('card').allowed).toBe(false);
     expect(context.access('exclusive_content').allowed).toBe(false);
     expect(context.access('network_conditions').allowed).toBe(false);
-    expect(context.access('psych_scheduling').allowed).toBe(true);
+    expect(context.access('individual_session').allowed).toBe(false);
     expect(context.access('request_service').allowed).toBe(true);
     ['groups', 'card', 'exclusive_content', 'network_conditions'].forEach((f) => {
       const reason = context.access(f as 'groups').reason ?? '';
@@ -523,7 +523,7 @@ describe('QAC: integridade cruzada com a visão da equipe', () => {
     });
     expect(result.ok).toBe(true);
     const session = result.ok ? result.session : null;
-    expect(session).toMatchObject({ caregiverId: ANA, psychologistId: slot.psychologistId, slotId: slot.id, status: 'scheduled', priceCents: 10200, discountPercent: 15, kind: 'guidance' });
+    expect(session).toMatchObject({ caregiverId: ANA, psychologistId: slot.psychologistId, slotId: slot.id, status: 'scheduled', priceCents: 0, discountPercent: 0, includedInPlan: true, kind: 'guidance' });
     expect(db.availabilitySlots.require(slot.id).status).toBe('booked');
     // O mesmo horário não pode ser vendido duas vezes.
     TestBed.inject(CaregiverSessionService).signIn(RITA);

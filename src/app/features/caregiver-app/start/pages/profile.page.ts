@@ -16,7 +16,6 @@ import { CgChoiceGroupComponent } from '../../ui/cg-choice-group.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgHeroComponent } from '../../ui/cg-hero.component';
 import { CgSheetComponent } from '../../ui/cg-sheet.component';
-import { CgTextSizeComponent } from '../../ui/cg-text-size.component';
 import { ProfileError, ProfileService } from '../state/profile.service';
 import {
   CHANNEL_CHOICES,
@@ -43,7 +42,8 @@ const chosen =
 
 /**
  * Meu perfil (UX C22, `/cuidador/mais/perfil`): os dados de quem usa e de quem é cuidado, em 3 cartões (Você, Quem
- * você cuida, Seu dia a dia) com **Editar** que abre uma folha SÓ daquela seção, e o tamanho da letra embaixo. O CPF
+ * você cuida, Seu dia a dia) com **Editar** que abre uma folha SÓ daquela seção. O tamanho da letra fica só em Mais
+ * (docs/14, seção 4: Perfil pesado; docs/20, regra 4: nada repetido). O CPF
  * aparece inteiro (é o dado da própria pessoa) e não se edita aqui (S-31: "Para corrigir o CPF, fale com a gente.").
  * A tela não pede nem mostra condição de saúde, remédio ou diagnóstico, nem dado de atendimento, grupo ou escala
  * (RN-USR-09). Se o canal preferido é o WhatsApp e não há número, uma nota avisa (CX-041).
@@ -56,7 +56,6 @@ const chosen =
     CgNoteComponent,
     CgHeroComponent,
     CgSheetComponent,
-    CgTextSizeComponent,
     ErrorSummaryComponent,
     FormFieldComponent,
     NxInputDirective,
@@ -181,11 +180,6 @@ const chosen =
         }
         <button cgCardFooter type="button" class="cg-link-btn" (click)="open('daily')">Editar<span class="sr-only"> o seu dia a dia</span></button>
       </app-cg-card>
-
-      <section aria-labelledby="profile-text-title">
-        <h2 class="cg-section__title" id="profile-text-title">Tamanho da letra</h2>
-        <app-cg-text-size />
-      </section>
     </div>
 
     <app-cg-sheet [heading]="sheetTitle()" [(open)]="sheetOpen">

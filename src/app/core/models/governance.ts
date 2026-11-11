@@ -112,9 +112,19 @@ export interface TrainingEvent extends Audited {
   attendees: TrainingAttendee[];
 }
 
+/** Categorias dos conteúdos de orientação (docs/20: seção e filtro na tela do cuidador). */
+export type GuidanceCategory =
+  | 'routine_organization'
+  | 'self_care'
+  | 'medication_health'
+  | 'communication_with_elder'
+  | 'rights_public_network';
+
 export interface GuidanceContent extends Audited {
   title: string;
   body: string;
+  /** A seção em que o conteúdo aparece para o cuidador. */
+  category: GuidanceCategory;
   status: 'draft' | 'in_review' | 'published';
   /** Só o RT aprova (RN-POP-09). */
   approvedByUserId?: ID;

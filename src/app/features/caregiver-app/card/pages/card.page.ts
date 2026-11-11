@@ -1,6 +1,5 @@
 import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { Clock } from '../../../../core/clock/clock.service';
 import { SubscriptionService } from '../../../../core/commerce/subscription.service';
 import { Database } from '../../../../core/data/database';
@@ -60,14 +59,15 @@ interface UsageRow {
  * cor do plano, o símbolo da marca, o chip e o número `NX-0000-0000`), "Mostre o número no balcão do parceiro.", **Copiar
  * número**, onde usar (só parceiros ATIVOS, cada um com o seu percentual) e o que já economizou (o total do mês em destaque e as
  * 3 últimas compras; o resto em "Ver todas"). Vale enquanto o plano pago estiver ativo (S-22); com cancelamento agendado diz até
- * quando. No plano Livre (ou cartão inativo) é um convite calmo: o desenho de um cartão, sem número, sem percentual, sem nome de
- * parceiro e sem preço (RN-CRT-02, RN-PLN-08). Nada aqui depende de pontuação, alerta ou ARBE (RN-PLN-19).
+ * quando. No plano Livre a página não existe: a rota redireciona para a porta de Rede (`cardPlanGuard`, decisão do líder sobre
+ * a regra de exibição 1 do docs/20); nenhuma tela convida para o cartão, sem número, percentual, parceiro ou preço
+ * (RN-CRT-02, RN-PLN-08). Nada aqui depende de pontuação, alerta ou ARBE (RN-PLN-19).
  *
  * Cores: as mesmas do plano (`--tone` e `--tone-on`, pares em `scripts/check-caregiver-a11y.mjs`); o texto do cartão passa 4,5:1.
  */
 @Component({
   selector: 'app-cg-card-page',
-  imports: [RouterLink, IconComponent, EmptyStateComponent, CgPageHeaderComponent, CgNoteComponent, CgPlanTagComponent],
+  imports: [IconComponent, EmptyStateComponent, CgPageHeaderComponent, CgNoteComponent, CgPlanTagComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
@@ -97,13 +97,6 @@ interface UsageRow {
       .nx-card__hint { margin: 0; font-size: var(--cg-fs-lead); color: var(--cg-heading); }
       .nx-card__validity { margin: 0; color: var(--cg-text-soft); }
 
-      .nx-ghost { display: grid; align-content: space-between; inline-size: 100%; max-inline-size: 26rem; aspect-ratio: 1.586 / 1; padding: 1.25rem; border: 2px dashed var(--cg-acc-solid); border-radius: 1.25rem; background: var(--cg-acc-tint); color: var(--cg-acc-ink); }
-      .nx-ghost__brand { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: var(--fw-semibold); letter-spacing: 0.24em; font-size: var(--cg-fs-small); }
-      .nx-ghost__brand svg { inline-size: 2.25rem; block-size: 1.5rem; }
-      .nx-ghost__lines { display: grid; gap: 0.5rem; }
-      .nx-ghost__lines span { display: block; inline-size: 70%; block-size: 0.75rem; border-radius: 0.375rem; background: var(--cg-acc-strong); }
-      .nx-ghost__lines span:last-child { inline-size: 40%; }
-      .nx-invite__lead { margin: 0; font-size: var(--cg-fs-lead); color: var(--cg-heading); }
 
       .nx-saved { display: grid; gap: 0.25rem; margin-bottom: 1rem; padding: 1rem 1.25rem; border: 1px solid var(--cg-acc-strong); border-radius: var(--cg-radius-card); background: var(--cg-acc-tint); }
       .nx-saved__amount { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; }
@@ -214,27 +207,11 @@ interface UsageRow {
           }
         </section>
       </div>
-    } @else if (ctx.canUse('card')) {
-      <app-cg-note variant="soft" icon="info">
+    } @else {
+      <!-- Sem cartão ativo. O Livre nem chega aqui: a rota redireciona para a Rede (cardPlanGuard, docs/20). -->
+      <app-cg-note variant="soft" icon="info" data-role="no-card">
         Não encontramos um cartão ativo para você. A equipe pode ajudar.
       </app-cg-note>
-    } @else {
-      <!-- Convite calmo: o desenho de um cartão (sem número) e uma frase. Sem preço, sem percentual, sem nome de parceiro. -->
-      <div class="nx-wallet" data-role="invite">
-        <div class="nx-ghost" aria-hidden="true">
-          <span class="nx-ghost__brand">
-            <svg class="brand-symbol" viewBox="-18 3 156 98" aria-hidden="true"><use href="icons/sprite.svg#nx-symbol" /></svg>
-            NEXUS
-          </span>
-          <span class="nx-ghost__lines"><span></span><span></span></span>
-        </div>
-        <div class="nx-wallet__info">
-          <p class="nx-invite__lead">
-            O Cartão Nexus dá descontos em farmácias, clínicas e outros parceiros. Ele vem com os planos pagos.
-          </p>
-          <a class="btn" routerLink="/cuidador/mais/plano">Ver os planos</a>
-        </div>
-      </div>
     }
   `,
 })

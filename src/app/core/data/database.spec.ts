@@ -28,7 +28,7 @@ describe('Database: seed, reset e primeira visita', () => {
       seedName: 'nexus-seed-1',
       seededForToday: '2026-11-04',
     });
-    expect(local.data.get('nexus-erp:schema-version')).toBe('"1"');
+    expect(local.data.get('nexus-erp:schema-version')).toBe('"2"');
     expect(db.ensureSeeded()).toBe(false);
   });
 
@@ -51,7 +51,7 @@ describe('Database: seed, reset e primeira visita', () => {
     expect(db.providers.size()).toBe(20);
     expect(db.serviceRequests.size()).toBe(213);
     expect(db.providerEvaluations.size()).toBe(124);
-    expect(db.activities.size()).toBe(8);
+    expect(db.activities.size()).toBe(11);
     expect(db.messages.size()).toBe(28);
     expect(db.complaints.size()).toBe(5);
     expect(db.dataSubjectRequests.size()).toBe(5);
@@ -119,7 +119,7 @@ describe('Database: exportar e importar JSON (AC-M15-02, 03)', () => {
     const { db } = configureCoreTest({ seed: true });
     const envelope = db.buildExport();
     expect(envelope.app).toBe(EXPORT_APP_ID);
-    expect(envelope.schemaVersion).toBe('1');
+    expect(envelope.schemaVersion).toBe('2');
     expect(envelope.clock.demoToday).toBe('2026-11-04');
     expect(Object.keys(envelope.collections)).toHaveLength(COLLECTION_NAMES.length);
     expect(envelope.collections.caregivers).toHaveLength(340);

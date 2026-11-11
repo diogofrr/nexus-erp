@@ -74,7 +74,8 @@ describe('seed: contagens da seção 5.15', () => {
     expect(c.serviceRequests).toHaveLength(213);
     expect(c.serviceRequests.filter((r) => r.status === 'evaluated')).toHaveLength(124);
     expect(c.providerEvaluations).toHaveLength(124);
-    expect(c.activities).toHaveLength(8);
+    // docs/20: 11 encontros (2 rodas abertas, 5 capacitações e 4 terapias de grupo, com os estados de antes).
+    expect(c.activities).toHaveLength(11);
     expect(c.partners).toHaveLength(9);
     expect(c.corporateAccounts).toHaveLength(3);
     expect(c.messages).toHaveLength(28);
@@ -86,8 +87,9 @@ describe('seed: contagens da seção 5.15', () => {
     expect(c.referrals).toHaveLength(10);
     expect(c.occurrences).toHaveLength(3);
     expect(c.cardUsages).toHaveLength(25);
-    // 60 do seed original + 2 conversas futuras de demonstração (Ana e Lourdes, build-caregiver-app.ts).
-    expect(c.careSessions).toHaveLength(62);
+    // 60 do seed original + 3 conversas futuras de demonstração (Ana, Lourdes e Elza, build-caregiver-app.ts; a de Elza
+    // entrou com o docs/20, para o Sustenta mostrar a cota do mês em uso).
+    expect(c.careSessions).toHaveLength(63);
     expect(c.consents).toHaveLength(340 * 6);
     expect(c.consentTerms).toHaveLength(6);
     expect(c.privacyDocuments.map((d) => d.kind).sort()).toEqual([
@@ -98,7 +100,8 @@ describe('seed: contagens da seção 5.15', () => {
     expect(c.messageTemplates).toHaveLength(6);
     expect(c.incidents).toHaveLength(2);
     expect(c.trainingEvents).toHaveLength(6);
-    expect(c.guidanceContents).toHaveLength(8);
+    // docs/20: 2 conteúdos publicados a mais, para cada categoria ter leitura.
+    expect(c.guidanceContents).toHaveLength(10);
     expect(c.norms).toHaveLength(6);
     expect(c.pilotEnrollments).toHaveLength(15);
     expect(FIRST_NAMES).toHaveLength(60);
@@ -495,10 +498,10 @@ describe('seed: rede credenciada (5.8 e 5.9)', () => {
 });
 
 describe('seed: agenda e equipe (5.2)', () => {
-  it('as 62 sessões (60 do seed e 2 de demonstração do aplicativo) seguem a distribuição de estados, modalidades e classificação', () => {
+  it('as 63 sessões (60 do seed e 3 de demonstração do aplicativo) seguem a distribuição de estados, modalidades e classificação', () => {
     const s = c.careSessions;
     const count = (status: string): number => s.filter((x) => x.status === status).length;
-    // As 2 conversas de demonstração (Ana, agendada, on-line; Lourdes, confirmada, coworking) somam 1 em cada coluna.
+    // As 3 conversas de demonstração (Ana e Elza, agendadas, on-line; Lourdes, confirmada, coworking) somam nas colunas.
     expect([
       count('done'),
       count('no_show'),
@@ -506,11 +509,11 @@ describe('seed: agenda e equipe (5.2)', () => {
       count('cancelled_by_psychologist'),
       count('confirmed'),
       count('scheduled'),
-    ]).toEqual([24, 3, 2, 2, 9, 22]);
-    expect(s.filter((x) => x.modality === 'online')).toHaveLength(31);
+    ]).toEqual([24, 3, 2, 2, 9, 23]);
+    expect(s.filter((x) => x.modality === 'online')).toHaveLength(32);
     expect(s.filter((x) => x.modality === 'in_person_coworking')).toHaveLength(22);
     expect(s.filter((x) => x.modality === 'in_person_home')).toHaveLength(9);
-    expect(s.filter((x) => x.kind === 'psychotherapy')).toHaveLength(53);
+    expect(s.filter((x) => x.kind === 'psychotherapy')).toHaveLength(54);
     expect(
       s
         .filter((x) => x.modality === 'online' && x.status === 'done')
@@ -539,7 +542,7 @@ describe('seed: agenda e equipe (5.2)', () => {
     expect(c.availabilitySlots.filter((x) => x.status === 'blocked')).toHaveLength(3);
     open.forEach((x) => expect(compareDates(x.date, TODAY)).toBeGreaterThan(0));
     const sessionSlots = new Set(c.careSessions.map((x) => x.slotId));
-    expect(sessionSlots.size).toBe(62);
+    expect(sessionSlots.size).toBe(63);
   });
 
   it('a ocupação reproduz Rafael 86,3% e 91,3% (alerta), Beatriz sem alerta, Letícia 80% sem alerta e Tiago n/d', () => {
@@ -597,41 +600,74 @@ describe('seed: comunicação, grupos, parceiros e governança', () => {
     expect(compareDates(dateOf(rec(5).dueAt), TODAY)).toBeLessThan(0);
   });
 
-  it('grupos G1 a G8: lotado com lista de espera, terapia de grupo em andamento, rascunho e cancelado', () => {
-    const act = (n: number) => c.activities.find((a) => a.id === `act_000${n}`)!;
+  it('encontros G1 a G11 (docs/20): só três tipos, lotado com lista de espera, terapia em andamento, rascunho, cancelado e cotas coerentes', () => {
+    const act = (n: number) => c.activities.find((a) => a.id === `act_${String(n).padStart(4, '0')}`)!;
     const enr = (n: number, status?: string) =>
       c.activityEnrollments.filter(
-        (e) => e.activityId === `act_000${n}` && (status === undefined || e.status === status),
+        (e) => e.activityId === act(n).id && (status === undefined || e.status === status),
       );
-    expect(act(1)).toMatchObject({ status: 'full', capacity: 8 });
-    expect(enr(1, 'enrolled')).toHaveLength(8);
-    expect(enr(1, 'waitlist').map((e) => e.waitlistPosition)).toEqual([1, 2]);
-    expect(act(2).status).toBe('open');
-    expect(enr(2)).toHaveLength(7);
-    expect(act(3)).toMatchObject({
-      kind: 'group_therapy',
-      character: 'psychotherapy',
-      status: 'in_progress',
+    const kinds = c.activities.map((a) => a.kind);
+    expect(new Set(kinds)).toEqual(new Set(['open_circle', 'training', 'group_therapy']));
+    expect(kinds.filter((k) => k === 'open_circle')).toHaveLength(2);
+    expect(kinds.filter((k) => k === 'training')).toHaveLength(5);
+    expect(kinds.filter((k) => k === 'group_therapy')).toHaveLength(4);
+    const live = (kind: string) => c.activities.filter((a) => a.kind === kind && ['open', 'full', 'in_progress'].includes(a.status));
+    expect(live('open_circle').length).toBeGreaterThanOrEqual(2);
+    expect(live('training').length).toBeGreaterThanOrEqual(3);
+    expect(live('group_therapy').length).toBeGreaterThanOrEqual(3);
+    c.activities.forEach((a) => {
+      expect(a.minPlan).toBe(a.kind === 'group_therapy' ? 'cuida' : null);
+      expect(a.requiresEligibility).toBe(false);
     });
-    expect(act(3).meetings.filter((m) => m.done)).toHaveLength(3);
-    expect(act(3).meetings).toHaveLength(8);
-    expect(enr(3).every((e) => e.eligibleForGroupTherapy)).toBe(true);
-    expect(enr(3)).toHaveLength(5);
-    expect(act(4).kind).toBe('open_conversation_circle');
+    expect(act(1)).toMatchObject({ kind: 'group_therapy', status: 'full', capacity: 6 });
+    expect(enr(1, 'enrolled')).toHaveLength(6);
+    expect(enr(1, 'waitlist').map((e) => e.waitlistPosition)).toEqual([1, 2]);
+    expect(act(2)).toMatchObject({ kind: 'training', status: 'open' });
+    expect(enr(2)).toHaveLength(8);
+    expect(act(3)).toMatchObject({ kind: 'group_therapy', character: 'psychotherapy', status: 'in_progress' });
+    expect(act(3).meetings.filter((m) => m.done)).toHaveLength(2);
+    expect(act(4).kind).toBe('open_circle');
     expect(enr(4)).toHaveLength(11);
     expect(enr(4).filter((e) => e.external)).toHaveLength(4);
     expect(enr(5, 'attended')).toHaveLength(9);
     expect(enr(5, 'absent')).toHaveLength(2);
     expect(act(6).status).toBe('cancelled');
     expect(act(7).status).toBe('draft');
-    expect(enr(8)).toHaveLength(4);
+    expect(act(10)).toMatchObject({ kind: 'training', status: 'full' });
+    expect(enr(10, 'waitlist')).toHaveLength(2);
+    expect(enr(10).every((e) => e.paid === true && e.priceCents === 8000)).toBe(true);
+    // Terapia de grupo só com Cuida e Sustenta; Ana e Lourdes em terapia de grupo; João só em roda aberta; Maria em capacitação incluída.
     const plans = new Map(c.subscriptions.map((s) => [s.caregiverId, s.planId] as const));
-    [1, 2, 8].forEach((n) => {
-      enr(n)
-        .filter((e) => e.caregiverId)
-        .forEach((e) =>
-          expect(['cuida', 'sustenta']).toContain(plans.get(e.caregiverId as string)),
-        );
+    c.activityEnrollments
+      .filter((e) => e.caregiverId && act(Number(e.activityId.slice(4))).kind === 'group_therapy')
+      .forEach((e) => expect(['cuida', 'sustenta']).toContain(plans.get(e.caregiverId as string)));
+    expect(c.activityEnrollments.some((e) => e.caregiverId === caregiverId(1) && e.activityId === act(1).id && e.status === 'enrolled')).toBe(true);
+    expect(c.activityEnrollments.some((e) => e.caregiverId === caregiverId(24) && e.activityId === act(3).id && e.status === 'enrolled')).toBe(true);
+    const joao = c.activityEnrollments.filter((e) => e.caregiverId === caregiverId(3));
+    expect(joao.every((e) => act(Number(e.activityId.slice(4))).kind === 'open_circle')).toBe(true);
+    expect(c.activityEnrollments.find((e) => e.caregiverId === caregiverId(2) && e.activityId === act(2).id)).toMatchObject({
+      includedInPlan: true,
+      paid: false,
+    });
+  });
+
+  it('sessões pela cota do plano (docs/20): incluídas só em Cuida e Sustenta, dentro do limite do mês', () => {
+    const plans = new Map(c.subscriptions.map((s) => [s.caregiverId, s.planId] as const));
+    const limit: Record<string, number> = { livre: 0, essencial: 0, cuida: 2, sustenta: 4 };
+    const used = new Map<string, number>();
+    c.careSessions.forEach((s) => {
+      expect(s.priceCents).toBe(s.includedInPlan ? 0 : 12000);
+      expect(s.discountPercent).toBe(0);
+      if (s.includedInPlan) {
+        const key = `${s.caregiverId}|${s.startAt.slice(0, 7)}`;
+        used.set(key, (used.get(key) ?? 0) + 1);
+      }
+    });
+    used.forEach((n, key) => expect(n).toBeLessThanOrEqual(limit[plans.get(key.split('|')[0] as string) ?? 'livre'] ?? 0));
+    [1, 27].forEach((n) => {
+      const mine = c.careSessions.filter((s) => s.caregiverId === caregiverId(n) && s.startAt.slice(0, 7) === TODAY.slice(0, 7));
+      expect(mine.length).toBeGreaterThan(0);
+      expect(mine.every((s) => s.includedInPlan)).toBe(true);
     });
   });
 
@@ -687,7 +723,11 @@ describe('seed: comunicação, grupos, parceiros e governança', () => {
       'published',
       'published',
       'published',
+      'published',
+      'published',
     ]);
+    // docs/20: cada conteúdo tem uma categoria; as 5 categorias têm leitura publicada.
+    expect(new Set(c.guidanceContents.filter((g) => g.status === 'published').map((g) => g.category)).size).toBe(5);
     expect(c.guidanceContents.filter((g) => g.exclusive)).toHaveLength(1);
     expect(c.norms.every((n) => n.confirmedInForceAt === undefined)).toBe(true);
     expect(
@@ -933,7 +973,7 @@ describe('seed: integridade, dados fictícios e determinismo', () => {
       const other = generateSeed(today);
       const oc = other.collections;
       expect(oc.caregivers).toHaveLength(340);
-      expect(oc.careSessions).toHaveLength(62);
+      expect(oc.careSessions).toHaveLength(63);
       expect(oc.messages).toHaveLength(28);
       expect(oc.accessLog).toHaveLength(80);
       expect(oc.zaritAssessments.filter((z) => z.status === 'completed')).toHaveLength(158);

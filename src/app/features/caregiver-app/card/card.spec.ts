@@ -190,19 +190,12 @@ describe('Área card (Cartão Nexus)', () => {
     expect(text(app)).toContain('Ainda não há parceiros por aqui');
   });
 
-  it('AC-CG-142: o plano Livre vê só o convite calmo, sem percentual, parceiro, preço nem número', async () => {
+  it('AC-CG-142 (docs/20 e decisão do líder): no Livre a rota /cartao redireciona para a porta de Rede, sem página intermediária', async () => {
     for (const id of ['cg_0003', 'cg_0004']) {
       const app = await bootCaregiverApp(id, { url: URL });
-      const body = text(app);
-      expect(body).toContain('O Cartão Nexus dá descontos em farmácias, clínicas e outros parceiros. Ele vem com os planos pagos.');
-      expect(body).not.toMatch(/NX-\d{4}/);
-      expect(body).not.toContain('%');
-      expect(body).not.toContain('R$');
-      ['Farmácia Bem-Estar', 'Drogaria Cuidar', 'Ótica Visão Clara', 'Onde usar', 'Copiar número'].forEach((t) => expect(body).not.toContain(t));
-      const link = Array.from(app.root.querySelectorAll('main a')).find((a) => a.textContent?.trim() === 'Ver os planos');
-      expect(link?.getAttribute('href')).toBe('/cuidador/mais/plano');
-      expect(app.root.querySelector('main [data-role="invite"]')).not.toBeNull();
+      expect(app.router.url).toBe('/cuidador/rede');
       expect(app.root.querySelector('main [data-role="card-number"]')).toBeNull();
+      expect(text(app)).not.toMatch(/NX-\d{4}/);
       TestBed.resetTestingModule();
     }
   });
@@ -215,14 +208,13 @@ describe('Área card (Cartão Nexus)', () => {
     expect(app.root.querySelector('[data-role="card-number"]')).not.toBeNull();
   });
 
-  it('AC-CG-143: no dia em que a assinatura deixa de valer, o cartão some e vira o convite do Livre', async () => {
+  it('AC-CG-143: no dia em que a assinatura deixa de valer, o cartão é inativado e a rota leva à porta de Rede', async () => {
     const app = await bootCaregiverApp('cg_0026', { url: '/cuidador/hoje' });
     app.clock.setSimulated('2026-11-13', '12:00');
     await app.router.navigateByUrl(URL);
     await settleCaregiver(app.fixture);
     expect(app.context.planId()).toBe('livre');
-    expect(app.root.querySelector('[data-role="card-number"]')).toBeNull();
-    expect(text(app)).toContain('Ele vem com os planos pagos.');
+    expect(app.router.url).toBe('/cuidador/rede');
     expect(app.db.benefitCards.find((c) => c.caregiverId === 'cg_0026')?.status).toBe('inactive');
   });
 
@@ -239,7 +231,7 @@ describe('Área card (Cartão Nexus)', () => {
     app.db.benefitCards.updateWhere((c) => c.caregiverId === 'cg_0001', { status: 'inactive' });
     await settleCaregiver(app.fixture);
     expect(text(app)).toContain('Não encontramos um cartão ativo para você. A equipe pode ajudar.');
-    expect(text(app)).not.toContain('Ele vem com os planos pagos.');
+    expect(text(app)).not.toContain('Ver os planos');
   });
 
   it('AC-CG-144: nada de pontuação, faixa, alerta ou ARBE na tela, para quem tem alertas diferentes', async () => {
@@ -274,12 +266,11 @@ describe('Área card (Cartão Nexus)', () => {
     expect(icons.find((i) => i.name === 'Ótica Visão Clara')?.icon).toBe('eye');
   });
 
-  it('o Livre vê o cartão desenhado e vazio: sem número, e o desenho não é lido pelo leitor de tela', async () => {
-    const app = await bootCaregiverApp('cg_0003', { url: URL });
-    const invite = app.root.querySelector('[data-role="invite"]') as HTMLElement;
-    expect(invite.querySelector('.nx-ghost')?.getAttribute('aria-hidden')).toBe('true');
-    expect(norm(invite.querySelector('.nx-ghost')?.textContent)).toBe('NEXUS');
-    expect(invite.querySelector('a.btn')?.classList.contains('btn--primary')).toBe(false);
+  it('plano pago sem cartão ativo: a nota calma, sem convite', async () => {
+    const app = await bootCaregiverApp('cg_0002', { url: URL });
+    app.db.benefitCards.updateWhere((c) => c.caregiverId === 'cg_0002', { status: 'inactive' });
+    await settleCaregiver(app.fixture);
+    expect(app.root.querySelector('[data-role="no-card"]')).not.toBeNull();
+    expect(text(app)).not.toContain('Ver os planos');
   });
-
 });

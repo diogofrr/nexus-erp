@@ -20,22 +20,24 @@ import { StorageStatusService, doseNotSavedText } from '../../state/storage-stat
 import { CgCardComponent } from '../../ui/cg-card.component';
 import { CgDoseComponent } from '../../ui/cg-dose.component';
 import { CgEmptyComponent } from '../../ui/cg-empty.component';
+import { CgEventBadgeComponent } from '../../ui/cg-event-badge.component';
 import { CgHeroComponent } from '../../ui/cg-hero.component';
-import { CgIllustrationComponent } from '../../ui/cg-illustration.component';
 import { CgMoodComponent, MoodValue } from '../../ui/cg-mood.component';
 import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgProgressRingComponent } from '../../ui/cg-progress-ring.component';
+import { CgSectionComponent } from '../../ui/cg-section.component';
 import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
 
 /**
- * Hoje (UX C4, `/cuidador/hoje`): o que importa hoje, sem painel. Ordem: saudação (o herói azul-céu com o sol nascente),
- * nota de cuidado (só com contato da equipe), próximo compromisso (a hora grande em serifa), remédios de hoje com
- * "Dei" (o que falta primeiro; o anel mostra "2 de 4" sem escrever), humor, "Para você" e "Falar com a gente". Quem
- * prefere telefone ou WhatsApp vê o cartão com o número logo depois da saudação (CXC-025).
- * Em 1024 px ou mais, duas colunas (compromisso e remédios; humor e convite). O plano nunca aparece aqui, e a tela
- * não lê pontuação nem faixa: o contato da equipe vem só de `staffContact` do contexto (P-03).
- * Vida (docs/17-vida-v1.md): cada bloco leva a tinta da sua seção (remédios na sálvia, humor e convite na areia), sem
- * acrescentar nenhum texto novo.
+ * Hoje (UX C4, `/cuidador/hoje`): o que importa hoje, sem painel. Um herói (a saudação e a data) e duas colunas bem
+ * definidas em tela larga (uma coluna no celular, na mesma ordem): à esquerda O DIA (o contato da equipe quando houver, o
+ * cartão do telefone para quem prefere ligar, o próximo compromisso com a hora grande em serifa, os remédios de hoje com
+ * "Dei" e o anel "2 de 4"); à direita VOCÊ (o humor do dia, "Para você" e o jeito de falar com a gente). Tudo é seção com
+ * título e cartão: nenhuma frase solta.
+ *
+ * O plano nunca aparece aqui, e a tela não lê pontuação nem faixa: o contato da equipe vem só de `staffContact` do
+ * contexto (P-03). "Para você" só convida para o que a pessoa pode usar de verdade (docs/20, regras de exibição 1 e 2),
+ * e todo encontro leva o selo do tipo (`app-cg-event-badge`).
  */
 @Component({
   selector: 'app-today-page',
@@ -43,11 +45,12 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
     CgCardComponent,
     CgDoseComponent,
     CgEmptyComponent,
+    CgEventBadgeComponent,
     CgHeroComponent,
-    CgIllustrationComponent,
     CgMoodComponent,
     CgNoteComponent,
     CgProgressRingComponent,
+    CgSectionComponent,
     RouterLink,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -66,9 +69,6 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
         align-items: start;
         gap: 2rem;
       }
-    }
-    .today-block > h2 {
-      margin: 0;
     }
     .today-support {
       color: var(--cg-text-soft);
@@ -108,53 +108,28 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
     .today-when__what {
       display: grid;
       flex: 1 1 9rem;
-      gap: 0.125rem;
+      gap: 0.375rem;
+      justify-items: start;
       min-width: 0;
       overflow-wrap: break-word;
       font-weight: var(--fw-semibold);
     }
     .today-panel {
-      display: grid;
-      gap: 0.75rem;
       padding: 1rem 0.75rem;
       border: 1px solid var(--cg-acc-strong);
       border-radius: var(--cg-radius-card);
       background: linear-gradient(160deg, var(--cg-surface) 40%, var(--cg-acc-tint) 135%);
       box-shadow: inset 0 3px 0 var(--cg-acc-strong), var(--cg-shadow-1);
     }
-    .today-panel > h2 {
-      margin: 0;
-      padding-inline: 0.25rem;
-    }
     @media (min-width: 48rem) {
       .today-panel {
         padding: var(--cg-pad-card);
       }
-      .today-panel > h2 {
-        padding-inline: 0;
-      }
     }
-    .today-end {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-top: 2rem;
-      padding: 1rem var(--cg-pad-card);
-      border-radius: var(--cg-radius-card);
-      background: var(--cg-acc-tint);
-    }
-    .today-end__text {
+    .today-invite {
       display: grid;
-      gap: 0.125rem;
+      gap: 0.5rem;
       justify-items: start;
-    }
-    .today-end__text p {
-      margin: 0;
-    }
-    .today-end--card {
-      display: block;
-      padding: 0;
-      background: none;
     }
   `,
   template: `
@@ -165,27 +140,27 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
         <app-cg-note variant="soft" icon="info">Você está sem conexão. Seus dados continuam neste navegador.</app-cg-note>
       }
 
-      @if (ctx.staffContact() === 'today') {
-        <app-cg-note variant="care" [heading]="careHeading()">
-          {{ careToday }}
-          <button cgNoteActions type="button" class="cg-link-btn" (click)="contact.open()">Prefere falar agora?</button>
-        </app-cg-note>
-      } @else if (ctx.staffContact() === 'not_yet') {
-        <app-cg-note variant="care" [heading]="inviteHeading">
-          {{ inviteText }}
-          <button cgNoteActions type="button" class="btn" (click)="contact.open()">Falar com a gente agora</button>
-        </app-cg-note>
-      }
-
-      @if (phoneFirst()) {
-        <app-cg-card title="Prefere falar com a gente?" variant="soft" icon="phone">
-          <p class="today-phone">{{ phone }}</p>
-          <button cgCardFooter type="button" class="btn" (click)="contact.open()">Como falar com a gente</button>
-        </app-cg-card>
-      }
-
       <div class="today-cols">
-        <div class="today-main">
+        <div class="today-main" data-role="today-day">
+          @if (ctx.staffContact() === 'today') {
+            <app-cg-note variant="care" [heading]="careHeading()">
+              {{ careToday }}
+              <button cgNoteActions type="button" class="cg-link-btn" (click)="contact.open()">Prefere falar agora?</button>
+            </app-cg-note>
+          } @else if (ctx.staffContact() === 'not_yet') {
+            <app-cg-note variant="care" [heading]="inviteHeading">
+              {{ inviteText }}
+              <button cgNoteActions type="button" class="btn" (click)="contact.open()">Falar com a gente agora</button>
+            </app-cg-note>
+          }
+
+          @if (phoneFirst()) {
+            <app-cg-card title="Prefere falar com a gente?" variant="soft" icon="phone" data-role="phone-card">
+              <p class="today-phone">{{ phone }}</p>
+              <button cgCardFooter type="button" class="btn" (click)="contact.open()">Como falar com a gente</button>
+            </app-cg-card>
+          }
+
           @if (view.empty()) {
             <app-cg-empty illustration="day" title="Ainda não há nada para hoje" text="Comece pelos remédios ou por um compromisso.">
               <span class="today-actions">
@@ -195,7 +170,7 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
             </app-cg-empty>
           } @else {
             @if (view.next(); as next) {
-              <app-cg-card title="Próximo compromisso" icon="calendar" link="/cuidador/rotina/agenda">
+              <app-cg-card title="Próximo compromisso" icon="calendar" [link]="next.link" [linkQuery]="next.query" data-role="next">
                 <span class="today-when">
                   <span class="today-when__time">
                     <span class="today-when__day">{{ next.day }}&ngsp;</span>
@@ -203,6 +178,9 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
                   </span>
                   <span class="today-when__what">
                     <span>{{ next.title }}</span>
+                    @if (next.eventType; as type) {
+                      <app-cg-event-badge [type]="type" size="sm" />
+                    }
                     @if (next.support; as support) {
                       <span class="today-support">{{ support }}</span>
                     }
@@ -210,21 +188,16 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
                 </span>
               </app-cg-card>
             } @else {
-              <app-cg-card title="Próximo compromisso" icon="calendar">
+              <app-cg-card title="Próximo compromisso" icon="calendar" data-role="next">
                 <span>Nenhum compromisso nos próximos dias.</span>
                 <a cgCardFooter class="cg-link-btn" routerLink="/cuidador/rotina/agenda" [queryParams]="{ novo: 1 }">Adicionar compromisso</a>
               </app-cg-card>
             }
 
-            <section class="today-block cg-stack cg-stack--tight cg-sec--rotina" aria-labelledby="today-meds-title">
-              <div class="cg-section-head">
-                <h2 class="cg-section__title" id="today-meds-title">Remédios de hoje</h2>
-                @if (view.progress().total > 0) {
-                  <span class="today-progress">
-                    <app-cg-progress-ring [value]="view.progress().given" [max]="view.progress().total" size="md" label="dados" />
-                  </span>
-                }
-              </div>
+            <app-cg-section title="Remédios de hoje" accent="rotina" data-role="meds">
+              @if (view.progress().total > 0) {
+                <app-cg-progress-ring cgSectionEnd [value]="view.progress().given" [max]="view.progress().total" size="md" label="dados" />
+              }
               @if (view.slots().length > 0) {
                 <ul class="cg-plain-list cg-enter">
                   @for (slot of visibleSlots(); track slot.key) {
@@ -250,14 +223,13 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
               } @else {
                 <app-cg-note variant="soft" icon="pill">Hoje não há remédios para dar.</app-cg-note>
               }
-            </section>
+            </app-cg-section>
           }
         </div>
 
-        <div class="today-side">
+        <div class="today-side" data-role="today-you">
           @if (view.moodEnabled()) {
-            <section class="today-block today-panel cg-sec--cuidar" aria-labelledby="today-mood-title">
-              <h2 class="cg-section__title" id="today-mood-title">Como você está hoje?</h2>
+            <app-cg-section class="today-panel" title="Como você está hoje?" accent="cuidar" data-role="mood">
               @if (view.todayMood() && !editingMood()) {
                 <app-cg-note variant="ok">
                   Anotado para hoje: {{ view.todayMoodLabel() }}.
@@ -281,7 +253,7 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
               @if (moodError(); as problem) {
                 <app-cg-note variant="error">{{ problem }}</app-cg-note>
               }
-            </section>
+            </app-cg-section>
           }
 
           @if (view.moodPaused()) {
@@ -292,45 +264,42 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
           }
 
           @if (view.rate(); as rate) {
-            <section class="today-block cg-stack cg-stack--tight cg-sec--rede" aria-labelledby="today-foryou-title">
-              <h2 class="cg-section__title" id="today-foryou-title">Para você</h2>
+            <app-cg-section title="Para você" accent="rede" data-role="for-you">
               <app-cg-card [headingLevel]="3" icon="star" [title]="'Como foi o atendimento de ' + rate.providerName + '?'">
                 <a cgCardFooter class="btn" routerLink="/cuidador/rede/pedidos" [queryParams]="{ avaliar: rate.requestId }">Avaliar</a>
               </app-cg-card>
-            </section>
+            </app-cg-section>
           } @else if (view.invite(); as invite) {
-            <section class="today-block cg-stack cg-stack--tight cg-sec--cuidar" aria-labelledby="today-foryou-title">
-              <h2 class="cg-section__title" id="today-foryou-title">Para você</h2>
+            <app-cg-section title="Para você" accent="cuidar" data-role="for-you">
               <app-cg-card [headingLevel]="3" icon="sparkles" [title]="invite.title">
-                <span>{{ invite.text }}</span>
+                <span class="today-invite">
+                  @if (invite.eventType; as type) {
+                    <app-cg-event-badge [type]="type" />
+                  }
+                  <span>{{ invite.text }}</span>
+                </span>
                 @if (invite.query; as query) {
                   <a cgCardFooter class="btn" [routerLink]="invite.link" [queryParams]="query">{{ invite.actionLabel }}</a>
                 } @else {
                   <a cgCardFooter class="btn" [routerLink]="invite.link">{{ invite.actionLabel }}</a>
                 }
               </app-cg-card>
-            </section>
+            </app-cg-section>
+          }
+
+          @if (!phoneFirst()) {
+            <app-cg-card title="Quer falar com a gente?" variant="soft" icon="phone" data-role="contact-card">
+              @if (prefersPhone()) {
+                <p class="today-phone">{{ phone }}</p>
+              } @else {
+                <span>Aplicativo, WhatsApp ou telefone, como for mais fácil.</span>
+              }
+              <button cgCardFooter type="button" class="btn" (click)="contact.open()">Como falar com a gente</button>
+            </app-cg-card>
           }
         </div>
       </div>
     </div>
-
-    @if (!phoneFirst()) {
-      @if (prefersPhone()) {
-        <app-cg-card class="today-end today-end--card" title="Prefere falar com a gente?" variant="soft" icon="phone">
-          <p class="today-phone">{{ phone }}</p>
-          <button cgCardFooter type="button" class="btn" (click)="contact.open()">Como falar com a gente</button>
-        </app-cg-card>
-      } @else {
-        <div class="today-end">
-          <app-cg-illustration name="chat" size="sm" tone="accent" />
-          <div class="today-end__text">
-            <p>Quer falar com a gente?</p>
-            <button type="button" class="cg-link-btn" (click)="contact.open()">Como falar com a gente</button>
-          </div>
-        </div>
-      }
-    }
   `,
 })
 export class TodayPage {
@@ -361,12 +330,12 @@ export class TodayPage {
   protected readonly editingMood = signal(false);
   protected readonly moodError = signal<string | null>(null);
 
-  /** Canal preferido telefone ou pouca familiaridade digital: o fechamento é o cartão com o número em destaque (AC-CG-54). */
+  /** Canal preferido telefone ou pouca familiaridade digital: o cartão de contato traz o número em destaque (AC-CG-54). */
   protected prefersPhone(): boolean {
     return this.ctx.preferredChannel() === 'phone' || this.ctx.lowDigitalLiteracy();
   }
 
-  /** Quem prefere telefone ou WhatsApp vê o cartão com o número no alto, logo depois da saudação (CXC-025). */
+  /** Quem prefere telefone ou WhatsApp vê o cartão com o número no alto do dia, logo depois da saudação (CXC-025). */
   protected readonly phoneFirst = computed(
     () => this.ctx.preferredChannel() === 'phone' || this.ctx.preferredChannel() === 'whatsapp',
   );

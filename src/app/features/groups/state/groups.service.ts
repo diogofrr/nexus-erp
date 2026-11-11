@@ -14,7 +14,7 @@ import {
   ISODate,
   PlanId,
 } from '@core/models';
-import { activityMinPlan, canAccessActivity, percentOf } from '@core/rules';
+import { EnrollmentOffer, activityMinPlan, canAccessActivity, formatCentsBr, percentOf } from '@core/rules';
 import { isRoomBookable, roomBlockReason } from '@core/rules/rooms';
 import { DEFAULT_CONFIDENTIALITY, PROMISE_PATTERN, isThemeAllowed } from './groups-labels';
 
@@ -224,37 +224,36 @@ export class GroupsService {
       checks.push({
         id: 'plan',
         title: 'Plano',
-        state: activity.kind === 'open_conversation_circle' ? 'ok' : 'fail',
+        state: activity.kind === 'open_circle' ? 'ok' : 'fail',
         text:
-          activity.kind === 'open_conversation_circle'
+          activity.kind === 'open_circle'
             ? 'Roda aberta: aceita qualquer plano e participante externo.'
             : 'Só a roda de conversa aberta aceita participante externo.',
       });
     } else if (who.caregiverId) {
       const plan = planIdOfCaregiver(this.db, who.caregiverId);
       const access = canAccessActivity(plan, activity.kind);
+      // docs/20: roda aberta sem cota; capacitação incluída conforme o plano, senão avulsa; terapia de grupo só Cuida e Sustenta.
+      const offer = access.allowed ? this.membership.offerFor(activity, who.caregiverId) : null;
       checks.push({
         id: 'plan',
         title: 'Plano',
         state: access.allowed ? 'ok' : 'fail',
         text: access.allowed
-          ? `${this.planName(plan)}: ok.`
-          : `${this.planName(plan)}: grupos e capacitações são do plano Cuida em diante.`,
+          ? `${this.planName(plan)}: ${offer ? offerText(offer) : 'ok.'}`
+          : `${this.planName(plan)}: a terapia de grupo é dos planos Cuida e Sustenta.`,
       });
     } else {
       checks.push({ id: 'plan', title: 'Plano', state: 'pending', text: 'Escolha o participante para conferir o plano.' });
     }
     if (activity.kind === 'group_therapy') {
+      // docs/20: a indicação do psicólogo deixou de ser exigida; marcar continua possível e fica registrado.
       const ok = eligible && this.canMarkEligible(who.caregiverId);
       checks.push({
         id: 'eligibility',
-        title: 'Elegibilidade para terapia de grupo',
-        state: ok ? 'ok' : 'pending',
-        text: ok
-          ? 'Marcado como elegível pelo psicólogo do caso.'
-          : this.auth.role() === 'support'
-            ? 'Aguardando elegibilidade do psicólogo do caso.'
-            : 'Marque a elegibilidade do cuidador, como psicólogo do caso.',
+        title: 'Indicação do psicólogo',
+        state: ok ? 'ok' : 'na',
+        text: ok ? 'Indicado pelo psicólogo do caso.' : 'Não é exigida: a terapia de grupo vale para os planos Cuida e Sustenta.',
       });
     } else {
       checks.push({ id: 'eligibility', title: 'Elegibilidade', state: 'na', text: 'Não se aplica a este tipo de atividade.' });
@@ -335,12 +334,6 @@ export class GroupsService {
         errors.push({ field: 'caregiver', message: 'Escolha o participante.' });
       }
     }
-    if (activity.kind === 'group_therapy' && !(input.eligible && this.canMarkEligible(input.caregiverId))) {
-      errors.push({
-        field: 'eligibility',
-        message: 'A terapia de grupo só recebe cuidador marcado como elegível pelo psicólogo do caso.',
-      });
-    }
     if (!input.contractAccepted) {
       errors.push({ field: 'contract', message: 'O participante precisa aceitar o contrato de sigilo para entrar.' });
     }
@@ -357,13 +350,15 @@ export class GroupsService {
       return { ok: false, errors: unique };
     }
     const full = this.membership.seatsFree(activity) === 0;
+    const offer = input.caregiverId && !input.external ? this.membership.offerFor(activity, input.caregiverId) : null;
     const enrollment = this.db.activityEnrollments.create({
       activityId: activity.id,
       ...(input.external ? { external: { name: input.external.name.trim(), email: input.external.email.trim() } } : { caregiverId: input.caregiverId as ID }),
       status: full ? 'waitlist' : 'enrolled',
       ...(full ? { waitlistPosition: this.membership.nextWaitlistPosition(activity.id) } : {}),
       confidentialityAcceptedAt: input.acceptedAt ?? this.clock.now(),
-      ...(activity.kind === 'group_therapy' ? { eligibleForGroupTherapy: true } : {}),
+      ...(activity.kind === 'group_therapy' && input.eligible && this.canMarkEligible(input.caregiverId) ? { eligibleForGroupTherapy: true } : {}),
+      ...(offer ? { includedInPlan: offer.kind === 'included', paid: offer.kind === 'paid', priceCents: offer.priceCents } : { includedInPlan: false, paid: false, priceCents: 0 }),
       attendance: [],
     });
     this.membership.syncStatus(activity.id);
@@ -504,7 +499,8 @@ export class GroupsService {
       mode: form.mode,
       capacity: form.capacity as number,
       minPlan: activityMinPlan(kind),
-      requiresEligibility: kind === 'group_therapy',
+      // docs/20: a terapia de grupo não exige mais a indicação do psicólogo (o plano decide).
+      requiresEligibility: false,
       confidentialityText: form.confidentialityText.trim(),
       ...(form.mode === 'in_person' ? { roomId: form.roomId } : {}),
       ...(form.partnerOrg.trim() ? { partnerOrg: form.partnerOrg.trim() } : {}),
@@ -699,5 +695,21 @@ export class GroupsService {
       .all()
       .filter((c) => c.status !== 'closed' && (this.auth.role() !== 'psychologist' || c.assignedPsychologistId === mine))
       .map((c) => ({ id: c.id, fullName: c.fullName, code: c.code, planId: planIdOfCaregiver(this.db, c.id) }));
+  }
+}
+
+/** "incluída na cota do plano (2 de 2 encontros no mês)." ou "avulsa, R$ 80,00 (2 encontros)." ou "roda aberta, sem cota." */
+function offerText(offer: EnrollmentOffer): string {
+  switch (offer.kind) {
+    case 'free':
+      return 'roda aberta, sem cota.';
+    case 'included':
+      return offer.usage && offer.usage.limit !== 'all'
+        ? `incluída na cota do plano (${Math.min(offer.usage.limit, offer.usage.used + offer.meetings)} de ${offer.usage.limit} encontros no mês).`
+        : 'incluída no plano.';
+    case 'paid':
+      return `avulsa, ${formatCentsBr(offer.priceCents)} (${offer.meetings} ${offer.meetings === 1 ? 'encontro' : 'encontros'} no mês, pagamento simulado).`;
+    default:
+      return 'ok.';
   }
 }

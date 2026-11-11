@@ -71,7 +71,7 @@ export const CAREGIVER_TOAST_PROFILE: ToastProfile = { maxStack: 1, defaultMs: 8
           <app-cg-note variant="error" icon="circle-alert"><span data-role="storage-note">{{ storageText }}</span></app-cg-note>
         </div>
       }
-      <div class="cg-col">
+      <div class="cg-col" [class.is-entering]="entering()">
         <router-outlet />
       </div>
       <app-cg-proto-note />
@@ -110,16 +110,44 @@ export class CaregiverShellComponent {
    * não é teclado e não pode esconder a navegação (QAC-011).
    */
   protected readonly keyboardOpen = signal(false);
+  /**
+   * Entrada em cascata dos blocos (docs/17-vida-kit.md, seção 3), à prova de falha: a coluna leva `is-entering` por
+   * `ENTER_MS` a cada tela nova (o caminho muda; trocar só a consulta da URL não reanima) e depois a classe sai. O
+   * estado padrão de todo bloco é visível: com a aba em segundo plano a animação não roda, mas nada fica em branco.
+   */
+  protected readonly entering = signal(true);
 
   constructor() {
     const root = this.doc.documentElement;
+    const view = this.doc.defaultView;
+    let enterTimer: ReturnType<typeof setTimeout> | null = null;
+    const armEntering = (): void => {
+      if (enterTimer !== null) {
+        clearTimeout(enterTimer);
+      }
+      this.entering.set(true);
+      enterTimer = setTimeout(() => {
+        this.entering.set(false);
+        enterTimer = null;
+      }, ENTER_MS);
+    };
+    armEntering();
+    let lastPath = pathOf(this.router.url);
+    const navigation = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event) => {
+        const path = pathOf(event.urlAfterRedirects);
+        if (path !== lastPath) {
+          lastPath = path;
+          armEntering();
+        }
+      });
     const previousTheme = root.getAttribute('data-theme');
     const previousApp = root.getAttribute('data-app');
     root.setAttribute('data-theme', 'light');
     root.setAttribute('data-app', 'caregiver');
     const restoreToasts = this.toasts.useProfile(CAREGIVER_TOAST_PROFILE);
 
-    const view = this.doc.defaultView;
     const visual = view?.visualViewport ?? null;
     const onResize = (): void => {
       if (view && visual) {
@@ -133,6 +161,10 @@ export class CaregiverShellComponent {
     this.doc.addEventListener('focusout', onResize);
 
     inject(DestroyRef).onDestroy(() => {
+      navigation.unsubscribe();
+      if (enterTimer !== null) {
+        clearTimeout(enterTimer);
+      }
       visual?.removeEventListener('resize', onResize);
       this.doc.removeEventListener('focusin', onResize);
       this.doc.removeEventListener('focusout', onResize);
@@ -149,6 +181,14 @@ export class CaregiverShellComponent {
     main?.focus();
     main?.scrollIntoView?.({ block: 'start' });
   }
+}
+
+/** Quanto tempo a classe `is-entering` fica na coluna: a cascata inteira (320 ms mais o maior atraso, 280 ms) com folga. */
+export const ENTER_MS = 800;
+
+/** O caminho da URL sem consulta nem âncora (`/cuidador/rede/buscar?categoria=x` vira `/cuidador/rede/buscar`). */
+function pathOf(url: string): string {
+  return url.split(/[?#]/)[0] ?? '';
 }
 
 /** Campo em que se digita (texto, número, e-mail, área de texto, lista, editável)? Caixa, opção e botão não abrem o teclado. */

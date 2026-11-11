@@ -6,6 +6,7 @@ import { formatDate, formatMoney } from '../../../../core/format/format';
 import { PlanId } from '../../../../core/models';
 import { PLAN_ORDER } from '../../../../core/rules/plans';
 import { planShortName } from '../../../../core/rules/plan-features';
+import { quotaSentence } from '../../../../core/rules/plan-quotas';
 import { PageChromeService } from '../../../../layout/state/page-chrome.service';
 import { IconComponent } from '../../../../shared/ui/display/icon.component';
 import { CheckboxComponent } from '../../../../shared/ui/forms/checkbox.component';
@@ -21,6 +22,8 @@ import {
   NOT_INCLUDED_NOTICE,
   actionLabelFor,
   allBenefits,
+  boardPerks,
+  quotaLines,
   changeCopy,
   planPerks,
   priceParts,
@@ -29,7 +32,9 @@ import {
 
 /**
  * Meu plano (UX C18 e B9, `/cuidador/mais/plano`). Um único herói: o plano atual num cartão com a COR do plano (Figura 1), o
- * nome em serifa grande, o preço, a próxima cobrança e 4 destaques com ícone; a lista inteira fica atrás de **Ver tudo que
+ * nome em serifa grande, o preço, a próxima cobrança, a cota do mês (Cuida e Sustenta: "Neste mês: 1 de 2 sessões usadas",
+ * docs/20) e 4 destaques com ícone (atendimento individual, terapia de grupo e capacitações com as cotas do docs/20; nenhuma
+ * menção a Zarit); a lista inteira fica atrás de **Ver tudo que
  * inclui** (folha). Uma ação principal, **Ver outros planos** (no Livre, **Ver os planos**); **Cancelar plano** é um link calmo
  * no fim, só em plano pago. Mudança agendada vira uma faixa "Seu plano muda para X em DD/MM" com **Manter meu plano** (um
  * toque, sem folha).
@@ -136,6 +141,9 @@ import {
               @if (situation(); as text) {
                 <p class="nx-hero__when" data-role="situation">{{ text }}</p>
               }
+            }
+            @if (monthQuota(); as quota) {
+              <p class="nx-hero__when" data-role="month-quota">{{ quota }}</p>
             }
           </div>
           <div class="nx-hero__body">
@@ -254,6 +262,11 @@ export class PlanPage {
 
   protected readonly includesOpen = signal(false);
 
+  /** "Neste mês: 1 de 2 sessões usadas", só para quem tem o atendimento individual no plano (Cuida e Sustenta, docs/20). */
+  protected readonly monthQuota = computed(() =>
+    this.ctx.canUse('individual_session') ? quotaSentence(this.ctx.quotas().individualSessions, 'sessões') : null,
+  );
+
   /** "Próxima cobrança em 18/11/2026"; com mudança agendada, até quando o plano vale. */
   protected readonly situation = computed(() => {
     const sub = this.ctx.subscription();
@@ -299,8 +312,9 @@ export class PlanPage {
           name: planShortName(id, plans),
           amount: price.amount,
           unit: price.unit,
-          inherits: id !== 'livre',
-          perks: planPerks(id, plans, 3),
+          inherits: false,
+          perks: boardPerks(id),
+          quotas: quotaLines(id),
           current: id === current,
           canChoose: id !== current && canChange && actionLabelFor(this.service.quote(id).kind, id) !== null,
         },

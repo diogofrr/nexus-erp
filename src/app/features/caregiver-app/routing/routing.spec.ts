@@ -92,9 +92,11 @@ describe('Catálogo do kit (só em desenvolvimento)', () => {
     const app = await bootCaregiverApp('cg_0002', { url: '/cuidador/_kit' });
     expect(app.router.url).toBe('/cuidador/_kit');
     expect(app.root.querySelector('main h1')?.textContent?.trim()).toBe('Kit do cuidador');
-    ['.cg-note', '.cg-card', '.cg-dose', '.cg-mood', '.cg-row', '.cg-choice', '.cg-switch', '.cg-plan-lock', '.cg-rating', '.cg-trend', '.cg-text-size', '.cg-emergency', '.cg-sheet'].forEach((selector) =>
+    ['.cg-note', '.cg-card', '.cg-dose', '.cg-mood', '.cg-row', '.cg-choice', '.cg-switch', '.cg-event', '.cg-block', '.cg-rating', '.cg-trend', '.cg-text-size', '.cg-emergency', '.cg-sheet'].forEach((selector) =>
       expect(app.root.querySelector(selector), selector).not.toBeNull(),
     );
+    // O bloqueio por plano saiu do kit (docs/20, regra de exibição 1).
+    expect(app.root.querySelector('.cg-plan-lock, app-cg-plan-lock')).toBeNull();
     TestBed.resetTestingModule();
   });
 });

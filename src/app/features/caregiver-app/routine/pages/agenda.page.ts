@@ -26,6 +26,7 @@ import { FormFieldComponent } from '../../../../shared/ui/forms/form-field.compo
 import { NxInputDirective } from '../../../../shared/ui/forms/input.directive';
 import { ToastService } from '../../../../shared/ui/overlay/toast.service';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
+import { EVENT_TYPE_ICONS, enrolledMeetingsOf } from '../../state/event-type';
 import { OnlineStatusService } from '../../state/online-status.service';
 import { withArticle } from '../../state/people-format';
 import { CgCalendarComponent, CgCalendarEvent } from '../../ui/cg-calendar.component';
@@ -80,7 +81,9 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
  * Rotina, aba Agenda (UX C5, `/cuidador/rotina/agenda`): um **calendário do mês** (`app-cg-calendar`) com o detalhe do dia
  * escolhido (hoje, de começo). No celular o calendário fica em cima e o dia embaixo; em tela larga (1024 px ou mais) ficam
  * lado a lado. O dia mostra os compromissos da pessoa idosa e, no mesmo dia, a conversa do próprio cuidador com o psicólogo
- * ("Para você"), e a ação principal é **Adicionar compromisso neste dia** (a data já vai preenchida). Tocar num dia vazio
+ * ("Para você") e os encontros em que ele está inscrito (com o selo do tipo: roda aberta, capacitação, terapia de grupo;
+ * docs/20, regra 2: na Agenda só entra o que já é da pessoa, nunca a vitrine), e a ação principal é **Adicionar
+ * compromisso neste dia** (a data já vai preenchida). Tocar num dia vazio
  * diz "Nada marcado para este dia". Um alternador "Calendário | Lista" guarda o jeito preferido no navegador: a lista
  * (próximos 14 dias agrupados por dia, "Ver anteriores" e "Ver mais datas") continua como era.
  *
@@ -516,6 +519,9 @@ export class AgendaPage {
           icon: KIND_ICON[a.kind],
           kind: a.kind,
           forYou: false,
+          eventType: null,
+          link: null,
+          linkQuery: null,
           appointment: a,
           passed: date === today && isPastTime(a.at, now),
         });
@@ -537,10 +543,32 @@ export class AgendaPage {
             icon: s.modality === 'online' ? 'video' : s.modality === 'in_person_home' ? 'house' : 'building-2',
             kind: 'you',
             forYou: true,
+            eventType: null,
+            link: '/cuidador/cuidar-de-mim/atendimento',
+            linkQuery: null,
             appointment: null,
             passed: false,
           });
         });
+      // Os encontros em que a pessoa está inscrita (docs/20, regra 2: só o que já é dela), com o selo do tipo.
+      enrolledMeetingsOf(this.db.activities.list(), this.db.activityEnrollments.list(), caregiverId, now).forEach((m) =>
+        list.push({
+          key: m.meetingId,
+          at: m.startAt,
+          date: dateOf(m.startAt),
+          time: timeOf(m.startAt),
+          title: m.title,
+          support: null,
+          icon: EVENT_TYPE_ICONS[m.type],
+          kind: 'you',
+          forYou: true,
+          eventType: m.type,
+          link: '/cuidador/cuidar-de-mim/grupos',
+          linkQuery: { atividade: m.activityId },
+          appointment: null,
+          passed: false,
+        }),
+      );
     }
     return list;
   });

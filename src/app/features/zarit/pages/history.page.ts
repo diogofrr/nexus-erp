@@ -7,7 +7,7 @@ import { Clock } from '@core/clock';
 import { Database } from '@core/data';
 import { formatDate, formatDateTime } from '@core/format';
 import { ConsentService } from '@core/privacy/consent.service';
-import { zaritAssessmentState, zaritBandInfo, zaritDaysToDue } from '@core/rules';
+import { zaritAssessmentState, zaritBandInfo, zaritConductFor, zaritDaysToDue } from '@core/rules';
 import {
   BadgeComponent,
   EmptyStateComponent,
@@ -263,7 +263,7 @@ export class ZaritHistoryPageComponent {
       appliedAt: a.appliedAt,
       total: a.total ?? 0,
       kindText: a.sequence === 0 ? 'Adesão' : `Trimestral nº ${a.sequence}`,
-      conduct: zaritBandInfo(a.total ?? 0).conduct,
+      conduct: zaritConductFor(a.total ?? 0, planIdOfCaregiver(this.db, a.caregiverId)),
       addenda: a.addenda.map((x): TimelineItem => ({ title: 'Adendo', text: x.content, at: x.at })),
     })),
   );

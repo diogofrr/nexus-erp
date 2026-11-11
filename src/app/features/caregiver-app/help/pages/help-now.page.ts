@@ -120,7 +120,7 @@ import { CallNumberSheetComponent } from '../ui/call-number-sheet.component';
         </div>
       </details>
 
-      <p class="cg-meta" data-role="help-footer">{{ notice }}</p>
+      <app-cg-note variant="soft" icon="info"><span data-role="help-footer">{{ notice }}</span></app-cg-note>
     </div>
 
     <app-call-number-sheet [help]="shown()" [(open)]="sheetOpen" />

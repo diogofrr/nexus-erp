@@ -4,10 +4,9 @@ import type { BadgeVariant, IconName } from '@shared/ui';
 /** Textos de tela de grupos e capacitações (pt-BR, tom da marca, sem promessa de resultado terapêutico). */
 
 export const KIND_LABELS: Readonly<Record<ActivityKind, string>> = {
-  support_group: 'Grupo de apoio',
   training: 'Capacitação',
   group_therapy: 'Terapia de grupo',
-  open_conversation_circle: 'Roda de conversa aberta',
+  open_circle: 'Roda de conversa aberta',
 };
 
 /** Temas dos grupos (RN-GRP-05): os únicos oferecidos para grupo de apoio, terapia de grupo e roda de conversa. */

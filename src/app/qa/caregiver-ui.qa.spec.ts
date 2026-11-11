@@ -181,11 +181,16 @@ describe('QAC UI: matriz de sessão e rotas', () => {
     expect(await go(app, '/cuidador/ajuda-agora')).toBe('/cuidador/ajuda-agora'); // aberta
   });
 
-  it('pedido de exclusão aberto (Raimunda) e autorização de saúde retirada (Sônia) entram em toda tela', async () => {
+  it('pedido de exclusão aberto (Raimunda) e autorização de saúde retirada (Sônia) entram em toda tela do plano delas', async () => {
+    // docs/20 e decisão do líder: no Livre e no Essencial o atendimento leva à porta de Cuidar de mim, e o Cartão (Livre) à Rede.
+    const redirected: Record<string, Record<string, string>> = {
+      [RAIMUNDA]: { '/cuidador/cuidar-de-mim/atendimento': '/cuidador/cuidar-de-mim', '/cuidador/rede/cartao': '/cuidador/rede' },
+      [SONIA]: { '/cuidador/cuidar-de-mim/atendimento': '/cuidador/cuidar-de-mim' },
+    };
     for (const id of [RAIMUNDA, SONIA]) {
       const app = await bootCaregiverApp(id);
       for (const url of SESSION_URLS) {
-        expect(await go(app, url), `${id} ${url}`).toBe(url);
+        expect(await go(app, url), `${id} ${url}`).toBe(redirected[id]?.[url] ?? url);
       }
       TestBed.resetTestingModule();
     }
@@ -292,11 +297,11 @@ describe('QAC UI: adulteração de parâmetros', () => {
     }
   });
 
-  it('Grupos: capacitação do plano Cuida para quem é Essencial mostra "Disponível no plano Cuida" no lugar do botão', async () => {
-    const app = await bootCaregiverApp(MARIA, { url: '/cuidador/cuidar-de-mim/grupos?atividade=act_0002' });
+  it('Grupos (docs/20): a terapia de grupo não existe para quem é Essencial, nem por endereço direto, e sem "Disponível no plano"', async () => {
+    const app = await bootCaregiverApp(MARIA, { url: '/cuidador/cuidar-de-mim/grupos?atividade=act_0008' });
     const text = mainText(app);
-    expect(text).toContain('Disponível no plano Cuida');
-    expect(text).not.toContain('Quero participar');
+    expect(text).toContain('Não encontramos este encontro.');
+    expect(text).not.toMatch(/Disponível no plano|Organização da rotina/);
     expect(app.root.querySelector('[data-role="join"]')).toBeNull();
     // roda aberta vale para todos
     await go(app, '/cuidador/cuidar-de-mim/grupos?atividade=act_0004');
@@ -328,10 +333,10 @@ describe('QAC UI: adulteração de parâmetros', () => {
     }
   });
 
-  it('Conteúdos: o Livre vê UM cartão "Disponível no plano Essencial" sem listar o título do exclusivo; o Essencial vê a lista', async () => {
+  it('Conteúdos (docs/20): o Livre não vê o exclusivo nem um cartão de bloqueio; o Essencial vê o exclusivo', async () => {
     const livre = await bootCaregiverApp(JOAO, { url: '/cuidador/cuidar-de-mim/conteudos' });
     const exclusive = livre.db.guidanceContents.require('gdc_0005');
-    expect(mainText(livre)).toContain('Disponível no plano Essencial');
+    expect(mainText(livre)).not.toMatch(/Disponível no plano|Ver os planos/);
     expect(mainText(livre)).not.toContain(exclusive.title);
     expect(mainText(livre)).not.toContain('Rotina de sono e descanso'); // em revisão
     expect(mainText(livre)).not.toContain('Alimentação e prevenção de engasgo'); // rascunho
@@ -405,7 +410,7 @@ describe('QAC UI: plano nas telas', () => {
     const app = await bootCaregiverApp(MARIA, { url: '/cuidador/mais/plano?ver=planos' });
     const text = mainText(app);
     ['R$ 0,00', 'R$ 49,90', 'R$ 119,90', 'R$ 149,90'].forEach((price) => expect(text).toContain(price));
-    expect(text).toContain('A mensalidade não inclui serviços da rede nem atendimento psicológico.');
+    expect(text).toContain('A mensalidade não inclui os serviços da rede.');
     expect(text).toContain('Seu plano');
   });
 });

@@ -74,7 +74,7 @@ describe('SubscriptionService (RN-PLN-14, RN-CRT-02, 03, 11)', () => {
     expect(quote.effectiveAt).toBe(sub.nextCycleAt);
     expect(quote.actionLabel).toBe('Agendar mudança para o Essencial');
     expect(quote.effect).toContain('Vale no fim do ciclo');
-    expect(quote.effect).toContain('inclusive os grupos');
+    expect(quote.effect).toContain('inclusive a terapia de grupo');
     const result = service.changePlan(sub.id, 'essencial');
     expect(result.subscription.status).toBe('cancel_scheduled');
     expect(result.subscription.planId).toBe('cuida');
@@ -181,7 +181,7 @@ describe('SubscriptionService (RN-PLN-14, RN-CRT-02, 03, 11)', () => {
     // A turma G1 do seed já começou antes do fim do ciclo: continua (turmas em andamento seguem).
     expect(service.quote(sub, 'essencial').lostGroups).toEqual([]);
     const group = db.activities.create({
-      kind: 'support_group',
+      kind: 'group_therapy',
       title: 'Grupo de teste',
       theme: 'self_care',
       character: 'guidance',
@@ -230,7 +230,7 @@ describe('SubscriptionService (RN-PLN-14, RN-CRT-02, 03, 11)', () => {
     const sub = subOf('cg_0024');
     expect(sub.planId).toBe('sustenta');
     const group = db.activities.create({
-      kind: 'support_group',
+      kind: 'group_therapy',
       title: 'Grupo futuro',
       theme: 'self_care',
       character: 'guidance',

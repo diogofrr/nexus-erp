@@ -14,7 +14,7 @@ Legenda: **atendido** (coberto por teste), **parcial** (com o motivo), **não at
 
 | AC | Status | Onde ver, e o que foi feito |
 |---|---|---|
-| AC-CG-41 | parcial | Ordem dos blocos (saudação, nota de cuidado, próximo compromisso, remédios, humor, Para você, Falar com a gente) e um só h1 por teste. "Sem rolar em 360 x 800" não foi medido (sem navegador) |
+| AC-CG-41 | atendido (UX v2, 11/11) | Ordem dos blocos (saudação, nota de cuidado, próximo compromisso, remédios, humor, Para você, Quer falar com a gente) e um só h1 por teste; tudo é herói, seção (`app-cg-section`) ou cartão, nada solto. Conferido em navegador em 375 e 1280 px (docs/21-ux-v2-dev.md) |
 | AC-CG-42 | atendido | Bom dia até 11:59, Boa tarde até 17:59, Boa noite depois, com o primeiro nome (Ana, 08:30, 15:00 e 20:30) |
 | AC-CG-43 | atendido | Ana: "A equipe de psicologia vai falar com você hoje." sem alerta, vermelho, pontuação, faixa, plano; sem convite do dia |
 | AC-CG-44 | atendido | Maria: "A equipe ainda não conseguiu falar com você." com **Falar com a gente agora**, nota azul de cuidado, sem vencido nem atrasado |
@@ -25,10 +25,10 @@ Legenda: **atendido** (coberto por teste), **parcial** (com o motivo), **não at
 | AC-CG-49 | atendido | Mais de 4 doses: 4 linhas e "Ver todos (6)" para Remédios; sem remédio, "Nenhum remédio cadastrado." com **Cadastrar um remédio**; conta nova sem nada: nota suave com os dois caminhos |
 | AC-CG-50 | atendido | Um registro por dia, **Mudar** substitui, nada pré-marcado, as 5 opções com o mesmo visual; "Muito mal" e "Mal" mostram "Dias difíceis acontecem..." (e "Ajuda agora" só no "Muito mal") |
 | AC-CG-51 | atendido | Sônia (saúde retirada): sem humor e sem nota. `WellbeingCheckService.record` também recusa sem a autorização (borda do serviço) |
-| AC-CG-52 | atendido | Convite por rodízio de calendário, só itens abertos a todos os planos (conversa, roda aberta, conteúdo livre), sem preço, plano nem bloqueio; o mesmo dia dá o mesmo convite para planos diferentes |
+| AC-CG-52 | atendido (UX v2, 11/11) | Convite por rodízio de calendário só entre o que a pessoa **pode usar** (docs/20, regras 1 e 2): roda aberta e leitura para todos, capacitação só quando incluída, conversa só para Cuida e Sustenta; terapia de grupo nunca. Roda e capacitação levam o selo do tipo (`app-cg-event-badge`). Sem preço, plano nem bloqueio; sem nada disponível a seção some |
 | AC-CG-53 | parcial | "Como foi o atendimento de ...?" com **Avaliar** (Rita, Lourdes, Marlene e Sônia têm serviço concluído sem avaliação no seed). O botão leva a `/cuidador/rede/pedidos?avaliar=<id>`, onde P3 faz a folha (acordo do líder); a folha não é de P1 |
 | AC-CG-54 | atendido | Canal telefone ou familiaridade baixa (João, Elza, Raimunda): cartão "Prefere falar com a gente?" com `(34) 90000-0000` em destaque, sem `tel:`; os demais: botão de texto |
-| AC-CG-55 | parcial | Duas colunas de 1024 px em diante (compromisso e remédios; humor e convite) e nota na largura toda, conferido pela estrutura do DOM; o visual em 1280 px não foi medido |
+| AC-CG-55 | atendido (UX v2, 11/11) | Duas colunas de 1024 px em diante: o dia à esquerda (contato da equipe, telefone de quem prefere ligar, compromisso, remédios) e você à direita (humor, Para você, Quer falar com a gente); conferido no DOM e em navegador a 1280 px |
 | AC-CG-56 | atendido | As 9 pessoas de demonstração: nenhum plano, preço, desconto, pontuação, faixa, ARBE nem "alerta" |
 
 Estados: sem conexão (`OnlineStatusService`) atendido. **Carregando e erro** ("Não foi possível abrir o seu dia"): não atendido, porque os dados são locais e síncronos (a tela nunca fica em carregamento nem falha ao ler).
@@ -48,7 +48,7 @@ Estados: sem conexão (`OnlineStatusService`) atendido. **Carregando e erro** ("
 | AC-CG-60 | atendido | **Remarcar** abre só o dia e a hora (CXC-018); o calendário vai ao dia novo; "Remarcado para sex, 06/11, às 15:00." com **Desfazer** que restaura e volta ao dia de antes |
 | AC-CG-61 | atendido | "Tirar este compromisso da agenda?" com o efeito escrito, foco inicial em **Voltar**; só depois de confirmar sai; **Desfazer** devolve com o mesmo id e leva o calendário ao dia dele |
 | AC-CG-62 | atendido | "Lembrar de mim" vem ligado; desligar (no cadastro ou no detalhe) grava `reminder: false` sem confirmação |
-| AC-CG-63 | atendido | Conversa do próprio cuidador com o psicólogo aparece no dia (marca "Para você" no calendário e item no cartão do dia) com a etiqueta "Para você" e leva a `/cuidador/cuidar-de-mim/atendimento`; nunca entra no texto da família. No seed, Ana (seg, 09/11, on-line) e Lourdes (sex, 06/11, coworking) têm uma conversa futura desde a integração (`docs/12`, seção 1) |
+| AC-CG-63 | atendido (UX v2, 11/11) | Conversa do próprio cuidador com o psicólogo aparece no dia (marca "Para você" no calendário e item no cartão do dia) com a etiqueta "Para você" e leva a `/cuidador/cuidar-de-mim/atendimento`; nunca entra no texto da família. No seed, Ana (seg, 09/11, on-line) e Lourdes (sex, 06/11, coworking) têm uma conversa futura desde a integração (`docs/12`, seção 1). **Novo**: os encontros em que a pessoa está inscrita também entram no dia, com o selo do tipo (`app-cg-event-badge`), e levam a `/cuidador/cuidar-de-mim/grupos?atividade=` (docs/20, regra 2: só o que já é dela) |
 
 Estados: sem conexão atendido; etiqueta "Já passou" em compromisso de hoje atendido (docs/15, CXC-001); vazio atendido (no calendário, "Nada marcado para este dia"; na Lista, "Nenhum compromisso por aqui"). Carregando e erro: não atendido, pelo mesmo motivo de Hoje.
 
@@ -86,7 +86,7 @@ Não atendido: "Por pessoa" de João (hora em 22 px e **Dei** de 96 px): a linha
 
 | AC | Status | Onde ver, e o que foi feito |
 |---|---|---|
-| AC-CG-185 | atendido | h1, três cartões (Você, Quem você cuida, Seu dia a dia) com **CPF completo**, e o seletor de tamanho da letra |
+| AC-CG-185 | atendido (UX v2, 11/11) | h1 e três cartões (Você, Quem você cuida, Seu dia a dia) com o CPF recolhido; o seletor de tamanho da letra saiu do perfil (fica só em Mais, docs/20 regra 4) |
 | AC-CG-186 | atendido | **Editar** abre a folha só daquela seção; valida (18 anos, e-mail e telefone fictícios, horas de 0 a 24) sem apagar o digitado; "Dados salvos."; sem mudança: "Nada mudou." |
 | AC-CG-187 | atendido | Maria sem número de WhatsApp: a nota com **Informar o número** (a folha já traz o celular); ao informar, a nota some. Trocar de WhatsApp para telefone não apaga o número |
 | AC-CG-188 | atendido | CPF sem campo; "Para corrigir o CPF, fale com a gente." abre o diálogo "Como falar com a gente" |

@@ -7,6 +7,9 @@ import type { BenefitKey, PlanId } from '@core/models';
 import {
   BENEFIT_LABELS,
   PLAN_NOT_INCLUDED_NOTICE,
+  PLAN_QUOTAS,
+  limitText,
+  singlePriceText,
   PLAN_ORDER,
   averageGrossPerSubscriberCents,
   averageNetPerSubscriberCents,
@@ -82,7 +85,7 @@ const PLAN_CLASS: Record<PlanId, string> = {
               @for (benefit of plan.benefits; track benefit) {
                 <li><svg appIcon="check" size="sm"></svg><span>{{ benefit }}</span></li>
               }
-              <li class="t-caption">Desconto na sessão com psicólogo da Nexus: {{ plan.discount }}%</li>
+              <li class="t-caption" data-role="quota-sessions">Atendimento individual: {{ plan.sessions }}</li>
             </ul>
             <p class="t-caption card__body">{{ plan.subscribers }}</p>
           </article>
@@ -149,7 +152,7 @@ export class PlansPage {
         css: PLAN_CLASS[id],
         shortName: PLAN_SHORT_NAMES[id],
         price: formatMoney(own?.monthlyPriceCents ?? 0),
-        discount: own?.psychSessionDiscountPercent ?? 0,
+        sessions: limitText(PLAN_QUOTAS[id].individualSessionsPerMonth, 'sessões'),
         inherits: index > 0 ? PLAN_SHORT_NAMES[PLAN_ORDER[index - 1] as PlanId] : null,
         benefits: [...planBenefits(id)].filter((b) => !previous.has(b)).map((b) => BENEFIT_LABELS[b]),
         subscribers: id === 'livre' ? `${free} cuidadores no plano` : `${counts.byPlan[id as 'essencial' | 'cuida' | 'sustenta']} assinantes`,
@@ -163,7 +166,9 @@ export class PlansPage {
     const all = [...new Set(planBenefits('sustenta'))];
     return [
       { id: 'price', label: 'Preço por mês', cells: byPlan((id) => ({ kind: 'text', text: id === 'livre' ? 'R$ 0,00' : formatMoney(this.db.plans.get(id)?.monthlyPriceCents ?? 0) })) },
-      { id: 'discount', label: 'Desconto na sessão com psicólogo da Nexus', cells: byPlan((id) => ({ kind: 'text', text: `${this.db.plans.get(id)?.psychSessionDiscountPercent ?? 0}%` })) },
+      { id: 'sessions', label: 'Sessões de atendimento individual por mês', cells: byPlan((id) => ({ kind: 'text', text: limitText(PLAN_QUOTAS[id].individualSessionsPerMonth, 'sessões') })) },
+      { id: 'group_therapy', label: 'Encontros de terapia de grupo por mês', cells: byPlan((id) => ({ kind: 'text', text: limitText(PLAN_QUOTAS[id].groupTherapyPerMonth, 'encontros') })) },
+      { id: 'trainings', label: 'Capacitações incluídas por mês', cells: byPlan((id) => ({ kind: 'text', text: PLAN_QUOTAS[id].trainingsPerMonth === 0 ? `Avulsas, ${singlePriceText('training')}` : limitText(PLAN_QUOTAS[id].trainingsPerMonth, 'capacitações') })) },
       ...all.map((b): ComparisonRow => ({
         id: b,
         label: BENEFIT_LABELS[b],

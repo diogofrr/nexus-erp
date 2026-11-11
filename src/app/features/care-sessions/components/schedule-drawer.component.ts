@@ -13,6 +13,8 @@ import {
 import { Router } from '@angular/router';
 import { AuthService } from '@core/auth';
 import { Database } from '@core/data';
+import { planIdOfCaregiver } from '@core/data/plan-lookup';
+import { QuotaUsage, canBookIndividualSession, quotaSentence } from '@core/rules/plan-quotas';
 import { formatMoney } from '@core/format';
 import { CareSession, ID, SessionModality } from '@core/models';
 import {
@@ -176,8 +178,9 @@ const MAX_CAREGIVERS = 30;
         @if (quote(); as q) {
           <div class="card card--sunken card--pad" data-role="price-summary" aria-live="polite">
             <p class="t-strong">
-              Sessão {{ money(q.baseCents) }}, desconto {{ planName(q.planId) }} {{ q.discountPercent }}% ({{ money(q.discountCents) }}), total
-              {{ money(q.totalCents) }}
+              {{ q.included ? 'Incluída na cota do plano ' + planName(q.planId) + ': total ' + money(q.totalCents) : 'Avulsa (cota do mês usada): total ' + money(q.totalCents) }}.
+            </p>
+            <p class="t-caption" data-role="quota-month">{{ quotaText(q.quota) }}
             </p>
           </div>
         }
@@ -254,7 +257,8 @@ export class ScheduleDrawerComponent {
     const selected = this.caregiverId();
     const all = this.db.caregivers
       .all()
-      .filter((c) => c.status !== 'closed' && (mine === null || c.assignedPsychologistId === mine));
+      // docs/20: o ERP só agenda sessão individual para Cuida e Sustenta (o POP-05 e o contato do alerta seguem para todos).
+      .filter((c) => c.status !== 'closed' && (mine === null || c.assignedPsychologistId === mine) && canBookIndividualSession(planIdOfCaregiver(this.db, c.id)));
     const found = all
       .filter((c) => !term || c.fullName.toLowerCase().includes(term) || c.code.toLowerCase().includes(term))
       .sort((a, b) => a.fullName.localeCompare(b.fullName, 'pt-BR'))
@@ -306,9 +310,11 @@ export class ScheduleDrawerComponent {
     }),
   );
 
+  /** O valor pela cota do mês (docs/20): incluída (R$ 0,00) ou avulsa. Na remarcação a sessão atual não conta. */
   protected readonly quote = computed(() => {
     const id = this.caregiverId();
-    return id ? this.svc.quote(id) : null;
+    const slot = this.slotId() ? this.db.availabilitySlots.get(this.slotId() as string) : undefined;
+    return id ? this.svc.quote(id, slot?.date, this.rescheduleFrom() ?? undefined) : null;
   });
 
   protected readonly overloadNote = computed(() => {
@@ -353,6 +359,11 @@ export class ScheduleDrawerComponent {
 
   protected planName(planId: keyof typeof PLAN_NAMES): string {
     return PLAN_NAMES[planId];
+  }
+
+  /** "Neste mês: 1 de 2 sessões usadas" (a cota do mês na ficha da equipe, docs/20). */
+  protected quotaText(quota: QuotaUsage): string {
+    return quotaSentence(quota, 'sessões');
   }
 
   private reset(): void {

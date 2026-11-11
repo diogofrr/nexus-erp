@@ -227,11 +227,11 @@ describe('M13 Governança: formação (SCR-M13-09, AC-M13-10)', () => {
 });
 
 describe('M13 Governança: conteúdos de orientação (SCR-M13-10, AC-M13-11)', () => {
-  it('lista os 8 conteúdos: 5 publicados, 2 em revisão e 1 rascunho', async () => {
+  it('lista os 10 conteúdos (docs/20: 2 publicados a mais, um por categoria nova): 7 publicados, 2 em revisão e 1 rascunho', async () => {
     const app = await open('u1', '/app/governanca/conteudos');
     const rows = pickAll(app.root, 'app-data-table tbody tr').map((r) => text(r));
-    expect(rows).toHaveLength(8);
-    expect(rows.filter((r) => r.includes('Publicado'))).toHaveLength(5);
+    expect(rows).toHaveLength(10);
+    expect(rows.filter((r) => r.includes('Publicado'))).toHaveLength(7);
     expect(rows.filter((r) => r.includes('Em revisão'))).toHaveLength(2);
     expect(rows.filter((r) => r.includes('Rascunho'))).toHaveLength(1);
     expect(rows.filter((r) => r.includes('Planos pagos'))).toHaveLength(1);

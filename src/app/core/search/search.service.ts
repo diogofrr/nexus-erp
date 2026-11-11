@@ -82,10 +82,9 @@ const PROVIDER_STATUS: Record<ProviderStatus, string> = {
 };
 
 const ACTIVITY_KIND: Record<ActivityKind, string> = {
-  support_group: 'Grupo de apoio',
   training: 'Capacitação',
   group_therapy: 'Terapia de grupo',
-  open_conversation_circle: 'Roda aberta',
+  open_circle: 'Roda aberta',
 };
 
 /** Mensagem da gestão: ela busca cuidador só por código (regra A-09, LP-08). */

@@ -7,7 +7,7 @@ import {
   averageGrossPerSubscriberCents,
   averageNetPerSubscriberCents,
   canAccessActivity,
-  canAccessGroupsAndTrainings,
+  canAccessGroupTherapy,
   canSeePrioritySlots,
   cardDiscountCents,
   classifyPlanChange,
@@ -70,31 +70,28 @@ describe('Planos (RN-PLN-01 a 10; Figura 1)', () => {
     expect(planHasBenefit('livre', 'card_discounts')).toBe(false);
   });
 
-  it('cartão só com plano pago (RN-CRT-02) e grupos e capacitações só a partir do Cuida (AC-M04-03)', () => {
+  it('cartão só com plano pago (RN-CRT-02) e terapia de grupo só a partir do Cuida (docs/20)', () => {
     expect(hasBenefitCard('livre')).toBe(false);
     expect(hasBenefitCard('essencial')).toBe(true);
-    expect(canAccessGroupsAndTrainings('essencial')).toBe(false);
-    expect(canAccessGroupsAndTrainings('cuida')).toBe(true);
-    expect(canAccessGroupsAndTrainings('sustenta')).toBe(true);
+    expect(canAccessGroupTherapy('essencial')).toBe(false);
+    expect(canAccessGroupTherapy('cuida')).toBe(true);
+    expect(canAccessGroupTherapy('sustenta')).toBe(true);
     expect(isPaidPlan('livre')).toBe(false);
     expect(isPaidPlan('sustenta')).toBe(true);
   });
 
-  it('elegibilidade por tipo de atividade (RN-GRP-02, 03, 14)', () => {
-    expect(canAccessActivity('essencial', 'support_group')).toMatchObject({
+  it('elegibilidade por tipo de encontro (docs/20): roda aberta e capacitação para todos, terapia de grupo só Cuida e Sustenta', () => {
+    expect(canAccessActivity('essencial', 'group_therapy')).toMatchObject({
       allowed: false,
-      reason: 'Disponível a partir do plano Cuida.',
+      reason: 'A terapia de grupo faz parte dos planos Cuida e Sustenta.',
+      minPlan: 'cuida',
     });
-    expect(canAccessActivity('livre', 'training').allowed).toBe(false);
-    expect(canAccessActivity('cuida', 'support_group').allowed).toBe(true);
-    expect(canAccessActivity('sustenta', 'training').allowed).toBe(true);
-    expect(canAccessActivity('livre', 'open_conversation_circle')).toMatchObject({
-      allowed: true,
-      minPlan: null,
-    });
-    expect(canAccessActivity('livre', 'group_therapy')).toMatchObject({
-      allowed: true,
-      requiresEligibility: true,
+    expect(canAccessActivity('livre', 'group_therapy').allowed).toBe(false);
+    expect(canAccessActivity('cuida', 'group_therapy')).toMatchObject({ allowed: true, requiresEligibility: false });
+    expect(canAccessActivity('sustenta', 'group_therapy').allowed).toBe(true);
+    (['livre', 'essencial', 'cuida', 'sustenta'] as const).forEach((plan) => {
+      expect(canAccessActivity(plan, 'training')).toMatchObject({ allowed: true, minPlan: null });
+      expect(canAccessActivity(plan, 'open_circle')).toMatchObject({ allowed: true, minPlan: null });
     });
   });
 
@@ -114,9 +111,9 @@ describe('Planos (RN-PLN-01 a 10; Figura 1)', () => {
     expect(canSeePrioritySlots('essencial', false)).toBe(false);
   });
 
-  it('o aviso obrigatório da contratação está no texto (RN-PLN-22)', () => {
+  it('o aviso obrigatório da contratação está no texto (RN-PLN-22; desde o docs/20 o atendimento psicológico entra no Cuida e no Sustenta)', () => {
     expect(PLAN_NOT_INCLUDED_NOTICE).toBe(
-      'A mensalidade não inclui serviços da rede nem atendimento psicológico.',
+      'A mensalidade não inclui os serviços da rede.',
     );
   });
 });
