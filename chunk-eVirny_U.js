@@ -1,1 +1,0 @@
-var o=[{path:``,loadComponent:()=>import(`./chunk-Cd7svnVj.js`).then(t=>t.CardPage),data:{title:`Cartão Nexus`}}];export{o as ROUTES};

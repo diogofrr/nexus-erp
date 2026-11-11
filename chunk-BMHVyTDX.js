@@ -1,1 +1,0 @@
-var o=[{path:``,loadComponent:()=>import(`./chunk-RiT0yCJF.js`).then(t=>t.GroupsPage),data:{title:`Grupos e capacitações`}}];export{o as ROUTES};

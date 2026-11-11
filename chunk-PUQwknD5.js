@@ -1,0 +1,1 @@
+import{Ja as rr,a as A,y as B}from"./chunk-_-rdC_Qb.js";var a=new B(`HARD_NAVIGATE`,{providedIn:`root`,factory:()=>{let o=A(rr);return r=>{let t=o.defaultView;t&&t.location.assign(new URL(r.replace(/^\//,``),o.baseURI).toString())}}});export{a as t};

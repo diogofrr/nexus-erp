@@ -1,1 +1,0 @@
-var o=[{path:``,loadComponent:()=>import(`./chunk-BDFb8S1A.js`).then(t=>t.CareHubPage),data:{title:`Cuidar de mim`}},{path:`atendimento`,loadComponent:()=>import(`./chunk-BehWdN-F.js`).then(t=>t.PsychologistPage),data:{title:`Conversar com um psicólogo`}}];export{o as ROUTES};

@@ -1,0 +1,1 @@
+var o=[{path:``,loadComponent:()=>import(`./chunk-01W96zX9.js`).then(t=>t.FamilyPage),data:{title:`Família`}}];export{o as ROUTES};

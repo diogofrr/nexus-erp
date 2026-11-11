@@ -1,0 +1,1 @@
+function n(e){return{groupTherapy:e.canUse(`group_therapy`),trainingIncluded:e.quotas().trainings.left!==0}}function r(e){return e.canUse(`individual_session`)}function o(e){return e.canUse(`card`)}function t(e){return e.canUse(`network_conditions`)}export{t as i,o as n,r,n as t};
