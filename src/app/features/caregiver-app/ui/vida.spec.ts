@@ -466,7 +466,7 @@ describe('Vida visual: as telas', () => {
   it('a Entrada mostra o desenho grande no painel azul e avatares coloridos para as pessoas de exemplo', async () => {
     const app = await bootCaregiverApp(null, { url: '/login' });
     await settleCaregiver(app.fixture);
-    expect(app.root.querySelector('.login__brand app-cg-illustration.login__scene[data-illustration="welcome"]')).not.toBeNull();
+    expect(app.root.querySelector('.login__brand svg.login__emblem use[href="icons/sprite.svg#nx-symbol"]')).not.toBeNull();
     const tones = Array.from(app.root.querySelectorAll('.cg-door__person .avatar')).map((a) => a.getAttribute('data-tone'));
     expect(tones.length).toBeGreaterThanOrEqual(6);
     tones.forEach((t) => expect(['1', '2', '3', '4', '5']).toContain(t));

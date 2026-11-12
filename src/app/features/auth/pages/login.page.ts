@@ -28,7 +28,6 @@ import { BannerComponent } from '../../../shared/ui/overlay/banner.component';
 import { initialsOf, roleLabel } from '../../../shared/ui/overlay/user-display';
 import { DEMO_CAREGIVERS } from '../../caregiver-app/state/demo-caregivers';
 import { FontScaleService } from '../../caregiver-app/state/font-scale.service';
-import { CgIllustrationComponent } from '../../caregiver-app/ui/cg-illustration.component';
 import { destinationAfterCaregiverLogin, destinationAfterLogin } from '../return-url';
 
 /** Texto da faixa de armazenamento bloqueado (F01, estados de erro). */
@@ -70,7 +69,7 @@ interface DemoPerson {
  */
 @Component({
   selector: 'app-login-page',
-  imports: [BannerComponent, CgIllustrationComponent, IconComponent, NgTemplateOutlet, PlanBadgeComponent, RouterLink],
+  imports: [BannerComponent, IconComponent, NgTemplateOutlet, PlanBadgeComponent, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="login">
@@ -81,8 +80,9 @@ interface DemoPerson {
           </svg>
           <span class="wordmark">Nexus</span>
         </div>
-        <app-cg-illustration class="login__scene" name="welcome" size="fill" tone="light" />
-        <app-cg-illustration class="login__mini-art" name="welcome" size="sm" tone="light" />
+        <svg class="login__emblem" viewBox="-20 -1 160 104" aria-hidden="true" focusable="false">
+          <use href="icons/sprite.svg#nx-symbol" />
+        </svg>
         <div class="stack stack--3">
           <p class="login__tagline">Quem cuida também precisa de sustentação.</p>
           <p class="login__note">

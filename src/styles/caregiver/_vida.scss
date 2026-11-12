@@ -407,25 +407,24 @@
 // Entrada (/login): a vida do painel azul e das pessoas de exemplo
 // ---------------------------------------------------------------------------
 .login .login__brand {
-  background:
-    radial-gradient(120% 70% at 85% 8%, rgb(227 193 94 / 0.16) 0%, rgb(227 193 94 / 0) 55%),
-    linear-gradient(165deg, var(--nx-blue-900) 0%, var(--nx-blue-950) 100%);
+  background: linear-gradient(170deg, var(--nx-blue-900) 0%, var(--nx-blue-950) 100%);
 }
-.login__scene {
+// Emblema da entrada: o símbolo oficial da marca em traço dourado fino, como no logotipo
+// (mãos abertas sustentando três pessoas). Sem arcos nem brilho: a marca fala sozinha.
+.login__emblem {
   display: none;
   align-self: center;
   justify-self: center;
-  width: min(100%, 26rem);
+  width: min(72%, 20rem);
+  height: auto;
+  overflow: visible;
+  fill: none;
+  stroke: var(--nx-gold-300);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   animation: cg-fade 700ms var(--ease) 100ms both;
   @include up(lg) { display: block; }
-}
-.login__mini-art {
-  position: absolute;
-  inset: 50% 1.25rem auto auto;
-  width: 5.5rem;
-  transform: translateY(-50%);
-  opacity: 0.9;
-  @include up(lg) { display: none; }
 }
 .login .login__tagline { @include up(lg) { font-size: var(--fs-4xl); max-width: 16ch; } }
 
