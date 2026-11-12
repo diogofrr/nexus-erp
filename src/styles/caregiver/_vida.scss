@@ -74,7 +74,8 @@
   flex-shrink: 0;
   width: 6.5rem;
   line-height: 0;
-  svg {
+  // Só o desenho de fora ocupa a largura; os desenhos internos (as mãos) seguem x, y, width e height do SVG.
+  > svg {
     display: block;
     width: 100%;
     height: auto;
