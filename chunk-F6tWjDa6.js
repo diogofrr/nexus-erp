@@ -1,1 +1,0 @@
-var t=[{path:``,loadComponent:()=>import(`./chunk-DdKa2l2x.js`).then(o=>o.TodayPage),data:{title:`Hoje`}}];export{t as ROUTES};

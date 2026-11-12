@@ -1,0 +1,1 @@
+var e=[{path:``,pathMatch:`full`,redirectTo:`agenda`},{path:`agenda`,loadComponent:()=>import(`./chunk-D5dXbyu5.js`).then(t=>t.AgendaPage),data:{title:`Agenda`}},{path:`remedios`,loadComponent:()=>import(`./chunk-DW79jR3B.js`).then(t=>t.MedicationsPage),data:{title:`Remédios`}}];export{e as ROUTES};

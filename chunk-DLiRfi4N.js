@@ -1,1 +1,0 @@
-function n(e){return e?` cg-sec--${e}`:``}function c(e){switch((e.split(/[?#]/)[0]??``).replace(/^\/cuidador\/?/,``).split(`/`)[0]??``){case`hoje`:return`hoje`;case`rotina`:return`rotina`;case`cuidar-de-mim`:return`cuidar`;case`rede`:return`rede`;case`mais`:return`mais`;default:return null}}export{n,c as t};
