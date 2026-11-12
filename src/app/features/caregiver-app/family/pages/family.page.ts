@@ -32,10 +32,10 @@ const GUARANTEE = 'Nada de conversa com psicólogo, grupo ou resultado da escala
   styles: `
     .family-box {
       min-height: 5rem;
-      padding: 1rem;
-      border: 2px solid var(--cg-border-control);
+      padding: 1rem 1.125rem;
+      border: 0;
       border-radius: var(--cg-radius-control);
-      background: var(--cg-surface);
+      background: var(--cg-surface-sunken);
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       user-select: all;

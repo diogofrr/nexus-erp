@@ -98,7 +98,7 @@ interface UsageRow {
       .nx-card__validity { margin: 0; color: var(--cg-text-soft); }
 
 
-      .nx-saved { display: grid; gap: 0.25rem; margin-bottom: 1rem; padding: 1rem 1.25rem; border: 1px solid var(--cg-acc-strong); border-radius: var(--cg-radius-card); background: var(--cg-acc-tint); }
+      .nx-saved { display: grid; gap: 0.25rem; margin-bottom: 1rem; padding: 1rem 1.25rem; border: 0; border-radius: var(--cg-radius-card); background: var(--cg-acc-tint); }
       .nx-saved__amount { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; }
       .nx-saved__num { font-family: var(--font-serif); font-size: calc(2.25rem * min(var(--cg-zoom), 1.15)); line-height: 1.1; color: var(--cg-acc-ink); font-variant-numeric: tabular-nums; }
       .nx-saved__total { margin: 0; color: var(--cg-text-soft); }

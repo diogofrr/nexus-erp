@@ -45,8 +45,8 @@ export interface BoardPlan {
         .nx-board__track { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; padding: 0.5rem 0 1.25rem; overflow: visible; }
         .nx-board__track > li { flex: none; }
       }
-      .nx-tier { display: flex; flex-direction: column; inline-size: 100%; border: 1px solid var(--cg-border); border-radius: var(--radius-xl); background: var(--cg-surface); box-shadow: var(--shadow-1); overflow: hidden; }
-      .nx-tier.is-current { border: 2px solid var(--tone-line); box-shadow: var(--shadow-2); }
+      .nx-tier { display: flex; flex-direction: column; inline-size: 100%; border: 0; border-radius: var(--cg-radius-card); background: var(--cg-surface); box-shadow: var(--cg-shadow-1); overflow: hidden; }
+      .nx-tier.is-current { box-shadow: inset 0 0 0 2px var(--tone-line), var(--cg-shadow-2); }
       .nx-tier__band { display: grid; gap: 0.375rem; align-content: end; padding: 1.25rem 1.25rem 1rem; background-color: var(--tone); background-image: linear-gradient(155deg, var(--tone) 35%, var(--tone-2)); color: var(--tone-on); }
       .nx-tier__name { display: grid; margin: 0; color: inherit; font-family: var(--font-sans); font-size: var(--cg-fs-small); font-weight: var(--fw-semibold); line-height: 1.2; }
       .nx-tier__title { font-family: var(--font-serif); font-weight: 400; font-size: calc(2.25rem * var(--cg-zoom)); line-height: 1.1; }

@@ -125,10 +125,10 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
       display: flex;
       width: fit-content;
       max-width: 100%;
-      padding: 0.125rem;
-      border: 2px solid var(--cg-border-control);
+      padding: 0.25rem;
+      border: 0;
       border-radius: var(--cg-radius-pill);
-      background: var(--cg-surface);
+      background: var(--cg-surface-sunken);
     }
     .routine-view__btn {
       display: inline-flex;
@@ -145,10 +145,12 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
       font: inherit;
       font-weight: var(--fw-semibold);
       cursor: pointer;
+      transition: background var(--cg-dur) var(--ease), box-shadow var(--cg-dur-sheet) var(--ease);
     }
     .routine-view__btn[aria-pressed='true'] {
-      background: var(--cg-acc-solid);
-      color: var(--cg-surface);
+      background: var(--cg-surface);
+      color: var(--cg-acc-ink);
+      box-shadow: var(--cg-shadow-1);
     }
     .routine-cal {
       display: grid;
@@ -200,8 +202,8 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
       align-items: center;
       gap: 0.25rem;
       min-height: var(--cg-target);
-      padding: 0 1rem;
-      border: 2px solid var(--cg-border-control);
+      padding: 0 1.125rem;
+      border: 1px solid var(--cg-border);
       border-radius: var(--cg-radius-pill);
       background: var(--cg-surface);
       font-weight: var(--fw-semibold);

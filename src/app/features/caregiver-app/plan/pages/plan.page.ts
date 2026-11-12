@@ -64,7 +64,7 @@ import {
       .nx-perk__icon { flex: none; display: grid; place-items: center; inline-size: 2.5rem; block-size: 2.5rem; border-radius: 50%; background: var(--tone-soft); color: var(--tone-text); }
       .nx-perk__text { min-width: 0; overflow-wrap: anywhere; }
 
-      .nx-hero { display: grid; border: 1px solid var(--cg-border); border-radius: var(--radius-xl); background: var(--cg-surface); box-shadow: var(--shadow-2); overflow: hidden; }
+      .nx-hero { display: grid; border: 0; border-radius: 1.75rem; background: var(--cg-surface); box-shadow: var(--cg-shadow-2); overflow: hidden; }
       @media (min-width: 48rem) { .nx-hero { grid-template-columns: minmax(18rem, 0.85fr) 1.15fr; } }
       .nx-hero__band { position: relative; isolation: isolate; display: grid; gap: 0.25rem; align-content: center; padding: 1.25rem 1.5rem; background-color: var(--tone); background-image: linear-gradient(155deg, var(--tone) 35%, var(--tone-2)); color: var(--tone-on); overflow: hidden; }
       @media (min-width: 48rem) { .nx-hero__band { padding: 2rem; } }

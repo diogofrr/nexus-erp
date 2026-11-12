@@ -57,19 +57,19 @@ const CONSENT_ICONS: Readonly<Record<ConsentKey, IconName>> = {
       .priv__req-status { font-weight: 600; color: var(--cg-heading); }
       .priv__state { margin: 0; font-weight: 600; color: var(--cg-heading); }
       .priv__sheet p { margin: 0; }
-      .priv__more { border: 1px solid var(--cg-border); border-radius: var(--cg-radius-control); padding: 0.25rem 1rem; }
+      .priv__more { border: 0; border-radius: var(--cg-radius-card); padding: 0.25rem 1.125rem; background: var(--cg-surface); box-shadow: var(--cg-shadow-1); }
       .priv__more > summary { min-height: var(--cg-target); display: flex; align-items: center; font-weight: 600; cursor: pointer; }
       .priv__more-body { display: grid; gap: 0.75rem; padding-bottom: 0.75rem; }
       .priv__history { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
       .priv__history li { display: grid; gap: 0; padding: 0.5rem 0.75rem; border-left: 3px solid var(--cg-border-control); background: var(--cg-surface-sunken); border-radius: 0 var(--cg-radius-control) var(--cg-radius-control) 0; }
       .priv__history small { color: var(--cg-text-soft); font-size: var(--cg-fs-caption); }
       .priv__effects { display: grid; gap: 0.75rem; }
-      .priv__effects section { display: grid; gap: 0.25rem; padding: 0.75rem 1rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-control); background: var(--cg-surface-sunken); }
+      .priv__effects section { display: grid; gap: 0.25rem; padding: 0.75rem 1rem; border: 0; border-radius: var(--cg-radius-control); background: var(--cg-surface-sunken); }
       .priv__effects h3 { margin: 0; font-size: var(--cg-fs-lead); }
       @media (min-width: 48rem) { .priv__effects { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
       .priv__hint { color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
       .priv__shared { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
-      .priv__shared li { display: grid; gap: 0.125rem; padding: 0.75rem 1rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-control); }
+      .priv__shared li { display: grid; gap: 0.125rem; padding: 0.75rem 1rem; border: 0; border-radius: var(--cg-radius-control); background: var(--cg-surface-sunken); }
       .priv__shared small { color: var(--cg-text-soft); font-size: var(--cg-fs-small); }
       .priv__dpo { padding: 0.75rem 1rem; border-radius: var(--cg-radius-control); background: var(--brand-soft); }
     `,

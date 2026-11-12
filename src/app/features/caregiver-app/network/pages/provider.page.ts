@@ -69,7 +69,7 @@ const SENT_MESSAGE = 'Pedido enviado. A equipe avisa você quando o profissional
       .nx-rate { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.5rem; }
       .nx-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
       .nx-head .cg-section__title { margin: 0; }
-      .nx-phonebox { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-card); background: var(--cg-surface); }
+      .nx-phonebox { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border: 0; border-radius: var(--cg-radius-card); background: var(--cg-surface-sunken); }
       .nx-phonebox p { margin: 0; }
     `,
   ],

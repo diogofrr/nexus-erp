@@ -193,10 +193,9 @@
   align-items: center;
   margin: 1rem 0 var(--cg-gap-block);
   padding: 1.25rem var(--cg-pad-card);
-  border: 1px solid var(--cg-acc-strong);
-  border-radius: 1.5rem;
+  border: 0;
+  border-radius: 1.75rem;
   background: linear-gradient(125deg, var(--cg-acc-tint) 0%, var(--cg-acc-strong) 150%);
-  box-shadow: var(--cg-shadow-1);
   overflow: hidden;
   // Um clarão suave no canto: dá profundidade sem desenho.
   &::before {
@@ -219,7 +218,8 @@
   font-family: var(--font-serif);
   font-weight: 400;
   font-size: calc(2rem * var(--cg-zoom));
-  line-height: 1.12;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
   color: var(--cg-acc-ink);
   @include up(lg) { font-size: calc(2.75rem * var(--cg-zoom)); }
   &::after { content: ''; display: block; width: 3.5rem; height: 3px; margin-top: 0.625rem; border-radius: 2px; background: var(--cg-gold-line); }
@@ -266,7 +266,7 @@
   justify-items: center;
   gap: 0.5rem;
   padding: 1.5rem 1rem 2rem;
-  border: 1px solid var(--cg-acc-strong);
+  border: 0;
   border-radius: var(--cg-radius-card);
   background: linear-gradient(180deg, var(--cg-acc-tint), transparent 90%);
   text-align: center;
@@ -322,7 +322,7 @@
 // Painel simples: o cartão branco que agrupa um bloco (tamanho da letra, por exemplo).
 .cg-app .cg-panel {
   padding: var(--cg-pad-card);
-  border: 1px solid var(--cg-border);
+  border: 0;
   border-radius: var(--cg-radius-card);
   background: var(--cg-surface);
   box-shadow: var(--cg-shadow-1);
@@ -429,21 +429,15 @@
 }
 .login .login__tagline { @include up(lg) { font-size: var(--fs-4xl); max-width: 16ch; } }
 
-.cg-door { box-shadow: var(--cg-shadow-2); border-color: var(--nx-blue-600); border-radius: 1.5rem; position: relative; overflow: hidden; }
-.cg-door:not(.cg-door--staff)::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 0.1875rem;
-  background: linear-gradient(90deg, var(--nx-blue-600), var(--nx-blue-300) 60%, var(--nx-gold-300));
-}
-.cg-door:not(.cg-door--staff) { padding-top: 1.5rem; }
+// As portas são cartões sem borda que flutuam sobre o fundo; as pessoas de exemplo, dentro delas, são linhas planas
+// (fundo papel, sem sombra), nunca um cartão dentro de outro.
+.cg-door { box-shadow: var(--cg-shadow-2); border-radius: 1.75rem; position: relative; overflow: hidden; }
 .cg-door__person {
   position: relative;
-  border-radius: 1rem;
-  box-shadow: var(--cg-shadow-1);
+  border-radius: 1.125rem;
+  background: var(--nx-paper-100);
   transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease), box-shadow var(--dur-2) var(--ease);
-  &:hover { box-shadow: var(--cg-shadow-2); transform: translateY(-1px); }
+  &:hover { background: var(--nx-blue-50); }
   &:active { transform: scale(0.985); }
   .avatar {
     width: 3.5rem;

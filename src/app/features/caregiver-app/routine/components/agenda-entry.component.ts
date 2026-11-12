@@ -22,7 +22,7 @@ import { AgendaEntry } from '../state/agenda-entry';
       align-items: center;
       gap: 0.25rem;
       padding: 0 0.5rem;
-      border: 1px solid var(--cg-late-border);
+      border: 0;
       border-radius: var(--cg-radius-pill);
       background: var(--cg-late-bg);
       color: var(--cg-late-fg);

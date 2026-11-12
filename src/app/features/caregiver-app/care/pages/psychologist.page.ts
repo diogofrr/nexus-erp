@@ -114,7 +114,7 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
       .conv__sheet p { margin: 0; overflow-wrap: anywhere; }
       .conv__prices { display: grid; gap: 0.25rem; padding: 0.75rem 1rem; border-radius: var(--cg-radius-control); background: var(--cg-surface-sunken); }
       .conv__total { font-weight: 600; font-size: var(--cg-fs-lead); }
-      .conv__more { border: 1px solid var(--cg-border); border-radius: var(--cg-radius-card); background: var(--cg-surface); }
+      .conv__more { border: 0; border-radius: var(--cg-radius-card); background: var(--cg-surface); box-shadow: var(--cg-shadow-1); }
       .conv__more > summary { min-height: var(--cg-target); display: flex; align-items: center; padding: 0.75rem 1rem; font-weight: 600; cursor: pointer; }
       .conv__more .cg-list { border: 0; border-top: 1px solid var(--cg-border-subtle); border-radius: 0; }
     `,

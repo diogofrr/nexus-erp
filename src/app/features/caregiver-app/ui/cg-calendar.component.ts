@@ -107,12 +107,12 @@ interface DayView {
   host: { class: 'cg-calendar-host' },
   styles: `
     :host { display: block; container: cg-cal / inline-size; }
-    .cg-cal { padding-block: 0 0.25rem; border: 1px solid var(--cg-acc-strong); border-radius: var(--cg-radius-card); background: var(--cg-surface); box-shadow: var(--cg-shadow-1); overflow: hidden; }
+    .cg-cal { padding-block: 0 0.25rem; border: 0; border-radius: var(--cg-radius-card); background: var(--cg-surface); box-shadow: var(--cg-shadow-1); overflow: hidden; }
     .cg-cal__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0 0.25rem; margin-bottom: 0.25rem; padding: 0.75rem 0.5rem 0.5rem 1rem; background: var(--cg-acc-tint); }
     .cg-cal__title { flex: 1 0 100%; margin: 0 0 0.25rem; color: var(--cg-acc-ink); font-family: var(--font-serif); font-size: calc(1.5rem * var(--cg-zoom)); line-height: 1.2; }
     .cg-cal__title::first-letter { text-transform: uppercase; }
     .cg-cal__step { display: grid; place-items: center; width: var(--cg-target); height: var(--cg-target); padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--cg-acc-ink); cursor: pointer; transition: background-color var(--cg-dur) ease; }
-    .cg-cal__today { min-height: var(--cg-target); margin-inline-start: auto; padding: 0 1rem; border: 2px solid var(--cg-acc-solid); border-radius: var(--cg-radius-pill); background: var(--cg-surface); color: var(--cg-acc-ink); font: inherit; font-weight: var(--fw-semibold); cursor: pointer; transition: background-color var(--cg-dur) ease; }
+    .cg-cal__today { min-height: var(--cg-target); margin-inline-start: auto; padding: 0 1rem; border: 0; border-radius: var(--cg-radius-pill); background: var(--cg-acc-tint); box-shadow: inset 0 0 0 1px var(--cg-acc-strong); color: var(--cg-acc-ink); font: inherit; font-weight: var(--fw-semibold); cursor: pointer; transition: background-color var(--cg-dur) ease; }
     .cg-cal__step:hover, .cg-cal__today:hover { background: var(--cg-surface-sunken); }
     .cg-cal__row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
     .cg-cal__dow { padding: 0.5rem 0 0.25rem; color: var(--cg-text-soft); font-size: var(--cg-fs-caption); font-weight: var(--fw-semibold); text-align: center; }

@@ -118,7 +118,8 @@ interface Banner {
   styles: [
     `
       .nx-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
-      .nx-chip { min-block-size: var(--cg-target); padding: 0.375rem 1rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-pill); background: var(--cg-surface); color: var(--cg-text); font: inherit; font-weight: var(--fw-semibold); cursor: pointer; }
+      .nx-chip { min-block-size: var(--cg-target); padding: 0.375rem 1.125rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-pill); background: var(--cg-surface); color: var(--cg-text); font: inherit; font-weight: var(--fw-semibold); cursor: pointer; transition: background var(--cg-dur) var(--ease), border-color var(--cg-dur) var(--ease); }
+      .nx-chip:hover { border-color: var(--cg-border-control); }
       .nx-chip[aria-pressed='true'] { background: var(--cg-acc-solid); border-color: var(--cg-acc-solid); color: #ffffff; }
       .nx-cards { display: grid; gap: var(--cg-gap-stack); margin: 0; padding: 0; list-style: none; grid-template-columns: minmax(0, 1fr); }
       @media (min-width: 64rem) { .nx-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

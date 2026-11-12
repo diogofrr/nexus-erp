@@ -59,7 +59,7 @@ import { CallNumberSheetComponent } from '../ui/call-number-sheet.component';
       .help__channel { display: grid; gap: 0.25rem; padding: 0.75rem 1rem; border-radius: var(--cg-radius-control); background: var(--cg-surface-sunken); }
       .help__channel p { margin: 0; }
       .help__channel-value { font-size: var(--cg-fs-lead); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--cg-heading); }
-      .help__more { border: 1px solid var(--cg-border); border-radius: var(--cg-radius-card); background: var(--cg-surface); }
+      .help__more { border: 0; border-radius: var(--cg-radius-card); background: var(--cg-surface); box-shadow: var(--cg-shadow-1); }
       .help__more > summary { min-height: var(--cg-target); padding: 0.75rem 1rem; font-weight: 600; cursor: pointer; }
       .help__more-body { display: grid; gap: 1rem; padding: 0 1rem 1rem; }
       .help__more-body p { margin: 0; }

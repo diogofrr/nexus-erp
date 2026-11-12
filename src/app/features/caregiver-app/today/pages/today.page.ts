@@ -116,10 +116,9 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
     }
     .today-panel {
       padding: 1rem 0.75rem;
-      border: 1px solid var(--cg-acc-strong);
+      border: 0;
       border-radius: var(--cg-radius-card);
-      background: linear-gradient(160deg, var(--cg-surface) 40%, var(--cg-acc-tint) 135%);
-      box-shadow: inset 0 3px 0 var(--cg-acc-strong), var(--cg-shadow-1);
+      background: var(--cg-acc-tint);
     }
     @media (min-width: 48rem) {
       .today-panel {

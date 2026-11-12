@@ -145,7 +145,7 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
       gap: 0.75rem;
       min-height: var(--cg-target-lg);
       padding: 0.5rem 1rem;
-      border: 2px solid var(--cg-border-control);
+      border: 1px solid var(--cg-border);
       border-radius: var(--cg-radius-control);
       background: var(--cg-surface);
       font-weight: var(--fw-semibold);
@@ -154,6 +154,7 @@ const PRESET_SET: ReadonlySet<string> = new Set(MEDICATION_PRESET_TIMES.map((p) 
     .routine-time.is-selected {
       border-color: var(--cg-action);
       background: var(--brand-soft);
+      box-shadow: inset 0 0 0 1px var(--cg-action);
     }
     .routine-time:focus-within {
       outline: 3px solid var(--cg-focus);

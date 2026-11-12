@@ -58,13 +58,14 @@ interface CategorySection {
   styles: [
     `
       .nx-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
-      .nx-chip { min-block-size: var(--cg-target); padding: 0.375rem 1rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-pill); background: var(--cg-surface); color: var(--cg-text); font: inherit; font-weight: var(--fw-semibold); cursor: pointer; }
+      .nx-chip { min-block-size: var(--cg-target); padding: 0.375rem 1.125rem; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-pill); background: var(--cg-surface); color: var(--cg-text); font: inherit; font-weight: var(--fw-semibold); cursor: pointer; transition: background var(--cg-dur) var(--ease), border-color var(--cg-dur) var(--ease); }
+      .nx-chip:hover { border-color: var(--cg-border-control); }
       .nx-chip[aria-pressed='true'] { background: var(--cg-acc-solid); border-color: var(--cg-acc-solid); color: #ffffff; }
       .nx-reads { display: grid; gap: var(--cg-gap-stack); margin: 0; padding: 0; list-style: none; grid-template-columns: minmax(0, 1fr); }
       @media (min-width: 40rem) { .nx-reads { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; } }
       @media (min-width: 64rem) { .nx-reads { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
       .nx-reads > li { display: flex; }
-      .nx-read { display: grid; grid-template-rows: auto 1fr; inline-size: 100%; padding: 0; border: 1px solid var(--cg-border); border-radius: var(--cg-radius-card); background: var(--cg-surface); color: var(--cg-text); font: inherit; text-align: start; cursor: pointer; overflow: hidden; box-shadow: var(--cg-shadow-1); transition: box-shadow var(--cg-dur) var(--ease), transform var(--cg-dur) var(--ease); }
+      .nx-read { display: grid; grid-template-rows: auto 1fr; inline-size: 100%; padding: 0; border: 0; border-radius: var(--cg-radius-card); background: var(--cg-surface); color: var(--cg-text); font: inherit; text-align: start; cursor: pointer; overflow: hidden; box-shadow: var(--cg-shadow-1); transition: box-shadow var(--cg-dur) var(--ease), transform var(--cg-dur) var(--ease); }
       .nx-read:hover { box-shadow: var(--cg-shadow-2); }
       .nx-read:active { transform: scale(0.985); }
       .nx-read__cover { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-block-size: 5.25rem; padding: 0.75rem 1rem 0.75rem 1.25rem; }
