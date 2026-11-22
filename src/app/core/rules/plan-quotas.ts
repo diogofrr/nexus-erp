@@ -2,8 +2,8 @@
  * Cotas mensais e valores avulsos por plano (docs/20-regras-planos-v2.md, decisão do dono em 06/11 e 11/11/2026). Funções
  * PURAS, sem Angular e sem relógio: o mês de referência vem de fora (do `Clock`, pela tela ou pelo serviço).
  *
- * - Tabela do docs/20: atendimento individual 0, 0, 2 e 4 sessões por mês; terapia em grupo 0, 0, 2 e 2 encontros por mês;
- *   capacitações incluídas nenhuma, 2 por mês [suposição], todas, todas; Cartão, conteúdos exclusivos e condições na rede do
+ * - Tabela do docs/20 (revista pelo dono em 22/11/2026): atendimento individual 0, 0, 1 e 2 sessões por mês; terapia em
+ *   grupo 0, 0, 2 e 2 encontros por mês; capacitações incluídas 1, 2, todas, todas; Cartão, conteúdos exclusivos e condições na rede do
  *   Essencial em diante; benefícios diferenciados na rede só no Sustenta.
  * - **Cotas mensais não acumulam** (docs/20): o que não foi usado no mês não passa para o seguinte.
  * - Cancelamento com menos de 24 h consome a cota (RN-ATD-16): a sessão `no_show` continua contando.
@@ -40,7 +40,7 @@ export const PLAN_QUOTAS: Readonly<Record<PlanId, PlanQuotas>> = {
   livre: {
     individualSessionsPerMonth: 0,
     groupTherapyPerMonth: 0,
-    trainingsPerMonth: 0,
+    trainingsPerMonth: 1,
     card: false,
     exclusiveContent: false,
     networkConditions: false,
@@ -56,7 +56,7 @@ export const PLAN_QUOTAS: Readonly<Record<PlanId, PlanQuotas>> = {
     networkDifferentiated: false,
   },
   cuida: {
-    individualSessionsPerMonth: 2,
+    individualSessionsPerMonth: 1,
     groupTherapyPerMonth: 2,
     trainingsPerMonth: 'all',
     card: true,
@@ -65,7 +65,7 @@ export const PLAN_QUOTAS: Readonly<Record<PlanId, PlanQuotas>> = {
     networkDifferentiated: false,
   },
   sustenta: {
-    individualSessionsPerMonth: 4,
+    individualSessionsPerMonth: 2,
     groupTherapyPerMonth: 2,
     trainingsPerMonth: 'all',
     card: true,
@@ -238,7 +238,10 @@ export function quotaSentence(quota: QuotaUsage, noun: 'sessões' | 'encontros' 
   if (quota.limit === 'all') {
     return `Neste mês: todas as ${noun} incluídas`;
   }
-  return `Neste mês: ${quota.used} de ${quota.limit} ${noun} usad${noun === 'encontros' ? 'os' : 'as'}`;
+  // Com limite 1 a frase vai no singular: "Neste mês: 0 de 1 sessão usada".
+  const word = quota.limit === 1 ? (noun === 'sessões' ? 'sessão' : noun === 'encontros' ? 'encontro' : 'capacitação') : noun;
+  const ending = noun === 'encontros' ? (quota.limit === 1 ? 'o' : 'os') : quota.limit === 1 ? 'a' : 'as';
+  return `Neste mês: ${quota.used} de ${quota.limit} ${word} usad${ending}`;
 }
 
 /** "Incluída no seu plano (1 de 2 neste mês)": o que a tela diz quando a sessão ou o encontro cabe na cota. */

@@ -42,7 +42,9 @@ describe('encontros vistos pelo cuidador (docs/20; RN-GRP-03, 09, 13, 17)', () =
   it('capacitação incluída ou avulsa; terapia em grupo travada no Livre e no Essencial', () => {
     // Maria (Essencial) já usou as 2 capacitações de novembro na G2: a G9 sai avulsa.
     expect(standing('cg_0002', 'act_0009')).toMatchObject({ kind: 'can_join', full: false, offer: { kind: 'paid', priceCents: 4000 } });
-    expect(standing('cg_0003', 'act_0009')).toMatchObject({ kind: 'can_join', offer: { kind: 'paid', priceCents: 4000 } });
+    // João (Livre) tem 1 capacitação por mês: a G9 (1 encontro em novembro) cabe e sai incluída; a G2 (2 encontros) não cabe.
+    expect(standing('cg_0003', 'act_0009')).toMatchObject({ kind: 'can_join', offer: { kind: 'included', priceCents: 0, meetings: 1 } });
+    expect(standing('cg_0003', 'act_0002')).toMatchObject({ kind: 'can_join', offer: { kind: 'paid', priceCents: 8000, meetings: 2 } });
     expect(standing('cg_0001', 'act_0009')).toMatchObject({ kind: 'can_join', offer: { kind: 'included', priceCents: 0 } });
     ['cg_0002', 'cg_0003', 'cg_0026', 'cg_0016'].forEach((id) => expect(standing(id, 'act_0008').kind).toBe('plan_locked'));
     // Ana já usou os 2 encontros de terapia em grupo de novembro na G1: a G8 sai avulsa (R$ 60,00 por encontro).
@@ -90,12 +92,18 @@ describe('encontros vistos pelo cuidador (docs/20; RN-GRP-03, 09, 13, 17)', () =
       paid: false,
       priceCents: 0,
     });
-    // João (Livre) paga a capacitação avulsa (pagamento simulado).
+    // João (Livre): a G9 cabe na capacitação do mês e sai incluída; a G2 (2 encontros) é avulsa (pagamento simulado).
     service.enroll('cg_0003', 'act_0009', { contractAccepted: true });
     expect(db.activityEnrollments.find((e) => e.activityId === 'act_0009' && e.caregiverId === 'cg_0003')).toMatchObject({
+      includedInPlan: true,
+      paid: false,
+      priceCents: 0,
+    });
+    service.enroll('cg_0003', 'act_0002', { contractAccepted: true });
+    expect(db.activityEnrollments.find((e) => e.activityId === 'act_0002' && e.caregiverId === 'cg_0003')).toMatchObject({
       includedInPlan: false,
       paid: true,
-      priceCents: 4000,
+      priceCents: 8000,
     });
     expect(service.enroll('cg_0027', 'act_0009', { contractAccepted: true })).toEqual({ ok: false, error: 'Você já está neste encontro.' });
   });

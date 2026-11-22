@@ -5,7 +5,8 @@
  * que o plano não inclui (regra de exibição 1); quem chama só mostra ou esconde.
  *
  * `trainingIncluded` lê a cota do mês em `ctx.quotas()` (publicada pelo agente Regras v2, docs/21-regras-v2-dev.md): no
- * Essencial a cota de 2 capacitações pode acabar no mês.
+ * Livre (1 por mês) e no Essencial (2 por mês) a cota de capacitações pode acabar. Se uma capacitação específica cabe na
+ * cota é a oferta da inscrição que diz (`CaregiverActivitiesService.offerFor`).
  */
 import { CaregiverContextService } from './caregiver-context.service';
 import { EventPlanAccess } from './event-type';
@@ -14,7 +15,7 @@ import { EventPlanAccess } from './event-type';
 export function eventAccessOf(ctx: CaregiverContextService): EventPlanAccess {
   return {
     groupTherapy: ctx.canUse('group_therapy'),
-    // A cota do mês pode acabar (Essencial: 2 por mês); Cuida e Sustenta têm todas ('all').
+    // A cota do mês pode acabar (Livre 1 e Essencial 2 por mês); Cuida e Sustenta têm todas ('all').
     trainingIncluded: ctx.quotas().trainings.left !== 0,
   };
 }

@@ -83,7 +83,9 @@ export const PAYMENT_NOTE = 'O pagamento é combinado direto no atendimento. No 
 
 /** A cota do mês acabou: a conversa é avulsa (docs/20). "Você já usou as 2 sessões do mês incluídas no plano. Esta conversa é avulsa: R$ 120,00." */
 export const QUOTA_USED_UP = (limit: number | 'all', price: string): string =>
-  `Você já usou as ${limit} sessões do mês incluídas no plano. Esta conversa é avulsa: ${price}.`;
+  (limit === 1
+    ? `Você já usou a sessão do mês incluída no plano. Esta conversa é avulsa: ${price}.`
+    : `Você já usou as ${limit} sessões do mês incluídas no plano. Esta conversa é avulsa: ${price}.`);
 
 export const NO_SLOTS_TEXT = 'Sem horários nesse formato nos próximos 14 dias. Escolha outro formato ou fale com a gente.';
 export const SLOT_TAKEN = 'Esse horário acabou de ser reservado. Escolha outro.';

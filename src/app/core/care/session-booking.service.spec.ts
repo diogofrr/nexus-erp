@@ -43,34 +43,36 @@ describe('SessionBookingService (o miolo de agendar do núcleo, RN-ATD-02 a 05, 
     expect(booking.quote('cg_0004')).toMatchObject({ allowed: false, included: false, totalCents: 12000 });
     expect(booking.quote('cg_0006')).toMatchObject({ allowed: false, included: false });
     expect(booking.quote('cg_0001')).toMatchObject({ allowed: true, discountPercent: 0 });
-    expect(booking.quote('cg_0001').quota.limit).toBe(2);
-    expect(booking.quote('cg_0009').quota.limit).toBe(4);
+    expect(booking.quote('cg_0001').quota.limit).toBe(1);
+    expect(booking.quote('cg_0009').quota.limit).toBe(2);
     const livre = booking.schedule(input(farSlot(booking, 'cg_0001'), 'cg_0004'));
     expect(livre.ok ? '' : livre.errors[0]?.field).toBe('plan');
   });
 
-  it('dentro da cota a sessão custa R$ 0,00; a terceira do mês no Cuida é avulsa; cancelar com menos de 24 h consome a cota (RN-ATD-16)', () => {
+  it('dentro da cota a sessão custa R$ 0,00; a segunda do mês no Cuida é avulsa; cancelar com menos de 24 h consome a cota (RN-ATD-16)', () => {
     const { booking, db, clock } = setup();
-    // Ana (Cuida) usa as duas do mês de dezembro e a terceira já é avulsa.
+    // Ana (Cuida, 1 sessão por mês) usa a de dezembro e a segunda já é avulsa.
     const dec = (start: string, psy: string) =>
       db.availabilitySlots.create({ psychologistId: psy, date: '2026-12-02', start, end: `${String(Number(start.slice(0, 2)) + 1).padStart(2, '0')}:00`, status: 'open', priorityOnly: false });
     const s1 = booking.schedule(input(dec('09:00', 'psy_0001'), 'cg_0001'));
     const s2 = booking.schedule(input(dec('10:00', 'psy_0001'), 'cg_0001'));
-    const s3 = booking.schedule(input(dec('11:00', 'psy_0001'), 'cg_0001'));
-    expect([s1, s2, s3].map((r) => (r.ok ? [r.value.priceCents, r.value.includedInPlan] : null))).toEqual([
-      [0, true],
+    expect([s1, s2].map((r) => (r.ok ? [r.value.priceCents, r.value.includedInPlan] : null))).toEqual([
       [0, true],
       [12000, false],
     ]);
-    expect(booking.quotaFor('cg_0001', '2026-12')).toEqual({ limit: 2, used: 2, left: 0 });
+    expect(booking.quotaFor('cg_0001', '2026-12')).toEqual({ limit: 1, used: 1, left: 0 });
     // Cancelar com 24 horas ou mais devolve a cota; com menos, vira falta e continua contando.
-    if (s1.ok && s2.ok) {
+    if (s1.ok) {
       booking.cancel(s1.value.id, 'user');
       expect(booking.quotaFor('cg_0001', '2026-12').left).toBe(1);
-      clock.setSimulated('2026-12-02', '07:00');
-      expect(booking.cancel(s2.value.id, 'user').ok).toBe(true);
-      expect(db.careSessions.require(s2.value.id).status).toBe('no_show');
-      expect(booking.quotaFor('cg_0001', '2026-12').used).toBe(1);
+      const s3 = booking.schedule(input(dec('11:00', 'psy_0001'), 'cg_0001'));
+      expect(s3.ok ? [s3.value.priceCents, s3.value.includedInPlan] : null).toEqual([0, true]);
+      if (s3.ok) {
+        clock.setSimulated('2026-12-02', '07:00');
+        expect(booking.cancel(s3.value.id, 'user').ok).toBe(true);
+        expect(db.careSessions.require(s3.value.id).status).toBe('no_show');
+        expect(booking.quotaFor('cg_0001', '2026-12')).toEqual({ limit: 1, used: 1, left: 0 });
+      }
     }
   });
 

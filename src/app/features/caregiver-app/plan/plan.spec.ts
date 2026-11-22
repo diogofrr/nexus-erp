@@ -69,13 +69,13 @@ describe('Área plan (Meu plano)', () => {
       expect(norm(card.querySelector('[data-role="situation"]')?.textContent)).toBe('Próxima cobrança em 06/11/2026');
       // Só 4 destaques de cara: a lista longa fica atrás de "Ver tudo que inclui".
       expect(Array.from(card.querySelectorAll('[data-role="perks"] li')).map((li) => norm(li.textContent))).toEqual([
-        'Atendimento psicológico individual: 2 sessões por mês',
+        'Atendimento psicológico individual: 1 sessão por mês',
         'Terapia em grupo: 2 encontros por mês',
         'Todas as capacitações do mês',
         'Maior suporte à organização da rotina',
       ]);
-      // docs/20: a cota do mês no herói, só para Cuida e Sustenta.
-      expect(norm(card.querySelector('[data-role="month-quota"]')?.textContent)).toBe('Neste mês: 1 de 2 sessões usadas');
+      // docs/20: a cota do mês no herói, só para Cuida e Sustenta. O Cuida tem 1 sessão por mês: a frase vai no singular.
+      expect(norm(card.querySelector('[data-role="month-quota"]')?.textContent)).toBe('Neste mês: 1 de 1 sessão usada');
       expect(openSheet(app)).toBeNull();
       const primary = byText(app, 'main button', 'Ver outros planos');
       expect(primary?.classList.contains('btn--primary')).toBe(true);
@@ -92,7 +92,7 @@ describe('Área plan (Meu plano)', () => {
       await click(app, app.root.querySelector('[data-role="see-all"]'));
       expect(openSheet(app)?.querySelector('.cg-sheet__title')?.textContent?.trim()).toBe('O que o plano Cuida inclui');
       expect(Array.from(openSheet(app)?.querySelectorAll('[data-role="all-benefits"] li') ?? []).map((li) => norm(li.textContent))).toEqual([
-        'Atendimento psicológico individual: 2 sessões por mês',
+        'Atendimento psicológico individual: 1 sessão por mês',
         'Terapia em grupo: 2 encontros por mês',
         'Todas as capacitações do mês',
         'Maior suporte à organização da rotina',
@@ -106,9 +106,9 @@ describe('Área plan (Meu plano)', () => {
 
     it('cada plano tem a sua cor, o seu nome e os seus 4 destaques', async () => {
       const expected = [
-        ['cg_0003', 'livre', 'Plano Livre', ['Organização básica da rotina: agenda, lembretes e remédios', 'Conteúdos abertos', 'Rede credenciada: consultar, comparar e pedir serviço', 'Capacitações avulsas (R$ 40,00 por encontro)']],
+        ['cg_0003', 'livre', 'Plano Livre', ['Organização básica da rotina: agenda, lembretes e remédios', 'Conteúdos abertos', 'Rede credenciada: consultar, comparar e pedir serviço', '1 capacitação por mês']],
         ['cg_0002', 'essencial', 'Plano Essencial', ['Organização ampliada da rotina', 'Cartão Nexus, com descontos nos parceiros', 'Conteúdos abertos e exclusivos', 'Rede credenciada, com condições especiais']],
-        ['cg_0027', 'sustenta', 'Plano Sustenta', ['Atendimento psicológico individual: 4 sessões por mês', 'Terapia em grupo: 2 encontros por mês', 'Rede credenciada, com benefícios diferenciados', 'Acompanhamento próximo da organização da rotina']],
+        ['cg_0027', 'sustenta', 'Plano Sustenta', ['Atendimento psicológico individual: 2 sessões por mês', 'Terapia em grupo: 2 encontros por mês', 'Rede credenciada, com benefícios diferenciados', 'Acompanhamento próximo da organização da rotina']],
       ] as const;
       for (const [id, tone, name, perks] of expected) {
         const app = await bootCaregiverApp(id, { url: URL });
@@ -142,7 +142,7 @@ describe('Área plan (Meu plano)', () => {
         'Organização básica da rotina: agenda, lembretes e remédios',
         'Conteúdos abertos',
         'Rede credenciada: consultar, comparar e pedir serviço',
-        'Capacitações avulsas (R$ 40,00 por encontro)',
+        '1 capacitação por mês',
       ]);
       // A Nexus não tem roda de conversa: nenhum plano a lista.
       expect(norm(openSheet(joao)?.textContent)).not.toMatch(/roda/i);
@@ -174,10 +174,10 @@ describe('Área plan (Meu plano)', () => {
         Array.from(p.querySelectorAll('[data-role="quotas"] dd')).map((d) => norm(d.textContent)),
       );
       expect(quotas).toEqual([
-        ['Não inclui', 'Não inclui', 'Avulsas, R$ 40,00 por encontro'],
+        ['Não inclui', 'Não inclui', '1 capacitação por mês'],
         ['Não inclui', 'Não inclui', '2 capacitações por mês'],
+        ['1 sessão por mês', '2 encontros por mês', 'Todas as do mês'],
         ['2 sessões por mês', '2 encontros por mês', 'Todas as do mês'],
-        ['4 sessões por mês', '2 encontros por mês', 'Todas as do mês'],
       ]);
       expect(plans.every((p) => p.more === '')).toBe(true);
       expect(plans[0]?.items).toEqual(['Organização básica da rotina: agenda, lembretes e remédios', 'Conteúdos abertos', 'Rede credenciada: consultar, comparar e pedir serviço']);

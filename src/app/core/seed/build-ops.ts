@@ -102,7 +102,7 @@ export function buildGroups(s: SeedState): void {
     type: 'psychologist',
     id: PSYCHOLOGIST[key].id,
     name: PSYCHOLOGIST[key].name,
-    // Sem CRP cadastrado (a equipe aparece só pelo nome), o encontro não leva registro profissional.
+    // O registro profissional vem do CRP (fictício) da pessoa; sem CRP cadastrado, o encontro não leva registro.
     ...(PSYCHOLOGIST[key].crp ? { professionalRegistration: `${PSYCHOLOGIST[key].crp} (fictício)` } : {}),
   });
 

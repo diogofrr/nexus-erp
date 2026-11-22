@@ -10,15 +10,17 @@ Substitui, no que conflitar, RN-PLN-04 a 11, RN-GRP-01 a 03 e RN-ATD-03 a 05 de 
 | Conteúdos | abertos | abertos e exclusivos | idem | idem |
 | Rede credenciada | consulta, compara e pede serviço | + condições especiais | idem | + benefícios diferenciados |
 | Cartão Nexus | não | sim | sim | sim |
-| Capacitações incluídas | nenhuma (pode pagar avulsa) | 2 por mês [suposição] | todas do mês | todas do mês |
+| Capacitações incluídas | 1 por mês | 2 por mês | todas do mês | todas do mês |
 | Terapia em grupo (= grupo de apoio) | não | não | 2 encontros por mês | 2 encontros por mês |
-| Atendimento psicológico individual (on-line ou presencial, à escolha) | não | não | 2 sessões por mês | 4 sessões por mês |
+| Atendimento psicológico individual (on-line ou presencial, à escolha) | não | não | 1 sessão por mês | 2 sessões por mês |
+
+Tabela revista pelo dono em 22/11/2026 (quadro "Os planos" do material da Nexus): Livre com 1 capacitação por mês, Cuida com 1 sessão individual e Sustenta com 2. Preços sem mudança (R$ 0, R$ 49,90, R$ 119,90 e R$ 149,90). Além da cota, a capacitação continua avulsa para qualquer plano.
 
 - **Não existe roda de conversa** (decisão do dono, 22/11/2026): os encontros da Nexus são só capacitação e terapia em grupo. O tipo `open_circle` saiu do código; a migração v3 apaga as rodas e as inscrições delas.
 - **Cotas mensais não acumulam.** Cancelamento com menos de 24 h consome a cota (RN-ATD-16).
 - **Avulsos**: sessão individual e encontro de terapia em grupo além da cota só para Cuida e Sustenta (valor de referência R$ 120,00 a sessão e R$ 60,00 o encontro de grupo [suposição]); capacitação avulsa para qualquer pessoa com cadastro, em qualquer plano (R$ 40,00 por encontro [suposição]). Pagamento simulado.
 - **O atendimento psicológico da equipe não é vendido a quem está no Livre ou no Essencial.** A conduta da Zarit para esses planos (faixas 21 a 60) é: conteúdos, capacitações e encaminhamento à rede pública ou a clínicas-escola (Quadro 15 do plano). O alerta vermelho (61 a 88) continua: contato da equipe no mesmo dia e POP-05, para qualquer plano. **Nada de Zarit vira convite de upgrade** (RN-PLN-19 continua).
-- **Quem atende**: os sócios psicólogos com CRP ativo, sem retirada; a capacidade cresce conforme os integrantes se formam. O financeiro do plano (27 assinantes, mês 7, mês 14) não muda.
+- **Quem atende**: os 7 integrantes do grupo (Jessica Rosa, Isabelle Ramos, João Eduardo, Marina Gomes, Maria José, Gustavo Medeiros e Luzia Luzdalma), com CRP fictício no protótipo, sem retirada; a capacidade cresce conforme os integrantes se formam. O financeiro do plano (27 assinantes, mês 7, mês 14) não muda.
 
 ## Tipos de atividade (categorização obrigatória)
 

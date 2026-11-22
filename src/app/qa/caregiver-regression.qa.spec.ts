@@ -523,7 +523,8 @@ describe('QAC: integridade cruzada com a visão da equipe', () => {
     });
     expect(result.ok).toBe(true);
     const session = result.ok ? result.session : null;
-    expect(session).toMatchObject({ caregiverId: ANA, psychologistId: slot.psychologistId, slotId: slot.id, status: 'scheduled', priceCents: 0, discountPercent: 0, includedInPlan: true, kind: 'guidance' });
+    // Ana (Cuida, 1 sessão por mês) já usou a de novembro: a conversa nova é avulsa, R$ 120,00.
+    expect(session).toMatchObject({ caregiverId: ANA, psychologistId: slot.psychologistId, slotId: slot.id, status: 'scheduled', priceCents: 12000, discountPercent: 0, includedInPlan: false, kind: 'guidance' });
     expect(db.availabilitySlots.require(slot.id).status).toBe('booked');
     // O mesmo horário não pode ser vendido duas vezes.
     TestBed.inject(CaregiverSessionService).signIn(RITA);

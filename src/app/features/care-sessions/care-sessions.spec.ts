@@ -56,9 +56,9 @@ describe('M05 agenda e agendamento (F04)', () => {
     select.dispatchEvent(new Event('change', { bubbles: true }));
     await settle(app.fixture);
     const summary = drawer.querySelector('[data-role="price-summary"]')?.textContent ?? '';
-    // Cuida: 2 sessões por mês; Ana usou 1 em novembro, então a próxima é incluída (R$ 0,00).
-    expect(summary).toContain('Incluída na cota do plano Cuida: total R$ 0,00');
-    expect(summary).toContain('Neste mês: 1 de 2 sessões usadas');
+    // Cuida: 1 sessão por mês; Ana já usou a de novembro, então a próxima é avulsa (R$ 120,00), com a frase no singular.
+    expect(summary).toContain('Avulsa (cota do mês usada): total R$ 120,00');
+    expect(summary).toContain('Neste mês: 1 de 1 sessão usada');
     // docs/20: o ERP não oferece agendamento de sessão para Livre e Essencial.
     const options = Array.from(select.options).map((o) => o.value).filter(Boolean);
     expect(options).toContain('cg_0001');
@@ -91,13 +91,14 @@ describe('M05 agenda e agendamento (F04)', () => {
     expect(drawer.querySelector('#sched-kind')?.parentElement?.textContent ?? drawer.textContent).toContain('confirme com o psicólogo do caso');
   });
 
-  it('o valor da sessão vem da cota do plano (docs/20): Livre e Essencial não agendam; Cuida 2 e Sustenta 4 por mês', async () => {
+  it('o valor da sessão vem da cota do plano (docs/20): Livre e Essencial não agendam; Cuida 1 e Sustenta 2 por mês', async () => {
     const app = await bootApp({ userId: 'u7', url: '/app/atendimento/agenda' });
     const { svc } = helpers(app);
     expect(svc().quote('cg_0004')).toMatchObject({ allowed: false }); // Livre
     expect(svc().quote('cg_0006')).toMatchObject({ allowed: false }); // Essencial
-    expect(svc().quote('cg_0001')).toMatchObject({ allowed: true, included: true, totalCents: 0 }); // Cuida, 1 de 2
-    expect(svc().quote('cg_0009').quota.limit).toBe(4); // Sustenta
+    // Cuida, 1 de 1: a segunda sessão de novembro já é avulsa.
+    expect(svc().quote('cg_0001')).toMatchObject({ allowed: true, included: false, totalCents: 12000, quota: { limit: 1, used: 1, left: 0 } });
+    expect(svc().quote('cg_0009').quota.limit).toBe(2); // Sustenta
     const slot = svc().freeSlots('psy_0001', true)[0];
     const refused = svc().schedule({ caregiverId: 'cg_0004', psychologistId: 'psy_0001', slotId: slot?.id ?? '', modality: 'online', kind: 'guidance' });
     expect(refused.ok === false && refused.errors[0]?.message).toBe('O atendimento psicológico individual faz parte dos planos Cuida e Sustenta.');

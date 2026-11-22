@@ -34,21 +34,21 @@ export const USER = {
 export type PsychologistKey = 'jessica' | 'isabelle' | 'marina' | 'gustavo' | 'joao' | 'mariaJose' | 'luzia';
 
 /**
- * A equipe de psicologia: os 7 integrantes do grupo (decisão do dono, 22/11/2026), pelo nome, sem "Dr." nem "Dra." e
- * sem número de CRP (`crp` vazio: o aplicativo não mostra registro que não existe). Os ids e as agendas de antes ficam
- * com as 4 primeiras pessoas; João Eduardo, Maria José e Luzia Luzdalma entram com agenda nova, ainda sem cuidadores.
+ * A equipe de psicologia: os 7 integrantes do grupo (decisão do dono, 22/11/2026), pelo nome, sem "Dr." nem "Dra.", com
+ * CRP FICTÍCIO (o aplicativo é de demonstração; toda tela que mostra o número diz "fictício"). Os ids e as agendas de antes
+ * ficam com as 4 primeiras pessoas; João Eduardo, Maria José e Luzia Luzdalma entram com agenda nova, ainda sem cuidadores.
  */
 export const PSYCHOLOGIST: Record<
   PsychologistKey,
   { id: string; userId: string; name: string; crp: string }
 > = {
-  jessica: { id: 'psy_0001', userId: USER.jessica, name: 'Jessica Rosa', crp: '' },
-  isabelle: { id: 'psy_0002', userId: USER.isabelle, name: 'Isabelle Ramos', crp: '' },
-  marina: { id: 'psy_0003', userId: USER.marina, name: 'Marina Gomes', crp: '' },
-  gustavo: { id: 'psy_0004', userId: USER.gustavo, name: 'Gustavo Medeiros', crp: '' },
-  joao: { id: 'psy_0005', userId: USER.joao, name: 'João Eduardo', crp: '' },
-  mariaJose: { id: 'psy_0006', userId: USER.mariaJose, name: 'Maria José', crp: '' },
-  luzia: { id: 'psy_0007', userId: USER.luzia, name: 'Luzia Luzdalma', crp: '' },
+  jessica: { id: 'psy_0001', userId: USER.jessica, name: 'Jessica Rosa', crp: 'CRP-04/00102' },
+  isabelle: { id: 'psy_0002', userId: USER.isabelle, name: 'Isabelle Ramos', crp: 'CRP-04/00103' },
+  marina: { id: 'psy_0003', userId: USER.marina, name: 'Marina Gomes', crp: 'CRP-04/00104' },
+  gustavo: { id: 'psy_0004', userId: USER.gustavo, name: 'Gustavo Medeiros', crp: 'CRP-04/00105' },
+  joao: { id: 'psy_0005', userId: USER.joao, name: 'João Eduardo', crp: 'CRP-04/00106' },
+  mariaJose: { id: 'psy_0006', userId: USER.mariaJose, name: 'Maria José', crp: 'CRP-04/00107' },
+  luzia: { id: 'psy_0007', userId: USER.luzia, name: 'Luzia Luzdalma', crp: 'CRP-04/00108' },
 };
 
 export const ROOM = { girassol: 'room_0001', ipe: 'room_0002', jacaranda: 'room_0003' } as const;

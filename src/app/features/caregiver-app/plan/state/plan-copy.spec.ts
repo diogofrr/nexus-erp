@@ -22,13 +22,13 @@ function quote(partial: Partial<ChangeQuote> & Pick<ChangeQuote, 'from' | 'to' |
 describe('textos de Meu plano (docs/20; UX C18 e B9)', () => {
   it('os destaques: 4 no herói, 3 no quadro; Cuida e Sustenta começam pelo atendimento e pela terapia em grupo', () => {
     expect(planPerks('cuida', plans, 4).map((p) => p.label)).toEqual([
-      'Atendimento psicológico individual: 2 sessões por mês',
+      'Atendimento psicológico individual: 1 sessão por mês',
       'Terapia em grupo: 2 encontros por mês',
       'Todas as capacitações do mês',
       'Maior suporte à organização da rotina',
     ]);
     expect(planPerks('sustenta', plans, 3).map((p) => p.label)).toEqual([
-      'Atendimento psicológico individual: 4 sessões por mês',
+      'Atendimento psicológico individual: 2 sessões por mês',
       'Terapia em grupo: 2 encontros por mês',
       'Rede credenciada, com benefícios diferenciados',
     ]);
@@ -42,17 +42,19 @@ describe('textos de Meu plano (docs/20; UX C18 e B9)', () => {
   it('o Livre não tem o Cartão como destaque nem em lugar nenhum; nenhum plano cita Zarit', () => {
     const livre = planLines('livre').map((p) => p.label).join(' ');
     expect(livre).not.toMatch(/cart[ãa]o/i);
-    expect(livre).toContain('Capacitações avulsas (R$ 40,00 por encontro)');
+    expect(livre).toContain('1 capacitação por mês');
+    expect(livre).not.toContain('avulsa');
+    expect(planLines('essencial').map((p) => p.label)).toContain('2 capacitações por mês');
     (['livre', 'essencial', 'cuida', 'sustenta'] as const).forEach((id) =>
       expect(allBenefits(id, plans).join(' ')).not.toMatch(/zarit|pontua|alerta|arbe/i),
     );
   });
 
   it('as linhas de cota do quadro (docs/20)', () => {
-    expect(quotaLines('livre').map((l) => l.value)).toEqual(['Não inclui', 'Não inclui', 'Avulsas, R$ 40,00 por encontro']);
+    expect(quotaLines('livre').map((l) => l.value)).toEqual(['Não inclui', 'Não inclui', '1 capacitação por mês']);
     expect(quotaLines('essencial').map((l) => l.value)).toEqual(['Não inclui', 'Não inclui', '2 capacitações por mês']);
-    expect(quotaLines('cuida').map((l) => l.value)).toEqual(['2 sessões por mês', '2 encontros por mês', 'Todas as do mês']);
-    expect(quotaLines('sustenta').map((l) => l.value)).toEqual(['4 sessões por mês', '2 encontros por mês', 'Todas as do mês']);
+    expect(quotaLines('cuida').map((l) => l.value)).toEqual(['1 sessão por mês', '2 encontros por mês', 'Todas as do mês']);
+    expect(quotaLines('sustenta').map((l) => l.value)).toEqual(['2 sessões por mês', '2 encontros por mês', 'Todas as do mês']);
   });
 
   it('o preço em duas partes e a faixa da mudança agendada', () => {

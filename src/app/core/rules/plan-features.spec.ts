@@ -12,7 +12,7 @@ const TABLE: Readonly<Record<CaregiverFeature, readonly [boolean, boolean, boole
   network_search: [true, true, true, true],
   request_service: [true, true, true, true],
   training_paid: [true, true, true, true],
-  training_included: [false, true, true, true],
+  training_included: [true, true, true, true],
   group_therapy: [false, false, true, true],
   groups: [false, false, true, true],
   individual_session: [false, false, true, true],
@@ -57,7 +57,7 @@ describe('Acesso do cuidador por plano (docs/20, RN-PLN-01 a 08, RN-CRT-02, RN-R
 
   it('o menor plano de cada recurso', () => {
     expect(minimumPlanForFeature('card')).toBe('essencial');
-    expect(minimumPlanForFeature('training_included')).toBe('essencial');
+    expect(minimumPlanForFeature('training_included')).toBe('livre');
     expect(minimumPlanForFeature('individual_session')).toBe('cuida');
     expect(minimumPlanForFeature('network_differentiated')).toBe('sustenta');
     expect(minimumPlanForFeature('training_paid')).toBe('livre');

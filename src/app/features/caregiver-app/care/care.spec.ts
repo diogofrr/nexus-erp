@@ -5,6 +5,7 @@ import { BootedCaregiverApp, bootCaregiverApp, settleCaregiver } from '../testin
 import { ROUTES } from './care.routes';
 import { shortName } from '../state/people-format';
 import { bookingErrorText } from './state/conversations.service';
+import { QUOTA_USED_UP } from './state/care-labels';
 
 /**
  * Porta de Cuidar de mim (C7, AC-CG-72 a 75) e Conversar com um psicólogo (C8, AC-CG-76 a 86): marcar em 2 passos mais a
@@ -243,16 +244,15 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(isOpen('Confirme a conversa')).toBe(true);
       const body = text(sheet('Confirme a conversa'));
       expect(body).toMatch(/Quando: .+, às \d{2}:\d{2} \(1 hora\)\./);
-      // Pelo nome, da equipe de psicologia, sem tratamento e sem registro (o CRP só aparece quando existe).
-      expect(body).toMatch(/Com quem: [^.,]+, da equipe de psicologia\./);
+      // Pelo nome, da equipe de psicologia, sem tratamento, com o CRP marcado "fictício".
+      expect(body).toMatch(/Com quem: [^.,]+, da equipe de psicologia \(CRP-04\/\d{5}, fictício\)\./);
       expect(body).not.toMatch(/Com quem: Dra?\./);
-      expect(body).not.toContain('CRP');
-      expect(body).not.toContain('fictício');
       expect(body).toContain('Como: On-line.');
       expect(body).toContain('O que você procura?');
       expect(body).toContain('O psicólogo confirma se o formato on-line serve para você. Se não servir, combina outro formato.');
-      expect(text(q('[data-role="summary-included"]'))).toBe('Incluída no seu plano (2 de 2 neste mês).');
-      expect(text(q('[data-role="summary-total"]'))).toBe('Total: R$ 0,00.');
+      // Ana (Cuida, 1 sessão por mês) já usou a de novembro: esta é avulsa.
+      expect(text(q('[data-role="summary-quota"]'))).toBe('Você já usou a sessão do mês incluída no plano. Esta conversa é avulsa: R$ 120,00.');
+      expect(text(q('[data-role="summary-total"]'))).toBe('Total: R$ 120,00.');
       expect(all<HTMLInputElement>('app-cg-sheet .cg-choice__input').some((i) => i.checked)).toBe(false);
       expect(all('app-cg-sheet .cg-choice__label').map(text)).toEqual(['Psicoterapia', 'Orientação psicológica', 'Não sei']);
       await click(q('[data-role="confirm-booking"]'));
@@ -262,30 +262,33 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
     });
 
     it('AC-CG-79 (docs/20): dentro da cota a conversa é incluída (R$ 0,00); além dela, avulsa com o valor e o aviso', async () => {
+      // Ana (Cuida, 1 sessão por mês) já usou a de novembro: a próxima de novembro é avulsa, com a frase no singular.
       await boot('cg_0001');
-      expect(text(q('[data-role="quota"]'))).toBe('Neste mês: 1 de 2 sessões usadas');
-      await goToSummary();
-      expect(text(q('[data-role="summary-included"]'))).toBe('Incluída no seu plano (2 de 2 neste mês).');
-      expect(text(sheet('Confirme a conversa'))).not.toMatch(/desconto/i);
-      TestBed.resetTestingModule();
-      // Ana com as 2 do mês usadas: a próxima de novembro é avulsa.
-      await boot('cg_0001');
-      const booking = TestBed.inject(SessionBookingService);
-      const extra = booking.freeSlots('psy_0002', true).find((s) => s.date.startsWith('2026-11'))!;
-      app.db.careSessions.create({
-        caregiverId: 'cg_0001', psychologistId: extra.psychologistId, slotId: extra.id, startAt: booking.startOf(extra),
-        durationMin: 60, modality: 'online', kind: 'guidance', status: 'scheduled', priceCents: 0, discountPercent: 0, includedInPlan: true,
-      });
-      app.db.availabilitySlots.update(extra.id, { status: 'booked' });
-      await flush();
-      expect(text(q('[data-role="quota"]'))).toBe('Neste mês: 2 de 2 sessões usadas');
+      expect(text(q('[data-role="quota"]'))).toBe('Neste mês: 1 de 1 sessão usada');
       await goToSummary();
       const slotDate = q('[data-role="summary-when"]')?.textContent ?? '';
       if (/\/11/.test(slotDate)) {
-        expect(text(q('[data-role="summary-quota"]'))).toBe('Você já usou as 2 sessões do mês incluídas no plano. Esta conversa é avulsa: R$ 120,00.');
+        expect(text(q('[data-role="summary-quota"]'))).toBe('Você já usou a sessão do mês incluída no plano. Esta conversa é avulsa: R$ 120,00.');
         expect(text(q('[data-role="summary-total"]'))).toBe('Total: R$ 120,00.');
+        expect(q('[data-role="summary-included"]')).toBeNull();
         expect(text(sheet('Confirme a conversa'))).toContain('O pagamento é combinado direto no atendimento. No protótipo não há cobrança.');
       }
+      TestBed.resetTestingModule();
+      // Cancelada com antecedência, a sessão de novembro devolve a cota: a próxima volta a ser incluída (R$ 0,00).
+      await boot('cg_0001');
+      const used = app.db.careSessions.find(
+        (s) => s.caregiverId === 'cg_0001' && s.includedInPlan === true && s.startAt.startsWith('2026-11') && s.status !== 'cancelled_by_user',
+      )!;
+      app.db.careSessions.update(used.id, { status: 'cancelled_by_user' });
+      await flush();
+      expect(text(q('[data-role="quota"]'))).toBe('Neste mês: 0 de 1 sessão usada');
+      await goToSummary();
+      expect(text(q('[data-role="summary-included"]'))).toBe('Incluída no seu plano (1 de 1 neste mês).');
+      expect(text(q('[data-role="summary-total"]'))).toBe('Total: R$ 0,00.');
+      expect(text(sheet('Confirme a conversa'))).not.toMatch(/desconto/i);
+      // Com limite maior que 1 (Sustenta), o aviso fica no plural.
+      expect(QUOTA_USED_UP(2, 'R$ 120,00')).toBe('Você já usou as 2 sessões do mês incluídas no plano. Esta conversa é avulsa: R$ 120,00.');
+      expect(QUOTA_USED_UP(1, 'R$ 120,00')).toBe('Você já usou a sessão do mês incluída no plano. Esta conversa é avulsa: R$ 120,00.');
     });
 
     it('docs/20 e decisão do líder: no Livre e no Essencial a rota /atendimento redireciona para a porta de Cuidar de mim', async () => {
@@ -314,9 +317,10 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
         modality: 'online',
         kind: 'psychotherapy',
         status: 'scheduled',
-        priceCents: 0,
+        // Ana (Cuida, 1 sessão por mês) já usou a de novembro: a conversa nova é avulsa.
+        priceCents: 12000,
         discountPercent: 0,
-        includedInPlan: true,
+        includedInPlan: false,
         durationMin: 60,
       });
       expect(created.startAt.startsWith(slot.date)).toBe(true);

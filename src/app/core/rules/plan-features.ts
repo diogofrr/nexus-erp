@@ -3,8 +3,8 @@
  * mês"). Funções PURAS: a tabela de cotas (`plan-quotas.ts`) e o quadro de benefícios (`plans.ts`) são a fonte; aqui só
  * se dá nome de tela a cada recurso.
  *
- * - `individual_session` e `group_therapy`: só Cuida e Sustenta (2 ou 4 sessões e 2 encontros por mês).
- * - `training_included`: há capacitação incluída no plano (Essencial 2 por mês; Cuida e Sustenta todas). `training_paid`:
+ * - `individual_session` e `group_therapy`: só Cuida e Sustenta (1 ou 2 sessões e 2 encontros por mês).
+ * - `training_included`: há capacitação incluída no plano (Livre 1, Essencial 2 por mês; Cuida e Sustenta todas). `training_paid`:
  *   qualquer pessoa cadastrada participa pagando avulsa (R$ 40,00 por encontro), em qualquer plano.
  * - `card`, `exclusive_content`, `network_conditions`: do Essencial em diante (RN-PLN-05, 08, RN-CRT-02);
  *   `network_differentiated`: só o Sustenta (RN-PLN-07).

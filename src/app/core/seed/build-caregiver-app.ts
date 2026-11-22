@@ -147,7 +147,7 @@ export function buildCaregiverApp(s: SeedState): void {
     status: 'confirmed',
     modality: 'in_person_coworking',
   });
-  // Elza (Sustenta, 4 sessões por mês): uma conversa marcada dentro da cota do mês.
+  // Elza (Sustenta, 2 sessões por mês): uma conversa marcada dentro da cota do mês.
   addDemoSession(s, {
     caregiverNumber: 27,
     psychologist: 'gustavo',

@@ -9,6 +9,7 @@ import { withArticle } from '../state/people-format';
 import { enrolledMeetingsOf } from '../state/event-type';
 import { greetingFor, inviteKindFor } from './state/today-rules';
 import { WellbeingCheckService, WellbeingError } from '../../../core/care/wellbeing-check.service';
+import { CaregiverActivitiesService } from '../../../core/groups/caregiver-activities.service';
 
 const text = (el: Element | null | undefined): string => (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
@@ -514,7 +515,7 @@ describe('Hoje (UX C4)', () => {
   describe('docs/20, regras de exibição 1 a 3: o plano decide o que "Para você" convida, nunca aparece', () => {
     /** Quatro dias seguidos: o rodízio passa por todos os itens disponíveis para a pessoa. */
     const DAYS = ['2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07'];
-    interface Seen { day: string; title: string; type: string | null; href: string }
+    interface Seen { day: string; title: string; type: string | null; href: string; body: string }
     /** O convite de cada dia. Com `clear`, a pessoa fica sem inscrições (o convite não repete o que já é dela). */
     const invites = async (id: string, clear = false): Promise<Seen[]> => {
       const seen: Seen[] = [];
@@ -532,6 +533,7 @@ describe('Hoje (UX C4)', () => {
           title: text(q('[data-role="for-you"] h3')),
           type: q('[data-role="for-you"] app-cg-event-badge')?.getAttribute('data-type') ?? null,
           href: q('[data-role="for-you"] a.btn')?.getAttribute('href') ?? '',
+          body: text(q('[data-role="for-you"]')),
         });
         expect(text(q('main')), `${id} ${day}`).not.toMatch(NEVER_IN_TODAY);
         // Livre e Essencial não veem terapia em grupo em lugar nenhum de Hoje.
@@ -544,6 +546,23 @@ describe('Hoje (UX C4)', () => {
     const titlesOf = (kind: string): string[] =>
       app.db.activities.query((a) => a.kind === kind).map((a) => a.title);
 
+    it('a capacitação de Hoje cabe na cota: com 2 encontros e 1 de cota (Livre, 13/11) ela não vira convite "Sem custo"', async () => {
+      const offers: string[] = [];
+      for (const day of ['2026-11-13', '2026-11-14', '2026-11-15', '2026-11-16']) {
+        TestBed.resetTestingModule();
+        app = await bootCaregiverApp('cg_0003', { url: '/cuidador/hoje', today: day, time: '08:00' });
+        app.db.activityEnrollments.removeWhere((e) => e.caregiverId === 'cg_0003');
+        app.db.serviceRequests.removeWhere((r) => r.caregiverId === 'cg_0003');
+        await flush();
+        const type = q('[data-role="for-you"] app-cg-event-badge')?.getAttribute('data-type');
+        if (type === 'training') {
+          const id = /atividade=(act_\d+)/.exec(q('[data-role="for-you"] a.btn')?.getAttribute('href') ?? '')?.[1] ?? '';
+          offers.push(TestBed.inject(CaregiverActivitiesService).offerFor('cg_0003', app.db.activities.require(id)).kind);
+        }
+      }
+      offers.forEach((kind) => expect(kind).toBe('included'));
+    });
+
     it('Livre (João, Raimunda) e Essencial (Sônia): nunca a conversa nem terapia em grupo; a leitura entra para todos', async () => {
       for (const id of ['cg_0003', 'cg_0018', 'cg_0016']) {
         const seen = await invites(id, true);
@@ -555,13 +574,24 @@ describe('Hoje (UX C4)', () => {
       }
     });
 
-    it('Livre: só a leitura (a capacitação não está no plano); Essencial recebe a capacitação incluída; Sustenta, a conversa e a terapia em grupo', async () => {
+    it('Livre: a leitura e a capacitação que cabe na cota (1 por mês, sem custo); Essencial recebe a capacitação incluída; Sustenta, a conversa e a terapia em grupo', async () => {
       const livre = await invites('cg_0003', true);
-      expect(livre.some((x) => x.type === 'training')).toBe(false);
-      livre.forEach((x) => {
-        expect(x.type, x.day).toBeNull();
-        expect(x.title, x.day).toMatch(/Leitura de \d+ minuto/);
+      // O Livre tem 1 capacitação por mês (docs/20): o convite só leva a uma capacitação que cabe na cota, sem valor.
+      const trainings = livre.filter((x) => x.type === 'training');
+      expect(trainings.length).toBeGreaterThan(0);
+      const activities = TestBed.inject(CaregiverActivitiesService);
+      trainings.forEach((x) => {
+        const id = /atividade=(act_\d+)/.exec(x.href)?.[1] ?? '';
+        expect(activities.offerFor('cg_0003', app.db.activities.require(id)).kind, `${x.day} ${x.title}`).toBe('included');
+        expect(x.body, x.day).toContain('Sem custo para você.');
+        expect(x.body, x.day).not.toContain('R$');
       });
+      livre
+        .filter((x) => x.type !== 'training')
+        .forEach((x) => {
+          expect(x.type, x.day).toBeNull();
+          expect(x.title, x.day).toMatch(/Leitura de \d+ minuto/);
+        });
       const essencial = await invites('cg_0016', true);
       expect(essencial.some((x) => x.type === 'training')).toBe(true);
       const sustenta = await invites('cg_0027', true);

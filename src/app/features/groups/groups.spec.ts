@@ -134,13 +134,16 @@ describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
     expect(text(app, '[data-role="enrolled"]')).toContain('04/11/2026 12:00');
   });
 
-  it('nenhum encontro aceita participante externo; o Livre entra na capacitação, avulsa (AC-M07-03, sem roda de conversa)', async () => {
+  it('nenhum encontro aceita participante externo; o Livre entra na capacitação, incluída na cota de 1 e avulsa além dela (AC-M07-03, sem roda de conversa)', async () => {
     const app = await bootApp({ userId: 'u7', url: '/app/grupos/act_0009' });
     const svc = TestBed.inject(GroupsService);
     const before = app.db.activityEnrollments.count((e) => e.activityId === 'act_0009');
-    // João (Livre): a capacitação não está no plano, então entra avulsa (pagamento simulado).
+    // João (Livre, 1 capacitação por mês): a G9 tem 1 encontro em novembro e cabe na cota, sem valor.
     const livre = svc.enroll({ activityId: 'act_0009', caregiverId: 'cg_0003', ...accepted });
-    expect(livre.ok && livre.value.enrollment).toMatchObject({ caregiverId: 'cg_0003', paid: true, includedInPlan: false, priceCents: 4000 });
+    expect(livre.ok && livre.value.enrollment).toMatchObject({ caregiverId: 'cg_0003', paid: false, includedInPlan: true, priceCents: 0 });
+    // A G2 tem 2 encontros em novembro: não cabe na cota e entra avulsa (pagamento simulado, R$ 40,00 por encontro).
+    const extra = svc.enroll({ activityId: 'act_0002', caregiverId: 'cg_0003', ...accepted });
+    expect(extra.ok && extra.value.enrollment).toMatchObject({ caregiverId: 'cg_0003', paid: true, includedInPlan: false, priceCents: 8000 });
     // Participante externo não entra em nenhum tipo de encontro, nem com e-mail válido.
     const visitor = { name: 'Visitante Teste', email: 'visitante@exemplo.com.br' };
     ['act_0009', 'act_0008', 'act_0002'].forEach((id) => {
@@ -312,9 +315,9 @@ describe('M07 nova atividade (SCR-M07-02, AC-M07-06, AC-M07-10)', () => {
       },
       true,
     );
-    // Quem conduz vai pelo nome; sem CRP cadastrado, a atividade não ganha número de inscrição profissional.
+    // Quem conduz vai pelo nome, sem "Dr."/"Dra.", com o CRP fictício do cadastro marcado "fictício".
     expect(mine.ok && mine.value.leaders[0]?.name).toBe('Jessica Rosa');
-    expect(mine.ok && mine.value.leaders[0]?.professionalRegistration).toBeUndefined();
+    expect(mine.ok && mine.value.leaders[0]?.professionalRegistration).toBe('CRP-04/00102 (fictício)');
   });
 
   it('a nova atividade guarda rascunho e oferece retomar (UX 5.12)', async () => {
@@ -340,18 +343,15 @@ describe('M07 detalhe, sigilo e privacidade (SCR-M07-03, AC-M07-07)', () => {
     expect(q(app, '[data-role="no-promise"]')?.textContent).toContain('não promete resultado terapêutico');
     expect(text(app, '[data-role="leader"]')).toContain('Jessica Rosa');
     expect(text(app, '[data-role="leader"]')).not.toMatch(/Dra?\./);
-    expect(text(app, '[data-role="leader"]')).not.toContain('CRP');
+    expect(text(app, '[data-role="leader"]')).toContain('fictício');
     expect(q(app, '[data-role="min-plan"]')?.textContent).toContain('Planos Cuida e Sustenta');
     expect(text(app, '[data-role="contract"]')).toContain('o que for dito no grupo fica no grupo');
     expect(text(app)).not.toMatch(FORBIDDEN_WORDS);
   });
 
-  // Defeito conhecido: a semente (`build-ops.ts`, `psy`) grava `professionalRegistration` como " (fictício)" mesmo com o CRP
-  // vazio, e o detalhe mostra "Jessica Rosa · Inscrição profissional  (fictício)". Quando for corrigido, este teste passa
-  // a falhar: aí se tira o `.fails`.
-  it('sem CRP cadastrado, o detalhe não mostra "Inscrição profissional"', async () => {
+  it('o detalhe mostra a "Inscrição profissional" com o CRP fictício, sem "Dr."/"Dra."', async () => {
     const app = await bootApp({ userId: 'u3', url: '/app/grupos/act_0001' });
-    expect(text(app, '[data-role="leader"]').trim()).toBe('Jessica Rosa');
+    expect(text(app, '[data-role="leader"]').trim()).toBe('Jessica Rosa · Inscrição profissional CRP-04/00102 (fictício)');
   });
 
   it('a sócia vê só códigos; o atendimento não vê quem está na terapia em grupo; o RT valida o enquadramento', async () => {

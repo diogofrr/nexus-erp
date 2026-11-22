@@ -15,6 +15,7 @@ import { MoodValue, moodLabel } from '../../ui/cg-mood.component';
 import { leadersShort, withArticle } from '../../state/people-format';
 import { InviteKind, capitalize, greetingFor, inviteKindFor } from './today-rules';
 import { WellbeingCheckService, WellbeingError } from '../../../../core/care/wellbeing-check.service';
+import { CaregiverActivitiesService } from '../../../../core/groups/caregiver-activities.service';
 
 /** Quantas linhas de remédio Hoje mostra de cara (S-36): o resto fica atrás de "Ver todos". */
 export const TODAY_DOSE_ROWS = 4;
@@ -71,6 +72,7 @@ export class TodayViewService {
   private readonly clock = inject(Clock);
   private readonly doses = inject(DoseCheckService);
   private readonly wellbeing = inject(WellbeingCheckService);
+  private readonly activityOffers = inject(CaregiverActivitiesService);
 
   readonly greeting = computed(() => `${greetingFor(this.clock.now())}, ${this.ctx.firstName()}`);
   readonly dateLabel = computed(() => formatDayLong(this.ctx.today()));
@@ -223,7 +225,13 @@ export class TodayViewService {
     const mine = new Set(this.enrolled().map((m) => m.activityId));
     const activities = this.db.activities.list();
     const group = access.groupTherapy ? nextOpenMeetingOf('group_therapy', activities, now, mine) : null;
-    const training = access.trainingIncluded ? nextOpenMeetingOf('training', activities, now, mine) : null;
+    // Só convida para a capacitação que CABE na cota do mês (a oferta da inscrição é "incluída"): uma de 2 encontros
+    // com 1 de cota sairia avulsa, e o convite diria "Sem custo para você".
+    const caregiverId = this.ctx.caregiverId();
+    const includedTrainings = caregiverId
+      ? activities.filter((a) => a.kind === 'training' && this.activityOffers.offerFor(caregiverId, a).kind === 'included')
+      : [];
+    const training = access.trainingIncluded ? nextOpenMeetingOf('training', includedTrainings, now, mine) : null;
     const reading = this.readingOfTheDay();
     const available: InviteKind[] = [];
     if (canBookSession(this.ctx)) {

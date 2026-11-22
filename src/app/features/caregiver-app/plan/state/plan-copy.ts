@@ -63,7 +63,7 @@ export function planLines(planId: PlanId): Perk[] {
       ? 'Todas as capacitações do mês'
       : q.trainingsPerMonth === 0
         ? `Capacitações avulsas (${singlePriceText('training')})`
-        : `${limitText(q.trainingsPerMonth, 'capacitações')} incluídas`,
+        : limitText(q.trainingsPerMonth, 'capacitações'),
   );
   const card = line('card', 'credit-card', 'Cartão Nexus, com descontos nos parceiros');
   switch (planId) {
