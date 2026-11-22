@@ -54,6 +54,7 @@ Mapa área para rota base (fonte: `routing/caregiver-areas.ts`; o teste `routing
 | `plan` | `ROUTES` | `mais/plano` | `''` Meu plano | sessão |
 | `help` | `ROUTES` | `mais/ajuda` | `''` Falar com a Nexus | sessão |
 | `help` | `HELP_NOW_ROUTES` | `ajuda-agora` | `''` Ajuda agora | aberta |
+| `guide` | `ROUTES` | `mais/guia` | `''` Começando a cuidar, `perguntas` Perguntas frequentes | sessão |
 | `privacy` | `ROUTES` | `mais/privacidade` | `''` Privacidade e meus dados | sessão |
 
 Não está na tabela porque é da Base: `/cuidador` (vai a `hoje`), `/cuidador/mais` (porta de Mais) e `/cuidador/_kit` (catálogo do kit, só em desenvolvimento).

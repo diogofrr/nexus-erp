@@ -433,7 +433,7 @@ describe('Vida visual: as telas', () => {
     expect(avatar?.getAttribute('aria-hidden')).toBe('true');
     expect(text(avatar)).toBe('AF');
     const sections = Array.from(app.root.querySelectorAll('main .cg-list > li')).map((li) => Array.from(li.classList).find((c) => c.startsWith('cg-sec--')));
-    expect(sections).toEqual(['cg-sec--cuidar', 'cg-sec--mais', 'cg-sec--rotina', 'cg-sec--hoje', 'cg-sec--hoje', 'cg-sec--rede']);
+    expect(sections).toEqual(['cg-sec--cuidar', 'cg-sec--mais', 'cg-sec--rotina', 'cg-sec--cuidar', 'cg-sec--cuidar', 'cg-sec--hoje', 'cg-sec--hoje', 'cg-sec--rede']);
   });
 
   it('Buscar: as necessidades são ladrilhos com ícone, a tinta agrupa e o nome continua escrito', async () => {

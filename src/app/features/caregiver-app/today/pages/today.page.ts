@@ -27,6 +27,7 @@ import { CgNoteComponent } from '../../ui/cg-note.component';
 import { CgProgressRingComponent } from '../../ui/cg-progress-ring.component';
 import { CgSectionComponent } from '../../ui/cg-section.component';
 import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
+import { GuideProgressService } from '../../guide/state/guide-progress.service';
 
 /**
  * Hoje (UX C4, `/cuidador/hoje`): o que importa hoje, sem painel. Um herói (a saudação e a data) e duas colunas bem
@@ -157,6 +158,16 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
             <app-cg-card title="Prefere falar com a gente?" variant="soft" icon="phone" data-role="phone-card">
               <p class="today-phone">{{ phone }}</p>
               <button cgCardFooter type="button" class="btn" (click)="contact.open()">Como falar com a gente</button>
+            </app-cg-card>
+          }
+
+          @if (guide.showOnToday()) {
+            <app-cg-card title="Começou a cuidar agora?" icon="sprout" class="cg-sec--cuidar" data-role="guide-card">
+              <span>O essencial para os primeiros dias, passo a passo. {{ guide.progressText() }}.</span>
+              <span cgCardFooter class="today-actions">
+                <a class="btn btn--primary" routerLink="/cuidador/mais/guia">Ver por onde começar</a>
+                <button type="button" class="cg-link-btn" data-role="guide-hide" (click)="guide.hideOnToday()">Não mostrar mais aqui</button>
+              </span>
             </app-cg-card>
           }
 
@@ -303,6 +314,7 @@ import { TODAY_DOSE_ROWS, TodayViewService } from '../state/today-view.service';
 })
 export class TodayPage {
   protected readonly view = inject(TodayViewService);
+  protected readonly guide = inject(GuideProgressService);
   protected readonly ctx = inject(CaregiverContextService);
   protected readonly contact = inject(ContactDialogService);
   protected readonly online = inject(OnlineStatusService);

@@ -14,6 +14,7 @@ const EXPECTED: readonly [string, string, 'session' | 'open'][] = [
   ['my-wellbeing', 'cuidar-de-mim/como-estou', 'session'],
   ['help', 'mais/ajuda', 'session'],
   ['help', 'ajuda-agora', 'open'],
+  ['guide', 'mais/guia', 'session'],
   ['privacy', 'mais/privacidade', 'session'],
   ['network', 'rede', 'session'],
   ['card', 'rede/cartao', 'session'],
@@ -27,8 +28,8 @@ describe('Mapa de áreas do aplicativo do cuidador', () => {
     expect(CAREGIVER_AREAS.map((a) => [a.id, a.mount, a.access])).toEqual(EXPECTED);
   });
 
-  it('as 13 áreas de página existem e os trechos de montagem não se repetem', () => {
-    expect(new Set(CAREGIVER_AREAS.map((a) => a.id)).size).toBe(13);
+  it('as 14 áreas de página existem e os trechos de montagem não se repetem', () => {
+    expect(new Set(CAREGIVER_AREAS.map((a) => a.id)).size).toBe(14);
     expect(new Set(CAREGIVER_AREAS.map((a) => a.mount)).size).toBe(CAREGIVER_AREAS.length);
   });
 

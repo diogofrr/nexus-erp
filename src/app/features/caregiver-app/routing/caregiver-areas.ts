@@ -96,6 +96,14 @@ export const CAREGIVER_AREAS: readonly CaregiverArea[] = [
     load: () => import('../help/help.routes').then((m) => m.HELP_NOW_ROUTES),
   },
   {
+    id: 'guide',
+    owner: 'P2',
+    mount: 'mais/guia',
+    access: 'session',
+    exportName: 'ROUTES',
+    load: () => import('../guide/guide.routes').then((m) => m.ROUTES),
+  },
+  {
     id: 'privacy',
     owner: 'P2',
     mount: 'mais/privacidade',

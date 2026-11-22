@@ -12,11 +12,12 @@ import { CgRowComponent } from '../../ui/cg-row.component';
 import { CgSectionComponent } from '../../ui/cg-section.component';
 import { CgTextSizeComponent } from '../../ui/cg-text-size.component';
 import { CaregiverSignOutService } from '../caregiver-sign-out.service';
+import { GuideProgressService } from '../../guide/state/guide-progress.service';
 
 /**
  * Mais (a porta, UX C17; docs/20, regra de exibição 4): o que não é do dia a dia, em grupos com título. O herói traz o
  * nome da pessoa com a etiqueta do plano; depois três grupos de itens, **Conta** (Meu plano, Meu perfil, Família),
- * **Ajuda** (Falar com a Nexus, Ajuda agora) e **Privacidade** (Privacidade e meus dados); o painel **Tamanho da letra**;
+ * **Ajuda** (Começando a cuidar, Perguntas frequentes, Falar com a Nexus, Ajuda agora) e **Privacidade** (Privacidade e meus dados); o painel **Tamanho da letra**;
  * e Sair. Meu plano é um item como os outros: o apoio é informação neutra ("Cuida · R$ 119,90 por mês", "Livre · sem
  * custo", "Muda para o Livre em 13/11"), sem chamada, contador, ponto de notificação nem selo de novidade. Sair não pede
  * confirmação (é reversível: entrar de novo). A porta é da Base; as telas de dentro são das áreas `plan`, `help`,
@@ -75,6 +76,12 @@ import { CaregiverSignOutService } from '../caregiver-sign-out.service';
 
         <app-cg-section title="Ajuda" data-role="group-help">
           <ul class="cg-list">
+            <li class="cg-sec--cuidar">
+              <app-cg-row title="Começando a cuidar" [description]="guideLine()" icon="sprout" link="/cuidador/mais/guia" />
+            </li>
+            <li class="cg-sec--cuidar">
+              <app-cg-row title="Perguntas frequentes" description="Respostas curtas para as dúvidas mais comuns" icon="circle-help" link="/cuidador/mais/guia/perguntas" />
+            </li>
             <li class="cg-sec--hoje">
               <app-cg-row title="Falar com a Nexus" description="Aplicativo, WhatsApp e telefone" icon="messages-square" link="/cuidador/mais/ajuda" />
             </li>
@@ -114,6 +121,12 @@ export class MoreHubPageComponent {
   protected readonly contact = inject(ContactDialogService);
   private readonly db = inject(Database);
   private readonly signOutService = inject(CaregiverSignOutService);
+  private readonly guide = inject(GuideProgressService);
+
+  /** "O essencial para os primeiros dias" até a pessoa marcar um passo; depois, "3 de 9 passos feitos". */
+  protected readonly guideLine = computed(() =>
+    this.guide.doneCount() === 0 ? 'O essencial para os primeiros dias' : this.guide.progressText(),
+  );
 
   /** As iniciais do nome, no avatar (decorativo: o nome vem escrito ao lado). */
   protected readonly initials = computed(() => initialsOf(this.ctx.caregiver()?.fullName ?? ''));

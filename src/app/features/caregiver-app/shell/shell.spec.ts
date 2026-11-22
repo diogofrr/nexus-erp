@@ -362,12 +362,14 @@ describe('Mais, a porta da Base (UX C17)', () => {
     expect(text(q('.cg-who app-cg-plan-tag'))).toBe('Plano Cuida');
     expect(all('app-cg-section h2.cg-section__title').map(text)).toEqual(['Conta', 'Ajuda', 'Privacidade']);
     expect(all('[data-role="group-account"] .cg-row__title').map(text)).toEqual(['Meu plano', 'Meu perfil', 'Família']);
-    expect(all('[data-role="group-help"] .cg-row__title').map(text)).toEqual(['Falar com a Nexus', 'Ajuda agora']);
+    expect(all('[data-role="group-help"] .cg-row__title').map(text)).toEqual(['Começando a cuidar', 'Perguntas frequentes', 'Falar com a Nexus', 'Ajuda agora']);
     expect(all('[data-role="group-privacy"] .cg-row__title').map(text)).toEqual(['Privacidade e meus dados']);
     expect(all('.cg-list .cg-row').map((a) => a.getAttribute('href'))).toEqual([
       '/cuidador/mais/plano',
       '/cuidador/mais/perfil',
       '/cuidador/mais/familia',
+      '/cuidador/mais/guia',
+      '/cuidador/mais/guia/perguntas',
       '/cuidador/mais/ajuda',
       '/cuidador/ajuda-agora',
       '/cuidador/mais/privacidade',
@@ -396,10 +398,10 @@ describe('Mais, a porta da Base (UX C17)', () => {
 
   it('pedido de dados em andamento muda o apoio de Privacidade (Raimunda)', async () => {
     app = await bootCaregiverApp('cg_0018', { url: '/cuidador/mais' });
-    expect(rows()[5]).toContain('Há um pedido em andamento');
+    expect(rows()[7]).toContain('Há um pedido em andamento');
     TestBed.resetTestingModule();
     app = await bootCaregiverApp('cg_0001', { url: '/cuidador/mais' });
-    expect(rows()[5]).toContain('Suas autorizações, cópia e eliminação dos dados');
+    expect(rows()[7]).toContain('Suas autorizações, cópia e eliminação dos dados');
   });
 
   it('"Como falar com a gente" abre o diálogo', async () => {
