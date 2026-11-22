@@ -93,7 +93,7 @@ export class GroupMembershipService {
   /**
    * O que a inscrição custa e se consome cota, pela regra do docs/20 (a MESMA para a equipe e para o cuidador):
    * terapia em grupo só Cuida e Sustenta (incluída na cota, senão avulsa); capacitação incluída quando cabe na cota,
-   * senão avulsa a R$ 40,00 o encontro, em qualquer plano.
+   * senão avulsa pelo valor desta capacitação, em qualquer plano.
    */
   offerFor(activity: Activity, caregiverId: ID): EnrollmentOffer {
     return enrollmentOffer(

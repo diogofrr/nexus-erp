@@ -41,10 +41,12 @@ describe('encontros vistos pelo cuidador (docs/20; RN-GRP-03, 09, 13, 17)', () =
 
   it('capacitação incluída ou avulsa; terapia em grupo travada no Livre e no Essencial', () => {
     // Maria (Essencial) já usou as 2 capacitações de novembro na G2: a G9 sai avulsa.
-    expect(standing('cg_0002', 'act_0009')).toMatchObject({ kind: 'can_join', full: false, offer: { kind: 'paid', priceCents: 4000 } });
-    // João (Livre): toda capacitação é avulsa, R$ 40,00 por encontro (a G9 tem 1 encontro em novembro, a G2 tem 2).
-    expect(standing('cg_0003', 'act_0009')).toMatchObject({ kind: 'can_join', offer: { kind: 'paid', priceCents: 4000, meetings: 1 } });
-    expect(standing('cg_0003', 'act_0002')).toMatchObject({ kind: 'can_join', offer: { kind: 'paid', priceCents: 8000, meetings: 2 } });
+    expect(standing('cg_0002', 'act_0009')).toMatchObject({ kind: 'can_join', full: false, offer: { kind: 'paid', priceCents: 4500 } });
+    // João (Livre): toda capacitação é avulsa, pelo valor DELA (G9 R$ 45,00 com 1 encontro; G2 R$ 95,00 com 2), não encontros x valor fixo.
+    expect(standing('cg_0003', 'act_0009')).toMatchObject({ kind: 'can_join', offer: { kind: 'paid', priceCents: 4500, meetings: 1 } });
+    expect(standing('cg_0003', 'act_0002')).toMatchObject({ kind: 'can_join', offer: { kind: 'paid', priceCents: 9500, meetings: 2 } });
+    expect(db.activities.require('act_0002').priceCents).toBe(9500);
+    expect(db.activities.require('act_0009').priceCents).toBe(4500);
     expect(standing('cg_0001', 'act_0009')).toMatchObject({ kind: 'can_join', offer: { kind: 'included', priceCents: 0 } });
     ['cg_0002', 'cg_0003', 'cg_0026', 'cg_0016'].forEach((id) => expect(standing(id, 'act_0008').kind).toBe('plan_locked'));
     // Ana já usou os 2 encontros de terapia em grupo de novembro na G1: a G8 sai avulsa (R$ 60,00 por encontro).
@@ -92,18 +94,18 @@ describe('encontros vistos pelo cuidador (docs/20; RN-GRP-03, 09, 13, 17)', () =
       paid: false,
       priceCents: 0,
     });
-    // João (Livre) paga toda capacitação avulsa (pagamento simulado): a G9 por 1 encontro, a G2 por 2.
+    // João (Livre) paga toda capacitação avulsa, pelo valor de cada uma (pagamento simulado): G9 R$ 45,00, G2 R$ 95,00.
     service.enroll('cg_0003', 'act_0009', { contractAccepted: true });
     expect(db.activityEnrollments.find((e) => e.activityId === 'act_0009' && e.caregiverId === 'cg_0003')).toMatchObject({
       includedInPlan: false,
       paid: true,
-      priceCents: 4000,
+      priceCents: 4500,
     });
     service.enroll('cg_0003', 'act_0002', { contractAccepted: true });
     expect(db.activityEnrollments.find((e) => e.activityId === 'act_0002' && e.caregiverId === 'cg_0003')).toMatchObject({
       includedInPlan: false,
       paid: true,
-      priceCents: 8000,
+      priceCents: 9500,
     });
     expect(service.enroll('cg_0027', 'act_0009', { contractAccepted: true })).toEqual({ ok: false, error: 'Você já está neste encontro.' });
   });

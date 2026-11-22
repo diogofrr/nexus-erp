@@ -4,7 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth';
 import { Database } from '@core/data';
 import { planIdOfCaregiver } from '@core/data/plan-lookup';
-import { formatDate, formatDateTime, formatPercent, formatTime } from '@core/format';
+import { formatDate, formatDateTime, formatMoney, formatPercent, formatTime } from '@core/format';
 import { GroupMembershipService } from '@core/groups';
 import { ActivityEnrollment } from '@core/models';
 import {
@@ -129,6 +129,9 @@ interface ParticipantRow {
             <dt>Modalidade</dt><dd>{{ modeText() }}</dd>
             <dt>Quem pode participar</dt><dd data-role="min-plan">{{ a.minPlan ? 'Planos Cuida e Sustenta' : a.kind === 'training' ? 'Todos os planos (incluída conforme o plano, senão avulsa)' : 'Todos, inclusive sem cadastro' }}</dd>
             <dt>Vagas</dt><dd>{{ a.capacity }}</dd>
+            @if (a.kind === 'training' && a.priceCents) {
+              <dt>Valor avulso</dt><dd data-role="price">{{ money(a.priceCents) }} (a capacitação inteira; incluída para quem tem no plano)</dd>
+            }
             @if (a.partnerOrg) {
               <dt>Em parceria com</dt><dd>{{ a.partnerOrg }}</dd>
             }
@@ -251,6 +254,7 @@ interface ParticipantRow {
   `,
 })
 export class ActivityDetailPageComponent {
+  protected readonly money = formatMoney;
   private readonly db = inject(Database);
   private readonly auth = inject(AuthService);
   private readonly svc = inject(GroupsService);

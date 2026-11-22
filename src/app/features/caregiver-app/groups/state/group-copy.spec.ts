@@ -58,16 +58,22 @@ describe('textos de Grupos e capacitações (UX C10)', () => {
 
 describe('valor do encontro (docs/20)', () => {
   const base = { meetings: 2, month: '2026-11' } as const;
-  it('bloqueado não diz valor; capacitação incluída diz a cota; avulsa diz o valor, e no Livre o convite neutro', async () => {
+  it('bloqueado não diz valor; capacitação incluída diz a cota; avulsa diz o valor DELA em qualquer plano', async () => {
     const { offerLine, paidDetail } = await import('./group-copy');
     expect(offerLine('group_therapy', { ...base, kind: 'blocked', priceCents: 0, usage: null }, 'livre')).toBeNull();
     expect(offerLine('training', { ...base, kind: 'included', priceCents: 0, usage: { limit: 'all', used: 0, left: 'all' } }, 'cuida')).toBe('Incluída no seu plano');
     expect(offerLine('training', { ...base, kind: 'included', priceCents: 0, usage: { limit: 2, used: 0, left: 2 } }, 'essencial')).toBe(
       'Incluída no seu plano (2 de 2 neste mês)',
     );
-    const paid = { ...base, kind: 'paid' as const, priceCents: 8000, usage: { limit: 0, used: 0, left: 0 } };
-    expect(offerLine('training', paid, 'livre')).toBe('Você pode participar pagando por encontro');
-    expect(offerLine('training', paid, 'essencial')).toBe('R$ 40,00 por encontro');
-    expect(paidDetail('training', paid)).toContain('R$ 40,00 por encontro: R$ 80,00 por 2 encontros neste mês.');
+    const paid = { ...base, kind: 'paid' as const, priceCents: 4500, usage: { limit: 0, used: 0, left: 0 } };
+    expect(offerLine('training', paid, 'livre')).toBe('Avulsa: R$ 45,00');
+    expect(offerLine('training', paid, 'essencial')).toBe('Avulsa: R$ 45,00');
+    expect(paidDetail('training', paid)).toBe(
+      'Valor desta capacitação: R$ 45,00, com todos os encontros. O pagamento é combinado depois. No protótipo não há cobrança.',
+    );
+    // A terapia em grupo continua por encontro do mês.
+    const therapy = { ...base, kind: 'paid' as const, priceCents: 12000, usage: { limit: 2, used: 2, left: 0 } };
+    expect(offerLine('group_therapy', therapy, 'cuida')).toBe('R$ 60,00 por encontro');
+    expect(paidDetail('group_therapy', therapy)).toContain('R$ 60,00 por encontro: R$ 120,00 por 2 encontros neste mês.');
   });
 });

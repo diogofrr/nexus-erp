@@ -55,7 +55,7 @@ interface ActivityCard {
   next: string;
   format: string;
   seats: string;
-  /** "Incluída no seu plano", "R$ 40,00 por encontro" ou nada. */
+  /** "Incluída no seu plano", "Avulsa: R$ 45,00" ou nada. */
   offer: string | null;
   /** "Com Marina Gomes": quem conduz (na terapia em grupo, a pessoa da equipe de psicologia). */
   leader: string | null;

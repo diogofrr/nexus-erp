@@ -79,6 +79,15 @@ describe('M04 Planos, assinaturas e Cartão Nexus', () => {
       expect(q('table.table--stack')).toBeNull();
     });
 
+    it('capacitação sem valor fixo: o Livre lê "Avulsas, com o valor de cada uma" e ninguém lê "R$ 40,00 por encontro"', async () => {
+      await open('u7', '/app/assinaturas/planos');
+      const row = all('tbody tr').find((r) => text(r).startsWith('Capacitações incluídas por mês'));
+      expect(row).toBeTruthy();
+      expect(text(row ?? null)).toContain('Avulsas, com o valor de cada uma');
+      expect(text(row ?? null)).toContain('2 capacitações por mês');
+      expect(text(q('main'))).not.toContain('R$ 40,00 por encontro');
+    });
+
     it('o valor médio e o líquido (realizado e de referência) aparecem só para a gestão', async () => {
       await open('u1', '/app/assinaturas/planos');
       expect(text(q('main'))).toContain('Valor médio e líquido por assinante');

@@ -57,6 +57,11 @@ export interface Activity extends Audited {
   meetings: ActivityMeeting[];
   /** Padrão 12 (editável). */
   capacity: number;
+  /**
+   * Capacitação: o valor avulso DESTA capacitação (todos os encontros), definido pela equipe ao criar (decisão do dono,
+   * 22/11/2026: não há valor fixo de capacitação). Ausente na terapia em grupo (o avulso dela é por encontro).
+   */
+  priceCents?: Cents;
   status: ActivityStatus;
   /** `cuida` na terapia em grupo (Cuida e Sustenta); `null` = aberta a todos os cadastrados (capacitação). */
   minPlan: 'cuida' | null;

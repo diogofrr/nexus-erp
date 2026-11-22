@@ -42,7 +42,8 @@ describe('textos de Meu plano (docs/20; UX C18 e B9)', () => {
   it('o Livre não tem o Cartão como destaque nem em lugar nenhum; nenhum plano cita Zarit', () => {
     const livre = planLines('livre').map((p) => p.label).join(' ');
     expect(livre).not.toMatch(/cart[ãa]o/i);
-    expect(livre).toContain('Capacitações avulsas (R$ 40,00 por encontro)');
+    expect(livre).toContain('Capacitações avulsas, com o valor de cada uma');
+    expect(livre).not.toContain('R$ 40,00');
     expect(livre).not.toMatch(/capacitação por mês|capacitações por mês/);
     expect(planLines('essencial').map((p) => p.label)).toContain('2 capacitações por mês');
     (['livre', 'essencial', 'cuida', 'sustenta'] as const).forEach((id) =>
@@ -51,7 +52,7 @@ describe('textos de Meu plano (docs/20; UX C18 e B9)', () => {
   });
 
   it('as linhas de cota do quadro (docs/20)', () => {
-    expect(quotaLines('livre').map((l) => l.value)).toEqual(['Não inclui', 'Não inclui', 'Avulsas, R$ 40,00 por encontro']);
+    expect(quotaLines('livre').map((l) => l.value)).toEqual(['Não inclui', 'Não inclui', 'Avulsas, com o valor de cada uma']);
     expect(quotaLines('essencial').map((l) => l.value)).toEqual(['Não inclui', 'Não inclui', '2 capacitações por mês']);
     expect(quotaLines('cuida').map((l) => l.value)).toEqual(['1 sessão por mês', '2 encontros por mês', 'Todas as do mês']);
     expect(quotaLines('sustenta').map((l) => l.value)).toEqual(['2 sessões por mês', '2 encontros por mês', 'Todas as do mês']);

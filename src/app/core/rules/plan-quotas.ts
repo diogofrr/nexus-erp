@@ -8,7 +8,8 @@
  * - **Cotas mensais não acumulam** (docs/20): o que não foi usado no mês não passa para o seguinte.
  * - Cancelamento com menos de 24 h consome a cota (RN-ATD-16): a sessão `no_show` continua contando.
  * - Avulsos (docs/20, suposições): sessão R$ 120,00; encontro de terapia em grupo R$ 60,00 (só Cuida e Sustenta, além da
- *   cota); capacitação R$ 40,00 por encontro (qualquer cadastrado, em qualquer plano). Pagamento simulado.
+ *   cota); capacitação pelo valor de cada uma (`Activity.priceCents`, definido pela equipe; sem valor fixo), para qualquer
+ *   cadastrado, em qualquer plano. Pagamento simulado.
  * - O desconto por plano na sessão (RN-ATD-05 antiga) deixou de existir: o que vale é a cota e o avulso.
  * - A cota de encontros conta os ENCONTROS do mês das atividades em que a pessoa está inscrita (não a inscrição): uma turma
  *   de terapia em grupo com dois encontros em novembro usa os 2 encontros da cota de novembro [suposição de protótipo].
@@ -75,17 +76,16 @@ export const PLAN_QUOTAS: Readonly<Record<PlanId, PlanQuotas>> = {
   },
 };
 
-/** O que se paga avulso. */
-export type SingleItemKind = 'individual_session' | 'group_therapy' | 'training';
+/** O que tem valor avulso fixo. A capacitação não está aqui: cada uma tem o seu valor (`Activity.priceCents`). */
+export type SingleItemKind = 'individual_session' | 'group_therapy';
 
 /** Valores de referência dos avulsos, em centavos (docs/20, suposições; editáveis aqui). */
 export const SINGLE_PRICES_CENTS: Readonly<Record<SingleItemKind, Cents>> = {
   individual_session: 12000,
   group_therapy: 6000,
-  training: 4000,
 };
 
-/** "R$ 40,00 por encontro", "R$ 120,00 por sessão" (sem depender do módulo de formato: centavos inteiros). */
+/** "R$ 60,00 por encontro", "R$ 120,00 por sessão" (sem depender do módulo de formato: centavos inteiros). */
 export function singlePriceText(kind: SingleItemKind, prices: Readonly<Record<SingleItemKind, Cents>> = SINGLE_PRICES_CENTS): string {
   const unit = kind === 'individual_session' ? 'sessão' : 'encontro';
   return `${formatCentsBr(prices[kind])} por ${unit}`;
@@ -150,7 +150,7 @@ export function meetingsInMonth(activity: Pick<Activity, 'meetings'>, month: Yea
 export const QUOTA_ENROLLMENT_STATUSES: readonly ActivityEnrollment['status'][] = ['enrolled', 'attended', 'absent'];
 
 type EnrollmentForQuota = Pick<ActivityEnrollment, 'activityId' | 'status' | 'includedInPlan'>;
-type ActivityForQuota = Pick<Activity, 'id' | 'kind' | 'meetings'>;
+type ActivityForQuota = Pick<Activity, 'id' | 'kind' | 'meetings'> & Partial<Pick<Activity, 'priceCents'>>;
 
 /** Encontros do tipo, no mês, das atividades incluídas no plano em que a pessoa está inscrita. */
 export function meetingsUsedInMonth(
@@ -202,7 +202,7 @@ export interface EnrollmentOffer {
 /**
  * Decide a oferta de uma inscrição (docs/20): terapia em grupo só Cuida e Sustenta, dentro
  * da cota incluída, além dela avulsa a R$ 60,00 o encontro; capacitação incluída quando os encontros do mês cabem na cota,
- * senão avulsa a R$ 40,00 o encontro (qualquer plano). O mês de referência é o do próximo encontro da atividade.
+ * senão avulsa pelo valor DESTA capacitação (qualquer plano). O mês de referência é o do próximo encontro da atividade.
  */
 export function enrollmentOffer(
   planId: PlanId,
@@ -225,7 +225,7 @@ export function enrollmentOffer(
   const quota = trainingQuota(planId, month, enrollments, activities);
   return fits(quota, meetings)
     ? { kind: 'included', meetings, priceCents: 0, usage: quota, month }
-    : { kind: 'paid', meetings, priceCents: meetings * prices.training, usage: quota, month };
+    : { kind: 'paid', meetings, priceCents: activity.priceCents ?? 0, usage: quota, month };
 }
 
 /** Os encontros cabem no que resta da cota (uma atividade sem encontro no mês cabe sempre)? */

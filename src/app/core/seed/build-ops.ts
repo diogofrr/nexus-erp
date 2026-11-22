@@ -41,11 +41,14 @@ const CONFIDENTIALITY =
  * | G7 | terapia em grupo | Prevenção de conflitos familiares (on-line) | rascunho | ninguém |
  * | G8 | terapia em grupo | Organização da rotina (on-line, 12 vagas, quinzenal: D+6, D+20, D+34) | aberta | ninguém (12 vagas) |
  * | G9 | capacitação | Primeiros socorros em casa (on-line, 12 vagas, D+8) | aberta | 2 do Cuida |
- * | G10 | capacitação | Higiene e banho no leito (presencial, 10 vagas, D+12 e D+19) | lotada | 10 do Livre (avulsa, R$ 40,00 por encontro); 2 na lista de espera |
+ * | G10 | capacitação | Higiene e banho no leito (presencial, 10 vagas, D+12 e D+19) | lotada | 10 do Livre (avulsa, R$ 80,00 a capacitação); 2 na lista de espera |
  *
  * As cotas do mês (docs/20) ficam coerentes: Ana usa os 2 encontros de terapia em grupo de novembro na G1 (a G8 fica
  * avulsa para ela); Lourdes e Elza usam os 2 na G3; Maria usa as 2 capacitações do Essencial na G2; João não está em nenhum encontro.
  */
+/** O valor avulso de cada capacitação da semente (G2, G5, G6, G9, G10), em centavos: cada uma tem o seu. */
+const TRAINING_PRICES_CENTS: Readonly<Record<number, number>> = { 2: 9500, 5: 7000, 6: 6000, 9: 4500, 10: 8000 };
+
 export function buildGroups(s: SeedState): void {
   const { ctx, c } = s;
 
@@ -94,6 +97,8 @@ export function buildGroups(s: SeedState): void {
         requiresEligibility: false,
         confidentialityText: CONFIDENTIALITY,
         ...(mode === 'in_person' ? { roomId: ROOM.girassol } : {}),
+        // Cada capacitação tem o seu valor avulso (sem valor fixo, decisão do dono em 22/11/2026).
+        ...(kind === 'training' ? { priceCents: TRAINING_PRICES_CENTS[n] ?? 5000 } : {}),
         ...extra,
       }),
     );
@@ -193,7 +198,8 @@ export function buildGroups(s: SeedState): void {
           : done.map((m) => ({ meetingId: m.id, present: true }));
     // Participante externo: sem cota e sem valor. Terapia em grupo e capacitação: incluída, salvo quando avulsa.
     const counts = 'caregiver' in who;
-    const unit = act.kind === 'group_therapy' ? SINGLE_PRICES_CENTS.group_therapy : SINGLE_PRICES_CENTS.training;
+    // Avulso: terapia em grupo por encontro do mês; capacitação pelo valor dela (a capacitação inteira).
+    const paidCents = act.kind === 'group_therapy' ? monthMeetings(act) * SINGLE_PRICES_CENTS.group_therapy : (act.priceCents ?? 0);
     c.activityEnrollments.push(
       ctx.entity<ActivityEnrollment>(ctx.nextId('enr'), ctx.dt(-30), {
         activityId: act.id,
@@ -203,7 +209,7 @@ export function buildGroups(s: SeedState): void {
         status,
         confidentialityAcceptedAt: ctx.dt(-30, '10:00'),
         attendance,
-        ...(counts ? { includedInPlan: !paid, paid, priceCents: paid ? monthMeetings(act) * unit : 0 } : { includedInPlan: false, paid: false, priceCents: 0 }),
+        ...(counts ? { includedInPlan: !paid, paid, priceCents: paid ? paidCents : 0 } : { includedInPlan: false, paid: false, priceCents: 0 }),
         ...extra,
       }),
     );

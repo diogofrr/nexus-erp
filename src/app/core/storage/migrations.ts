@@ -6,7 +6,7 @@
  */
 
 /** Versão atual do esquema dos dados (também gravada nas exportações JSON). */
-export const SCHEMA_VERSION = '3';
+export const SCHEMA_VERSION = '4';
 
 /** Acesso restrito que uma migração recebe para ler e reescrever coleções. */
 export interface MigrationContext {
@@ -117,8 +117,36 @@ export const MIGRATION_V2_TO_V3: Migration = {
   },
 };
 
+/**
+ * v3 para v4: cada capacitação passa a ter o seu valor avulso (`priceCents`, decisão do dono em 22/11/2026: sem valor
+ * fixo). Nos dados já guardados, a capacitação sem valor recebe R$ 40,00 por encontro, contando TODOS
+ * os encontros (o valor agora é da capacitação inteira; a regra antiga cobrava só os encontros do mês). A equipe ajusta
+ * o valor de cada uma na tela da atividade.
+ */
+export const MIGRATION_V3_TO_V4: Migration = {
+  from: '3',
+  to: '4',
+  description: 'Valor avulso próprio em cada capacitação.',
+  run(ctx) {
+    const activities = rows(ctx, 'activities');
+    if (!activities || !activities.some((a) => a['kind'] === 'training' && a['priceCents'] === undefined)) {
+      return;
+    }
+    ctx.write(
+      'activities',
+      activities.map((a) => {
+        if (a['kind'] !== 'training' || a['priceCents'] !== undefined) {
+          return a;
+        }
+        const meetings = Array.isArray(a['meetings']) ? a['meetings'].length : 1;
+        return { ...a, priceCents: Math.max(1, meetings) * 4000 };
+      }),
+    );
+  },
+};
+
 /** Cadeia de migrações. */
-export const MIGRATIONS: readonly Migration[] = [MIGRATION_V1_TO_V2, MIGRATION_V2_TO_V3];
+export const MIGRATIONS: readonly Migration[] = [MIGRATION_V1_TO_V2, MIGRATION_V2_TO_V3, MIGRATION_V3_TO_V4];
 
 export type MigrationPlan =
   | { kind: 'none' }

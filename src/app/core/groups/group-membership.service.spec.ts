@@ -42,11 +42,14 @@ describe('cotas e oferta da inscrição (docs/20)', () => {
     expect(membership.groupTherapyQuotaOf('cg_0001')).toEqual({ limit: 2, used: 2, left: 0 });
     expect(membership.offerFor(db.activities.require('act_0008'), 'cg_0001')).toMatchObject({ kind: 'paid', priceCents: 12000 });
     expect(membership.trainingQuotaOf('cg_0002')).toEqual({ limit: 2, used: 2, left: 0 });
-    expect(membership.offerFor(db.activities.require('act_0009'), 'cg_0002')).toMatchObject({ kind: 'paid', priceCents: 4000 });
-    // João (Livre): nenhuma capacitação incluída; a G9 (1 encontro) e a G2 (2 encontros) saem avulsas.
+    expect(membership.offerFor(db.activities.require('act_0009'), 'cg_0002')).toMatchObject({ kind: 'paid', priceCents: 4500 });
+    // João (Livre): nenhuma capacitação incluída; a G9 (1 encontro) e a G2 (2 encontros) saem avulsas, pelo valor de cada uma.
     expect(membership.trainingQuotaOf('cg_0003')).toEqual({ limit: 0, used: 0, left: 0 });
-    expect(membership.offerFor(db.activities.require('act_0009'), 'cg_0003')).toMatchObject({ kind: 'paid', priceCents: 4000, meetings: 1 });
-    expect(membership.offerFor(db.activities.require('act_0002'), 'cg_0003')).toMatchObject({ kind: 'paid', priceCents: 8000, meetings: 2 });
+    expect(membership.offerFor(db.activities.require('act_0009'), 'cg_0003')).toMatchObject({ kind: 'paid', priceCents: 4500, meetings: 1 });
+    expect(membership.offerFor(db.activities.require('act_0002'), 'cg_0003')).toMatchObject({ kind: 'paid', priceCents: 9500, meetings: 2 });
+    // Se a equipe muda o valor da capacitação, a oferta muda junto (o número de encontros não entra na conta).
+    db.activities.update('act_0002', { priceCents: 12345 });
+    expect(membership.offerFor(db.activities.require('act_0002'), 'cg_0003')).toMatchObject({ kind: 'paid', priceCents: 12345, meetings: 2 });
     expect(membership.offerFor(db.activities.require('act_0009'), 'cg_0001')).toMatchObject({ kind: 'included', priceCents: 0 });
     // Sem roda de conversa: nenhum encontro sai de graça fora da cota; a terapia em grupo segue fechada para o Livre.
     expect(membership.offerFor(db.activities.require('act_0008'), 'cg_0003').kind).toBe('blocked');

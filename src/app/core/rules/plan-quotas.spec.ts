@@ -21,10 +21,16 @@ const session = (startAt: string, status: CareSession['status'], includedInPlan 
   includedInPlan,
 });
 
-const act = (id: string, kind: Activity['kind'], dates: string[]): Pick<Activity, 'id' | 'kind' | 'meetings'> => ({
+const act = (
+  id: string,
+  kind: Activity['kind'],
+  dates: string[],
+  priceCents?: number,
+): Pick<Activity, 'id' | 'kind' | 'meetings' | 'priceCents'> => ({
   id,
   kind,
   meetings: dates.map((d, i) => ({ id: `${id}_m${i}`, startAt: `${d}T14:00:00-03:00`, endAt: `${d}T16:00:00-03:00`, done: false })),
+  ...(priceCents === undefined ? {} : { priceCents }),
 });
 
 const enr = (activityId: string, status: ActivityEnrollment['status'] = 'enrolled', includedInPlan = true): Pick<ActivityEnrollment, 'activityId' | 'status' | 'includedInPlan'> => ({
@@ -44,9 +50,10 @@ describe('cotas mensais por plano (docs/20)', () => {
     expect(PLAN_QUOTAS.sustenta.networkDifferentiated).toBe(true);
   });
 
-  it('avulsos: sessão R$ 120,00, terapia em grupo R$ 60,00 e capacitação R$ 40,00 por encontro', () => {
-    expect(SINGLE_PRICES_CENTS).toEqual({ individual_session: 12000, group_therapy: 6000, training: 4000 });
-    expect(singlePriceText('training')).toBe('R$ 40,00 por encontro');
+  it('avulsos fixos: sessão R$ 120,00 e terapia em grupo R$ 60,00 por encontro; a capacitação não tem valor fixo', () => {
+    expect(SINGLE_PRICES_CENTS).toEqual({ individual_session: 12000, group_therapy: 6000 });
+    expect(Object.keys(SINGLE_PRICES_CENTS)).not.toContain('training');
+    expect(singlePriceText('group_therapy')).toBe('R$ 60,00 por encontro');
     expect(singlePriceText('individual_session')).toBe('R$ 120,00 por sessão');
   });
 
@@ -90,15 +97,28 @@ describe('cotas mensais por plano (docs/20)', () => {
   });
 
   it('a oferta da capacitação: Livre sempre avulsa; Essencial incluída até 2 encontros no mês; Cuida sempre incluída', () => {
-    const t1 = act('t1', 'training', ['2026-11-14', '2026-11-21']);
-    const t2 = act('t2', 'training', ['2026-11-12']);
-    expect(enrollmentOffer('livre', t1, '2026-11', [], [t1])).toMatchObject({ kind: 'paid', priceCents: 8000 });
+    const t1 = act('t1', 'training', ['2026-11-14', '2026-11-21'], 9500);
+    const t2 = act('t2', 'training', ['2026-11-12'], 4500);
+    // Avulsa custa o valor DESTA capacitação (a capacitação inteira), não encontros vezes um valor fixo.
+    expect(enrollmentOffer('livre', t1, '2026-11', [], [t1])).toMatchObject({ kind: 'paid', priceCents: 9500, meetings: 2 });
     // Nem a de 1 encontro cabe: o Livre não tem capacitação incluída.
-    expect(enrollmentOffer('livre', t2, '2026-11', [], [t1, t2])).toMatchObject({ kind: 'paid', priceCents: 4000, meetings: 1 });
+    expect(enrollmentOffer('livre', t2, '2026-11', [], [t1, t2])).toMatchObject({ kind: 'paid', priceCents: 4500, meetings: 1 });
     expect(trainingQuota('livre', '2026-11', [], [t1, t2])).toEqual({ limit: 0, used: 0, left: 0 });
     expect(enrollmentOffer('essencial', t1, '2026-11', [], [t1, t2])).toMatchObject({ kind: 'included', priceCents: 0 });
-    expect(enrollmentOffer('essencial', t2, '2026-11', [enr('t1')], [t1, t2])).toMatchObject({ kind: 'paid', priceCents: 4000 });
+    expect(enrollmentOffer('essencial', t2, '2026-11', [enr('t1')], [t1, t2])).toMatchObject({ kind: 'paid', priceCents: 4500 });
     expect(enrollmentOffer('cuida', t2, '2026-11', [enr('t1')], [t1, t2]).kind).toBe('included');
+  });
+
+  it('a capacitação avulsa usa o valor dela, com qualquer número de encontros no mês; terapia em grupo segue por encontro', () => {
+    const three = act('t3', 'training', ['2026-11-05', '2026-11-12', '2026-11-19'], 7000);
+    const crossing = act('t4', 'training', ['2026-11-26', '2026-12-03'], 6000);
+    expect(enrollmentOffer('livre', three, '2026-11', [], [three])).toMatchObject({ kind: 'paid', meetings: 3, priceCents: 7000 });
+    expect(enrollmentOffer('livre', crossing, '2026-11', [], [crossing])).toMatchObject({ kind: 'paid', meetings: 1, priceCents: 6000 });
+    // Sem valor cadastrado (não deveria acontecer depois da migração v3 para v4), a oferta não inventa preço.
+    expect(enrollmentOffer('livre', act('t5', 'training', ['2026-11-05']), '2026-11', [], []).priceCents).toBe(0);
+    const g1 = act('g1', 'group_therapy', ['2026-11-07', '2026-11-21']);
+    const g2 = act('g2', 'group_therapy', ['2026-11-10', '2026-11-24']);
+    expect(enrollmentOffer('cuida', g2, '2026-11', [enr('g1')], [g1, g2])).toMatchObject({ kind: 'paid', priceCents: 12000 });
   });
 
   it('as frases: "Neste mês: 1 de 2 sessões usadas", "Incluída no seu plano (1 de 2 neste mês)", "2 sessões por mês"', () => {

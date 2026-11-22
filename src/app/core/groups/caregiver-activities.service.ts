@@ -38,7 +38,7 @@ export const GROUP_THERAPY_PLAN_BLOCKED = 'A terapia em grupo faz parte dos plan
  * - Só aparecem encontros abertos, lotados ou em andamento (rascunho, cancelado e encerrado não).
  * - **Regra de exibição 2 do docs/20**: o que o plano não dá acesso NÃO é listado (nem como vitrine). Livre e Essencial
  *   veem capacitações; Cuida e Sustenta veem tudo. Quem já está inscrita vê o que é dela (RN-GRP-17).
- * - Capacitação: todos os cadastrados, incluída quando cabe na cota, senão avulsa a R$ 40,00
+ * - Capacitação: todos os cadastrados, incluída quando cabe na cota, senão avulsa pelo valor dela
  *   o encontro (pagamento simulado). Terapia em grupo: só Cuida e Sustenta, 2 encontros por mês na cota, além dela avulsa.
  * - O aceite do contrato de sigilo é obrigatório e é gravado com data e hora (RN-GRP-09).
  * - Nenhuma frase fala de pontuação, faixa ou alerta (RN-PLN-19).

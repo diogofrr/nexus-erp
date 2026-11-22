@@ -60,29 +60,35 @@ export function seatsText(free: number): string {
 }
 
 /**
- * A linha de valor do cartão e do detalhe (docs/20): capacitação "Incluída no seu plano" ou o valor
- * avulso ("Você pode participar pagando por encontro" no Livre); terapia em grupo "Incluída no seu plano" ou o avulso.
+ * A linha de valor do cartão e do detalhe (docs/20): capacitação "Incluída no seu plano" ou "Avulsa: R$ 45,00" (o valor
+ * DESTA capacitação); terapia em grupo "Incluída no seu plano" ou o avulso por encontro.
  * `null` quando não há nada a dizer. Nunca fala do que o plano não inclui.
  */
-export function offerLine(kind: ActivityKind, offer: EnrollmentOffer, planId: PlanId): string | null {
+export function offerLine(kind: ActivityKind, offer: EnrollmentOffer, _planId: PlanId): string | null {
   if (offer.kind === 'blocked') {
     return null;
   }
   if (offer.kind === 'included') {
     return offer.usage ? includedSentence(offer.usage, offer.meetings) : 'Incluída no seu plano';
   }
-  if (kind === 'training' && planId === 'livre') {
-    return 'Você pode participar pagando por encontro';
+  if (kind === 'training') {
+    return `Avulsa: ${formatMoney(offer.priceCents)}`;
   }
-  return singlePriceText(kind === 'training' ? 'training' : 'group_therapy');
+  return singlePriceText('group_therapy');
 }
 
-/** O detalhe do valor avulso na folha de inscrição: "R$ 40,00 por encontro: R$ 80,00 por 2 encontros neste mês." */
+/**
+ * O detalhe do valor avulso na folha de inscrição. Capacitação: "Valor desta capacitação: R$ 95,00, com todos os
+ * encontros." Terapia em grupo: "R$ 60,00 por encontro: R$ 120,00 por 2 encontros neste mês."
+ */
 export function paidDetail(kind: ActivityKind, offer: EnrollmentOffer): string | null {
   if (offer.kind !== 'paid') {
     return null;
   }
-  const unit = kind === 'training' ? SINGLE_PRICES_CENTS.training : SINGLE_PRICES_CENTS.group_therapy;
+  if (kind === 'training') {
+    return `Valor desta capacitação: ${formatMoney(offer.priceCents)}, com todos os encontros. O pagamento é combinado depois. No protótipo não há cobrança.`;
+  }
+  const unit = SINGLE_PRICES_CENTS.group_therapy;
   const count = offer.meetings;
   return `${formatMoney(unit)} por encontro: ${formatMoney(offer.priceCents)} por ${count} ${count === 1 ? 'encontro' : 'encontros'} neste mês. O pagamento é combinado depois. No protótipo não há cobrança.`;
 }

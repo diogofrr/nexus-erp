@@ -87,18 +87,23 @@ describe('Área groups (Encontros)', () => {
       }
     });
 
-    it('a capacitação diz se é incluída ou o valor: Maria (2 de 2 usadas) paga a próxima; o Livre lê "Você pode participar pagando por encontro"', async () => {
+    it('a capacitação diz se é incluída ou o valor dela: Maria (2 de 2 usadas) paga a próxima; o Livre lê o valor de cada uma', async () => {
       const maria = await bootCaregiverApp('cg_0002', { url: URL });
-      expect(norm(card(maria, 'Primeiros socorros em casa')?.querySelector('[data-role="card-offer"]')?.textContent)).toBe('R$ 40,00 por encontro');
+      expect(norm(card(maria, 'Primeiros socorros em casa')?.querySelector('[data-role="card-offer"]')?.textContent)).toBe('Avulsa: R$ 45,00');
       TestBed.resetTestingModule();
       const joao = await bootCaregiverApp('cg_0003', { url: URL });
-      expect(norm(card(joao, 'Prevenção de quedas')?.querySelector('[data-role="card-offer"]')?.textContent)).toBe('Você pode participar pagando por encontro');
+      expect(norm(card(joao, 'Prevenção de quedas')?.querySelector('[data-role="card-offer"]')?.textContent)).toBe('Avulsa: R$ 95,00');
       // João não está em nenhum encontro: sem "Minhas inscrições", todas as capacitações ficam na seção, cada uma com o valor.
       // O Livre não tem capacitação incluída: todas, mesmo a de 1 encontro, são avulsas.
       expect(joao.root.querySelector('[data-role="mine"]')).toBeNull();
       expect(sectionCards(joao, 'training')).toEqual(['Primeiros socorros em casa', 'Prevenção de quedas', 'Higiene e banho no leito']);
+      const prices: Record<string, string> = {
+        'Primeiros socorros em casa': 'Avulsa: R$ 45,00',
+        'Prevenção de quedas': 'Avulsa: R$ 95,00',
+        'Higiene e banho no leito': 'Avulsa: R$ 80,00',
+      };
       sectionCards(joao, 'training').forEach((title) =>
-        expect(norm(card(joao, title)?.querySelector('[data-role="card-offer"]')?.textContent), title).toBe('Você pode participar pagando por encontro'),
+        expect(norm(card(joao, title)?.querySelector('[data-role="card-offer"]')?.textContent), title).toBe(prices[title]),
       );
     });
 
@@ -245,37 +250,70 @@ describe('Área groups (Encontros)', () => {
       expect(norm(app.root.querySelector('[data-role="mine"]')?.textContent)).toContain('Primeiros socorros em casa');
     });
 
-    it('no Livre toda capacitação é avulsa: a de 1 encontro também sai paga, R$ 40,00 (simulado)', async () => {
+    it('no Livre toda capacitação é avulsa: a de 1 encontro também sai paga, pelo valor dela, R$ 45,00 (simulado)', async () => {
       const app = await bootCaregiverApp('cg_0003', { url: detail('act_0009') });
-      expect(norm(app.root.querySelector('[data-role="offer"]')?.textContent)).toBe('Você pode participar pagando por encontro');
+      expect(norm(app.root.querySelector('[data-role="offer"]')?.textContent)).toBe('Avulsa: R$ 45,00');
       await click(app, app.root.querySelector('[data-role="join"]'));
       expect(norm(openSheet(app)?.querySelector('[data-role="paid"]')?.textContent)).toBe(
-        'R$ 40,00 por encontro: R$ 40,00 por 1 encontro neste mês. O pagamento é combinado depois. No protótipo não há cobrança.',
+        'Valor desta capacitação: R$ 45,00, com todos os encontros. O pagamento é combinado depois. No protótipo não há cobrança.',
       );
       await click(app, openSheet(app)?.querySelector('input[type="checkbox"]'));
       await click(app, openSheet(app)?.querySelector('[data-role="confirm-join"]'));
       expect(app.db.activityEnrollments.find((e) => e.activityId === 'act_0009' && e.caregiverId === 'cg_0003')).toMatchObject({
         paid: true,
-        priceCents: 4000,
+        priceCents: 4500,
         includedInPlan: false,
       });
     });
 
-    it('capacitação avulsa no Livre: a folha diz o valor por encontro, sem campo de cartão, e grava paga (simulado)', async () => {
+    it('capacitação avulsa no Livre: a folha diz o valor da capacitação inteira (não encontros x valor fixo), sem campo de cartão, e grava paga (simulado)', async () => {
       const app = await bootCaregiverApp('cg_0003', { url: detail('act_0002') });
-      expect(norm(app.root.querySelector('[data-role="offer"]')?.textContent)).toBe('Você pode participar pagando por encontro');
+      expect(norm(app.root.querySelector('[data-role="offer"]')?.textContent)).toBe('Avulsa: R$ 95,00');
       await click(app, app.root.querySelector('[data-role="join"]'));
       expect(norm(openSheet(app)?.querySelector('[data-role="paid"]')?.textContent)).toBe(
-        'R$ 40,00 por encontro: R$ 80,00 por 2 encontros neste mês. O pagamento é combinado depois. No protótipo não há cobrança.',
+        'Valor desta capacitação: R$ 95,00, com todos os encontros. O pagamento é combinado depois. No protótipo não há cobrança.',
       );
       expect(Array.from(openSheet(app)?.querySelectorAll('input') ?? []).every((i) => i.type === 'checkbox')).toBe(true);
       await click(app, openSheet(app)?.querySelector('input[type="checkbox"]'));
       await click(app, openSheet(app)?.querySelector('[data-role="confirm-join"]'));
       expect(app.db.activityEnrollments.find((e) => e.activityId === 'act_0002' && e.caregiverId === 'cg_0003')).toMatchObject({
         paid: true,
-        priceCents: 8000,
+        priceCents: 9500,
         includedInPlan: false,
       });
+    });
+
+    it('nenhum texto do cuidador mostra "R$ 40,00 por encontro": lista, detalhe, folha de inscrição e Meu plano, em todos os planos', async () => {
+      const seen: string[] = [];
+      for (const id of ['cg_0003', 'cg_0002', 'cg_0001', 'cg_0027']) {
+        const list = await bootCaregiverApp(id, { url: URL });
+        seen.push(`${id} lista: ${norm(list.root.textContent)}`);
+        TestBed.resetTestingModule();
+        for (const activityId of ['act_0002', 'act_0009', 'act_0010']) {
+          const app = await bootCaregiverApp(id, { url: detail(activityId) });
+          const join = app.root.querySelector('[data-role="join"]');
+          if (join) {
+            await click(app, join);
+          }
+          seen.push(`${id} ${activityId}: ${norm(app.root.textContent)}`);
+          TestBed.resetTestingModule();
+        }
+        for (const url of ['/cuidador/mais/plano', '/cuidador/mais/plano?ver=planos']) {
+          const plan = await bootCaregiverApp(id, { url });
+          const all = plan.root.querySelector('[data-role="see-all"]');
+          if (all) {
+            await click(plan, all);
+          }
+          seen.push(`${id} ${url}: ${norm(plan.root.textContent)}`);
+          TestBed.resetTestingModule();
+        }
+      }
+      seen.forEach((t) => {
+        expect(t).not.toContain('R$ 40,00 por encontro');
+        expect(t).not.toContain('Você pode participar pagando por encontro');
+      });
+      // O valor de cada capacitação aparece para quem paga avulsa (João, Livre).
+      expect(seen.some((t) => t.startsWith('cg_0003 act_0002') && t.includes('R$ 95,00'))).toBe(true);
     });
 
     it('terapia em grupo dentro da cota: "Incluída no seu plano (2 de 2 neste mês)"; entra no grupo sem valor e consome a cota', async () => {

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { GroupMembershipService } from '../../core/groups/group-membership.service';
 import { BootedApp, bootApp, settle } from '../../layout/testing';
 import { DraftService } from '../../shared/ui/forms/draft.service';
+import { typeInto } from '../../shared/ui/testing/dom';
 import { Activity } from '../../core/models';
 import { ActivityForm, GroupsService } from './state/groups.service';
 
@@ -138,12 +139,14 @@ describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
     const app = await bootApp({ userId: 'u7', url: '/app/grupos/act_0009' });
     const svc = TestBed.inject(GroupsService);
     const before = app.db.activityEnrollments.count((e) => e.activityId === 'act_0009');
-    // João (Livre): a capacitação não está incluída no plano, então entra avulsa (pagamento simulado, R$ 40,00 por encontro).
+    // João (Livre): a capacitação não está incluída no plano, então entra avulsa pelo valor dela (pagamento simulado).
+    const plan = svc.checksFor(app.db.activities.require('act_0009'), { caregiverId: 'cg_0003' }).find((c) => c.id === 'plan');
+    expect(plan?.text).toContain('avulsa, R$ 45,00 (valor desta capacitação, pagamento simulado).');
     const livre = svc.enroll({ activityId: 'act_0009', caregiverId: 'cg_0003', ...accepted });
-    expect(livre.ok && livre.value.enrollment).toMatchObject({ caregiverId: 'cg_0003', paid: true, includedInPlan: false, priceCents: 4000 });
-    // A G2 tem 2 encontros em novembro: R$ 80,00.
+    expect(livre.ok && livre.value.enrollment).toMatchObject({ caregiverId: 'cg_0003', paid: true, includedInPlan: false, priceCents: 4500 });
+    // A G2 tem 2 encontros em novembro e custa R$ 95,00 a capacitação inteira.
     const extra = svc.enroll({ activityId: 'act_0002', caregiverId: 'cg_0003', ...accepted });
-    expect(extra.ok && extra.value.enrollment).toMatchObject({ caregiverId: 'cg_0003', paid: true, includedInPlan: false, priceCents: 8000 });
+    expect(extra.ok && extra.value.enrollment).toMatchObject({ caregiverId: 'cg_0003', paid: true, includedInPlan: false, priceCents: 9500 });
     // Participante externo não entra em nenhum tipo de encontro, nem com e-mail válido.
     const visitor = { name: 'Visitante Teste', email: 'visitante@exemplo.com.br' };
     ['act_0009', 'act_0008', 'act_0002'].forEach((id) => {
@@ -278,6 +281,7 @@ describe('M07 nova atividade (SCR-M07-02, AC-M07-06, AC-M07-10)', () => {
       guestName: 'Convidado Exemplo',
       mode: 'online',
       capacity: 12,
+      priceCents: 5000,
       meetings: [{ date: '2026-12-02', start: '19:00', end: '20:00' }],
     };
     const wrong = svc.save(form, false);
@@ -285,6 +289,76 @@ describe('M07 nova atividade (SCR-M07-02, AC-M07-06, AC-M07-10)', () => {
     expect(wrong.ok === false && wrong.errors.some((e) => e.field === 'theme')).toBe(true);
     const right = svc.save({ ...form, theme: 'first_aid' }, false);
     expect(right.ok && right.value.status).toBe('draft');
+  });
+
+  it('o valor da capacitação avulsa: o campo aparece só na capacitação, é obrigatório, grava priceCents e o detalhe mostra o valor', async () => {
+    const app = await bootApp({ userId: 'u1', url: '/app/grupos/novo' });
+    const svc = TestBed.inject(GroupsService);
+    const radios = () => app.root.querySelectorAll<HTMLElement>('app-radio-group input[type="radio"]');
+    const priceInput = () => q(app, '[data-role="price"]') as HTMLInputElement | null;
+    // Sem tipo e na terapia em grupo, nada de valor; na capacitação, o campo aparece com o rótulo.
+    expect(priceInput()).toBeNull();
+    click(radios()[1]);
+    await settle(app.fixture);
+    expect(priceInput()).toBeNull();
+    click(radios()[0]);
+    await settle(app.fixture);
+    expect(priceInput()).not.toBeNull();
+    const field = () => priceInput()?.closest('app-form-field');
+    expect(field()?.textContent).toContain('Valor da capacitação avulsa (R$)');
+    // Publicar sem valor mostra o erro no campo; com o valor digitado, o erro do campo some.
+    click(q(app, '[data-role="publish"]'));
+    await settle(app.fixture);
+    expect(field()?.querySelector('.field__error')?.textContent).toContain('Informe o valor da capacitação avulsa (maior que zero).');
+    typeInto(priceInput() as HTMLInputElement, '95');
+    await settle(app.fixture);
+    click(q(app, '[data-role="publish"]'));
+    await settle(app.fixture);
+    expect(field()?.querySelector('.field__error')).toBeNull();
+
+    // O serviço: sem valor, zero ou negativo é recusado no campo 'price'; com valor, grava a capacitação inteira em centavos.
+    const form: ActivityForm = {
+      ...svc.emptyForm(),
+      kind: 'training',
+      title: 'Cuidados com a pele da pessoa idosa',
+      theme: 'first_aid',
+      leaderType: 'guest',
+      guestName: 'Convidado Exemplo',
+      mode: 'online',
+      capacity: 12,
+      meetings: [
+        { date: '2026-12-02', start: '19:00', end: '20:00' },
+        { date: '2026-12-09', start: '19:00', end: '20:00' },
+      ],
+    };
+    for (const priceCents of [null, 0, -100]) {
+      const refused = svc.save({ ...form, priceCents }, true);
+      expect(refused.ok === false && refused.errors.find((e) => e.field === 'price')?.message, String(priceCents)).toBe(
+        'Informe o valor da capacitação avulsa (maior que zero).',
+      );
+    }
+    const saved = svc.save({ ...form, priceCents: 9500 }, true);
+    expect(saved.ok && saved.value.priceCents).toBe(9500);
+    expect(saved.ok && app.db.activities.require(saved.value.id).priceCents).toBe(9500);
+    // A terapia em grupo não tem valor de capacitação, mesmo que o formulário traga um.
+    const therapy = svc.save(therapyForm(svc, { priceCents: 5000 }), true);
+    expect(therapy.ok && therapy.value.priceCents).toBeUndefined();
+    expect(therapy.ok === false ? therapy.errors : []).toEqual([]);
+
+    // O detalhe da capacitação mostra o valor avulso; o da terapia em grupo, não.
+    if (saved.ok && therapy.ok) {
+      await app.router.navigateByUrl(`/app/grupos/${saved.value.id}`);
+      await settle(app.fixture);
+      expect(text(app, '[data-role="price"]').trim()).toBe('R$ 95,00 (a capacitação inteira; incluída para quem tem no plano)');
+      expect(text(app, 'main dl')).toContain('Valor avulso');
+      await app.router.navigateByUrl(`/app/grupos/${therapy.value.id}`);
+      await settle(app.fixture);
+      expect(q(app, '[data-role="price"]')).toBeNull();
+    }
+    // A capacitação da semente também mostra o seu valor (G2, R$ 95,00).
+    await app.router.navigateByUrl('/app/grupos/act_0002');
+    await settle(app.fixture);
+    expect(text(app, '[data-role="price"]').trim()).toBe('R$ 95,00 (a capacitação inteira; incluída para quem tem no plano)');
   });
 
   it('terapia em grupo só com psicólogo da Nexus com CRP ativo; divulgação sem promessa de resultado (RN-GRP-04, 15)', async () => {

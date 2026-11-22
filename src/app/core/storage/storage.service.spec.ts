@@ -192,8 +192,8 @@ describe('Versão de esquema e migrações', () => {
       reason: 'newer_than_app',
     });
     expect(planMigrations('0', '3', steps)).toEqual({ kind: 'unsupported', reason: 'no_path' });
-    expect(MIGRATIONS.map((m) => `${m.from}>${m.to}`)).toEqual(['1>2', '2>3']);
-    expect(SCHEMA_VERSION).toBe('3');
+    expect(MIGRATIONS.map((m) => `${m.from}>${m.to}`)).toEqual(['1>2', '2>3', '3>4']);
+    expect(SCHEMA_VERSION).toBe('4');
     expect(compareVersions('1.2', '1.10')).toBeLessThan(0);
     expect(compareVersions('2', '1.9')).toBeGreaterThan(0);
   });
@@ -284,7 +284,7 @@ describe('migração v2 para v3 (sem roda de conversa)', () => {
     expect(empty.size).toBe(0);
   });
 
-  it('dados guardados na v2 sobem para a v3 na inicialização, sem as rodas', () => {
+  it('dados guardados na v2 sobem até a versão atual na inicialização, sem as rodas', () => {
     const { service } = setup();
     service.writeLocal('schema-version', '2');
     service.writeLocal('activities', [
@@ -296,7 +296,7 @@ describe('migração v2 para v3 (sem roda de conversa)', () => {
       { id: 'e2', activityId: 'a2' },
     ]);
     expect(service.ensureSchema()).toBe(true);
-    expect(service.storedSchemaVersion()).toBe('3');
+    expect(service.storedSchemaVersion()).toBe('4');
     expect(service.readLocal<{ id: string }[]>('activities', []).map((a) => a.id)).toEqual(['a2']);
     expect(service.readLocal<{ id: string }[]>('activityEnrollments', []).map((e) => e.id)).toEqual(['e2']);
   });
@@ -313,10 +313,86 @@ describe('migração v2 para v3 (sem roda de conversa)', () => {
       { id: 'e2', activityId: 'a2' },
     ]);
     expect(service.ensureSchema()).toBe(true);
-    expect(service.storedSchemaVersion()).toBe('3');
+    expect(service.storedSchemaVersion()).toBe('4');
     expect(service.readLocal<{ id: string; kind: string }[]>('activities', [])).toEqual([
       { id: 'a1', kind: 'group_therapy', minPlan: 'cuida', requiresEligibility: false },
     ]);
     expect(service.readLocal<{ id: string }[]>('activityEnrollments', []).map((e) => e.id)).toEqual(['e1']);
+  });
+});
+
+describe('migração v3 para v4 (valor próprio de cada capacitação)', () => {
+  function context(store: Map<string, unknown>, writes: string[] = []): Parameters<Migration['run']>[0] {
+    return {
+      names: () => [...store.keys()],
+      read: (n) => store.get(n),
+      write: (n, v) => {
+        writes.push(n);
+        store.set(n, v);
+      },
+      remove: (n) => void store.delete(n),
+    };
+  }
+  const meetings = (count: number) => Array.from({ length: count }, (_, i) => ({ id: `m${i + 1}` }));
+
+  it('a capacitação sem valor recebe encontros x R$ 40,00; com valor, terapia em grupo e inscrições ficam iguais', async () => {
+    const { MIGRATION_V3_TO_V4 } = await import('./migrations');
+    const enrollments = [{ id: 'e1', activityId: 't1', priceCents: 4000 }];
+    const store = new Map<string, unknown>([
+      [
+        'activities',
+        [
+          { id: 't1', kind: 'training', meetings: meetings(2) },
+          { id: 't2', kind: 'training', meetings: meetings(3), priceCents: 9500 },
+          { id: 't3', kind: 'training', meetings: meetings(1) },
+          { id: 't4', kind: 'training', meetings: [] },
+          { id: 'g1', kind: 'group_therapy', meetings: meetings(2) },
+        ],
+      ],
+      ['activityEnrollments', enrollments],
+    ]);
+    const writes: string[] = [];
+    MIGRATION_V3_TO_V4.run(context(store, writes));
+    expect(writes).toEqual(['activities']);
+    expect(store.get('activities')).toEqual([
+      { id: 't1', kind: 'training', meetings: meetings(2), priceCents: 8000 },
+      { id: 't2', kind: 'training', meetings: meetings(3), priceCents: 9500 },
+      { id: 't3', kind: 'training', meetings: meetings(1), priceCents: 4000 },
+      // Sem encontro, conta como 1: a capacitação nunca fica com valor zero.
+      { id: 't4', kind: 'training', meetings: [], priceCents: 4000 },
+      { id: 'g1', kind: 'group_therapy', meetings: meetings(2) },
+    ]);
+    expect(store.get('activityEnrollments')).toBe(enrollments);
+  });
+
+  it('nada a fazer (toda capacitação já tem valor, só terapia em grupo ou nenhuma atividade guardada): não reescreve', async () => {
+    const { MIGRATION_V3_TO_V4 } = await import('./migrations');
+    const writes: string[] = [];
+    MIGRATION_V3_TO_V4.run(
+      context(
+        new Map<string, unknown>([['activities', [{ id: 't1', kind: 'training', meetings: meetings(2), priceCents: 9500 }, { id: 'g1', kind: 'group_therapy', meetings: [] }]]]),
+        writes,
+      ),
+    );
+    MIGRATION_V3_TO_V4.run(context(new Map<string, unknown>([['activities', [{ id: 'g1', kind: 'group_therapy', meetings: [] }]]]), writes));
+    const empty = new Map<string, unknown>();
+    MIGRATION_V3_TO_V4.run(context(empty, writes));
+    expect(writes).toEqual([]);
+    expect(empty.size).toBe(0);
+  });
+
+  it('dados guardados na v3 sobem para a v4 na inicialização, com o valor em cada capacitação', () => {
+    const { service } = setup();
+    service.writeLocal('schema-version', '3');
+    service.writeLocal('activities', [
+      { id: 't1', kind: 'training', meetings: meetings(2) },
+      { id: 'g1', kind: 'group_therapy', meetings: meetings(2) },
+    ]);
+    expect(service.ensureSchema()).toBe(true);
+    expect(service.storedSchemaVersion()).toBe('4');
+    expect(service.readLocal<{ id: string; priceCents?: number }[]>('activities', []).map((a) => [a.id, a.priceCents])).toEqual([
+      ['t1', 8000],
+      ['g1', undefined],
+    ]);
   });
 });

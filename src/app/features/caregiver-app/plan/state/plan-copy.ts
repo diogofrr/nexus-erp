@@ -13,7 +13,7 @@ import {
   PlanDefinition,
   canAccessGroupTherapy,
 } from '../../../../core/rules/plans';
-import { PLAN_QUOTAS, limitText, singlePriceText } from '../../../../core/rules/plan-quotas';
+import { PLAN_QUOTAS, limitText } from '../../../../core/rules/plan-quotas';
 import { IconName } from '../../../../shared/ui/display/icon.component';
 import { dayMonth } from '../../state/day-format';
 
@@ -62,7 +62,7 @@ export function planLines(planId: PlanId): Perk[] {
     q.trainingsPerMonth === 'all'
       ? 'Todas as capacitações do mês'
       : q.trainingsPerMonth === 0
-        ? `Capacitações avulsas (${singlePriceText('training')})`
+        ? 'Capacitações avulsas, com o valor de cada uma'
         : limitText(q.trainingsPerMonth, 'capacitações'),
   );
   const card = line('card', 'credit-card', 'Cartão Nexus, com descontos nos parceiros');
@@ -119,7 +119,7 @@ export function quotaLines(planId: PlanId): { key: string; label: string; value:
     {
       key: 'trainings',
       label: 'Capacitações',
-      value: q.trainingsPerMonth === 0 ? `Avulsas, ${singlePriceText('training')}` : limitText(q.trainingsPerMonth, 'capacitações'),
+      value: q.trainingsPerMonth === 0 ? 'Avulsas, com o valor de cada uma' : limitText(q.trainingsPerMonth, 'capacitações'),
     },
   ];
 }

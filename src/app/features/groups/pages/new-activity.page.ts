@@ -48,6 +48,7 @@ const FIELD_IDS: Record<string, string> = {
   mode: 'na-mode',
   room: 'na-room',
   capacity: 'na-capacity',
+  price: 'na-price',
   meetings: 'na-meetings',
   confidentiality: 'na-confidentiality',
 };
@@ -157,6 +158,12 @@ const DRAFT_FORM = 'activity';
           @if (form().mode === 'in_person') {
             <app-form-field label="Sala do coworking" group controlId="na-room" [error]="err('room')" hint="A atividade presencial só pode usar sala com os 4 itens de acessibilidade.">
               <app-radio-group [options]="roomOptions()" [value]="form().roomId || null" (valueChange)="set('roomId', $event ?? '')" />
+            </app-form-field>
+          }
+
+          @if (form().kind === 'training') {
+            <app-form-field label="Valor da capacitação avulsa (R$)" controlId="na-price" [error]="err('price')" hint="O valor desta capacitação, com todos os encontros. Quem tem a capacitação no plano não paga.">
+              <input appInput type="number" min="1" step="0.01" inputmode="decimal" [value]="priceReais()" (input)="setPrice(valueOf($event))" data-role="price" />
             </app-form-field>
           }
 
@@ -341,6 +348,17 @@ export class NewActivityPageComponent {
       leaderType: kind === 'group_therapy' ? 'psychologist' : f.leaderType,
     }));
     this.scheduleDraft();
+  }
+
+  /** O valor no campo, em reais ("95.00"); vazio sem valor. */
+  protected priceReais(): string {
+    const cents = this.form().priceCents ?? null;
+    return cents === null ? '' : (cents / 100).toFixed(2);
+  }
+
+  protected setPrice(raw: string): void {
+    const value = Number(raw.replace(',', '.'));
+    this.set('priceCents', raw.trim() === '' || !Number.isFinite(value) ? null : Math.round(value * 100));
   }
 
   protected setCapacity(raw: string): void {

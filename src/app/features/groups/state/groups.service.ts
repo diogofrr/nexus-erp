@@ -51,6 +51,8 @@ export interface ActivityForm {
   roomId: ID;
   partnerOrg: string;
   capacity: number | null;
+  /** Capacitação: o valor avulso desta capacitação, em centavos (obrigatório; sem valor fixo). */
+  priceCents: number | null;
   meetings: { date: ISODate; start: string; end: string }[];
   confidentialityText: string;
 }
@@ -237,7 +239,7 @@ export class GroupsService {
         title: 'Plano',
         state: access.allowed ? 'ok' : 'fail',
         text: access.allowed
-          ? `${this.planName(plan)}: ${offer ? offerText(offer) : 'ok.'}`
+          ? `${this.planName(plan)}: ${offer ? offerText(offer, activity.kind) : 'ok.'}`
           : `${this.planName(plan)}: a terapia em grupo é dos planos Cuida e Sustenta.`,
       });
     } else {
@@ -408,6 +410,7 @@ export class GroupsService {
       roomId: '',
       partnerOrg: '',
       capacity: this.db.settings.get().groupDefaultCapacity,
+      priceCents: null,
       meetings: [],
       confidentialityText: DEFAULT_CONFIDENTIALITY,
     };
@@ -428,6 +431,7 @@ export class GroupsService {
       roomId: activity.roomId ?? '',
       partnerOrg: activity.partnerOrg ?? '',
       capacity: activity.capacity,
+      priceCents: activity.priceCents ?? null,
       meetings: activity.meetings.map((m) => ({ date: m.startAt.slice(0, 10), start: m.startAt.slice(11, 16), end: m.endAt.slice(11, 16) })),
       confidentialityText: activity.confidentialityText,
     };
@@ -465,6 +469,10 @@ export class GroupsService {
     if (form.capacity === null || !Number.isInteger(form.capacity) || form.capacity < 1 || form.capacity > 60) {
       errors.push({ field: 'capacity', message: 'A capacidade deve ser de 1 a 60 vagas.' });
     }
+    const price = form.priceCents ?? null;
+    if (form.kind === 'training' && (price === null || !Number.isInteger(price) || price <= 0)) {
+      errors.push({ field: 'price', message: 'Informe o valor da capacitação avulsa (maior que zero).' });
+    }
     if (form.meetings.length === 0) {
       errors.push({ field: 'meetings', message: 'Informe ao menos um encontro, com data e horário.' });
     }
@@ -501,6 +509,7 @@ export class GroupsService {
       confidentialityText: form.confidentialityText.trim(),
       ...(form.mode === 'in_person' ? { roomId: form.roomId } : {}),
       ...(form.partnerOrg.trim() ? { partnerOrg: form.partnerOrg.trim() } : {}),
+      ...(kind === 'training' && price ? { priceCents: price } : {}),
     };
     const toMeetings = (activityId: ID, previous: readonly ActivityMeeting[]): ActivityMeeting[] =>
       form.meetings.map((m, i) => ({
@@ -518,6 +527,8 @@ export class GroupsService {
       activity = this.db.activities.update(existing.id, {
         ...base,
         ...(form.mode === 'online' ? { roomId: undefined } : {}),
+        // Só a capacitação tem valor avulso próprio: ao virar terapia em grupo, o valor antigo sai.
+        ...(kind !== 'training' ? { priceCents: undefined } : {}),
         meetings: toMeetings(existing.id, existing.meetings),
         ...(publish && existing.status === 'draft' ? { status: 'open' as const } : {}),
       });
@@ -701,14 +712,16 @@ export class GroupsService {
 }
 
 /** "incluída na cota do plano (2 de 2 encontros no mês)." ou "avulsa, R$ 80,00 (2 encontros)." */
-function offerText(offer: EnrollmentOffer): string {
+function offerText(offer: EnrollmentOffer, kind: Activity['kind']): string {
   switch (offer.kind) {
     case 'included':
       return offer.usage && offer.usage.limit !== 'all'
         ? `incluída na cota do plano (${Math.min(offer.usage.limit, offer.usage.used + offer.meetings)} de ${offer.usage.limit} encontros no mês).`
         : 'incluída no plano.';
     case 'paid':
-      return `avulsa, ${formatCentsBr(offer.priceCents)} (${offer.meetings} ${offer.meetings === 1 ? 'encontro' : 'encontros'} no mês, pagamento simulado).`;
+      return kind === 'training'
+        ? `avulsa, ${formatCentsBr(offer.priceCents)} (valor desta capacitação, pagamento simulado).`
+        : `avulsa, ${formatCentsBr(offer.priceCents)} (${offer.meetings} ${offer.meetings === 1 ? 'encontro' : 'encontros'} no mês, pagamento simulado).`;
     default:
       return 'ok.';
   }

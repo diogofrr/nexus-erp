@@ -5,7 +5,7 @@
  *
  * - `individual_session` e `group_therapy`: só Cuida e Sustenta (1 ou 2 sessões e 2 encontros por mês).
  * - `training_included`: há capacitação incluída no plano (Essencial 2 por mês; Cuida e Sustenta todas; o Livre só avulsa). `training_paid`:
- *   qualquer pessoa cadastrada participa pagando avulsa (R$ 40,00 por encontro), em qualquer plano.
+ *   qualquer pessoa cadastrada participa pagando avulsa (pelo valor de cada capacitação), em qualquer plano.
  * - `card`, `exclusive_content`, `network_conditions`: do Essencial em diante (RN-PLN-05, 08, RN-CRT-02);
  *   `network_differentiated`: só o Sustenta (RN-PLN-07).
  * - RN-REDE-25 e decisão do líder (S-09): a jornada não tem restrição de plano; no Livre a pessoa também PEDE serviço
