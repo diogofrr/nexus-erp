@@ -1,0 +1,1 @@
+var t=[{path:``,loadComponent:()=>import(`./chunk-b4cWiDdt.js`).then(o=>o.GroupsPage),data:{title:`Encontros`}}];export{t as ROUTES};

@@ -1,1 +1,0 @@
-var t=[{path:``,loadComponent:()=>import(`./chunk-B08TMqQX.js`).then(o=>o.GroupsPage),data:{title:`Encontros`}}];export{t as ROUTES};
