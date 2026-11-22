@@ -131,6 +131,13 @@ export class ConversationsService {
   private readonly clock = inject(Clock);
   private readonly booking = inject(SessionBookingService);
 
+  /** Garante horários abertos nos próximos dias (agenda recorrente do protótipo): chamado ao abrir a tela de marcar. */
+  ensureAvailability(): void {
+    if (this.ctx.caregiverId()) {
+      this.booking.ensureOpenAvailability();
+    }
+  }
+
   /** Todas as conversas da pessoa, da mais próxima para a mais antiga a partir de hoje (as futuras primeiro). */
   readonly all = computed<Conversation[]>(() => {
     const id = this.ctx.caregiverId();

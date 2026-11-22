@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { AuditLogService } from '../audit/audit-log.service';
 import { CaregiverOwnership, NOT_OWNER_TEXT } from '../auth/caregiver-ownership';
 import { Clock } from '../clock/clock.service';
-import { addMinutes, compareDateTimes, minutesBetween, toIsoDateTime } from '../clock/date-utils';
+import { addDays, addMinutes, compareDateTimes, isWeekend, minutesBetween, toIsoDateTime } from '../clock/date-utils';
 import { Database, NewEntity } from '../data';
 import { planIdOfCaregiver } from '../data/plan-lookup';
 import {
@@ -89,6 +89,8 @@ export const SESSION_PLAN_BLOCKED = 'O atendimento psicológico individual faz p
 
 /** Duração da sessão (hoje sempre 1 hora). */
 const SESSION_MINUTES = 60;
+/** Horas de início da agenda recorrente do protótipo (`ensureOpenAvailability`). */
+const RECURRING_HOURS = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
 
 /** Sessões que ocupam a vaga (a cancelada libera). */
 const ACTIVE_STATUSES: readonly CareSession['status'][] = ['scheduled', 'confirmed', 'done', 'no_show'];
@@ -175,6 +177,50 @@ export class SessionBookingService {
       this.hasYellowAlert(caregiverId),
       this.db.plans.list(),
     );
+  }
+
+  /**
+   * Agenda recorrente do protótipo: garante horários abertos para cada psicólogo com registro ativo nos próximos
+   * `days` dias úteis (a partir de amanhã), para a demonstração nunca ficar sem horário, por mais dias que passem desde
+   * que os dados foram gerados. Quem tem 40 horas semanais abre 4 horários por dia; quem tem menos, 2. Os horários
+   * variam por pessoa e por dia, nunca repetem uma vaga que já existe (livre, ocupada ou bloqueada) e não mexem no
+   * que já está marcado. Idempotente: chamar de novo não cria nada. Devolve quantos horários criou.
+   */
+  ensureOpenAvailability(days = 21): number {
+    const today = this.clock.today();
+    const taken = new Set(this.db.availabilitySlots.list().map((s) => `${s.psychologistId} ${s.date} ${s.start}`));
+    const drafts: NewEntity<AvailabilitySlot>[] = [];
+    this.activePsychologists()
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .forEach((psy, k) => {
+        const perDay = psy.weeklyAvailableHours >= 40 ? 4 : psy.weeklyAvailableHours > 0 ? 2 : 0;
+        for (let d = 1; d <= days; d += 1) {
+          const date = addDays(today, d);
+          if (isWeekend(date)) {
+            continue;
+          }
+          for (let j = 0; j < perDay; j += 1) {
+            const start = RECURRING_HOURS[(k + d + j * 2) % RECURRING_HOURS.length] as string;
+            const key = `${psy.id} ${date} ${start}`;
+            if (taken.has(key)) {
+              continue;
+            }
+            taken.add(key);
+            drafts.push({
+              psychologistId: psy.id,
+              date,
+              start,
+              end: `${String(Number(start.slice(0, 2)) + 1).padStart(2, '0')}:00`,
+              status: 'open',
+              priorityOnly: false,
+            });
+          }
+        }
+      });
+    if (drafts.length > 0) {
+      this.db.availabilitySlots.createMany(drafts);
+    }
+    return drafts.length;
   }
 
   /** Vagas livres e futuras do psicólogo, na ordem do calendário. */

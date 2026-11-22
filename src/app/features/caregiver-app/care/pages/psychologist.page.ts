@@ -405,6 +405,11 @@ export class PsychologistPage {
   protected readonly formats = FORMAT_OPTIONS;
   protected readonly kinds = KIND_OPTIONS;
   protected readonly noSlots = NO_SLOTS_TEXT;
+
+  constructor() {
+    // A demonstração nunca fica sem horário: abre a agenda recorrente dos próximos dias úteis antes de listar.
+    this.conversations.ensureAvailability();
+  }
   protected readonly paymentNote = PAYMENT_NOTE;
   protected readonly cancelFree = CANCEL_FREE;
   protected readonly cancelLate = CANCEL_LATE;

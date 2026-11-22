@@ -105,7 +105,7 @@ export function buildCore(s: SeedState): void {
       PSYCHOLOGIST[key].name,
       email,
       'psychologist',
-      'Equipe de psicologia, começou nesta semana: agenda ainda sem horários e sem cuidadores.',
+      'Equipe de psicologia, começou nesta semana: agenda aberta, ainda sem cuidadores.',
       { psychologistId: PSYCHOLOGIST[key].id },
     ),
   );
