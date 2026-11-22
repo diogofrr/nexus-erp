@@ -1,20 +1,36 @@
 import { describe, expect, it } from 'vitest';
-import { leaderLine, placeOf, roomAccessibility, seatsText } from './group-copy';
+import { leaderLine, leadersShort, placeOf, roomAccessibility, seatsText } from './group-copy';
 
 describe('textos de Grupos e capacitações (UX C10)', () => {
-  it('quem conduz: o psicólogo vem com o registro e o rótulo de fictício; os outros, só o nome', () => {
-    expect(leaderLine({ type: 'psychologist', name: 'Dra. Letícia Amaral', professionalRegistration: 'CRP-04/00104 (fictício)' })).toBe(
-      'Conduzido por Dra. Letícia Amaral, psicóloga (CRP-04/00104, fictício).',
+  it('quem conduz: a equipe de psicologia vem pelo nome, sem supor gênero; o registro só aparece quando existe', () => {
+    expect(leaderLine({ type: 'psychologist', name: 'Marina Gomes' })).toBe('Conduzido por Marina Gomes, da equipe de psicologia.');
+    expect(leaderLine({ type: 'psychologist', name: 'Gustavo Medeiros', professionalRegistration: '' })).toBe(
+      'Conduzido por Gustavo Medeiros, da equipe de psicologia.',
     );
-    expect(leaderLine({ type: 'psychologist', name: 'Dr. Rafael Moreira', professionalRegistration: 'CRP-04/00102 (fictício)' })).toBe(
-      'Conduzido por Dr. Rafael Moreira, psicólogo (CRP-04/00102, fictício).',
+    // A equipe de hoje não tem CRP; se um registro for cadastrado, ele vem entre parênteses.
+    expect(leaderLine({ type: 'psychologist', name: 'Pessoa Exemplo', professionalRegistration: 'CRP-04/00104 (fictício)' })).toBe(
+      'Conduzido por Pessoa Exemplo, da equipe de psicologia (CRP-04/00104, fictício).',
     );
-    expect(leaderLine({ type: 'psychologist', name: 'Beatriz Nogueira', professionalRegistration: 'CRP-04/00103' })).toBe(
-      'Conduzido por Beatriz Nogueira, psicólogo(a) (CRP-04/00103).',
+    expect(leaderLine({ type: 'psychologist', name: 'Pessoa Exemplo', professionalRegistration: 'CRP-04/00103' })).toBe(
+      'Conduzido por Pessoa Exemplo, da equipe de psicologia (CRP-04/00103).',
     );
-    expect(leaderLine({ type: 'psychologist', name: 'Dra. Sem Registro' })).toBe('Conduzido por Dra. Sem Registro, psicóloga.');
+    // O papel não concorda com o tratamento: é sempre "da equipe de psicologia".
+    expect(leaderLine({ type: 'psychologist', name: 'Dra. Sem Registro' })).toBe('Conduzido por Dra. Sem Registro, da equipe de psicologia.');
     expect(leaderLine({ type: 'guest', name: 'Dr. Augusto Pedrosa (convidado)' })).toBe('Conduzido por Dr. Augusto Pedrosa (convidado).');
     expect(leaderLine({ type: 'provider', name: 'Enf. Priscila Gouveia' })).toBe('Conduzido por Enf. Priscila Gouveia.');
+  });
+
+  it('quem conduz, curto, para o cartão: "Com" e os nomes, sem o que vem entre parênteses', () => {
+    expect(leadersShort([{ type: 'psychologist', name: 'Marina Gomes' }])).toBe('Com Marina Gomes');
+    expect(leadersShort([{ type: 'guest', name: 'Dr. Augusto Pedrosa (convidado)' }])).toBe('Com Dr. Augusto Pedrosa');
+    expect(
+      leadersShort([
+        { type: 'psychologist', name: 'Jessica Rosa' },
+        { type: 'psychologist', name: 'João Eduardo' },
+        { type: 'provider', name: 'Enf. Priscila Gouveia' },
+      ]),
+    ).toBe('Com Jessica Rosa, João Eduardo e Enf. Priscila Gouveia');
+    expect(leadersShort([])).toBeNull();
   });
 
   it('a acessibilidade da sala diz só o que a sala tem', () => {

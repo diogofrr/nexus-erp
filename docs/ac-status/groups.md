@@ -1,6 +1,6 @@
 # Status de aceite: M07 Grupos e capacitações (`groups`)
 
-Rota base `/app/grupos`. Perfis de teste: `u1` Helena (sócia, tudo), `u7` Camila (atendimento, inscrições), `u3` Dr. Rafael (conduz G1), `u5` Dra. Letícia (conduz a terapia de grupo G3), `u2` Dra. Cecília (RT, valida enquadramento).
+Rota base `/app/grupos`. Perfis de teste: `u1` Helena (sócia, tudo), `u7` Camila (atendimento, inscrições), `u3` Jessica (conduz G1), `u5` Marina (conduz a terapia de grupo G3), `u2` Dra. Cecília (RT, valida enquadramento).
 
 | AC | Status | Onde ver | Observação |
 |---|---|---|---|

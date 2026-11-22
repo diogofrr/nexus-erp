@@ -43,7 +43,9 @@ describe('Database: seed, reset e primeira visita', () => {
 
   it('as contagens da tabela 5.15 após o seed (AC-M15-01)', () => {
     const { db } = configureCoreTest({ seed: true });
-    expect(db.users.size()).toBe(8);
+    // A equipe: gestão (2), psicologia (7) e atendimento (2).
+    expect(db.users.size()).toBe(11);
+    expect(db.psychologists.size()).toBe(7);
     expect(db.caregivers.size()).toBe(340);
     expect(db.elders.size()).toBe(340);
     expect(db.subscriptions.size()).toBe(340);

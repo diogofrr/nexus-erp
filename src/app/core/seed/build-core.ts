@@ -47,36 +47,36 @@ export function buildCore(s: SeedState): void {
     'Responsável técnico (CRP-04/00001, fictício): supervisão dos casos, POPs de risco e parâmetros da ARBE.',
   );
   user(
-    USER.rafael,
-    PSYCHOLOGIST.rafael.name,
-    'rafael.moreira@exemplo.com.br',
+    USER.jessica,
+    PSYCHOLOGIST.jessica.name,
+    'jessica.rosa@exemplo.com.br',
     'psychologist',
-    'Psicólogo da equipe: agenda, sessões e Zarit dos seus cuidadores. Agenda muito ocupada.',
-    { psychologistId: PSYCHOLOGIST.rafael.id },
+    'Equipe de psicologia: agenda, sessões e Zarit dos seus cuidadores. Agenda muito ocupada.',
+    { psychologistId: PSYCHOLOGIST.jessica.id },
   );
   user(
-    USER.beatriz,
-    PSYCHOLOGIST.beatriz.name,
-    'beatriz.nogueira@exemplo.com.br',
+    USER.isabelle,
+    PSYCHOLOGIST.isabelle.name,
+    'isabelle.ramos@exemplo.com.br',
     'psychologist',
-    'Psicóloga da equipe: acompanhamento dos seus cuidadores.',
-    { psychologistId: PSYCHOLOGIST.beatriz.id },
+    'Equipe de psicologia: acompanhamento dos seus cuidadores.',
+    { psychologistId: PSYCHOLOGIST.isabelle.id },
   );
   user(
-    USER.leticia,
-    PSYCHOLOGIST.leticia.name,
-    'leticia.amaral@exemplo.com.br',
+    USER.marina,
+    PSYCHOLOGIST.marina.name,
+    'marina.gomes@exemplo.com.br',
     'psychologist',
-    'Psicóloga da equipe: ocupação exatamente no limite de 80%.',
-    { psychologistId: PSYCHOLOGIST.leticia.id },
+    'Equipe de psicologia: ocupação exatamente no limite de 80%.',
+    { psychologistId: PSYCHOLOGIST.marina.id },
   );
   user(
-    USER.tiago,
-    PSYCHOLOGIST.tiago.name,
-    'tiago.brandao@exemplo.com.br',
+    USER.gustavo,
+    PSYCHOLOGIST.gustavo.name,
+    'gustavo.medeiros@exemplo.com.br',
     'psychologist',
-    'Psicólogo que começou há um mês: agenda em formação.',
-    { psychologistId: PSYCHOLOGIST.tiago.id },
+    'Equipe de psicologia, começou há um mês: agenda em formação.',
+    { psychologistId: PSYCHOLOGIST.gustavo.id },
   );
   user(
     USER.camila,
@@ -92,17 +92,38 @@ export function buildCore(s: SeedState): void {
     'support',
     'Atendimento: caixa de mensagens e registros em nome do usuário.',
   );
+  // Os 3 integrantes que completam a equipe de psicologia (7 no total): começaram nesta semana, ainda sem cuidadores.
+  (
+    [
+      ['joao', 'joao.eduardo@exemplo.com.br'],
+      ['mariaJose', 'maria.jose@exemplo.com.br'],
+      ['luzia', 'luzia.luzdalma@exemplo.com.br'],
+    ] as const
+  ).forEach(([key, email]) =>
+    user(
+      USER[key],
+      PSYCHOLOGIST[key].name,
+      email,
+      'psychologist',
+      'Equipe de psicologia, começou nesta semana: agenda ainda sem horários e sem cuidadores.',
+      { psychologistId: PSYCHOLOGIST[key].id },
+    ),
+  );
 
-  // Psicólogos (4)
+  // Equipe de psicologia (7)
   const hours: Record<keyof typeof PSYCHOLOGIST, number> = {
-    rafael: 40,
-    beatriz: 40,
-    leticia: 40,
-    tiago: 20,
+    jessica: 40,
+    isabelle: 40,
+    marina: 40,
+    gustavo: 20,
+    joao: 20,
+    mariaJose: 20,
+    luzia: 20,
   };
+  const newcomers: ReadonlySet<string> = new Set(['joao', 'mariaJose', 'luzia']);
   (Object.keys(PSYCHOLOGIST) as (keyof typeof PSYCHOLOGIST)[]).forEach((key) => {
     const p = PSYCHOLOGIST[key];
-    const profile = ctx.entity<PsychologistProfile>(p.id, key === 'tiago' ? ctx.dt(-30) : created, {
+    const profile = ctx.entity<PsychologistProfile>(p.id, newcomers.has(key) ? ctx.dt(-5) : key === 'gustavo' ? ctx.dt(-30) : created, {
       userId: p.userId,
       displayName: p.name,
       crp: p.crp,

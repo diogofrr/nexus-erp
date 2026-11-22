@@ -143,7 +143,7 @@ describe('Seed do aplicativo do cuidador', () => {
     });
   });
 
-  it('os meses fechados de Rafael continuam em 160/138 e 160/146 (86,3% e 91,3%)', () => {
+  it('os meses fechados de Jessica continuam em 160/138 e 160/146 (86,3% e 91,3%)', () => {
     const rows = c.monthSummaries
       .filter((m) => m.psychologistId === 'psy_0001')
       .sort((a, b) => (a.month < b.month ? -1 : 1));

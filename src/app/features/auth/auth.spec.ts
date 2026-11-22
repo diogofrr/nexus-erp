@@ -50,7 +50,7 @@ describe('entrada: seleção de perfil (SCR-M01-01, AC-M01-01 e 02)', () => {
   const all = <T extends Element = HTMLElement>(selector: string): T[] =>
     Array.from(app.root.querySelectorAll<T>(selector));
 
-  it('lista os 8 usuários da equipe em três grupos por função, com perfil por extenso, frase de cenário e aviso de protótipo', async () => {
+  it('lista os 11 usuários da equipe em três grupos por função, com perfil por extenso, frase de cenário e aviso de protótipo', async () => {
     app = await bootApp({ url: '/login' });
     // A porta da equipe começa recolhida (a do cuidador vem primeiro) e abre com um toque.
     expect(all('.profile-group')).toHaveLength(0);
@@ -61,19 +61,19 @@ describe('entrada: seleção de perfil (SCR-M01-01, AC-M01-01 e 02)', () => {
     expect(q('h1')?.textContent).toBe('Entrar');
     expect(q('.banner--prototype')?.textContent).toContain(PROTOTYPE_NOTICE);
     const headings = all('.profile-group h3').map((h) => h.textContent?.trim());
-    expect(headings).toEqual(['Gestão (2)', 'Psicologia (4)', 'Atendimento (2)']);
+    expect(headings).toEqual(['Gestão (2)', 'Psicologia (7)', 'Atendimento (2)']);
     const cards = all('.profile-group .list-row');
-    expect(cards).toHaveLength(8);
+    expect(cards).toHaveLength(11);
     expect(cards.map((c) => c.querySelector('.list-row__title')?.textContent)).not.toContain(
       'Dr. Eduardo Falcão',
     );
-    const rafael = cards.find((c) => c.textContent?.includes('Dr. Rafael Moreira'));
-    expect(rafael?.getAttribute('aria-label')).toContain('Entrar como Dr. Rafael Moreira');
-    expect(rafael?.textContent).toContain('Psicólogo(a) da Nexus');
-    expect(rafael?.textContent).toContain('Agenda muito ocupada');
+    const jessica = cards.find((c) => c.textContent?.includes('Jessica Rosa'));
+    expect(jessica?.getAttribute('aria-label')).toContain('Entrar como Jessica Rosa');
+    expect(jessica?.textContent).toContain('Psicólogo(a) da Nexus');
+    expect(jessica?.textContent).toContain('Agenda muito ocupada');
     // Toda a equipe mostra o selo "Código".
     const badges = all('.profile-group .badge');
-    expect(badges).toHaveLength(8);
+    expect(badges).toHaveLength(11);
     expect(badges.every((b) => b.textContent?.includes('Código'))).toBe(true);
     // Não há grupo da rede credenciada nem avatar dourado de prestador.
     expect(all('.profile-group h3').some((h) => h.textContent?.includes('Rede'))).toBe(false);
@@ -262,7 +262,7 @@ describe('retorno ao link de origem (U-02) e telas do M01', () => {
     await settle(app.fixture);
     expect(app.router.url).toBe('/login');
     expect(q('.banner--attention')?.textContent).toContain(SESSION_EXPIRED_TEXT);
-    await choose('Dr. Rafael Moreira');
+    await choose('Jessica Rosa');
     await confirmCode();
     expect(app.router.url).toBe('/app/grupos');
   });

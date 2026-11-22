@@ -250,7 +250,7 @@ export function buildClinical(s: SeedState): void {
   c.reviewRequests.push(
     ctx.entity<ReviewRequest>(ctx.nextId('rvw'), ctx.dt(-4, '14:00'), {
       caregiverId: caregiverId(2),
-      psychologistId: PSYCHOLOGIST.beatriz.id,
+      psychologistId: PSYCHOLOGIST.isabelle.id,
       about: 'zarit_decision',
       text: 'Peço que a decisão de acompanhamento prioritário seja revista, porque me sinto mais preparada do que o resultado indica.',
       dueAt: ctx.d(6),
@@ -289,7 +289,7 @@ export function buildClinical(s: SeedState): void {
     'psychiatric_follow_up',
     ['CAPS de referência'],
     100,
-    USER.rafael,
+    USER.jessica,
     'acknowledged',
     { outcome: 'Cuidador iniciou acompanhamento no CAPS.' },
   );
@@ -299,7 +299,7 @@ export function buildClinical(s: SeedState): void {
     'severe_distress_or_suicide_risk',
     dest('severe_distress_or_suicide_risk'),
     2,
-    USER.leticia,
+    USER.marina,
     'registered',
     { occurrenceId: OCCURRENCE.o1 },
   );
@@ -309,7 +309,7 @@ export function buildClinical(s: SeedState): void {
     'social_vulnerability',
     ['CRAS do território'],
     30,
-    USER.tiago,
+    USER.gustavo,
     'registered',
   );
   referral(
@@ -328,7 +328,7 @@ export function buildClinical(s: SeedState): void {
     'social_security_or_guardianship',
     ['Advogado da rede'],
     25,
-    USER.tiago,
+    USER.gustavo,
     'acknowledged',
     { outcome: 'Família atendida pelo advogado Dr. Heitor Magalhães, da rede.' },
   );
@@ -338,7 +338,7 @@ export function buildClinical(s: SeedState): void {
     'elder_clinical_worsening',
     ['UBS de referência'],
     18,
-    USER.beatriz,
+    USER.isabelle,
     'registered',
     { familyCommunicated: true },
   );
@@ -348,7 +348,7 @@ export function buildClinical(s: SeedState): void {
     'caregiver_cannot_afford_care',
     ['Clínicas-escola'],
     40,
-    USER.tiago,
+    USER.gustavo,
     'closed',
     { outcome: 'Atendimento iniciado na clínica-escola. Plano gratuito mantido.' },
   );
@@ -367,7 +367,7 @@ export function buildClinical(s: SeedState): void {
     'social_vulnerability',
     ['CRAS do território'],
     55,
-    USER.rafael,
+    USER.jessica,
     'acknowledged',
     { outcome: 'Família cadastrada nos benefícios do território.' },
   );
@@ -377,7 +377,7 @@ export function buildClinical(s: SeedState): void {
     'caregiver_cannot_afford_care',
     ['Serviços públicos'],
     60,
-    USER.rafael,
+    USER.jessica,
     'closed',
     { outcome: 'Encaminhamento concluído.' },
   );
@@ -413,8 +413,8 @@ export function buildClinical(s: SeedState): void {
       caregiverId: caregiverId(11),
       openedAt: ctx.dt(-2, '09:50'),
       status: 'closed',
-      restrictedToUserIds: [USER.technicalLead, USER.leticia],
-      steps: steps(POP05_STEPS, 7, ctx.d(-2), USER.leticia, '09:50').map((st, k) =>
+      restrictedToUserIds: [USER.technicalLead, USER.marina],
+      steps: steps(POP05_STEPS, 7, ctx.d(-2), USER.marina, '09:50').map((st, k) =>
         k === 0
           ? st
           : {
@@ -433,10 +433,10 @@ export function buildClinical(s: SeedState): void {
       caregiverId: caregiverId(1),
       openedAt: ctx.dt(0, '00:20'),
       status: 'in_progress',
-      restrictedToUserIds: [USER.technicalLead, USER.rafael],
+      restrictedToUserIds: [USER.technicalLead, USER.jessica],
       // CX-017: só o passo 1 (acolhimento) está feito. O passo 2 (contato da equipe) fica pendente até o contato
       // ser registrado no alerta, com a hora e o autor reais; a nota guarda as tentativas sem retorno.
-      steps: steps(POP05_STEPS, 1, ctx.today, USER.rafael, '00:20').map((st, k) =>
+      steps: steps(POP05_STEPS, 1, ctx.today, USER.jessica, '00:20').map((st, k) =>
         k === 1
           ? {
               ...st,
@@ -453,7 +453,7 @@ export function buildClinical(s: SeedState): void {
       elderId: `el_${String(28).padStart(4, '0')}`,
       openedAt: ctx.dt(-5, '11:20'),
       status: 'open',
-      restrictedToUserIds: [USER.technicalLead, USER.tiago],
+      restrictedToUserIds: [USER.technicalLead, USER.gustavo],
       steps: steps(POP07_STEPS, 1, ctx.d(-5), USER.technicalLead, '11:20'),
       authoritiesNotified: POP07_AUTHORITIES.slice(0, 2).map((body) => ({ body })),
       sourceAlertId: ZARIT_ALERT.i,

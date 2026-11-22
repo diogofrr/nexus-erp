@@ -1,6 +1,6 @@
 # Status de aceite: M03 Cuidadores e pessoas idosas (`caregivers`)
 
-Dev A. Rotas: `/app/cuidadores`, `/app/cuidadores/novo`, `/app/cuidadores/:id` (abas por `?aba=`) e `/app/cuidadores/:id/idoso`. Perfis de teste: `u7` Camila (atendimento), `u1` Helena (gestão), `u2` Dra. Cecília (RT), `u3` Dr. Rafael (psicólogo).
+Dev A. Rotas: `/app/cuidadores`, `/app/cuidadores/novo`, `/app/cuidadores/:id` (abas por `?aba=`) e `/app/cuidadores/:id/idoso`. Perfis de teste: `u7` Camila (atendimento), `u1` Helena (gestão), `u2` Dra. Cecília (RT), `u3` Jessica (psicólogo).
 
 | AC | Status | Onde ver (rota e perfil) | Observação |
 |---|---|---|---|

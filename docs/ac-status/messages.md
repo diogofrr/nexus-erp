@@ -1,6 +1,6 @@
 # Status de aceite: M11 Mensagens e reclamações (`messages`)
 
-Telas: SCR-M11-01 a 06 em `/app/mensagens` (caixa, gaveta `:id`, `modelos`; "Registrar contato" abre por botão, tecla `N` ou `?acao=registrar-contato`) e `/app/reclamacoes` (lista e `:id`). Data de referência dos testes: 04/11/2026, 12:00 (quarta-feira). Perfis: `u7` Camila (atendimento), `u1` Helena (sócia), `u2` Dra. Cecília (responsável técnico), `u3` Dr. Rafael (psicólogo).
+Telas: SCR-M11-01 a 06 em `/app/mensagens` (caixa, gaveta `:id`, `modelos`; "Registrar contato" abre por botão, tecla `N` ou `?acao=registrar-contato`) e `/app/reclamacoes` (lista e `:id`). Data de referência dos testes: 04/11/2026, 12:00 (quarta-feira). Perfis: `u7` Camila (atendimento), `u1` Helena (sócia), `u2` Dra. Cecília (responsável técnico), `u3` Jessica (psicólogo).
 
 | AC | Status | Onde ver (rota e perfil) | Observações |
 |---|---|---|---|

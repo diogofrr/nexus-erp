@@ -310,19 +310,19 @@ describe('M06 fila e alerta vermelho (F06, SCR-M06-01 e 05)', () => {
     await settle(partner.fixture);
     expect(partner.router.url).toBe('/403');
     TestBed.resetTestingModule();
-    const rafael = await bootApp({ userId: 'u3', url: '/app/acompanhamento/fila' });
-    const before = rafael.db.accessLog.size();
+    const jessica = await bootApp({ userId: 'u3', url: '/app/acompanhamento/fila' });
+    const before = jessica.db.accessLog.size();
     for (const url of ['/app/acompanhamento/cuidador/cg_0002', '/app/acompanhamento/alertas/zal_0002', '/app/acompanhamento/zarit/cg_0002/nova']) {
-      await rafael.router.navigateByUrl(url);
-      await settle(rafael.fixture);
-      expect(rafael.router.url, url).toBe('/403');
+      await jessica.router.navigateByUrl(url);
+      await settle(jessica.fixture);
+      expect(jessica.router.url, url).toBe('/403');
     }
-    expect(rafael.db.accessLog.list().slice(before).filter((e) => e.action === 'denied').length).toBe(3);
-    // Nada do caso alheio aparece na fila do Rafael.
-    await rafael.router.navigateByUrl('/app/acompanhamento/fila');
-    await settle(rafael.fixture);
-    expect(text(rafael)).not.toContain('Maria Aparecida Lemos');
-    expect(text(rafael)).toContain('Ana Paula Ferraz');
+    expect(jessica.db.accessLog.list().slice(before).filter((e) => e.action === 'denied').length).toBe(3);
+    // Nada do caso alheio aparece na fila de Jessica.
+    await jessica.router.navigateByUrl('/app/acompanhamento/fila');
+    await settle(jessica.fixture);
+    expect(text(jessica)).not.toContain('Maria Aparecida Lemos');
+    expect(text(jessica)).toContain('Ana Paula Ferraz');
   });
 });
 
@@ -385,7 +385,7 @@ describe('M06 ARBE (SCR-M06-07, AC-M06-12, AC-M06-13)', () => {
 
   it('mudar os limites recalcula: o de atenção sai e o crítico nasce; confirmar, contatar, encerrar e descartar com motivo', async () => {
     const app = await bootApp({ userId: 'u5', url: '/app/acompanhamento/arbe' });
-    // Letícia (u5) não acompanha Adriana: o RT é quem vê e age.
+    // Marina (u5) não acompanha Adriana: o RT é quem vê e age.
     expect(text(app)).not.toContain('Adriana Fonseca');
     TestBed.resetTestingModule();
     const rt = await bootApp({ userId: 'u2', url: '/app/acompanhamento/arbe' });

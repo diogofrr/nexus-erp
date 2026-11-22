@@ -542,7 +542,12 @@ export class GroupsService {
         errors.push({ field: 'leader', message: 'O psicólogo precisa ter CRP ativo.' });
         return null;
       }
-      return { type: 'psychologist', id: psy.id, name: psy.displayName, professionalRegistration: `${psy.crp} (fictício)` };
+      return {
+        type: 'psychologist',
+        id: psy.id,
+        name: psy.displayName,
+        ...(psy.crp ? { professionalRegistration: `${psy.crp} (fictício)` } : {}),
+      };
     }
     if (form.kind === 'group_therapy') {
       errors.push({ field: 'leader', message: 'A terapia em grupo é conduzida por psicólogo da Nexus com CRP ativo.' });

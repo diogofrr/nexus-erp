@@ -284,7 +284,7 @@ export class NewActivityPageComponent {
     const f = this.form();
     if (f.leaderType === 'psychologist') {
       const psy = this.db.psychologists.get(f.leaderId);
-      return psy ? `${psy.crp} (fictício)` : null;
+      return psy?.crp ? `${psy.crp} (fictício)` : null;
     }
     return f.leaderType === 'guest' && f.guestRegistration.trim() ? f.guestRegistration.trim() : null;
   });

@@ -312,7 +312,7 @@ describe('M13 Governança: encaminhamentos (SCR-M13-05 e 06, AC-M13-05 e 09)', (
     expect(support.root.querySelector('[data-role="new"]')).toBeNull();
     const psy = await open('u3', '/app/governanca/encaminhamentos');
     const psyCodes = pickAll(psy.root, 'app-data-table tbody tr').map((r) => text(r).match(/CUI-\d{4}/)?.[0]);
-    // Rafael: C03 (CAPS), C24 (CRAS) e C05 (clínica-escola).
+    // Jessica: C03 (CAPS), C24 (CRAS) e C05 (clínica-escola).
     expect([...psyCodes].sort()).toEqual(['CUI-0003', 'CUI-0005', 'CUI-0024']);
   });
 

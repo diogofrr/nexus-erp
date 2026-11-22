@@ -26,7 +26,7 @@ export interface Conversation {
   dayText: string;
   time: string;
   psychologistName: string;
-  /** "Dra. Beatriz". */
+  /** "Isabelle". */
   psychologistShort: string;
   psychologistRole: string;
   crp: string;
@@ -50,7 +50,7 @@ export interface SlotOption {
   psychologistShort: string;
   date: ISODate;
   time: string;
-  /** "14:00 com a Dra. Beatriz". */
+  /** "14:00 com Isabelle". */
   label: string;
 }
 
@@ -263,8 +263,10 @@ export class ConversationsService {
     };
   }
 
+  /** "Isabelle Ramos, da equipe de psicologia"; com CRP cadastrado, ele vem entre parênteses. */
   psychologistLine(psychologistName: string, crp: string): string {
-    return `${psychologistName}, ${psychologistRole(psychologistName)} (${crp}, fictício)`;
+    const base = `${psychologistName}, ${psychologistRole(psychologistName)}`;
+    return crp ? `${base} (${crp}, fictício)` : base;
   }
 
   crpOf(psychologistId: ID): string {

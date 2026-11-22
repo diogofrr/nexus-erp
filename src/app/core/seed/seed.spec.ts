@@ -60,8 +60,9 @@ function providerStats(n: number): { average: number | null; count: number; grav
 
 describe('seed: contagens da seção 5.15', () => {
   it('gera as quantidades esperadas', () => {
-    expect(c.users).toHaveLength(8);
-    expect(c.psychologists).toHaveLength(4);
+    // A equipe: gestão (2), psicologia (7) e atendimento (2).
+    expect(c.users).toHaveLength(11);
+    expect(c.psychologists).toHaveLength(7);
     expect(c.rooms).toHaveLength(3);
     expect(c.caregivers).toHaveLength(340);
     expect(c.elders).toHaveLength(340);
@@ -545,7 +546,51 @@ describe('seed: agenda e equipe (5.2)', () => {
     expect(sessionSlots.size).toBe(63);
   });
 
-  it('a ocupação reproduz Rafael 86,3% e 91,3% (alerta), Beatriz sem alerta, Letícia 80% sem alerta e Tiago n/d', () => {
+  it('a equipe de psicologia são os 7 integrantes do grupo, pelo nome, sem "Dr."/"Dra." e sem número de CRP', () => {
+    expect(c.psychologists.map((p) => p.displayName)).toEqual([
+      'Jessica Rosa',
+      'Isabelle Ramos',
+      'Marina Gomes',
+      'Gustavo Medeiros',
+      'João Eduardo',
+      'Maria José',
+      'Luzia Luzdalma',
+    ]);
+    c.psychologists.forEach((p) => {
+      expect(p.displayName, p.id).not.toMatch(/\bDra?\./i);
+      expect(p.crp, p.displayName).toBe('');
+      expect(p.crpStatus, p.displayName).toBe('active');
+    });
+    // Cada pessoa da equipe tem um usuário de psicologia com o mesmo nome, também sem tratamento.
+    const team = c.users.filter((u) => u.role === 'psychologist');
+    expect(team).toHaveLength(7);
+    team.forEach((u) => {
+      expect(u.displayName, u.id).not.toMatch(/\bDra?\./i);
+      expect(u.demoDescription, u.id).not.toMatch(/\bDra?\.|CRP/);
+      expect(c.psychologists.find((p) => p.id === u.psychologistId)?.displayName).toBe(u.displayName);
+    });
+    // Quem conduz um encontro é da equipe e nunca leva número de CRP.
+    const names = c.psychologists.map((p) => p.displayName);
+    c.activities
+      .flatMap((a) => a.leaders)
+      .filter((l) => l.type === 'psychologist')
+      .forEach((l) => {
+        expect(names).toContain(l.name);
+        expect(l.professionalRegistration ?? '', l.name).not.toContain('CRP');
+      });
+  });
+
+  // Defeito conhecido: `build-ops.ts` (`psy`) grava `professionalRegistration` como "<crp> (fictício)" mesmo com o CRP
+  // vazio, e as telas de grupo mostram "(, fictício)" e "Inscrição profissional  (fictício)". Quando for corrigido, este
+  // teste passa a falhar: aí se tira o `.fails`.
+  it('quem conduz um encontro, sem CRP cadastrado, não leva registro profissional', () => {
+    c.activities
+      .flatMap((a) => a.leaders)
+      .filter((l) => l.type === 'psychologist')
+      .forEach((l) => expect(l.professionalRegistration, l.name).toBeUndefined());
+  });
+
+  it('a ocupação reproduz Jessica 86,3% e 91,3% (alerta), Isabelle sem alerta, Marina 80% sem alerta e Gustavo n/d', () => {
     const rows = (key: string) =>
       c.monthSummaries
         .filter((m) => m.psychologistId === key)

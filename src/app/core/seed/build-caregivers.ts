@@ -175,15 +175,15 @@ export function buildCaregivers(s: SeedState): void {
     zaritByIndex.set(index, { appliedAt: ctx.d(-daysAgo), total: rng.int(lo, hi) });
   });
   const psyWeights: PsychologistKey[] = [
-    'rafael',
-    'rafael',
-    'rafael',
-    'beatriz',
-    'beatriz',
-    'leticia',
-    'leticia',
-    'tiago',
-    'tiago',
+    'jessica',
+    'jessica',
+    'jessica',
+    'isabelle',
+    'isabelle',
+    'marina',
+    'marina',
+    'gustavo',
+    'gustavo',
   ];
 
   for (let i = 0; i < volumeCount; i += 1) {

@@ -40,9 +40,10 @@ function login(auth: AuthService, userId: string): void {
 }
 
 describe('Login simulado por perfil (M01)', () => {
-  it('lista exatamente os 8 usuários de demonstração da equipe (AC-M01-01)', () => {
+  it('lista exatamente os 11 usuários de demonstração da equipe (AC-M01-01)', () => {
     const { auth } = setup();
-    expect(auth.demoUsers()).toHaveLength(8);
+    expect(auth.demoUsers()).toHaveLength(11);
+    // Os ids u9 a u12 (perfil de prestador) saíram; u13 a u15 são as 3 pessoas que completam a equipe de psicologia.
     expect(auth.demoUsers().map((u) => u.id)).toEqual([
       'u1',
       'u2',
@@ -52,7 +53,11 @@ describe('Login simulado por perfil (M01)', () => {
       'u6',
       'u7',
       'u8',
+      'u13',
+      'u14',
+      'u15',
     ]);
+    expect(auth.demoUsers().filter((u) => u.role === 'psychologist')).toHaveLength(7);
     auth.demoUsers().forEach((u) => {
       expect(u.demoDescription.length).toBeGreaterThan(10);
       expect(u.email.endsWith('@exemplo.com.br')).toBe(true);
@@ -168,7 +173,7 @@ describe('Login simulado por perfil (M01)', () => {
     again.session.data.set('nexus-erp:session', JSON.stringify(stored));
     TestBed.resetTestingModule();
     const reloaded = configureCoreTest({ local, session: again.session });
-    expect(reloaded.db.users.size()).toBe(8);
+    expect(reloaded.db.users.size()).toBe(11);
     expect(TestBed.inject(AuthService).isAuthenticated()).toBe(true);
   });
 

@@ -214,7 +214,7 @@ Convenções: classe `bloco`, parte `bloco__parte`, variante `bloco--variante`. 
           <li><a class="nav-item" href="/app/acompanhamento">ICON(heart-pulse)<span class="nav-item__label">Acompanhamento</span><span class="nav-item__badge" aria-label="3 alertas vermelhos do dia">3</span></a></li>
         </ul></div>
     </nav>
-    <div class="sidebar__foot"><div class="sidebar__profile"><span class="avatar avatar--sm avatar--nav">BN</span><div><strong>Dra. Beatriz Nogueira</strong><span>Psicóloga</span></div></div></div>
+    <div class="sidebar__foot"><div class="sidebar__profile"><span class="avatar avatar--sm avatar--nav">BN</span><div><strong>Isabelle Ramos</strong><span>Psicóloga</span></div></div></div>
   </aside>
   <header class="topbar">
     <button class="btn btn--ghost btn--icon topbar__menu" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">ICON(menu)</button>
@@ -389,7 +389,7 @@ Legenda: `[Botão]`, `(selo)`, `{campo}`, `[x]` marcado, `[ ]` vazio, `###` pree
 |  de sustentação.               |  | (HP) Helena Prado Vasconcelos  (Código)|  |
 |                                |  |      Sócia e gestão: indicadores        |  |
 |  Back-office da Nexus.         |  | (CM) Dra. Cecília Montenegro   (Código)|  |
-|  Escolha um perfil.            |  | (BN) Dra. Beatriz Nogueira     (Código)|  |
+|  Escolha um perfil.            |  | (BN) Isabelle Ramos     (Código)|  |
 |                                |  | ... 8 da equipe                         |  |
 |                                |  +----------------------------------------+  |
 +--------------------------------+----------------------------------------------+
@@ -409,7 +409,7 @@ partner (Sócio/Gestão)  [sem nome de cuidador; "menos de 5" abaixo do mínimo]
  +-- Resultado x projeção (barras) --+ | Credenciamentos pendentes: 3       |
  | M1 M2 ... linha do plano           | | Risco de saída: 2 prestadores      |
  +-- Equipe (ocupação, alerta 80%) --+ +-- Pendências ---------------------+
- | Dr. Rafael 91,3% ####|##          | | LGPD a vencer: 2  POPs: 1  Riscos:4|
+ | Jessica 91,3% ####|##          | | LGPD a vencer: 2  POPs: 1  Riscos:4|
 technical_lead (Responsável técnica)
  [BANNER perigo: 1 vermelho do dia sem contato]  [BANNER: 1 vermelho vencido]
  [KPI vermelhos abertos][amarelos][ARBE críticos][ocorrências POP-05/07]
@@ -521,7 +521,7 @@ Nenhum campo de comissão, taxa ou repasse (AC-M08-12).
 
 ### 6.8 Agenda do psicólogo (SCR-M05-01)
 ```
-Agenda · Dra. Beatriz   (Semana|Mês) [<] 02 a 06/11 [>]   Psicólogo (v)  Modalidade (v)
+Agenda · Isabelle   (Semana|Mês) [<] 02 a 06/11 [>]   Psicólogo (v)  Modalidade (v)
 legenda: (o Aberta)(u Reservada)(v Confirmada)(* Prioritária)(x Bloqueada)(ok Realizada)(! Falta)
       Seg 02   Ter 03   [Qua 04]  Qui 05   Sex 06
 08:00 o Aberta v CUI-0051 o Aberta  o Aberta  * Prioritária

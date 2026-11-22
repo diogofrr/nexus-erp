@@ -47,7 +47,7 @@ Nenhum seed foi alterado. Nenhum `index.ts` foi tocado (importo pelos caminhos d
 
 ## Pedidos ao líder
 
-**Status na integração (`docs/12-cuidador-integracao.md`):** 1 feito (o diálogo "Como falar com a gente" seleciona o número e usa a frase do AC-CG-161, com o helper único `shared/ui/util/clipboard.ts`; AC-CG-161 passa a atendido); 2 feito (`WellbeingCheckService` em `core/care`); 3 feito (`requestClosure` delega a `SubjectRightsService`); 4 feito (rótulo por item em `app-cg-trend`); 5 feito (Ana tem conversa agendada com o Dr. Rafael e Lourdes, confirmada com a Dra. Letícia).
+**Status na integração (`docs/12-cuidador-integracao.md`):** 1 feito (o diálogo "Como falar com a gente" seleciona o número e usa a frase do AC-CG-161, com o helper único `shared/ui/util/clipboard.ts`; AC-CG-161 passa a atendido); 2 feito (`WellbeingCheckService` em `core/care`); 3 feito (`requestClosure` delega a `SubjectRightsService`); 4 feito (rótulo por item em `app-cg-trend`); 5 feito (Ana tem conversa agendada com o Jessica e Lourdes, confirmada com a Marina).
 
 1. **Contato "Como falar com a gente" (Base, `ui/cg-contact-dialog.component.ts`)**: com a área de transferência negada o texto é "Não consegui copiar sozinho. Segure sobre o número e escolha Copiar." e o número não fica selecionado; o AC-CG-161 pede "Não foi possível copiar. Segure sobre o número e escolha Copiar." com o número SELECIONADO. A folha de número da "Ajuda agora" (minha, `help/ui/call-number-sheet.component.ts`) já faz isso; `help/state/copy-text.ts` tem `copyToClipboard` e `selectContents` prontos para a Base reaproveitar.
 2. **Humor**: mover `WellbeingCheckService` (P1) para `core/care` (como o `DoseCheckService`), para Hoje e Como estou usarem o mesmo serviço sem importar entre áreas. Hoje `my-wellbeing` importa de `../../today/state/wellbeing-check.service`.
@@ -108,7 +108,7 @@ Legenda: **atendido** (testado), **parcial** (com o motivo), **não atendido** (
 | AC-CG-88 | atendido (visual não medido) | Data, faixa por extenso e pontuação só como legenda; rampa de azul (`data-band` 1 a 4); sem octógono, triângulo, termômetro, gráfico, vermelho ou âmbar. O tamanho da legenda (14 px) é do kit. |
 | AC-CG-89 | atendido | Sem "alerta", "eficácia", "melhorou", "piorou" nem percentual (Ana, Maria, João, Terezinha). |
 | AC-CG-90 | atendido | Ana: "A equipe de psicologia vai falar com você hoje." e 63 e 48 com as faixas por extenso. |
-| AC-CG-91 | atendido | Maria: nota "ainda não conseguiu", "Combinar um horário" (cria a mensagem do aplicativo, marcada como pedido de apoio, que aparece em Falar com a Nexus) e "Seu pedido de revisão está com a Dra. Beatriz. Resposta até 10/11." |
+| AC-CG-91 | atendido | Maria: nota "ainda não conseguiu", "Combinar um horário" (cria a mensagem do aplicativo, marcada como pedido de apoio, que aparece em Falar com a Nexus) e "Seu pedido de revisão está com a Isabelle. Resposta até 10/11." |
 | AC-CG-92 | atendido | Pedido gravado com o psicólogo e o prazo; "Pedido enviado. O psicólogo responde até 19/11."; texto vazio mostra a frase e o texto digitado continua. |
 | AC-CG-93 | atendido | Só as 5 opções do humor; nenhum campo da escala. |
 | AC-CG-94 | atendido | Sônia: sem humor e sem linha do tempo, "O acompanhamento está pausado" com "Autorizar de novo"; Hoje também não mostra o humor (teste em Privacidade). |

@@ -70,10 +70,10 @@ describe('M07 programação (SCR-M07-01, AC-M07-11, AC-M07-04)', () => {
   });
 
   it('o psicólogo vê por padrão os grupos que conduz; o atendimento não cria nem abre os indicadores', async () => {
-    const rafael = await bootApp({ userId: 'u3', url: '/app/grupos' });
-    expect(text(rafael, 'app-data-table')).toContain('Sobrecarga e autocuidado');
-    expect(text(rafael, 'app-data-table')).not.toContain('Lidar com as perdas');
-    expect(q(rafael, '[data-role="new-activity"]')).toBeTruthy();
+    const jessica = await bootApp({ userId: 'u3', url: '/app/grupos' });
+    expect(text(jessica, 'app-data-table')).toContain('Sobrecarga e autocuidado');
+    expect(text(jessica, 'app-data-table')).not.toContain('Lidar com as perdas');
+    expect(q(jessica, '[data-role="new-activity"]')).toBeTruthy();
     TestBed.resetTestingModule();
     const support = await bootApp({ userId: 'u7', url: '/app/grupos' });
     expect(q(support, '[data-role="new-activity"]')).toBeNull();
@@ -220,14 +220,14 @@ describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
     });
     const sustenta = svcSupport.enroll({ activityId: therapyId, caregiverId: 'cg_0021', ...accepted });
     expect(sustenta.ok && sustenta.value.enrollment.eligibleForGroupTherapy).toBeUndefined();
-    // Letícia (psicóloga do caso de C11, Sustenta) pode registrar a indicação; ela fica gravada.
+    // Marina (da equipe de psicologia, responsável pelo caso de C11, Sustenta) pode registrar a indicação; ela fica gravada.
     TestBed.resetTestingModule();
-    const leticia = await bootApp({ userId: 'u5', url: '/app/grupos/act_0003' });
-    const svcLeticia = TestBed.inject(GroupsService);
-    const therapy = cloneActivity(leticia, 'act_0003', { status: 'open', meetings: [] });
-    const marked = svcLeticia.enroll({ activityId: therapy.id, caregiverId: 'cg_0011', ...accepted, eligible: true });
+    const marina = await bootApp({ userId: 'u5', url: '/app/grupos/act_0003' });
+    const svcMarina = TestBed.inject(GroupsService);
+    const therapy = cloneActivity(marina, 'act_0003', { status: 'open', meetings: [] });
+    const marked = svcMarina.enroll({ activityId: therapy.id, caregiverId: 'cg_0011', ...accepted, eligible: true });
     expect(marked.ok && marked.value.enrollment.eligibleForGroupTherapy).toBe(true);
-    expect(svcLeticia.enroll({ activityId: therapy.id, caregiverId: 'cg_0007', ...accepted, eligible: true }).ok).toBe(false);
+    expect(svcMarina.enroll({ activityId: therapy.id, caregiverId: 'cg_0007', ...accepted, eligible: true }).ok).toBe(false);
   });
 });
 
@@ -312,7 +312,9 @@ describe('M07 nova atividade (SCR-M07-02, AC-M07-06, AC-M07-10)', () => {
       },
       true,
     );
-    expect(mine.ok && mine.value.leaders[0]?.professionalRegistration).toBe('CRP-04/00102 (fictício)');
+    // Quem conduz vai pelo nome; sem CRP cadastrado, a atividade não ganha número de inscrição profissional.
+    expect(mine.ok && mine.value.leaders[0]?.name).toBe('Jessica Rosa');
+    expect(mine.ok && mine.value.leaders[0]?.professionalRegistration).toBeUndefined();
   });
 
   it('a nova atividade guarda rascunho e oferece retomar (UX 5.12)', async () => {
@@ -332,14 +334,24 @@ describe('M07 nova atividade (SCR-M07-02, AC-M07-06, AC-M07-10)', () => {
 });
 
 describe('M07 detalhe, sigilo e privacidade (SCR-M07-03, AC-M07-07)', () => {
-  it('mostra o caráter, o aviso de que não promete resultado e o número de inscrição profissional', async () => {
+  it('mostra o caráter, o aviso de que não promete resultado e quem conduz, pelo nome', async () => {
     const app = await bootApp({ userId: 'u3', url: '/app/grupos/act_0001' });
     expect(q(app, '[data-role="character"]')?.textContent).toContain('Psicoterapia');
     expect(q(app, '[data-role="no-promise"]')?.textContent).toContain('não promete resultado terapêutico');
-    expect(q(app, '[data-role="leader"]')?.textContent).toContain('CRP-04/00102 (fictício)');
+    expect(text(app, '[data-role="leader"]')).toContain('Jessica Rosa');
+    expect(text(app, '[data-role="leader"]')).not.toMatch(/Dra?\./);
+    expect(text(app, '[data-role="leader"]')).not.toContain('CRP');
     expect(q(app, '[data-role="min-plan"]')?.textContent).toContain('Planos Cuida e Sustenta');
     expect(text(app, '[data-role="contract"]')).toContain('o que for dito no grupo fica no grupo');
     expect(text(app)).not.toMatch(FORBIDDEN_WORDS);
+  });
+
+  // Defeito conhecido: a semente (`build-ops.ts`, `psy`) grava `professionalRegistration` como " (fictício)" mesmo com o CRP
+  // vazio, e o detalhe mostra "Jessica Rosa · Inscrição profissional  (fictício)". Quando for corrigido, este teste passa
+  // a falhar: aí se tira o `.fails`.
+  it('sem CRP cadastrado, o detalhe não mostra "Inscrição profissional"', async () => {
+    const app = await bootApp({ userId: 'u3', url: '/app/grupos/act_0001' });
+    expect(text(app, '[data-role="leader"]').trim()).toBe('Jessica Rosa');
   });
 
   it('a sócia vê só códigos; o atendimento não vê quem está na terapia em grupo; o RT valida o enquadramento', async () => {

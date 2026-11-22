@@ -9,10 +9,10 @@ import { readingTimeLabel } from '../../../../core/rules/guidance-content';
 import { doseProgress } from '../../../../core/rules/medication-doses';
 import { CaregiverContextService } from '../../state/caregiver-context.service';
 import { formatDayLong, relativeDay, relativeDateTime } from '../../state/day-format';
-import { CgEventType, EnrolledMeeting, enrolledMeetingsOf, eventWhoText, nextOpenMeetingOf } from '../../state/event-type';
+import { CgEventType, EnrolledMeeting, EventPlanAccess, enrolledMeetingsOf, eventWhoText, nextOpenMeetingOf } from '../../state/event-type';
 import { canBookSession, eventAccessOf } from '../../state/plan-access';
 import { MoodValue, moodLabel } from '../../ui/cg-mood.component';
-import { withArticle } from '../../state/people-format';
+import { leadersShort, withArticle } from '../../state/people-format';
 import { InviteKind, capitalize, greetingFor, inviteKindFor } from './today-rules';
 import { WellbeingCheckService, WellbeingError } from '../../../../core/care/wellbeing-check.service';
 
@@ -22,9 +22,9 @@ export const TODAY_DOSE_ROWS = 4;
 /** O próximo compromisso da pessoa idosa, a conversa do próprio cuidador com o psicólogo ou um encontro em que está inscrita. */
 export interface NextEvent {
   key: string;
-  /** "Fisioterapia, hoje às 14:00" ou "Sua conversa com a Dra. Beatriz, qui, 06/11, às 14:00". */
+  /** "Fisioterapia, hoje às 14:00" ou "Sua conversa com Isabelle, qui, 06/11, às 14:00". */
   text: string;
-  /** "Fisioterapia" ou "Sua conversa com a Dra. Beatriz" (o texto sem o quando). */
+  /** "Fisioterapia" ou "Sua conversa com Isabelle" (o texto sem o quando). */
   title: string;
   /** "Hoje", "Amanhã" ou "Qui, 06/11": o dia, para o destaque. */
   day: string;
@@ -244,7 +244,8 @@ export class TodayViewService {
       const invite: DailyInvite = {
         kind,
         title: meeting.title,
-        text: `${this.when(meeting.startAt, today)}. ${eventWhoText(meeting.type, access)}`,
+        // Na terapia em grupo, quem conduz pelo nome ("Com Marina Gomes."); na capacitação, se é incluída ou avulsa.
+        text: `${this.when(meeting.startAt, today)}. ${this.whoText(meeting, access)}`,
         actionLabel: 'Ver detalhes',
         link: '/cuidador/cuidar-de-mim/grupos',
         query: { atividade: meeting.activityId },
@@ -294,5 +295,15 @@ export class TodayViewService {
     const day = relative === 'hoje' || relative === 'amanhã' ? capitalize(relative) : capitalize(formatDayLong(dateOf(at)));
     return `${day}, às ${timeOf(at)}`;
   }
-}
 
+  /** "Com Marina Gomes." na terapia em grupo (quem conduz); o texto do tipo nos outros casos. */
+  private whoText(meeting: EnrolledMeeting, access: EventPlanAccess): string {
+    if (meeting.type === 'group_therapy') {
+      const leader = leadersShort(this.db.activities.get(meeting.activityId)?.leaders ?? []);
+      if (leader) {
+        return `${leader}.`;
+      }
+    }
+    return eventWhoText(meeting.type, access);
+  }
+}

@@ -17,23 +17,25 @@ import { PSYCHOLOGIST, PsychologistKey, ROOM } from './refs';
 import { SeedState } from './state';
 
 const HOURS = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
-const KEYS: PsychologistKey[] = ['rafael', 'beatriz', 'leticia', 'tiago'];
+/** As 4 pessoas da equipe com histórico de agenda; quem entrou nesta semana (João Eduardo, Maria José e Luzia) ainda não tem sessões. */
+type SeasonedKey = Extract<PsychologistKey, 'jessica' | 'isabelle' | 'marina' | 'gustavo'>;
+const KEYS: SeasonedKey[] = ['jessica', 'isabelle', 'marina', 'gustavo'];
 
 /** Meses fechados (5.2): [disponíveis, realizadas] por psicólogo no mês -2 e no mês -1. */
-const SUMMARIES: Record<PsychologistKey, [[number, number], [number, number]]> = {
-  rafael: [
+const SUMMARIES: Record<SeasonedKey, [[number, number], [number, number]]> = {
+  jessica: [
     [160, 138],
     [160, 146],
   ],
-  beatriz: [
+  isabelle: [
     [160, 136],
     [160, 112],
   ],
-  leticia: [
+  marina: [
     [160, 128],
     [160, 128],
   ],
-  tiago: [
+  gustavo: [
     [0, 0],
     [80, 40],
   ],
@@ -92,34 +94,34 @@ export function buildSessions(s: SeedState): void {
   const combos = (days: string[]): { date: string; hour: string }[] =>
     days.flatMap((date) => HOURS.map((hour) => ({ date, hour })));
 
-  const pastQuota: Record<PsychologistKey, number> = {
-    rafael: 10,
-    beatriz: 8,
-    leticia: 8,
-    tiago: 5,
+  const pastQuota: Record<SeasonedKey, number> = {
+    jessica: 10,
+    isabelle: 8,
+    marina: 8,
+    gustavo: 5,
   };
-  const futureQuota: Record<PsychologistKey, number> = {
-    rafael: 10,
-    beatriz: 7,
-    leticia: 7,
-    tiago: 5,
+  const futureQuota: Record<SeasonedKey, number> = {
+    jessica: 10,
+    isabelle: 7,
+    marina: 7,
+    gustavo: 5,
   };
 
   interface Plan {
-    key: PsychologistKey;
+    key: SeasonedKey;
     date: string;
     hour: string;
     past: boolean;
   }
   const plan: Plan[] = [];
   /** Vagas livres candidatas (só depois de hoje e fora das sessões), por psicólogo. */
-  const freeShare: Record<PsychologistKey, number> = {
-    rafael: 4,
-    beatriz: 3,
-    leticia: 3,
-    tiago: 5,
+  const freeShare: Record<SeasonedKey, number> = {
+    jessica: 4,
+    isabelle: 3,
+    marina: 3,
+    gustavo: 5,
   };
-  const freeSlots: { key: PsychologistKey; date: string; hour: string }[] = [];
+  const freeSlots: { key: SeasonedKey; date: string; hour: string }[] = [];
   KEYS.forEach((key) => {
     rng
       .sample(combos(pastDays), pastQuota[key])
@@ -164,7 +166,7 @@ export function buildSessions(s: SeedState): void {
     })),
   ];
 
-  const pools = new Map<PsychologistKey, string[]>();
+  const pools = new Map<SeasonedKey, string[]>();
   KEYS.forEach((key) => {
     pools.set(
       key,

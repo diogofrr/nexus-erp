@@ -187,9 +187,12 @@ describe('M05 agenda e agendamento (F04)', () => {
   it('o psicólogo sem CRP ativo não aparece na agenda (RN-ATD-06)', async () => {
     const app = await bootApp({ userId: 'u7', url: '/app/atendimento/agenda' });
     const { svc } = helpers(app);
-    expect(svc().activePsychologists().length).toBe(4);
+    // Os 7 da equipe de psicologia estão ativos na semente.
+    expect(svc().activePsychologists().length).toBe(app.db.psychologists.count((p) => p.crpStatus === 'active'));
+    expect(svc().activePsychologists().length).toBe(7);
     app.db.psychologists.update('psy_0004', { crpStatus: 'inactive' });
     expect(svc().activePsychologists().map((p) => p.id)).not.toContain('psy_0004');
+    expect(svc().activePsychologists().length).toBe(6);
   });
 });
 
@@ -379,7 +382,7 @@ describe('M05 ocupação (SCR-M05-06, EQP)', () => {
   const rowOf = (app: BootedApp, psychologistId: string) =>
     TestBed.inject(CareSessionsService).occupancyFor(app.db.psychologists.require(psychologistId));
 
-  it('Rafael: 86,3% e 91,3% com o aviso de agenda acima de 80% por dois meses (AC-M05-01)', async () => {
+  it('Jessica: 86,3% e 91,3% com o aviso de agenda acima de 80% por dois meses (AC-M05-01)', async () => {
     const app = await bootApp({ userId: 'u3', url: '/app/atendimento/ocupacao' });
     const row = rowOf(app, 'psy_0001');
     expect(row.months.map((m) => m.occupancyPercent)).toEqual([86.3, 91.3, row.months[2]?.occupancyPercent]);
@@ -389,25 +392,25 @@ describe('M05 ocupação (SCR-M05-06, EQP)', () => {
     expect(app.root.querySelector('[data-role="overload-text"]')?.textContent).toContain('acima de 80% há dois meses seguidos');
   });
 
-  it('Letícia (80,0% e 80,0%) não dispara; Beatriz (85,0% e 70,0%) não dispara (AC-M05-02, AC-M05-03)', async () => {
+  it('Marina (80,0% e 80,0%) não dispara; Isabelle (85,0% e 70,0%) não dispara (AC-M05-02, AC-M05-03)', async () => {
     const app = await bootApp({ userId: 'u2', url: '/app/atendimento/ocupacao' });
-    const leticia = rowOf(app, 'psy_0003');
-    expect(leticia.months.slice(0, 2).map((m) => m.occupancyPercent)).toEqual([80, 80]);
-    expect(leticia.overload).toBe(false);
-    const beatriz = rowOf(app, 'psy_0002');
-    expect(beatriz.months.slice(0, 2).map((m) => m.occupancyPercent)).toEqual([85, 70]);
-    expect(beatriz.overload).toBe(false);
+    const marina = rowOf(app, 'psy_0003');
+    expect(marina.months.slice(0, 2).map((m) => m.occupancyPercent)).toEqual([80, 80]);
+    expect(marina.overload).toBe(false);
+    const isabelle = rowOf(app, 'psy_0002');
+    expect(isabelle.months.slice(0, 2).map((m) => m.occupancyPercent)).toEqual([85, 70]);
+    expect(isabelle.overload).toBe(false);
     expect(app.root.textContent).toContain('80,0%');
   });
 
-  it('Tiago: mês -2 sem agenda mostra n/d e nenhum alerta; o mês corrente é parcial e não entra na regra (AC-M05-04, AC-M05-05)', async () => {
+  it('Gustavo: mês -2 sem agenda mostra n/d e nenhum alerta; o mês corrente é parcial e não entra na regra (AC-M05-04, AC-M05-05)', async () => {
     const app = await bootApp({ userId: 'u2', url: '/app/atendimento/ocupacao' });
-    const tiago = rowOf(app, 'psy_0004');
-    expect(tiago.months[0]?.occupancyPercent).toBeNull();
-    expect(tiago.months[1]?.occupancyPercent).toBe(50);
-    expect(tiago.overload).toBe(false);
-    expect(tiago.months[2]?.isPartialMonth).toBe(true);
-    expect(tiago.months[0]?.isPartialMonth).toBe(false);
+    const gustavo = rowOf(app, 'psy_0004');
+    expect(gustavo.months[0]?.occupancyPercent).toBeNull();
+    expect(gustavo.months[1]?.occupancyPercent).toBe(50);
+    expect(gustavo.overload).toBe(false);
+    expect(gustavo.months[2]?.isPartialMonth).toBe(true);
+    expect(gustavo.months[0]?.isPartialMonth).toBe(false);
     const card = app.root.querySelector('[data-psychologist="psy_0004"]');
     expect(card?.textContent).toContain('n/d');
     expect(card?.textContent).toContain('parcial');
@@ -417,7 +420,7 @@ describe('M05 ocupação (SCR-M05-06, EQP)', () => {
     const app = await bootApp({ userId: 'u1', url: '/app/atendimento' });
     expect(app.router.url).toBe('/app/atendimento/ocupacao');
     const text = app.root.querySelector('main')?.textContent ?? '';
-    expect(text).toContain('Dr. Rafael Moreira');
+    expect(text).toContain('Jessica Rosa');
     expect(text).toContain('Horas disponibilizadas');
     const names = app.db.caregivers.list().slice(0, 29).map((c) => c.fullName);
     names.forEach((name) => expect(text).not.toContain(name));
@@ -427,7 +430,7 @@ describe('M05 ocupação (SCR-M05-06, EQP)', () => {
     expect(app.router.url).toBe('/403');
   });
 
-  it('redistribuir de Rafael para Tiago transfere sessões futuras e cuidadores, grava motivo e a ocupação de Rafael cai (AC-M05-06)', async () => {
+  it('redistribuir de Jessica para Gustavo transfere sessões futuras e cuidadores, grava motivo e a ocupação de Jessica cai (AC-M05-06)', async () => {
     const app = await bootApp({ userId: 'u2', url: '/app/atendimento/ocupacao' });
     const svc = TestBed.inject(CareSessionsService);
     const before = rowOf(app, 'psy_0001').months[2]?.availableHours ?? 0;
@@ -446,9 +449,9 @@ describe('M05 ocupação (SCR-M05-06, EQP)', () => {
     expect(entry?.justification).toBe('Agenda acima de 80% por dois meses.');
     // O psicólogo de origem não faz a transferência.
     TestBed.resetTestingModule();
-    const rafael = await bootApp({ userId: 'u3', url: '/app/atendimento/ocupacao' });
+    const jessica = await bootApp({ userId: 'u3', url: '/app/atendimento/ocupacao' });
     expect(TestBed.inject(CareSessionsService).redistribute('psy_0001', 'psy_0004', 'Motivo qualquer').ok).toBe(false);
-    expect(rafael.router.url).toBe('/app/atendimento/ocupacao');
+    expect(jessica.router.url).toBe('/app/atendimento/ocupacao');
   });
 });
 

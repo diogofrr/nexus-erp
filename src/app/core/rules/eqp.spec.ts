@@ -39,25 +39,25 @@ describe('Ocupação da agenda (RN-EQP-01 a 08; AC-M05-01 a 05)', () => {
     expect(isAboveThreshold(10000, 8001)).toBe(true);
   });
 
-  it('Rafael Moreira: 86,3% e 91,3% dispara o alerta de dois meses seguidos', () => {
+  it('Jessica Rosa: 86,3% e 91,3% dispara o alerta de dois meses seguidos', () => {
     expect(hasOverloadAlert([row('2026-09', 160, 138), row('2026-10', 160, 146)], CURRENT)).toBe(
       true,
     );
   });
 
-  it('Letícia Amaral: 80,0% e 80,0% não dispara', () => {
+  it('Marina Gomes: 80,0% e 80,0% não dispara', () => {
     expect(hasOverloadAlert([row('2026-09', 160, 128), row('2026-10', 160, 128)], CURRENT)).toBe(
       false,
     );
   });
 
-  it('Beatriz Nogueira: 85,0% e 70,0% não são seguidos', () => {
+  it('Isabelle Ramos: 85,0% e 70,0% não são seguidos', () => {
     expect(hasOverloadAlert([row('2026-09', 160, 136), row('2026-10', 160, 112)], CURRENT)).toBe(
       false,
     );
   });
 
-  it('Tiago Brandão: mês -2 sem agenda (n/d) e 50% não dispara', () => {
+  it('Gustavo Medeiros: mês -2 sem agenda (n/d) e 50% não dispara', () => {
     expect(hasOverloadAlert([row('2026-09', 0, 0), row('2026-10', 80, 40)], CURRENT)).toBe(false);
     expect(hasOverloadAlert([row('2026-10', 80, 70)], CURRENT)).toBe(false); // falta um mês
   });

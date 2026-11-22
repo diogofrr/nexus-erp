@@ -59,7 +59,7 @@ describe('NotificationService', () => {
     expect(audit?.title).toBe('Auditoria quinzenal vence amanhã');
     expect(items.some((i) => i.type === 'dsr_due')).toBe(true);
     expect(
-      items.some((i) => i.type === 'team_overload' && i.context === 'Dr. Rafael Moreira'),
+      items.some((i) => i.type === 'team_overload' && i.context === 'Jessica Rosa'),
     ).toBe(true);
   });
 
@@ -103,23 +103,23 @@ describe('NotificationService', () => {
   });
 
   it('cada psicólogo só recebe pendências dos próprios cuidadores', () => {
-    const rafael = asUser('u3');
+    const jessica = asUser('u3');
     expect(
-      rafael.some(
+      jessica.some(
         (i) => i.key.startsWith('red_contact_pending:') && i.context.startsWith('Ana Paula'),
       ),
     ).toBe(true);
-    expect(rafael.some((i) => i.context.includes('Maria Aparecida'))).toBe(false);
-    expect(rafael.some((i) => i.type === 'agenda_overload')).toBe(true);
+    expect(jessica.some((i) => i.context.includes('Maria Aparecida'))).toBe(false);
+    expect(jessica.some((i) => i.type === 'agenda_overload')).toBe(true);
 
-    const beatriz = asUser('u4');
+    const isabelle = asUser('u4');
     expect(
-      beatriz.some(
+      isabelle.some(
         (i) => i.type === 'red_contact_overdue' && i.context.includes('Maria Aparecida'),
       ),
     ).toBe(true);
-    expect(beatriz.some((i) => i.context.includes('Ana Paula'))).toBe(false);
-    expect(beatriz.some((i) => i.type === 'agenda_overload')).toBe(false);
+    expect(isabelle.some((i) => i.context.includes('Ana Paula'))).toBe(false);
+    expect(isabelle.some((i) => i.type === 'agenda_overload')).toBe(false);
   });
 
   it('não há notificações do antigo portal do credenciado (nenhum perfil as recebe nem leva a /portal)', () => {

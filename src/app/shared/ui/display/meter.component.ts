@@ -60,7 +60,7 @@ export class MeterComponent {
  * o ícone e o texto "acima de 80%". Sem agenda no mês (`percent` nulo) mostra "n/d" tracejado.
  *
  * ```html
- * <app-occupancy-bar name="Dr. Rafael Moreira" [percent]="91.3" />
+ * <app-occupancy-bar name="Jessica Rosa" [percent]="91.3" />
  * ```
  */
 @Component({

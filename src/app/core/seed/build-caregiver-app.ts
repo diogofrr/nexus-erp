@@ -135,14 +135,14 @@ export function buildCaregiverApp(s: SeedState): void {
   // Ana e Lourdes: uma conversa futura com o psicólogo, cada uma com a vaga correspondente já ocupada.
   addDemoSession(s, {
     caregiverNumber: 1,
-    psychologist: 'rafael',
+    psychologist: 'jessica',
     businessDays: 3,
     status: 'scheduled',
     modality: 'online',
   });
   addDemoSession(s, {
     caregiverNumber: 24,
-    psychologist: 'leticia',
+    psychologist: 'marina',
     businessDays: 2,
     status: 'confirmed',
     modality: 'in_person_coworking',
@@ -150,7 +150,7 @@ export function buildCaregiverApp(s: SeedState): void {
   // Elza (Sustenta, 4 sessões por mês): uma conversa marcada dentro da cota do mês.
   addDemoSession(s, {
     caregiverNumber: 27,
-    psychologist: 'tiago',
+    psychologist: 'gustavo',
     businessDays: 4,
     status: 'scheduled',
     modality: 'online',

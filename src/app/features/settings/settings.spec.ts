@@ -622,13 +622,19 @@ describe('conteúdos, usuários, suposições e sobre', () => {
     });
   });
 
-  it('usuários de demonstração: os 8 da equipe, com perfil, acesso e quem está conectado', async () => {
+  it('usuários de demonstração: os 11 da equipe, com perfil, acesso e quem está conectado', async () => {
     app = await bootApp({ userId: 'u1', url: '/app/configuracoes/usuarios' });
     const rows = all('tbody tr');
-    expect(rows).toHaveLength(8);
+    expect(rows).toHaveLength(11);
     expect(rows.filter((r) => r.textContent?.includes('Conectado'))).toHaveLength(1);
     expect(rows[7]?.textContent).toContain('Atendimento/Relacionamento');
     expect(rows[7]?.textContent).toContain('Exige código');
+    // As 3 pessoas que completam a equipe de psicologia vêm no fim, pelo nome.
+    expect(rows.slice(8).map((r) => r.textContent ?? '')).toEqual([
+      expect.stringContaining('João Eduardo'),
+      expect.stringContaining('Maria José'),
+      expect.stringContaining('Luzia Luzdalma'),
+    ]);
     expect(rows.some((r) => r.textContent?.includes('Profissional credenciado'))).toBe(false);
   });
 

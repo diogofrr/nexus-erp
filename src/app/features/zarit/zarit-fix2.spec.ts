@@ -73,7 +73,7 @@ describe('Zarit e alerta: ajustes do Fix-2', () => {
     // O passo 2 é da Cecília, às 09:47, com o texto dela.
     expect(steps.find((s) => s.n === 2)).toMatchObject({ byUserId: 'u2', note: 'Conversamos por telefone.' });
     expect(steps.find((s) => s.n === 2)?.doneAt).toBe('2026-11-04T09:47:00-03:00');
-    // O passo 1 continua do Dr. Rafael, sem o texto da Cecília.
+    // O passo 1 continua de Jessica, sem o texto da Cecília.
     expect(steps.find((s) => s.n === 1)?.byUserId).toBe('u3');
     expect(steps.find((s) => s.n === 1)?.note).toBeUndefined();
   });
@@ -105,7 +105,8 @@ describe('Zarit e alerta: ajustes do Fix-2', () => {
   it('CX-019: a RT pede ao psicólogo que ligue agora; o aviso chega ao sino dele e o pedido fica na tela', async () => {
     const app = await openAsRt('zal_0002', 'cg_0002');
     const button = q(app, '[data-role="request-contact"]');
-    expect(button?.textContent).toContain('Pedir à Dra. Beatriz Nogueira que ligue agora');
+    // Sem "Dra.", o nome vem sem artigo: "Pedir a Isabelle Ramos" (a preposição sozinha, sem crase).
+    expect(button?.textContent).toContain('Pedir a Isabelle Ramos que ligue agora');
     click(button);
     await settle(app.fixture);
     expect(q(app, '[data-role="request-sent"]')?.textContent).toContain('Pedido enviado às 12:00');

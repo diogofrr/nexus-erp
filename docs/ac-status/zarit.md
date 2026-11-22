@@ -1,6 +1,6 @@
 # Status de aceite: M06 Zarit e ARBE (`zarit`)
 
-Rota base `/app/acompanhamento`. Perfis de teste: `u3` Dr. Rafael (casos de Ana e João), `u4` Dra. Beatriz (caso de Maria), `u5` Dra. Letícia, `u2` Dra. Cecília (RT), `u1` Helena (sócia), `u7` Camila (atendimento).
+Rota base `/app/acompanhamento`. Perfis de teste: `u3` Jessica (casos de Ana e João), `u4` Isabelle (caso de Maria), `u5` Marina, `u2` Dra. Cecília (RT), `u1` Helena (sócia), `u7` Camila (atendimento).
 
 | AC | Status | Onde ver | Observação |
 |---|---|---|---|

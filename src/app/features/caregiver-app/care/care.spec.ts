@@ -154,7 +154,7 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       await boot('cg_0024');
       const card = text(q('[data-role="next-conversation"]'));
       expect(text(q('main'))).toContain('Sua próxima conversa');
-      expect(card).toContain('Dra. Letícia Amaral');
+      expect(card).toContain('Marina Gomes');
       expect(card).toContain('No espaço de coworking');
       expect(card).toContain('Confirmada');
     });
@@ -205,15 +205,17 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(text(q('[data-step-heading]'))).toBe('Qual horário?');
       const labels = all('[data-role="slot"]').map(text);
       expect(labels.length).toBeGreaterThan(0);
-      labels.forEach((l) => expect(l).toMatch(/^\d{2}:\d{2} com (Dr|Dra)\. \S+$/));
+      // O horário vem com o primeiro nome de quem atende, sem "Dr." nem "Dra." (a equipe aparece pelo nome).
+      labels.forEach((l) => expect(l).toMatch(/^\d{2}:\d{2} com \S+$/));
+      labels.forEach((l) => expect(l).not.toMatch(/Dra?\./));
       // Um psicólogo com registro inativo não aparece.
       TestBed.resetTestingModule();
       await boot('cg_0001');
-      const rafaelSlots = app.db.availabilitySlots.query((s) => s.psychologistId === 'psy_0001' && s.status === 'open').length;
-      expect(rafaelSlots).toBeGreaterThan(0);
+      const jessicaSlots = app.db.availabilitySlots.query((s) => s.psychologistId === 'psy_0001' && s.status === 'open').length;
+      expect(jessicaSlots).toBeGreaterThan(0);
       app.db.psychologists.update('psy_0001', { crpStatus: 'inactive' });
       await goToSummary();
-      expect(all('[data-role="slot"]').map(text).some((l) => l.includes('Rafael'))).toBe(false);
+      expect(all('[data-role="slot"]').map(text).some((l) => l.includes('Jessica'))).toBe(false);
     });
 
     it('AC-CG-77: no coworking mostra a sala com os 4 itens de acessibilidade (nunca a Jacarandá)', async () => {
@@ -241,7 +243,11 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       expect(isOpen('Confirme a conversa')).toBe(true);
       const body = text(sheet('Confirme a conversa'));
       expect(body).toMatch(/Quando: .+, às \d{2}:\d{2} \(1 hora\)\./);
-      expect(body).toMatch(/Com quem: (Dr|Dra)\. .+, (psicólogo|psicóloga) \(CRP-04\/\d+, fictício\)\./);
+      // Pelo nome, da equipe de psicologia, sem tratamento e sem registro (o CRP só aparece quando existe).
+      expect(body).toMatch(/Com quem: [^.,]+, da equipe de psicologia\./);
+      expect(body).not.toMatch(/Com quem: Dra?\./);
+      expect(body).not.toContain('CRP');
+      expect(body).not.toContain('fictício');
       expect(body).toContain('Como: On-line.');
       expect(body).toContain('O que você procura?');
       expect(body).toContain('O psicólogo confirma se o formato on-line serve para você. Se não servir, combina outro formato.');
@@ -550,10 +556,11 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       });
     });
 
-    it('shortName dá o tratamento e o primeiro nome', () => {
-      expect(shortName('Dra. Beatriz Nogueira')).toBe('Dra. Beatriz');
-      expect(shortName('Dr. Rafael Moreira')).toBe('Dr. Rafael');
-      expect(shortName('Rafael Moreira')).toBe('Rafael');
+    it('shortName dá o primeiro nome, com o tratamento só quando o nome tem um', () => {
+      expect(shortName('Isabelle Ramos')).toBe('Isabelle');
+      expect(shortName('Jessica Rosa')).toBe('Jessica');
+      expect(shortName('Maria José')).toBe('Maria');
+      expect(shortName('Dra. Renata Sampaio')).toBe('Dra. Renata');
     });
   });
 

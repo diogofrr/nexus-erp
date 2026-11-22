@@ -1,13 +1,13 @@
 # Status de aceite: M05 Atendimento psicológico (`care-sessions`)
 
-Rota base `/app/atendimento`. Perfis de teste: `u3` Dr. Rafael (psicólogo), `u7` Camila (atendimento), `u2` Dra. Cecília (RT), `u1` Helena (sócia). A data de hoje do seed é 04/11/2026 (quarta); com o relógio real a agenda mostra a semana de hoje.
+Rota base `/app/atendimento`. Perfis de teste: `u3` Jessica (psicólogo), `u7` Camila (atendimento), `u2` Dra. Cecília (RT), `u1` Helena (sócia). A data de hoje do seed é 04/11/2026 (quarta); com o relógio real a agenda mostra a semana de hoje.
 
 | AC | Status | Onde ver | Observação |
 |---|---|---|---|
 | AC-M05-01 | feito | `/app/atendimento/ocupacao` com `u3` ou `u2` | Rafael: 86,3% e 91,3%, selo "Agenda acima de 80% por dois meses seguidos" e o texto acolhedor |
-| AC-M05-02 | feito | idem, cartão da Dra. Letícia | 80,0% e 80,0%, sem alerta (limite estritamente maior que 80) |
-| AC-M05-03 | feito | idem, cartão da Dra. Beatriz | 85,0% e 70,0%, sem alerta |
-| AC-M05-04 | feito | idem, cartão do Dr. Tiago | Mês -2 "n/d", mês -1 50,0%, sem alerta |
+| AC-M05-02 | feito | idem, cartão da Marina | 80,0% e 80,0%, sem alerta (limite estritamente maior que 80) |
+| AC-M05-03 | feito | idem, cartão da Isabelle | 85,0% e 70,0%, sem alerta |
+| AC-M05-04 | feito | idem, cartão do Gustavo | Mês -2 "n/d", mês -1 50,0%, sem alerta |
 | AC-M05-05 | feito | idem, linha do mês corrente | Selo "parcial"; não entra na regra dos dois meses (calculado de vagas abertas e reservadas, e sessões `done` do mês) |
 | AC-M05-06 | feito | `/app/atendimento/ocupacao`, botão "Redistribuir", com `u2` ou `u1` | Transfere os casos escolhidos (pelo código) e as sessões futuras deles, divididos entre um ou mais psicólogos (a vaga vai junto, então a agenda de Rafael diminui), mostra a ocupação de hoje e a estimada depois (CX-010), pede motivo e a confirmação com o efeito (a gestão informa o aval da RT e não move caso em acompanhamento ativo), grava no log (`psychologist_redistribution`, motivo em `justification`). Se o destino já tem compromisso no mesmo horário, a sessão fica e aparece no aviso |
 | AC-M05-07 | feito | `/app/atendimento/agenda`, "Agendar sessão", modalidade coworking, `u7` ou `u3` | A sala Jacarandá aparece desabilitada com "Falta sanitário adaptado (3 de 4 itens de acessibilidade)"; o serviço também recusa |

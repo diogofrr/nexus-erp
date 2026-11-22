@@ -102,10 +102,11 @@ export function buildGroups(s: SeedState): void {
     type: 'psychologist',
     id: PSYCHOLOGIST[key].id,
     name: PSYCHOLOGIST[key].name,
-    professionalRegistration: `${PSYCHOLOGIST[key].crp} (fictício)`,
+    // Sem CRP cadastrado (a equipe aparece só pelo nome), o encontro não leva registro profissional.
+    ...(PSYCHOLOGIST[key].crp ? { professionalRegistration: `${PSYCHOLOGIST[key].crp} (fictício)` } : {}),
   });
 
-  activity(1, 'group_therapy', 'Sobrecarga e autocuidado', 'caregiver_burden', psy('rafael'), 'in_person', 6, 'full', meetings(1, 3, 3, 0, '14:00', 14));
+  activity(1, 'group_therapy', 'Sobrecarga e autocuidado', 'caregiver_burden', psy('jessica'), 'in_person', 6, 'full', meetings(1, 3, 3, 0, '14:00', 14));
   activity(
     2,
     'training',
@@ -118,7 +119,7 @@ export function buildGroups(s: SeedState): void {
     meetings(2, 10, 2, 0),
     { roomId: ROOM.ipe },
   );
-  activity(3, 'group_therapy', 'Lidar com as perdas, em grupo', 'emotional_health', psy('leticia'), 'in_person', 8, 'in_progress', meetings(3, -21, 6, 2, '16:00', 14), {
+  activity(3, 'group_therapy', 'Lidar com as perdas, em grupo', 'emotional_health', psy('marina'), 'in_person', 8, 'in_progress', meetings(3, -21, 6, 2, '16:00', 14), {
     roomId: ROOM.ipe,
   });
   activity(
@@ -143,8 +144,8 @@ export function buildGroups(s: SeedState): void {
     'cancelled',
     meetings(6, 20, 2, 0, '19:00'),
   );
-  activity(7, 'group_therapy', 'Prevenção de conflitos familiares', 'family_conflict_prevention', psy('beatriz'), 'online', 12, 'draft', meetings(7, 30, 4, 0, '19:00'));
-  activity(8, 'group_therapy', 'Organização da rotina', 'routine_organization', psy('tiago'), 'online', 12, 'open', meetings(8, 6, 3, 0, '19:00', 14));
+  activity(7, 'group_therapy', 'Prevenção de conflitos familiares', 'family_conflict_prevention', psy('isabelle'), 'online', 12, 'draft', meetings(7, 30, 4, 0, '19:00'));
+  activity(8, 'group_therapy', 'Organização da rotina', 'routine_organization', psy('gustavo'), 'online', 12, 'open', meetings(8, 6, 3, 0, '19:00', 14));
   activity(
     9,
     'training',
@@ -638,7 +639,7 @@ export function buildGovernance(s: SeedState): void {
     'group_professionals',
     'Formação dos profissionais de grupos: sobrecarga, luto ambíguo e linguagem acessível',
     -60,
-    [usr(USER.rafael), usr(USER.beatriz), usr(USER.leticia)],
+    [usr(USER.jessica), usr(USER.isabelle), usr(USER.marina)],
   );
   training(
     'management',

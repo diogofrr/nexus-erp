@@ -304,17 +304,17 @@ export function buildLgpd(s: SeedState): void {
   [
     USER.partner,
     USER.technicalLead,
-    USER.rafael,
+    USER.jessica,
     USER.camila,
     USER.technicalLead,
-    USER.beatriz,
+    USER.isabelle,
     USER.wesley,
-    USER.leticia,
+    USER.marina,
     USER.partner,
-    USER.tiago,
+    USER.gustavo,
     USER.camila,
     USER.technicalLead,
-    USER.rafael,
+    USER.jessica,
     USER.wesley,
   ].forEach((u) => push('login', u, 'session'));
 
@@ -327,10 +327,10 @@ export function buildLgpd(s: SeedState): void {
       });
     }
   };
-  viewsOf(USER.rafael, [1, 3, 5, 10, 24], 12);
-  viewsOf(USER.beatriz, [2, 6, 8, 12, 14, 16, 21], 9);
-  viewsOf(USER.leticia, [4, 7, 9, 11, 13, 15, 17], 9);
-  viewsOf(USER.tiago, [18, 19, 20, 22, 23, 25, 26, 27, 28, 29], 6);
+  viewsOf(USER.jessica, [1, 3, 5, 10, 24], 12);
+  viewsOf(USER.isabelle, [2, 6, 8, 12, 14, 16, 21], 9);
+  viewsOf(USER.marina, [4, 7, 9, 11, 13, 15, 17], 9);
+  viewsOf(USER.gustavo, [18, 19, 20, 22, 23, 25, 26, 27, 28, 29], 6);
   [OCCURRENCE.o1, OCCURRENCE.o2, OCCURRENCE.o3, OCCURRENCE.o2].forEach((id, k) =>
     push('view', USER.technicalLead, 'occurrence', {
       entityId: id,
@@ -385,9 +385,9 @@ export function buildLgpd(s: SeedState): void {
   push('export', USER.technicalLead, 'access_log_csv', { detail: 'log sem conteúdo clínico' });
 
   push('denied', USER.wesley, 'route', { detail: 'sem permissão em finance: /app/financeiro' });
-  push('denied', USER.tiago, 'route', { detail: 'sem permissão em lgpd_audit_log: /app/lgpd/log' });
-  push('denied', USER.rafael, 'route', { detail: 'sem permissão em finance: /app/financeiro' });
-  push('denied', USER.rafael, 'route', {
+  push('denied', USER.gustavo, 'route', { detail: 'sem permissão em lgpd_audit_log: /app/lgpd/log' });
+  push('denied', USER.jessica, 'route', { detail: 'sem permissão em finance: /app/financeiro' });
+  push('denied', USER.jessica, 'route', {
     detail: `caso de outro psicólogo: /app/cuidadores/${caregiverId(2)}`,
   });
   push('denied', USER.camila, 'route', {

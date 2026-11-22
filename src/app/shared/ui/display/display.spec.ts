@@ -43,9 +43,9 @@ const ITEMS: ChecklistItem[] = [
       <app-kpi id="k2" label="Zarit severa" value="3" suppressed />
     </app-kpi-strip>
     <app-meter id="meter" label="Ponto de equilíbrio" [value]="17" [target]="27" unit="assinantes" />
-    <app-occupancy-bar id="occ1" name="Dr. Rafael Moreira" [percent]="91.3" />
-    <app-occupancy-bar id="occ2" name="Dr. Tiago Brandão" [percent]="null" />
-    <app-occupancy-bar id="occ3" name="Dra. Letícia Amaral" [percent]="80" />
+    <app-occupancy-bar id="occ1" name="Jessica Rosa" [percent]="91.3" />
+    <app-occupancy-bar id="occ2" name="Gustavo Medeiros" [percent]="null" />
+    <app-occupancy-bar id="occ3" name="Marina Gomes" [percent]="80" />
     <app-progress id="prog" label="6 de 22 itens respondidos" [value]="6" [max]="22" large />
     <app-empty-state id="empty" title="Nenhum alerta aberto por aqui" text="Quando uma aplicação da escala indicar atenção, o caso aparece nesta fila.">
       <button class="btn">Ver histórico</button>
@@ -87,7 +87,10 @@ function render() {
 describe('Avatar', () => {
   it('iniciais do primeiro e do último nome; pseudonimizado não mostra iniciais', () => {
     const { el } = render();
-    expect(initialsOf('Dra. Beatriz Nogueira')).toBe('BN');
+    expect(initialsOf('Isabelle Ramos')).toBe('IR');
+    expect(initialsOf('Maria José')).toBe('MJ');
+    // O tratamento não entra nas iniciais.
+    expect(initialsOf('Dra. Renata Sampaio')).toBe('RS');
     expect(initialsOf('Clínica')).toBe('C');
     expect(text(el('av'))).toBe('AF');
     expect(el('av').className).toContain('avatar--lg');
@@ -161,7 +164,7 @@ describe('Meter, ocupação e progresso', () => {
     expect(text(pick(el('occ1'), '.occ__value'))).toBe('91,3%');
     expect(pick(el('occ1'), '.occ__fill').classList.contains('occ__fill--over')).toBe(true);
     expect(pick(el('occ1'), '.occ__value svg')).not.toBeNull();
-    expect(pick(el('occ1'), '[role="img"]').getAttribute('aria-label')).toBe('Dr. Rafael Moreira: 91,3% de ocupação, acima do limite de 80%');
+    expect(pick(el('occ1'), '[role="img"]').getAttribute('aria-label')).toBe('Jessica Rosa: 91,3% de ocupação, acima do limite de 80%');
     expect(text(pick(el('occ2'), '.occ__value'))).toBe('n/d');
     expect(pick(el('occ2'), '.occ__fill').classList.contains('occ__fill--na')).toBe(true);
     expect(pick(el('occ3'), '.occ__fill').classList.contains('occ__fill--over')).toBe(false);

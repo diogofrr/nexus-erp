@@ -188,7 +188,7 @@ describe('Família (UX C20)', () => {
 
     it('AC-CG-171: a conversa da própria pessoa com o psicólogo não aparece no texto nem entre as opções', async () => {
       await open('cg_0001');
-      const psychologist = app.db.psychologists.find((p) => p.displayName.startsWith('Dra. Beatriz'));
+      const psychologist = app.db.psychologists.find((p) => p.displayName.startsWith('Isabelle'));
       app.db.careSessions.create({
         caregiverId: 'cg_0001',
         psychologistId: psychologist?.id ?? '',
@@ -205,7 +205,7 @@ describe('Família (UX C20)', () => {
       for (const s of switches()) {
         await click(s);
       }
-      expect(box()).not.toContain('Beatriz');
+      expect(box()).not.toContain('Isabelle');
       expect(box()).not.toMatch(/conversa/i);
       expect(switches()).toHaveLength(3);
     });

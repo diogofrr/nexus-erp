@@ -289,7 +289,7 @@ describe('M03 Cuidadores', () => {
     it('o responsável técnico passa pelo portão de supervisão e cada abertura grava supervise e view (AC-M03-08, F16-A)', async () => {
       await open('u2', '/app/cuidadores/cg_0002?aba=acompanhamento');
       expect(q('[data-role="supervision-gate"]')).not.toBeNull();
-      expect(text(q('[data-role="supervision-gate"]'))).toContain('Este caso é acompanhado pela Dra. Beatriz Nogueira.');
+      expect(text(q('[data-role="supervision-gate"]'))).toContain('Este caso é acompanhado por Isabelle Ramos.');
       expect(text(q('[data-role="supervision-gate"]'))).toContain('Seu acesso será registrado no log');
       const before = app.db.accessLog.size();
       // Sem motivo, não abre.

@@ -8,8 +8,8 @@ Status: PRONTO. Este documento registra, tarefa por tarefa, o que a integração
 
 | Pessoa | Psicólogo | Quando | Formato | Situação | Vaga |
 |---|---|---|---|---|---|
-| Ana (`cg_0001`, Cuida) | Dr. Rafael Moreira (`psy_0001`) | 3 dias úteis depois de hoje (seg, 09/11/2026, em hoje = qua, 04/11) | On-line | `scheduled` (aguardando o psicólogo) | nova, `booked` |
-| Lourdes (`cg_0024`, Sustenta) | Dra. Letícia Amaral (`psy_0003`) | 2 dias úteis depois de hoje (sex, 06/11/2026) | Coworking (sala Girassol, com os 4 itens de acessibilidade) | `confirmed` | nova, `booked` |
+| Ana (`cg_0001`, Cuida) | Jessica Rosa (`psy_0001`) | 3 dias úteis depois de hoje (seg, 09/11/2026, em hoje = qua, 04/11) | On-line | `scheduled` (aguardando o psicólogo) | nova, `booked` |
+| Lourdes (`cg_0024`, Sustenta) | Marina Gomes (`psy_0003`) | 2 dias úteis depois de hoje (sex, 06/11/2026) | Coworking (sala Girassol, com os 4 itens de acessibilidade) | `confirmed` | nova, `booked` |
 
 Como o horário é escolhido: o primeiro da lista `10:00, 14:00, 15:00, 16:00, 11:00, 09:00, 17:00, 08:00` em que o psicólogo não tem nenhuma vaga (livre, ocupada ou bloqueada) naquele dia; o dia útil usa `isBusinessDay` (fim de semana e feriado nacional não contam). O preço já vem com o desconto do plano da pessoa (RN-ATD-05: Cuida 15%, R$ 102,00; Sustenta 20%). Psicoterapia nas duas.
 

@@ -70,10 +70,12 @@ describe('Hoje (UX C4)', () => {
       expect(toDayNumber(groupDay)).toBeGreaterThan(0);
     });
 
-    it('a conversa é "com a Dra." ou "com o Dr."', () => {
-      expect(withArticle('Dra. Beatriz Nogueira')).toBe('a Dra. Beatriz Nogueira');
-      expect(withArticle('Dr. Rafael Moreira')).toBe('o Dr. Rafael Moreira');
-      expect(withArticle('Beatriz')).toBe('Beatriz');
+    it('a conversa é "com Isabelle Ramos": sem tratamento, sem artigo e sem supor gênero; com tratamento, o artigo concorda', () => {
+      expect(withArticle('Isabelle Ramos')).toBe('Isabelle Ramos');
+      expect(withArticle('Jessica Rosa')).toBe('Jessica Rosa');
+      expect(withArticle('Gustavo')).toBe('Gustavo');
+      expect(withArticle('Dra. Renata Sampaio')).toBe('a Dra. Renata Sampaio');
+      expect(withArticle('Dr. Augusto Pedrosa')).toBe('o Dr. Augusto Pedrosa');
     });
   });
 
@@ -581,8 +583,14 @@ describe('Hoje (UX C4)', () => {
       const badge = q('[data-role="for-you"] app-cg-event-badge');
       expect(badge?.getAttribute('data-type')).toBe('group_therapy');
       expect(text(badge)).toBe('Terapia em grupo');
-      expect(text(q('[data-role="for-you"]'))).toContain('Com o psicólogo da Nexus.');
       expect(group?.href).toMatch(/^\/cuidador\/cuidar-de-mim\/grupos\?atividade=act_\d+$/);
+      // Quem conduz, pelo nome e sem "Dr."/"Dra.": "Com Gustavo Medeiros." no lugar de "Com o psicólogo da Nexus.".
+      const activityId = /atividade=(act_\d+)/.exec(group?.href ?? '')?.[1] ?? '';
+      const leader = app.db.activities.get(activityId)?.leaders[0]?.name ?? '';
+      expect(leader).not.toBe('');
+      expect(text(q('[data-role="for-you"]'))).toContain(`Com ${leader}.`);
+      expect(text(q('[data-role="for-you"]'))).not.toContain('Com o psicólogo da Nexus.');
+      expect(text(q('[data-role="for-you"]'))).not.toMatch(/Dra?\./);
     });
 
     it('encontro em que a pessoa já está inscrita não é convite', async () => {

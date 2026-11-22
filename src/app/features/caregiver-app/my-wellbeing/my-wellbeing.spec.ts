@@ -199,7 +199,7 @@ describe('Área my-wellbeing (Como estou)', () => {
   });
 
   describe('contato da equipe', () => {
-    it('AC-CG-91: Maria lê que a equipe ainda não conseguiu falar com ela, tem "Falar com a gente agora" e "Combinar um horário", e o pedido de revisão com a Dra. Beatriz', async () => {
+    it('AC-CG-91: Maria lê que a equipe ainda não conseguiu falar com ela, tem "Falar com a gente agora" e "Combinar um horário", e o pedido de revisão com Isabelle', async () => {
       await boot('cg_0002');
       // CXC-003: um convite, sem "responsável técnica" e sem "ainda não conseguiu falar com você".
       expect(text(q('[data-role="care-note"]'))).toBe('Queremos falar com você. Se quiser, fale com a gente agora.');
@@ -208,7 +208,7 @@ describe('Área my-wellbeing (Como estou)', () => {
       expect(text(q('[data-role="talk-now"]'))).toBe('Falar com a gente agora');
       expect(text(q('[data-role="arrange"]'))).toBe('Combinar um horário');
       const card = text(all('[data-role="review-card"]')[0]);
-      expect(card).toBe('Seu pedido de revisão está com a Dra. Beatriz. Resposta até 10/11.');
+      expect(card).toBe('Seu pedido de revisão está com Isabelle. Resposta até 10/11.');
       expect(pageText().toLowerCase()).not.toContain('vencid');
       expect(pageText().toLowerCase()).not.toContain('atrasad');
       expect(timelineLines()[0]).toContain('79 pontos');
@@ -302,7 +302,7 @@ describe('Área my-wellbeing (Como estou)', () => {
       const request = app.db.reviewRequests.find((r) => r.caregiverId === 'cg_0002')!;
       app.db.reviewRequests.update(request.id, { answer: 'Revisamos a decisão e mantivemos o acompanhamento. Vamos conversar sobre isso.', answeredAt: '2026-11-04T10:00:00-03:00' });
       await flush();
-      expect(text(q('[data-role="review-card"]'))).toBe('Resposta da Dra. Beatriz, em 04/11:');
+      expect(text(q('[data-role="review-card"]'))).toBe('Resposta de Isabelle, em 04/11:');
       expect(text(q('[data-role="review-answer"]'))).toBe('Revisamos a decisão e mantivemos o acompanhamento. Vamos conversar sobre isso.');
     });
   });

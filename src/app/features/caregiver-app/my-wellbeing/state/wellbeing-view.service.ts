@@ -42,9 +42,9 @@ export interface ReviewView {
   id: ID;
   /** Resposta dada? */
   answered: boolean;
-  /** "a Dra. Beatriz" ou "a equipe de psicologia" (depois de "está com"). */
+  /** "Isabelle" ou "a equipe de psicologia" (depois de "está com"). */
   who: string;
-  /** "da Dra. Beatriz" ou "da equipe de psicologia" (depois de "Resposta"). */
+  /** "de Isabelle" ou "da equipe de psicologia" (depois de "Resposta"). */
   whoOf: string;
   /** "10/11" (prazo) ou a data da resposta. */
   dateLabel: string;

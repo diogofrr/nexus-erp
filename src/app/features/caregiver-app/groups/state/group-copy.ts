@@ -9,6 +9,7 @@ import { formatMoney } from '../../../../core/format/format';
 import { KIND_LABELS as TEAM_KIND_LABELS, THEME_LABELS } from '../../../groups/state/groups-labels';
 
 export { THEME_LABELS };
+export { leadersShort } from '../../state/people-format';
 
 /** O tipo do encontro, o mesmo nome para a equipe e para o cuidador (docs/20: "Terapia em grupo" é o nome oficial). */
 export const KIND_LABELS: Readonly<Record<ActivityKind, string>> = { ...TEAM_KIND_LABELS };
@@ -86,12 +87,12 @@ export function paidDetail(kind: ActivityKind, offer: EnrollmentOffer): string |
   return `${formatMoney(unit)} por encontro: ${formatMoney(offer.priceCents)} por ${count} ${count === 1 ? 'encontro' : 'encontros'} neste mês. O pagamento é combinado depois. No protótipo não há cobrança.`;
 }
 
-/** "Conduzido por Dra. Letícia Amaral, psicóloga (CRP-04/00003, fictício)." */
+/** "Conduzido por Marina Gomes, da equipe de psicologia." (com CRP cadastrado, ele vem entre parênteses). */
 export function leaderLine(leader: ActivityLeader): string {
   if (leader.type !== 'psychologist') {
     return `Conduzido por ${leader.name}.`;
   }
-  const role = /^Dra\./.test(leader.name) ? 'psicóloga' : /^Dr\./.test(leader.name) ? 'psicólogo' : 'psicólogo(a)';
+  const role = 'da equipe de psicologia';
   const registration = leader.professionalRegistration;
   if (!registration) {
     return `Conduzido por ${leader.name}, ${role}.`;

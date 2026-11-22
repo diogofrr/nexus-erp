@@ -31,6 +31,7 @@ import {
   KIND_TEXT,
   THEME_LABELS,
   leaderLine,
+  leadersShort,
   offerLine,
   paidDetail,
   placeOf,
@@ -56,6 +57,8 @@ interface ActivityCard {
   seats: string;
   /** "Incluída no seu plano", "R$ 40,00 por encontro" ou nada. */
   offer: string | null;
+  /** "Com Marina Gomes": quem conduz (na terapia em grupo, a pessoa da equipe de psicologia). */
+  leader: string | null;
 }
 
 interface KindSection {
@@ -321,6 +324,9 @@ interface Banner {
                           <app-cg-event-badge [type]="card.kind" size="sm" />
                           <app-cg-seal tone="neutral">{{ card.character }}</app-cg-seal>
                         </p>
+                        @if (card.leader; as leader) {
+                          <p class="nx-meta nx-leader" data-role="card-leader"><svg appIcon="user-round" size="sm"></svg>{{ leader }}</p>
+                        }
                         <p class="nx-meta"><svg appIcon="calendar-days" size="sm"></svg>{{ card.next }}</p>
                         <p class="nx-meta"><svg [appIcon]="card.formatIcon" size="sm"></svg>{{ card.format }} · {{ card.seats }}</p>
                         @if (card.offer; as offer) {
@@ -400,6 +406,7 @@ export class GroupsPage {
           format: activityFormatLabel(a.mode),
           seats: a.status === 'in_progress' ? 'Em andamento' : seatsText(this.activities.seatsFree(a)),
           offer: offerLine(a.kind, this.activities.offerFor(id, a), planId),
+          leader: leadersShort(a.leaders),
         };
       });
   });
@@ -420,16 +427,18 @@ export class GroupsPage {
     return id
       ? this.activities.myEnrollments(id).map(({ activity, enrollment }) => {
           const next = this.activities.nextMeeting(activity);
+          const leader = leadersShort(activity.leaders);
+          const when =
+            enrollment.status === 'waitlist'
+              ? `Você está na lista de espera, posição ${enrollment.waitlistPosition ?? 1}.`
+              : next
+                ? `Próximo encontro: ${relativeDateTime(next.startAt, today)}`
+                : 'Sem encontros marcados';
           return {
             id: activity.id,
             kind: activity.kind,
             title: activity.title,
-            line:
-              enrollment.status === 'waitlist'
-                ? `Você está na lista de espera, posição ${enrollment.waitlistPosition ?? 1}.`
-                : next
-                  ? `Próximo encontro: ${relativeDateTime(next.startAt, today)}`
-                  : 'Sem encontros marcados',
+            line: !leader ? when : enrollment.status === 'waitlist' ? `${when} ${leader}.` : `${when} · ${leader.replace(/^Com /, 'com ')}`,
           };
         })
       : [];

@@ -546,7 +546,7 @@ Cada fluxo traz **onde começa**, o **máximo de toques** (a partir de Hoje, sem
 2. **Como você prefere?** (3 botões grandes que levam ao passo seguinte): **On-line** (`video`), **No espaço de coworking** (`building-2`), **Em casa** (`house`) (4).
 3. **Qual horário?** Lista de horários disponíveis por dia (próximos 14 dias), cada um é um botão com dia, hora e o nome do psicólogo (5). Quando o formato é coworking, o endereço da sala aparece; salas sem os 4 itens de acessibilidade **não aparecem**.
 4. **Folha de resumo** (a confirmação, sempre antes de gravar): formato, dia, hora, com quem, valor com o desconto do plano ("Conversa: R$ 120,00. Desconto do plano Cuida (15%): R$ 18,00. Total: R$ 102,00. Pagamento combinado depois, no atendimento." `[S-05]`), **O que você procura?** (6): "Psicoterapia", "Orientação psicológica", "Não sei: o psicólogo ajuda a decidir" `[S-07]`; botão **Marcar conversa** (7).
-5. A tela mostra "Conversa marcada: qui, 06/11, às 14:00, com a Dra. Beatriz." com o status **Aguardando confirmação** (ou **Confirmada**) e o botão de texto "Ver na agenda".
+5. A tela mostra "Conversa marcada: qui, 06/11, às 14:00, com a Isabelle." com o status **Aguardando confirmação** (ou **Confirmada**) e o botão de texto "Ver na agenda".
 6. **Cancelar**: Cuidar de mim, Conversar, tocar na conversa (3), **Cancelar conversa** (4), folha com o efeito **escrito antes** (5): com 24 horas ou mais, "Cancelar libera o horário. Não há custo."; com menos de 24 horas, "Faltam menos de 24 horas. Se cancelar agora, o horário fica registrado como falta." Ações: **Remarcar em vez de cancelar**, **Cancelar a conversa** (suave), **Voltar**.
 
 **Erros e recuperação**: horário tomado por outra pessoa no instante de gravar: "Esse horário acabou de ser reservado. Escolha outro." (o resto fica); sem horário no formato escolhido: estado vazio "Sem horários nesse formato nos próximos 14 dias" com "Escolher outro formato" e "Falar com a gente"; em casa: a folha explica "O psicólogo confirma se o local é adequado e seguro antes de confirmar a conversa" (RN-ATD-09); on-line: "O psicólogo confirma se o formato on-line serve para você. Se não servir, combina outro formato." (RN-ATD-07).
@@ -555,7 +555,7 @@ Cada fluxo traz **onde começa**, o **máximo de toques** (a partir de Hoje, sem
 **Começa em**: Cuidar de mim. **Máximo**: 2 toques para ver; 4 para pedir revisão. **Telas**: 9. **RN**: RN-ZRT-04, 18, 19, 20, 23, RN-LGPD-14, RN-PLN-19.
 1. Cuidar de mim (1), **Como estou** (2). A tela abre com a **nota de cuidado** (se houver contato da equipe pendente), a **linha do tempo** das conversas de acompanhamento e o humor da semana.
 2. **Pedir revisão**: botão de texto "Pedir revisão de uma decisão" (3), folha com o campo "O que você quer que a equipe reveja?" e **Enviar pedido** (4).
-3. Resposta: "Pedido enviado. O psicólogo responde até 10/11." Com o pedido aberto, o cartão mostra "Seu pedido de revisão está com a Dra. Beatriz. Resposta até 10/11."
+3. Resposta: "Pedido enviado. O psicólogo responde até 10/11." Com o pedido aberto, o cartão mostra "Seu pedido de revisão está com a Isabelle. Resposta até 10/11."
 
 **Erros e recuperação**: campo vazio, "Conte em uma frase o que você quer que a equipe reveja." (o texto digitado fica se a folha fechar sem querer); consentimento de saúde retirado, a linha do tempo **não aparece** e a tela explica (tela 9); sem nenhuma conversa de acompanhamento ainda, estado vazio "Ainda não houve uma conversa de acompanhamento. A equipe aplica a escala com você. Você não precisa preencher nada." **A pessoa não preenche a escala** (RN-ZRT-04).
 
@@ -828,7 +828,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - Nota de cuidado, **contato pendente hoje**: título "A equipe de psicologia vai falar com você hoje." Texto: "Você não precisa fazer nada." (o título diz "hoje" só em horário comercial; fora dele, "amanhã de manhã" ou "na segunda de manhã", CXC-003). Ação: botão de texto "Prefere falar agora?" (abre o diálogo A.2.16).
 - Nota de cuidado, **contato que ainda não aconteceu** (já passou do dia): título "Queremos falar com você." Texto: "Se quiser, fale com a gente agora." (sem "responsável técnica" e sem "ainda não conseguiu falar com você", CXC-003). Ação: botão **Falar com a gente agora**.
 - **Nunca** aparecem: "alerta", "vermelho", "urgente", pontuação, faixa, prazo em horas, "vencido", "atrasado".
-- Compromisso: título "Próximo compromisso"; "Fisioterapia, hoje às 14:00"; apoio "Clínica Movimento Vital". Conversa da pessoa: "Sua conversa com a Dra. Beatriz, qui, 06/11, às 14:00" (a etiqueta "Para você" fica na Agenda; em Hoje a frase já diz que é dela, CXC-020). Vazio: "Nenhum compromisso nos próximos dias." e botão de texto "Adicionar compromisso".
+- Compromisso: título "Próximo compromisso"; "Fisioterapia, hoje às 14:00"; apoio "Clínica Movimento Vital". Conversa da pessoa: "Sua conversa com a Isabelle, qui, 06/11, às 14:00" (a etiqueta "Para você" fica na Agenda; em Hoje a frase já diz que é dela, CXC-020). Vazio: "Nenhum compromisso nos próximos dias." e botão de texto "Adicionar compromisso".
 - Remédios: "Remédios de hoje" e "2 de 4 dados". Linha: "Losartana 50 mg", "08:00", botão "Dei". Dado: "Dado às 08:12" e "Desfazer". Vazio sem cadastro: "Nenhum remédio cadastrado." e botão "Cadastrar um remédio". Sem remédio hoje: "Hoje não há remédios para dar."
 - Humor: pergunta "Como você está hoje?"; depois "Anotado para hoje: Bem." e "Mudar". Se "Muito mal" ou "Mal": nota `care` "Dias difíceis acontecem. Se quiser conversar, fale com a gente." com **Falar com a gente** (e, para "Muito mal", "Ajuda agora").
 - Convite do dia (rodízio fixo, **só itens abertos a todos os planos**): "Uma conversa só para você. Reserve um horário com um psicólogo da Nexus. Você escolhe o formato." (**Ver horários**)
@@ -892,7 +892,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - Abas: "Agenda" e "Remédios". Alternador: "Calendário" e "Lista" (grupo "Ver a agenda como").
 - Título do dia: "Hoje, 4 de novembro", "Amanhã, 5 de novembro" ou "Sexta, 6 de novembro" (com o ano quando não é o corrente).
 - Rótulo de cada dia para leitor de tela: "6 de novembro, sexta-feira, 2 compromissos: Consulta e Fisioterapia" (hoje leva "hoje"; dia sem compromisso diz só a data).
-- Item: "14:00 Fisioterapia", apoio "Clínica Movimento Vital". A conversa da própria pessoa: "Sua conversa com a Dra. Beatriz" com a etiqueta "Para você", que leva a Conversar com um psicólogo `[S-27]`.
+- Item: "14:00 Fisioterapia", apoio "Clínica Movimento Vital". A conversa da própria pessoa: "Sua conversa com a Isabelle" com a etiqueta "Para você", que leva a Conversar com um psicólogo `[S-27]`.
 - Folha **Novo compromisso**:
   - "O que é?" (hint "Exemplo: consulta com o cardiologista")
   - "Tipo" em chips (Consulta, Fisioterapia, Psicologia, Outro)
@@ -1031,10 +1031,10 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - Passo 1, h2 "Como você prefere?" (3 botões grandes): **On-line** "Pelo celular ou computador, de onde você estiver."
   - **No espaço de coworking** "Em uma sala com acesso sem degraus, em Uberlândia."
   - **Em casa** "O psicólogo vai até você, se for seguro e adequado."
-- Passo 2, h2 "Qual horário?": dias em h3 ("qui, 06/11") com botões "14:00 com a Dra. Beatriz". Coworking mostra a sala e o endereço; em casa pede "Endereço da conversa".
+- Passo 2, h2 "Qual horário?": dias em h3 ("qui, 06/11") com botões "14:00 com a Isabelle". Coworking mostra a sala e o endereço; em casa pede "Endereço da conversa".
 - Folha de resumo:
   - "Quando: qui, 06/11, às 14:00 (1 hora)."
-  - "Com quem: Dra. Beatriz Nogueira, psicóloga (CRP-04/00002, fictício)."
+  - "Com quem: Isabelle Ramos, psicóloga (CRP-04/00002, fictício)."
   - "Como: On-line."
   - "Conversa de 1 hora: R$ 120,00."
   - "Desconto do plano Cuida (15%): menos R$ 18,00."
@@ -1122,7 +1122,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
   - "Sobrecarga moderada a severa (41 a 60): o cuidado pesa bastante."
   - "Sobrecarga severa (61 a 88): o cuidado está pesando muito."
   - "Em qualquer faixa, a equipe está aqui para conversar com você."
-- Revisão: botão de texto "Pedir revisão de uma decisão"; folha "Pedir revisão": "Se você não concorda com alguma decisão tomada com base nos seus resultados, conte aqui. O psicólogo responde por escrito." Campo "O que você quer que a equipe reveja?" **Enviar pedido**. Confirmação: "Pedido enviado. O psicólogo responde até 10/11." Cartão com pedido aberto: "Seu pedido de revisão está com a Dra. Beatriz. Resposta até 10/11." Resposta dada: "Resposta da Dra. Beatriz, em 06/11:" e o texto.
+- Revisão: botão de texto "Pedir revisão de uma decisão"; folha "Pedir revisão": "Se você não concorda com alguma decisão tomada com base nos seus resultados, conte aqui. O psicólogo responde por escrito." Campo "O que você quer que a equipe reveja?" **Enviar pedido**. Confirmação: "Pedido enviado. O psicólogo responde até 10/11." Cartão com pedido aberto: "Seu pedido de revisão está com a Isabelle. Resposta até 10/11." Resposta dada: "Resposta da Isabelle, em 06/11:" e o texto.
 - "Combinar um horário" (para quem a equipe ainda não alcançou): folha com 3 chips (Manhã, Tarde, Noite) e **Enviar para a equipe**; vira mensagem no aplicativo "Prefiro que falem comigo de manhã." (Falar com a Nexus).
 - Privacidade: "Só você e a equipe de psicologia que acompanha você veem estas informações."
 **Estados.**
@@ -1143,7 +1143,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - **AC-CG-88** Dada a linha do tempo, então cada ponto mostra a **data**, a **faixa por extenso** (nome oficial) e a pontuação **só como legenda de 14 px**; os pontos usam a rampa de azul (`--cg-band-1` a `4`); **não há** vermelho, âmbar, octógono, triângulo, termômetro, gráfico de linha nem número com mais de 18 px na tela.
 - **AC-CG-89** Dada a tela inteira, então **não aparecem** as palavras "alerta", "eficácia", "melhorou", "piorou", nem percentual de evolução; o texto é só factual (datas e faixas).
 - **AC-CG-90** Dada Ana, então a nota diz "A equipe de psicologia vai falar com você hoje." (em horário comercial) e a linha do tempo mostra as duas conversas (48 e 63) com a **frase da faixa primeiro** ("O cuidado está pesando muito") e o nome técnico e os pontos em legenda pequena (CXC-004), **sem** destaque de cor de risco.
-- **AC-CG-91** Dada Maria, então a nota diz "Queremos falar com você. Se quiser, fale com a gente agora.", aparece "Combinar um horário" (que cria uma mensagem de aplicativo para a equipe) e o cartão "Seu pedido de revisão está com a Dra. Beatriz. Resposta até {data}."
+- **AC-CG-91** Dada Maria, então a nota diz "Queremos falar com você. Se quiser, fale com a gente agora.", aparece "Combinar um horário" (que cria uma mensagem de aplicativo para a equipe) e o cartão "Seu pedido de revisão está com a Isabelle. Resposta até {data}."
 - **AC-CG-92** Dado **Pedir revisão de uma decisão**, quando se escreve e se toca **Enviar pedido**, então grava um pedido de revisão com o prazo e a tela mostra "Pedido enviado. O psicólogo responde até {data}."; texto vazio mostra "Conte em uma frase o que você quer que a equipe reveja."
 - **AC-CG-93** Dado qualquer momento, então a pessoa **nunca preenche a escala**: não há campo, pergunta nem botão para responder os 22 itens.
 - **AC-CG-94** Dada Sônia (consentimento de saúde retirado), então não aparecem humor nem linha do tempo, aparece "O acompanhamento está pausado" com **Autorizar de novo**, e Hoje não mostra nenhum bloco de saúde.
@@ -1162,7 +1162,7 @@ Cada tela traz: propósito, ação principal, blocos por prioridade (o que apare
 - Tocar na atividade abre a folha de tela cheia com o detalhe: o que é, o caráter explicado, temas, todos os encontros, local e acessibilidade da sala, **quem conduz** (com o registro profissional quando é psicólogo), vagas e o botão da ação.
 - `?atividade=` na URL permite recarregar `[S-21]`.
 **Textos.**
-- Caráter: "Orientação e psicoeducação: encontros para aprender e trocar. Não é psicoterapia." · "Psicoterapia: terapia de grupo conduzida por psicólogo da Nexus, com objetivo clínico." Quem conduz: "Conduzido por Dra. Letícia Amaral, psicóloga (CRP-04/00003, fictício)."
+- Caráter: "Orientação e psicoeducação: encontros para aprender e trocar. Não é psicoterapia." · "Psicoterapia: terapia de grupo conduzida por psicólogo da Nexus, com objetivo clínico." Quem conduz: "Conduzido por Marina Gomes, psicóloga (CRP-04/00003, fictício)."
 - Botão por situação: com vaga, **Quero participar**; lotado, **Entrar na lista de espera**; inscrita, nota `ok` "Você está no grupo." com **Sair do grupo** (botão de texto); em lista de espera, "Você está na lista de espera, posição 2. Avisamos quando abrir uma vaga." `[S-20]` com **Sair da lista**; em andamento, "Em andamento. As inscrições estão encerradas."
 - Folha do sigilo: título "Contrato de sigilo do grupo"; o texto do grupo (`confidentialityText`), por exemplo "O que cada pessoa conta aqui fica entre os participantes. Ninguém repete fora do grupo o que ouviu."; caixa "Li e aceito o contrato de sigilo do grupo"; depois de marcar, o carimbo "Aceito em 04/11/2026, às 09:42"; botão **Entrar no grupo** (ou **Entrar na lista de espera**).
 - Resultado: "Você está no grupo Sobrecarga e autocuidado. Primeiro encontro: sáb, 07/11, às 14:00." ou "Você entrou na lista de espera, posição 3."

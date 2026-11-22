@@ -109,7 +109,7 @@ interface Process {
         </div>
         <div class="cluster">
           <app-avatar name="Pessoa Exemplo" size="sm" />
-          <app-avatar name="Dra. Beatriz Nogueira" />
+          <app-avatar name="Isabelle Ramos" />
           <app-avatar name="Cecília Braga" size="lg" gold />
           <app-avatar pseudonymized />
           <div class="chip-group">
@@ -140,10 +140,10 @@ interface Process {
           <app-progress label="6 de 22 itens respondidos" [value]="6" [max]="22" large />
         </div>
         <div class="card card--pad stack stack--6">
-          <app-occupancy-bar name="Dr. Rafael Moreira" [percent]="91.3" />
-          <app-occupancy-bar name="Dra. Letícia Amaral" [percent]="80" />
-          <app-occupancy-bar name="Dra. Beatriz Nogueira" [percent]="70" />
-          <app-occupancy-bar name="Dr. Tiago Brandão" [percent]="null" />
+          <app-occupancy-bar name="Jessica Rosa" [percent]="91.3" />
+          <app-occupancy-bar name="Marina Gomes" [percent]="80" />
+          <app-occupancy-bar name="Isabelle Ramos" [percent]="70" />
+          <app-occupancy-bar name="Gustavo Medeiros" [percent]="null" />
         </div>
       </div>
     </section>

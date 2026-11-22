@@ -180,7 +180,7 @@ Conteúdo por perfil:
 - [ ] AC-M02-01 Cada perfil vê só os blocos da tabela acima; `partner` nunca vê nome de cuidador em bloco de saúde.
 - [ ] AC-M02-02 No seed, o painel do `technical_lead` mostra pelo menos: 1 alerta vermelho do dia sem contato, 1 vermelho vencido, 2 amarelos abertos, 1 ARBE `critical`.
 - [ ] AC-M02-03 O painel do `partner` mostra 17 assinantes, conversão 5,0% e "faltam 10 para o ponto de equilíbrio" (seção 5.14).
-- [ ] AC-M02-04 O painel do `psychologist` Rafael Moreira (seed) mostra alerta de sobrecarga de agenda; o de Beatriz Nogueira não.
+- [ ] AC-M02-04 O painel do `psychologist` Jessica Rosa (seed) mostra alerta de sobrecarga de agenda; o de Isabelle Ramos não.
 - [ ] AC-M02-05 O painel do `support` destaca mensagens `overdue` no topo com o tempo de atraso.
 - [ ] AC-M02-06 Removido por decisão do dono: não existe painel de prestador (o portal e o perfil `provider` saíram do escopo).
 - [ ] AC-M02-07 A busca global por "Ana" para `support` devolve cuidadores; para `partner` devolve apenas códigos pseudonimizados.
@@ -220,7 +220,7 @@ Conteúdo por perfil:
 - [ ] AC-M03-04 Para `partner`, a lista mostra `CUI-0042`, plano e status, **sem** nome, CPF, telefone nem e-mail; não há botão "revelar".
 - [ ] AC-M03-05 Para `support`, CPF aparece mascarado `***.***.***-**`; "mostrar" pede justificativa e gera log `reveal`.
 - [ ] AC-M03-06 `support` abrindo o perfil não vê as abas Acompanhamento e Atendimento (ou as vê bloqueadas sem conteúdo).
-- [ ] AC-M03-07 `psychologist` Rafael Moreira só lista os cuidadores atribuídos a ele; abrir outro por URL leva a SCR-M01-05.
+- [ ] AC-M03-07 `psychologist` Jessica Rosa só lista os cuidadores atribuídos a ele; abrir outro por URL leva a SCR-M01-05.
 - [ ] AC-M03-08 `technical_lead` abre qualquer perfil e cada abertura da aba Acompanhamento gera log `view` com perfil `S`.
 - [ ] AC-M03-09 Marcar piloto num cuidador sem TCLE ativo é bloqueado com a lista dos critérios que faltam; no cuidador de Uberaba com pessoa idosa independente a elegibilidade mostra os 2 critérios reprovados.
 - [ ] AC-M03-10 Revogar consentimento de saúde (M12) muda o status para `paused_by_consent_revocation` e a aba Acompanhamento mostra o motivo.
@@ -294,10 +294,10 @@ Conteúdo por perfil:
 - A classificação `psychotherapy` ou `guidance` é obrigatória e aparece ao usuário (RN-ATD-19).
 **Regras.** RN-ATD-01 a 20, RN-EQP-01 a 09, RN-ETICA-02 a 04, RN-LGPD-16.
 **Critérios de aceite.**
-- [ ] AC-M05-01 Rafael Moreira (seed) mostra ocupação de 86,3% (mês -2) e 91,3% (mês -1) e o alerta "agenda acima de 80% por dois meses seguidos".
-- [ ] AC-M05-02 Letícia Amaral (80,0% e 80,0%) **não** dispara o alerta (limite é estritamente maior que 80).
-- [ ] AC-M05-03 Beatriz Nogueira (85,0% e 70,0%) não dispara alerta (não são dois meses seguidos).
-- [ ] AC-M05-04 Tiago Brandão, com mês -2 sem agenda, mostra "n/d" no mês -2 e nenhum alerta.
+- [ ] AC-M05-01 Jessica Rosa (seed) mostra ocupação de 86,3% (mês -2) e 91,3% (mês -1) e o alerta "agenda acima de 80% por dois meses seguidos".
+- [ ] AC-M05-02 Marina Gomes (80,0% e 80,0%) **não** dispara o alerta (limite é estritamente maior que 80).
+- [ ] AC-M05-03 Isabelle Ramos (85,0% e 70,0%) não dispara alerta (não são dois meses seguidos).
+- [ ] AC-M05-04 Gustavo Medeiros, com mês -2 sem agenda, mostra "n/d" no mês -2 e nenhum alerta.
 - [ ] AC-M05-05 O mês corrente aparece como "parcial" e não entra na regra dos dois meses.
 - [ ] AC-M05-06 Redistribuir de Rafael para Tiago transfere sessões futuras e cuidadores, grava motivo e a ocupação de Rafael cai no cálculo seguinte; o log registra a transferência.
 - [ ] AC-M05-07 Sessão presencial no coworking com sala que tem 3 dos 4 atributos de acessibilidade é bloqueada.
@@ -1081,10 +1081,10 @@ Relações principais: cada `Caregiver` tem exatamente uma `Elder` (RN-USR-10); 
 |---|---|---|---|
 | u1 | Helena Prado Vasconcelos | `partner` | Sócia e gestão |
 | u2 | Dra. Cecília Montenegro | `technical_lead` | CRP-04/00001 (fictício) |
-| u3 | Dr. Rafael Moreira | `psychologist` | CRP-04/00102 (fictício); agenda sobrecarregada |
-| u4 | Dra. Beatriz Nogueira | `psychologist` | CRP-04/00103 (fictício) |
-| u5 | Dra. Letícia Amaral | `psychologist` | CRP-04/00104 (fictício); caso-limite de 80% |
-| u6 | Dr. Tiago Brandão | `psychologist` | CRP-04/00105 (fictício); começou há 1 mês |
+| u3 | Jessica Rosa | `psychologist` | CRP-04/00102 (fictício); agenda sobrecarregada |
+| u4 | Isabelle Ramos | `psychologist` | CRP-04/00103 (fictício) |
+| u5 | Marina Gomes | `psychologist` | CRP-04/00104 (fictício); caso-limite de 80% |
+| u6 | Gustavo Medeiros | `psychologist` | CRP-04/00105 (fictício); começou há 1 mês |
 | u7 | Camila Duarte | `support` | Atendimento |
 | u8 | Wesley Lacerda | `support` | Atendimento |
 
@@ -1095,10 +1095,10 @@ Horário de agenda: segunda a sexta, vagas de 1 hora. Os meses fechados vêm de 
 
 | Psicólogo | Mês -2: disponíveis / realizadas | % | Mês -1: disponíveis / realizadas | % | Resultado esperado |
 |---|---|---|---|---|---|
-| Rafael Moreira | 160 / 138 | 86,3% | 160 / 146 | 91,3% | **Alerta**: acima de 80% por dois meses seguidos |
-| Beatriz Nogueira | 160 / 136 | 85,0% | 160 / 112 | 70,0% | Sem alerta (não são seguidos) |
-| Letícia Amaral | 160 / 128 | 80,0% | 160 / 128 | 80,0% | Sem alerta (80,0% não é acima de 80) |
-| Tiago Brandão | 0 / 0 | n/d | 80 / 40 | 50,0% | Sem alerta; mês -2 sem agenda |
+| Jessica Rosa | 160 / 138 | 86,3% | 160 / 146 | 91,3% | **Alerta**: acima de 80% por dois meses seguidos |
+| Isabelle Ramos | 160 / 136 | 85,0% | 160 / 112 | 70,0% | Sem alerta (não são seguidos) |
+| Marina Gomes | 160 / 128 | 80,0% | 160 / 128 | 80,0% | Sem alerta (80,0% não é acima de 80) |
+| Gustavo Medeiros | 0 / 0 | n/d | 80 / 40 | 50,0% | Sem alerta; mês -2 sem agenda |
 
 #### 5.2.2 Sessões detalhadas (D-14 a D+14)
 60 sessões: 24 `done`, 3 `no_show`, 4 canceladas (2 pelo usuário, 2 pelo psicólogo), 8 `confirmed`, 21 `scheduled`. Modalidades: 50% on-line, 35% presencial no coworking, 15% em domicílio. Classificação: 85% psicoterapia, 15% orientação. 20 anotações assinadas e 4 em rascunho. 12 vagas `open` e 3 `blocked` nas próximas duas semanas, 4 delas `priorityOnly`. Toda sessão on-line `done` tem a confirmação de pertinência remota gravada.
@@ -1211,7 +1211,7 @@ Auditoria quinzenal: duas auditorias anteriores (D-28 e D-14) com `ArpSnapshot` 
 ### 5.10 Grupos e capacitações (8)
 | ID | Atividade | Tipo | Estado | Vagas | Cenário |
 |---|---|---|---|---|---|
-| G1 | Sobrecarga e autocuidado | Grupo de apoio | `full` | 8 | **Lotado**: 8 inscritos (C01, C08, C09, C11, C17, C21, C22, C23) e **2 na lista de espera** (C24, C27); Dr. Rafael; sala Girassol; D+3 |
+| G1 | Sobrecarga e autocuidado | Grupo de apoio | `full` | 8 | **Lotado**: 8 inscritos (C01, C08, C09, C11, C17, C21, C22, C23) e **2 na lista de espera** (C24, C27); Jessica; sala Girassol; D+3 |
 | G2 | Prevenção de quedas | Capacitação | `open` | 12 | 7 inscritos; conduzida por Dra. Renata Sampaio (profissional parceira); D+10 |
 | G3 | Luto ambíguo, em grupo | Terapia de grupo | `in_progress` | 8 | 5 inscritos elegíveis; 3 de 8 encontros feitos; selo "psicoterapia" |
 | G4 | Roda de conversa: cuidar de quem cuida | Roda aberta | `open` | 30 | 11 inscritos: 7 usuários (inclui Livre) e 4 externos; parceria CRAS; D+15 |

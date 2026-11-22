@@ -352,7 +352,7 @@ const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', '
       @if (detail(); as c) {
         <div class="conv__sheet cg-stack cg-stack--tight" data-role="detail">
           <p class="conv__when">{{ c.whenText }}</p>
-          <p>Com {{ c.psychologistName }}, {{ c.psychologistRole }} ({{ c.crp }}, fictício).</p>
+          <p>Com {{ c.psychologistName }}, {{ c.psychologistRole }}@if (c.crp) { ({{ c.crp }}, fictício)}.</p>
           <p>{{ c.formatLabel }} · {{ c.kindLabel }}</p>
           @if (c.place) {
             <p data-role="detail-place">{{ c.place }}</p>

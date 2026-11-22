@@ -44,7 +44,7 @@ describe('M02 Painel: sócia (AC-M02-01, 03 e 08)', () => {
     expect(items.length).toBeLessThanOrEqual(3);
     const textOf = items.map((a) => text(a)).join(' | ');
     expect(textOf).toContain('solicitação do titular vence em breve');
-    expect(textOf).toContain('Dr. Rafael Moreira está com a agenda acima de 80% por dois meses');
+    expect(textOf).toContain('Jessica Rosa está com a agenda acima de 80% por dois meses');
     const links = items.map((a) => a.getAttribute('href'));
     expect(links).toContain('/app/lgpd/solicitacoes?filtro=vencendo');
     expect(links).toContain('/app/indicadores?aba=equipe');
@@ -90,7 +90,7 @@ describe('M02 Painel: sócia (AC-M02-01, 03 e 08)', () => {
       'Conformidade e governança',
     ]);
     const team = text(pick(app.root, '[data-role="team"]'));
-    expect(team).toContain('Dr. Rafael Moreira');
+    expect(team).toContain('Jessica Rosa');
     expect(team).toContain('91,3%');
     expect(team).toContain('Agenda acima de 80% por dois meses');
     expect(pickAll(app.root, 'h1')).toHaveLength(1);
@@ -141,29 +141,29 @@ describe('M02 Painel: responsável técnico (AC-M02-02)', () => {
 });
 
 describe('M02 Painel: psicólogo (AC-M02-04)', () => {
-  it('o painel de Rafael mostra o aviso de sobrecarga; o de Beatriz não', async () => {
-    const rafael = await open('u3');
-    expect(text(pick(rafael.root, '[data-role="overload"]'))).toContain('A sua agenda passou de 80% por dois meses');
-    expect(text(pick(rafael.root, '[data-role="overload"]'))).toContain('não uma cobrança');
-    expect(kpi(rafael, 'Minha ocupação')).toContain('91,3%');
-    const beatriz = await open('u4');
-    expect(beatriz.root.querySelector('[data-role="overload"]')).toBeNull();
-    expect(kpi(beatriz, 'Minha ocupação')).toContain('70,0%');
+  it('o painel de Jessica mostra o aviso de sobrecarga; o de Isabelle não', async () => {
+    const jessica = await open('u3');
+    expect(text(pick(jessica.root, '[data-role="overload"]'))).toContain('A sua agenda passou de 80% por dois meses');
+    expect(text(pick(jessica.root, '[data-role="overload"]'))).toContain('não uma cobrança');
+    expect(kpi(jessica, 'Minha ocupação')).toContain('91,3%');
+    const isabelle = await open('u4');
+    expect(isabelle.root.querySelector('[data-role="overload"]')).toBeNull();
+    expect(kpi(isabelle, 'Minha ocupação')).toContain('70,0%');
   });
 
   it('a fila é só dos casos dele e os nomes ficam em modo discreto', async () => {
-    const rafael = await open('u3');
-    const rows = pickAll(rafael.root, '[data-role="queue"] a').map((a) => text(a));
+    const jessica = await open('u3');
+    const rows = pickAll(jessica.root, '[data-role="queue"] a').map((a) => text(a));
     expect(rows.join(' ')).toContain('Ana Paula Ferraz');
     expect(rows.join(' ')).toContain('Alerta vermelho: contato até 23:59');
     expect(rows.join(' ')).not.toContain('Maria Aparecida Lemos');
-    expect(pickAll(rafael.root, '[data-role="queue"] .discreet').length).toBeGreaterThan(0);
-    const beatriz = await open('u4');
-    const beatrizRows = pickAll(beatriz.root, '[data-role="queue"] a').map((a) => text(a));
-    expect(beatrizRows.join(' ')).toContain('Maria Aparecida Lemos');
-    expect(beatrizRows.join(' ')).toContain('contato vencido');
-    expect(beatrizRows.join(' ')).not.toContain('Ana Paula Ferraz');
-    expect(beatriz.root.querySelector('[data-role="overload"]')).toBeNull();
+    expect(pickAll(jessica.root, '[data-role="queue"] .discreet').length).toBeGreaterThan(0);
+    const isabelle = await open('u4');
+    const isabelleRows = pickAll(isabelle.root, '[data-role="queue"] a').map((a) => text(a));
+    expect(isabelleRows.join(' ')).toContain('Maria Aparecida Lemos');
+    expect(isabelleRows.join(' ')).toContain('contato vencido');
+    expect(isabelleRows.join(' ')).not.toContain('Ana Paula Ferraz');
+    expect(isabelle.root.querySelector('[data-role="overload"]')).toBeNull();
   });
 
   it('a agenda de hoje, as sessões a registrar e as tarefas de revisar a rede de apoio vêm dos dados', async () => {
@@ -175,9 +175,9 @@ describe('M02 Painel: psicólogo (AC-M02-04)', () => {
     expect(kpi(app, 'Sessões a registrar')).toMatch(/\d+/);
     expect(hrefs(app, 'app-panel-kpi a')).toContain('/app/atendimento?filtro=sem-anotacao');
     expect(hrefs(app, 'app-panel-kpi a')).toContain('/app/acompanhamento?filtro=tarefas');
-    const rita = await open('u4');
-    // Beatriz tem a tarefa "revisar rede de apoio" do alerta amarelo de C08.
-    expect(kpi(rita, 'Revisar a rede de apoio')).toContain('1');
+    const isabelle = await open('u4');
+    // Isabelle tem a tarefa "revisar rede de apoio" do alerta amarelo de C08.
+    expect(kpi(isabelle, 'Revisar a rede de apoio')).toContain('1');
   });
 });
 
@@ -221,11 +221,11 @@ describe('M02 Painel: estados e acessibilidade', () => {
     }
   });
 
-  it('o psicólogo sem sessões hoje (Tiago) vê o estado vazio acolhedor', async () => {
+  it('o psicólogo sem sessões hoje (Gustavo) vê o estado vazio acolhedor', async () => {
     const app = await open('u6');
     if (pickAll(app.root, '[data-role="today"] a').length === 0) {
       expect(main(app)).toContain('Hoje não há sessões');
     }
-    expect(text(pick(app.root, 'h1'))).toBe('Boa tarde, Dr. Tiago');
+    expect(text(pick(app.root, 'h1'))).toBe('Boa tarde, Gustavo');
   });
 });

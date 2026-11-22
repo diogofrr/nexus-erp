@@ -32,7 +32,7 @@ describe('busca: funções puras', () => {
   it('ignora acentos e maiúsculas e exige todas as palavras', () => {
     expect(normalizeText('Cecília  ')).toBe('cecilia');
     expect(matchesQuery('Dra. Cecília Montenegro', 'cecilia mont')).toBe(true);
-    expect(matchesQuery('Dra. Cecília Montenegro', 'cecilia rafael')).toBe(false);
+    expect(matchesQuery('Dra. Cecília Montenegro', 'cecilia jessica')).toBe(false);
   });
 
   it('reconhece o formato de código e casa pelo começo ou pelos dígitos', () => {
@@ -159,11 +159,11 @@ describe('SearchService', () => {
     loginAs('u2');
     const result = caregiverGroup(search.search('Maria Aparecida'))?.results[0];
     expect(result?.title).toBe('Maria Aparecida Lemos');
-    expect(result?.subtitle).toBe('CUI-0002 · Dra. Beatriz Nogueira');
+    expect(result?.subtitle).toBe('CUI-0002 · Isabelle Ramos');
   });
 
   it('o psicólogo só encontra os próprios cuidadores e vê a data da última aplicação', () => {
-    loginAs('u3'); // Dr. Rafael
+    loginAs('u3'); // Jessica
     expect(caregiverGroup(search.search('Maria Aparecida'))).toBeUndefined();
     expect(search.search('Maria Aparecida').message).toBe(EMPTY_SEARCH_MESSAGE);
     const own = caregiverGroup(search.search('Ana Paula'))?.results[0];

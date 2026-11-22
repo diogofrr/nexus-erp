@@ -77,7 +77,7 @@ export class SupervisionGateComponent {
   readonly entityId = input.required<string>();
   /** O titular do caso (id do cuidador). */
   readonly caregiverId = input.required<string>();
-  /** Nome de quem acompanha o caso ("Dra. Beatriz Nogueira"). Sem ele, vem do psicólogo do cuidador. */
+  /** Nome de quem acompanha o caso ("Isabelle Ramos"). Sem ele, vem do psicólogo do cuidador. */
   readonly ownerName = input<string | null>(null);
   /** O que será aberto, na frase "para ver {what}". */
   readonly what = input('');
@@ -103,7 +103,7 @@ export class SupervisionGateComponent {
   protected readonly intro = computed(() => {
     const owner = this.owner();
     const who = owner
-      ? `Este caso é acompanhado ${owner.startsWith('Dra.') ? 'pela' : 'pelo'} ${owner}.`
+      ? `Este caso é acompanhado ${owner.startsWith('Dra.') ? 'pela' : owner.startsWith('Dr.') ? 'pelo' : 'por'} ${owner}.`
       : 'Este caso ainda não tem psicólogo responsável.';
     const what = this.what();
     return `${who} Seu acesso será registrado no log, com o motivo que você informar${what ? `, para ver ${what}` : ''}.`;

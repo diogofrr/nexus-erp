@@ -150,7 +150,7 @@ export function buildComms(s: SeedState): void {
       date: d(-4),
       time: '11:30',
       support: true,
-      body: 'Hoje foi um dia difícil. Posso falar com a psicóloga?',
+      body: 'Hoje foi um dia difícil. Posso falar com alguém da psicologia?',
     },
     {
       channel: 'whatsapp',
@@ -204,7 +204,7 @@ export function buildComms(s: SeedState): void {
       date: d(-3),
       time: '11:00',
       support: true,
-      body: 'Ligação do titular: relatou sobrecarga e pediu retorno da psicóloga.',
+      body: 'Ligação do titular: relatou sobrecarga e pediu retorno da equipe de psicologia.',
     },
     {
       channel: 'phone',

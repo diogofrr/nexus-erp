@@ -55,7 +55,7 @@ describe('M10 Indicadores (SCR-M10-06, AC-M10-10 e 11)', () => {
   it('as frentes seguem a URL em português e uma aba que o perfil não tem volta à primeira', async () => {
     const app = await open('u1', '/app/indicadores?aba=equipe');
     expect(main(app)).toContain('Ocupação da agenda');
-    expect(main(app)).toContain('Dr. Rafael Moreira');
+    expect(main(app)).toContain('Jessica Rosa');
     expect(main(app)).toContain('91,3%');
     expect(text(pick(app.root, '[data-psychologist="psy_0001"] [data-role="overload"]'))).toContain(
       'acima de 80%',
@@ -101,8 +101,8 @@ describe('M10 Indicadores (SCR-M10-06, AC-M10-10 e 11)', () => {
     const all = await open('u1', '/app/indicadores');
     expect(ownTable).not.toBe(text(pick(all.root, 'app-bar-chart table')));
     const team = await open('u3', '/app/indicadores?aba=equipe');
-    expect(main(team)).toContain('Dr. Rafael Moreira');
-    expect(main(team)).not.toContain('Dra. Beatriz Nogueira');
+    expect(main(team)).toContain('Jessica Rosa');
+    expect(main(team)).not.toContain('Isabelle Ramos');
   });
 });
 

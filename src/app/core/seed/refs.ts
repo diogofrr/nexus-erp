@@ -20,35 +20,35 @@ export const caregiverCodeOf = caregiverCode;
 export const USER = {
   partner: 'u1',
   technicalLead: 'u2',
-  rafael: 'u3',
-  beatriz: 'u4',
-  leticia: 'u5',
-  tiago: 'u6',
+  jessica: 'u3',
+  isabelle: 'u4',
+  marina: 'u5',
+  gustavo: 'u6',
   camila: 'u7',
   wesley: 'u8',
+  joao: 'u13',
+  mariaJose: 'u14',
+  luzia: 'u15',
 } as const;
 
-export type PsychologistKey = 'rafael' | 'beatriz' | 'leticia' | 'tiago';
+export type PsychologistKey = 'jessica' | 'isabelle' | 'marina' | 'gustavo' | 'joao' | 'mariaJose' | 'luzia';
 
-/** Perfis de psicólogo(a). */
+/**
+ * A equipe de psicologia: os 7 integrantes do grupo (decisão do dono, 22/11/2026), pelo nome, sem "Dr." nem "Dra." e
+ * sem número de CRP (`crp` vazio: o aplicativo não mostra registro que não existe). Os ids e as agendas de antes ficam
+ * com as 4 primeiras pessoas; João Eduardo, Maria José e Luzia Luzdalma entram com agenda nova, ainda sem cuidadores.
+ */
 export const PSYCHOLOGIST: Record<
   PsychologistKey,
   { id: string; userId: string; name: string; crp: string }
 > = {
-  rafael: { id: 'psy_0001', userId: USER.rafael, name: 'Dr. Rafael Moreira', crp: 'CRP-04/00102' },
-  beatriz: {
-    id: 'psy_0002',
-    userId: USER.beatriz,
-    name: 'Dra. Beatriz Nogueira',
-    crp: 'CRP-04/00103',
-  },
-  leticia: {
-    id: 'psy_0003',
-    userId: USER.leticia,
-    name: 'Dra. Letícia Amaral',
-    crp: 'CRP-04/00104',
-  },
-  tiago: { id: 'psy_0004', userId: USER.tiago, name: 'Dr. Tiago Brandão', crp: 'CRP-04/00105' },
+  jessica: { id: 'psy_0001', userId: USER.jessica, name: 'Jessica Rosa', crp: '' },
+  isabelle: { id: 'psy_0002', userId: USER.isabelle, name: 'Isabelle Ramos', crp: '' },
+  marina: { id: 'psy_0003', userId: USER.marina, name: 'Marina Gomes', crp: '' },
+  gustavo: { id: 'psy_0004', userId: USER.gustavo, name: 'Gustavo Medeiros', crp: '' },
+  joao: { id: 'psy_0005', userId: USER.joao, name: 'João Eduardo', crp: '' },
+  mariaJose: { id: 'psy_0006', userId: USER.mariaJose, name: 'Maria José', crp: '' },
+  luzia: { id: 'psy_0007', userId: USER.luzia, name: 'Luzia Luzdalma', crp: '' },
 };
 
 export const ROOM = { girassol: 'room_0001', ipe: 'room_0002', jacaranda: 'room_0003' } as const;

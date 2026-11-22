@@ -63,7 +63,7 @@ describe('entrada: porta do cuidador (UX C1, AC-CG-17 a 23)', () => {
     expect(all('.profile-group')).toHaveLength(0);
     click(q('[data-role="staff-toggle"]'));
     await settleCaregiver(app.fixture);
-    expect(all('.profile-group .list-row')).toHaveLength(8);
+    expect(all('.profile-group .list-row')).toHaveLength(11);
     expect(q('.banner--prototype')?.textContent).toContain(PROTOTYPE_NOTICE);
   });
 
@@ -196,7 +196,7 @@ describe('entrada: porta do cuidador (UX C1, AC-CG-17 a 23)', () => {
     await settleCaregiver(app.fixture);
     expect(toggle?.getAttribute('aria-expanded')).toBe('true');
     expect(panel?.hasAttribute('hidden')).toBe(false);
-    expect(panel?.querySelectorAll('.list-row')).toHaveLength(8);
+    expect(panel?.querySelectorAll('.list-row')).toHaveLength(11);
     expect(q('.cg-accordion')?.classList.contains('cg-accordion--open')).toBe(true);
     // O foco continua no botão (Enter e Espaço de novo fecham); a escolha do perfil segue a de sempre.
     click(toggle);
@@ -224,7 +224,7 @@ describe('entrada: porta do cuidador (UX C1, AC-CG-17 a 23)', () => {
     app = await bootCaregiverApp(null, { url: '/login' });
     click(q('[data-role="staff-toggle"]'));
     await settleCaregiver(app.fixture);
-    expect(all('.profile-group h3').map(text)).toEqual(['Gestão (2)', 'Psicologia (4)', 'Atendimento (2)']);
+    expect(all('.profile-group h3').map(text)).toEqual(['Gestão (2)', 'Psicologia (7)', 'Atendimento (2)']);
     click(all('.profile-group .list-row')[0]);
     await settleCaregiver(app.fixture);
     expect(app.router.url).toBe('/login/2fa');

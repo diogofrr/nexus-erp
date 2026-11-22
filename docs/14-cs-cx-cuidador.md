@@ -208,9 +208,9 @@ Nota 1 (leve) a 5 (pesada demais).
 
 Entrando como Atendimento, pela porta da equipe e com o botão "Usar o código mostrado" do segundo fator simulado:
 
-- **Painel**: Beatriz Nogueira Teste aparece em "Aguardando resposta" com o prazo de 10/11/2026, 12:00; a mensagem de Ana ("Outro assunto: Oi, queria combinar um horario...") também; "Cadastros novos" inclui a pessoa nova.
+- **Painel**: Isabelle Ramos Teste aparece em "Aguardando resposta" com o prazo de 10/11/2026, 12:00; a mensagem de Ana ("Outro assunto: Oi, queria combinar um horario...") também; "Cadastros novos" inclui a pessoa nova.
 - **Mensagens**: as duas mensagens aparecem com o assunto escolhido (a de Ana, sem escolha, como "Outro assunto").
-- **Atendimento, Sessões**: a conversa de Beatriz aparece "Agendada", 12/11/2026 17:00, Dra. Letícia, On-line, Orientação psicológica, código CUI-0341. O cuidador vê "Aguardando confirmação do psicólogo" para o mesmo registro.
+- **Atendimento, Sessões**: a conversa de Beatriz aparece "Agendada", 12/11/2026 17:00, Marina, On-line, Orientação psicológica, código CUI-0341. O cuidador vê "Aguardando confirmação do psicólogo" para o mesmo registro.
 
 ## 7. Os 10 principais ajustes, em ordem de valor
 

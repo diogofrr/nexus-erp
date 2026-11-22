@@ -30,7 +30,7 @@ A tela de entrada tem duas portas. **Sou cuidador(a)** vem primeiro (veja a seç
 |---|---|---|
 | Helena Prado Vasconcelos | Sócia e gestão | Painel financeiro, ponto de equilíbrio, rede, parceiros, LGPD. Só vê códigos (`CUI-0000`) e agregados |
 | Dra. Cecília Montenegro | Responsável técnica | Alerta vermelho e POP-05, supervisão com justificativa, parâmetros da ARBE |
-| Dr. Rafael Moreira | Psicólogo (agenda acima de 80%) | Agenda, aplicar a escala de Zarit, anotações sigilosas |
+| Jessica Rosa | Psicólogo (agenda acima de 80%) | Agenda, aplicar a escala de Zarit, anotações sigilosas |
 | Camila Duarte | Atendimento | Cadastros, planos, mensagens com prazo, solicitações do titular. Nunca vê escore nem alerta |
 
 Há ainda a psicóloga Beatriz, a Letícia e o Tiago (casos de ocupação), e o Wesley no atendimento.

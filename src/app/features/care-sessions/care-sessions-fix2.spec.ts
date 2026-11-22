@@ -80,13 +80,15 @@ describe('Redistribuir a agenda (CX-010, CX-011)', () => {
     click(app.root.querySelector('[data-psychologist="psy_0001"] [data-role="redistribute"]'));
     await settle(app.fixture);
     const drawer = q(app, 'app-redistribute-drawer') as HTMLElement;
-    // CX-011: a Dra. Letícia, exatamente em 80%, "está no limite", não "acima".
+    // CX-011: a Marina, exatamente em 80%, "está no limite", não "acima".
     const blocked = clean(drawer.querySelector('[data-role="receiver-blocked"]'));
-    expect(blocked).toContain('Dra. Letícia Amaral');
+    expect(blocked).toContain('Marina Gomes');
     expect(blocked).toContain('no limite de 80%, não recebe mais casos');
     expect(blocked).not.toContain('acima do limite de 80%');
-    // Quem pode receber tem um campo de quantidade: Beatriz (70%) e Tiago (50%).
-    expect(drawer.querySelectorAll('[data-role="receiver-qty"]')).toHaveLength(2);
+    // Quem pode receber tem um campo de quantidade: Isabelle (70%), Gustavo (50%) e as 3 pessoas que entraram na equipe
+    // sem agenda fechada (João, Maria José e Luzia). Marina, no limite, não tem campo.
+    const receiverIds = Array.from(drawer.querySelectorAll<HTMLInputElement>('[data-role="receiver-qty"]')).map((i) => i.id);
+    expect(receiverIds).toEqual(['psy_0002', 'psy_0004', 'psy_0005', 'psy_0006', 'psy_0007'].map((id) => `redistribute-qty-${id}`));
     // Escolhe 4 casos pelo código (a RT também vê os de acompanhamento ativo, marcados).
     const boxes = Array.from(drawer.querySelectorAll<HTMLInputElement>('[data-role="case-list"] input[type="checkbox"]'));
     expect(boxes.length).toBeGreaterThan(10);
@@ -95,9 +97,10 @@ describe('Redistribuir a agenda (CX-010, CX-011)', () => {
     boxes.slice(0, 4).forEach((box) => click(box));
     await settle(app.fixture);
     expect(clean(drawer.querySelector('[data-role="selected-count"]'))).toBe('4 casos escolhidos');
-    const [beatriz, tiago] = Array.from(drawer.querySelectorAll<HTMLInputElement>('[data-role="receiver-qty"]'));
-    typeInto(beatriz ?? null, '1');
-    typeInto(tiago ?? null, '3');
+    const isabelle = drawer.querySelector<HTMLInputElement>('#redistribute-qty-psy_0002');
+    const gustavo = drawer.querySelector<HTMLInputElement>('#redistribute-qty-psy_0004');
+    typeInto(isabelle ?? null, '1');
+    typeInto(gustavo ?? null, '3');
     await settle(app.fixture);
     const rows = Array.from(drawer.querySelectorAll('[data-role="projection"] tbody tr'));
     expect(rows).toHaveLength(3);
@@ -108,15 +111,15 @@ describe('Redistribuir a agenda (CX-010, CX-011)', () => {
     click(drawer.querySelector('[data-role="clear-selection"]'));
     await settle(app.fixture);
     click(boxes[0] ?? null);
-    typeInto(beatriz ?? null, '0');
-    typeInto(tiago ?? null, '1');
+    typeInto(isabelle ?? null, '0');
+    typeInto(gustavo ?? null, '1');
     await settle(app.fixture);
     expect(drawer.querySelector('[data-role="exceeds-warning"]')).toBeNull();
     click(drawer.querySelector('[data-role="select-all"]'));
     await settle(app.fixture);
     const everyone = drawer.querySelectorAll('[data-role="case-list"] input[type="checkbox"]:checked').length;
-    typeInto(beatriz ?? null, String(everyone));
-    typeInto(tiago ?? null, '0');
+    typeInto(isabelle ?? null, String(everyone));
+    typeInto(gustavo ?? null, '0');
     await settle(app.fixture);
     expect(drawer.querySelector('[data-role="exceeds-warning"]')).toBeTruthy();
     expect(clean(drawer.querySelector('[data-psychologist="psy_0002"]'))).toContain('passaria de 80%');
@@ -124,17 +127,17 @@ describe('Redistribuir a agenda (CX-010, CX-011)', () => {
     click(drawer.querySelector('[data-role="clear-selection"]'));
     await settle(app.fixture);
     boxes.slice(0, 4).forEach((box) => click(box));
-    typeInto(beatriz ?? null, '1');
-    typeInto(tiago ?? null, '3');
+    typeInto(isabelle ?? null, '1');
+    typeInto(gustavo ?? null, '3');
     typeInto(drawer.querySelector('[data-role="reason"]'), 'Agenda acima de 80% por dois meses seguidos.');
     await settle(app.fixture);
     click(drawer.querySelector('[data-role="redistribute-submit"]'));
     await settle(app.fixture);
     const dialog = app.root.querySelector('app-dialog-host dialog') as HTMLDialogElement;
     const dialogText = clean(dialog);
-    expect(dialogText).toContain('Transferir 4 casos de Dr. Rafael Moreira?');
-    expect(dialogText).toContain('1 caso para Dra. Beatriz Nogueira e 3 casos para Dr. Tiago Brandão');
-    expect(dialogText).toContain('A ocupação de Dr. Rafael Moreira iria de 91,3% para cerca de');
+    expect(dialogText).toContain('Transferir 4 casos de Jessica Rosa?');
+    expect(dialogText).toContain('1 caso para Isabelle Ramos e 3 casos para Gustavo Medeiros');
+    expect(dialogText).toContain('A ocupação de Jessica Rosa iria de 91,3% para cerca de');
     const before = app.db.caregivers.count((c) => c.assignedPsychologistId === 'psy_0001');
     await confirmDialog(app);
     expect(app.db.caregivers.count((c) => c.assignedPsychologistId === 'psy_0001')).toBe(before - 4);

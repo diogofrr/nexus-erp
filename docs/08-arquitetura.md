@@ -141,10 +141,10 @@ Contagens conferidas pelos testes (`seed.spec.ts`): 8 usuários (todos da equipe
 |---|---|---|---|
 | `u1` | Helena Prado Vasconcelos | `partner` | Sócia e gestão |
 | `u2` | Dra. Cecília Montenegro | `technical_lead` | RT, CRP-04/00001 (fictício) |
-| `u3` | Dr. Rafael Moreira | `psychologist` (`psy_0001`) | Agenda sobrecarregada (86,3% e 91,3%) |
-| `u4` | Dra. Beatriz Nogueira | `psychologist` (`psy_0002`) | 85,0% e 70,0%: sem alerta |
-| `u5` | Dra. Letícia Amaral | `psychologist` (`psy_0003`) | 80,0% e 80,0%: sem alerta |
-| `u6` | Dr. Tiago Brandão | `psychologist` (`psy_0004`) | Mês -2 sem agenda: n/d |
+| `u3` | Jessica Rosa | `psychologist` (`psy_0001`) | Agenda sobrecarregada (86,3% e 91,3%) |
+| `u4` | Isabelle Ramos | `psychologist` (`psy_0002`) | 85,0% e 70,0%: sem alerta |
+| `u5` | Marina Gomes | `psychologist` (`psy_0003`) | 80,0% e 80,0%: sem alerta |
+| `u6` | Gustavo Medeiros | `psychologist` (`psy_0004`) | Mês -2 sem agenda: n/d |
 | `u7` | Camila Duarte | `support` | Atendimento |
 | `u8` | Wesley Lacerda | `support` | Atendimento |
 Os ids `u9` a `u12` eram os usuários do perfil de prestador credenciado (portal, M14). O perfil foi **removido por decisão do dono**: os ids não existem mais nem são reaproveitados, e os prestadores correspondentes (P11, P01, P10 e P20) continuam como cadastros da rede, geridos pela equipe e sem login. A persona de teste do CS/CX passa a ser a equipe da Nexus: psicólogo(a) (`u3`), atendimento (`u7`) e sócia (`u1`).

@@ -53,9 +53,9 @@ describe('M13 Governança: ocorrências (SCR-M13-07 e 08, AC-M13-06, 07 e 08)', 
     expect(rows.join(' ')).toContain('CUI-0011');
     expect(rows.join(' ')).toContain('CUI-0028');
     expect(rows.join(' ')).not.toMatch(/Ana Paula|Eliane|Vanessa/);
-    // Rafael só tem a do caso dele (C01).
-    const rafael = await open('u3', '/app/governanca/ocorrencias');
-    const mine = pickAll(rafael.root, 'app-data-table tbody tr').map((r) => text(r));
+    // Jessica só tem a do caso que acompanha (C01).
+    const jessica = await open('u3', '/app/governanca/ocorrencias');
+    const mine = pickAll(jessica.root, 'app-data-table tbody tr').map((r) => text(r));
     expect(mine).toHaveLength(1);
     expect(mine[0]).toContain('CUI-0001');
   });
@@ -89,7 +89,7 @@ describe('M13 Governança: ocorrências (SCR-M13-07 e 08, AC-M13-06, 07 e 08)', 
     expect(text(pick(progress.root, '[data-role="closing"]'))).toContain('os passos 2, 3, 4, 5, 6, 7');
     expect(pick<HTMLButtonElement>(progress.root, '[data-role="close-occurrence"]').disabled).toBe(true);
     // Cada passo feito tem hora e responsável.
-    expect(main(progress)).toContain('por Dr. Rafael Moreira');
+    expect(main(progress)).toContain('por Jessica Rosa');
     expect(main(progress)).toContain('Pendente');
   });
 
@@ -112,24 +112,24 @@ describe('M13 Governança: ocorrências (SCR-M13-07 e 08, AC-M13-06, 07 e 08)', 
   });
 
   it('registrar um passo grava hora, responsável e log; psicólogo conduz mas só o RT encerra', async () => {
-    const rafael = await open('u3', '/app/governanca/ocorrencias/occ_0002');
-    expect(rafael.root.querySelector('[data-role="step-form"]')).not.toBeNull();
-    expect(rafael.root.querySelector('[data-role="close-occurrence"]')).toBeNull();
-    expect(text(pick(rafael.root, '[data-role="close-owner"]'))).toContain('Só o responsável técnico encerra');
-    typeInto(pick<HTMLTextAreaElement>(rafael.root, '#occ-note'), 'Contato feito por telefone.');
-    pick<HTMLFormElement>(rafael.root, '[data-role="step-form"]').dispatchEvent(new Event('submit'));
-    await settle(rafael.fixture);
-    const step = rafael.db.occurrences.get('occ_0002')?.steps.find((s) => s.n === 2);
+    const jessica = await open('u3', '/app/governanca/ocorrencias/occ_0002');
+    expect(jessica.root.querySelector('[data-role="step-form"]')).not.toBeNull();
+    expect(jessica.root.querySelector('[data-role="close-occurrence"]')).toBeNull();
+    expect(text(pick(jessica.root, '[data-role="close-owner"]'))).toContain('Só o responsável técnico encerra');
+    typeInto(pick<HTMLTextAreaElement>(jessica.root, '#occ-note'), 'Contato feito por telefone.');
+    pick<HTMLFormElement>(jessica.root, '[data-role="step-form"]').dispatchEvent(new Event('submit'));
+    await settle(jessica.fixture);
+    const step = jessica.db.occurrences.get('occ_0002')?.steps.find((s) => s.n === 2);
     expect(step?.byUserId).toBe('u3');
     expect(step?.doneAt).toMatch(/^2026-11-04T12:00/);
     expect(step?.note).toBe('Contato feito por telefone.');
-    expect(rafael.db.accessLog.list().at(-1)).toMatchObject({ action: 'update', entity: 'occurrence', entityId: 'occ_0002' });
-    expect(text(pick(rafael.root, '[data-role="status"]'))).toContain('2 de 7 passos feitos');
-    // Outro psicólogo não conduz a ocorrência de Rafael.
-    const beatriz = await open('u4', '/app/governanca/ocorrencias/occ_0002');
-    expect(beatriz.root.querySelector('[data-role="step-form"]')).toBeNull();
-    expect(main(beatriz)).toContain('não está disponível para o seu perfil');
-    expect(main(beatriz)).not.toContain('CUI-0001');
+    expect(jessica.db.accessLog.list().at(-1)).toMatchObject({ action: 'update', entity: 'occurrence', entityId: 'occ_0002' });
+    expect(text(pick(jessica.root, '[data-role="status"]'))).toContain('2 de 7 passos feitos');
+    // Outro psicólogo não conduz a ocorrência de Jessica.
+    const isabelle = await open('u4', '/app/governanca/ocorrencias/occ_0002');
+    expect(isabelle.root.querySelector('[data-role="step-form"]')).toBeNull();
+    expect(main(isabelle)).toContain('não está disponível para o seu perfil');
+    expect(main(isabelle)).not.toContain('CUI-0001');
   });
 
   it('abrir a ocorrência fica no log de acesso; encerrar exige os 7 passos e pede confirmação com o efeito', async () => {

@@ -1,6 +1,6 @@
 # Status de aceite: M10 Financeiro, indicadores e piloto (`finance`)
 
-Telas: SCR-M10-01 a 05 em `/app/financeiro` (visão geral, `projecao`, `parametros`, `investimento`, `custos`), SCR-M10-06 em `/app/indicadores` (abas na URL: `?aba=cuidadores|rede|equipe|atendimento`), SCR-M10-07 em `/app/piloto` e SCR-M10-08 (exportar) nos botões "Baixar tabela (CSV)" e "Baixar parâmetros (JSON)". Data de referência dos testes: 04/11/2026, 12:00. Perfis: `u1` Helena (sócia, financeiro inteiro), `u2` Dra. Cecília (responsável técnico, só agregados clínicos), `u3` Dr. Rafael (psicólogo, só os casos dele), `u7` Camila (atendimento, só SLA e reclamações). Fluxo F14 completo.
+Telas: SCR-M10-01 a 05 em `/app/financeiro` (visão geral, `projecao`, `parametros`, `investimento`, `custos`), SCR-M10-06 em `/app/indicadores` (abas na URL: `?aba=cuidadores|rede|equipe|atendimento`), SCR-M10-07 em `/app/piloto` e SCR-M10-08 (exportar) nos botões "Baixar tabela (CSV)" e "Baixar parâmetros (JSON)". Data de referência dos testes: 04/11/2026, 12:00. Perfis: `u1` Helena (sócia, financeiro inteiro), `u2` Dra. Cecília (responsável técnico, só agregados clínicos), `u3` Jessica (psicólogo, só os casos dele), `u7` Camila (atendimento, só SLA e reclamações). Fluxo F14 completo.
 
 | AC | Status | Onde ver (rota e perfil) | Observações |
 |---|---|---|---|

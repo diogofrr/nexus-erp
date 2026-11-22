@@ -520,7 +520,7 @@ describe('Rotina (UX C5 e C6)', () => {
 
     it('a conversa da própria pessoa com o psicólogo aparece com "Para você" e leva a Conversar com um psicólogo (AC-CG-63)', async () => {
       await open('cg_0001', '/cuidador/rotina/agenda');
-      const psychologist = app.db.psychologists.find((p) => p.displayName.startsWith('Dra. Beatriz'));
+      const psychologist = app.db.psychologists.find((p) => p.displayName.startsWith('Isabelle'));
       app.db.careSessions.create({
         caregiverId: 'cg_0001',
         psychologistId: psychologist?.id ?? '',
@@ -536,7 +536,7 @@ describe('Rotina (UX C5 e C6)', () => {
       await flush();
       expect(q('[data-date="2026-11-06"]')?.getAttribute('aria-label')).toContain('Para você');
       await pickDay('2026-11-06');
-      const row = all('app-cg-row').find((r) => text(r).includes('Sua conversa com a Dra. Beatriz'));
+      const row = all('app-cg-row').find((r) => text(r).includes('Sua conversa com Isabelle Ramos'));
       expect(text(row)).toContain('14:00');
       expect(text(row)).toContain('Para você');
       expect(row?.querySelector('a')?.getAttribute('href')).toBe('/cuidador/cuidar-de-mim/atendimento');
