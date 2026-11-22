@@ -143,7 +143,7 @@ describe('Área care (Cuidar de mim e Conversar com um psicólogo)', () => {
       await boot('cg_0002', '/cuidador/cuidar-de-mim');
       app.db.activityEnrollments.removeWhere((e) => e.caregiverId === 'cg_0002');
       await settleCaregiver(app.fixture);
-      expect(text(q('[data-role="care-groups"]'))).toBe('Rodas de conversa, capacitações e grupos com quem também cuida.');
+      expect(text(q('[data-role="care-groups"]'))).toBe('Capacitações e encontros com quem também cuida.');
       expect(all('.cg-plan-lock')).toHaveLength(0);
     });
 

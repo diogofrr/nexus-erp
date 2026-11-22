@@ -74,8 +74,8 @@ describe('seed: contagens da seção 5.15', () => {
     expect(c.serviceRequests).toHaveLength(213);
     expect(c.serviceRequests.filter((r) => r.status === 'evaluated')).toHaveLength(124);
     expect(c.providerEvaluations).toHaveLength(124);
-    // docs/20: 11 encontros (2 rodas abertas, 5 capacitações e 4 terapias de grupo, com os estados de antes).
-    expect(c.activities).toHaveLength(11);
+    // docs/20: 9 encontros (5 capacitações e 4 terapias em grupo, com os estados de antes); a roda aberta saiu (v3).
+    expect(c.activities).toHaveLength(9);
     expect(c.partners).toHaveLength(9);
     expect(c.corporateAccounts).toHaveLength(3);
     expect(c.messages).toHaveLength(28);
@@ -600,19 +600,17 @@ describe('seed: comunicação, grupos, parceiros e governança', () => {
     expect(compareDates(dateOf(rec(5).dueAt), TODAY)).toBeLessThan(0);
   });
 
-  it('encontros G1 a G11 (docs/20): só três tipos, lotado com lista de espera, terapia em andamento, rascunho, cancelado e cotas coerentes', () => {
+  it('encontros G1 a G11 sem G4 e G11 (docs/20): só dois tipos, lotado com lista de espera, terapia em andamento, rascunho, cancelado e cotas coerentes', () => {
     const act = (n: number) => c.activities.find((a) => a.id === `act_${String(n).padStart(4, '0')}`)!;
     const enr = (n: number, status?: string) =>
       c.activityEnrollments.filter(
         (e) => e.activityId === act(n).id && (status === undefined || e.status === status),
       );
     const kinds = c.activities.map((a) => a.kind);
-    expect(new Set(kinds)).toEqual(new Set(['open_circle', 'training', 'group_therapy']));
-    expect(kinds.filter((k) => k === 'open_circle')).toHaveLength(2);
+    expect(new Set(kinds)).toEqual(new Set(['training', 'group_therapy']));
     expect(kinds.filter((k) => k === 'training')).toHaveLength(5);
     expect(kinds.filter((k) => k === 'group_therapy')).toHaveLength(4);
     const live = (kind: string) => c.activities.filter((a) => a.kind === kind && ['open', 'full', 'in_progress'].includes(a.status));
-    expect(live('open_circle').length).toBeGreaterThanOrEqual(2);
     expect(live('training').length).toBeGreaterThanOrEqual(3);
     expect(live('group_therapy').length).toBeGreaterThanOrEqual(3);
     c.activities.forEach((a) => {
@@ -626,9 +624,8 @@ describe('seed: comunicação, grupos, parceiros e governança', () => {
     expect(enr(2)).toHaveLength(8);
     expect(act(3)).toMatchObject({ kind: 'group_therapy', character: 'psychotherapy', status: 'in_progress' });
     expect(act(3).meetings.filter((m) => m.done)).toHaveLength(2);
-    expect(act(4).kind).toBe('open_circle');
-    expect(enr(4)).toHaveLength(11);
-    expect(enr(4).filter((e) => e.external)).toHaveLength(4);
+    expect(c.activities.some((a) => a.id === 'act_0004' || a.id === 'act_0011')).toBe(false);
+    expect(c.activityEnrollments.some((e) => e.external)).toBe(false);
     expect(enr(5, 'attended')).toHaveLength(9);
     expect(enr(5, 'absent')).toHaveLength(2);
     expect(act(6).status).toBe('cancelled');
@@ -636,7 +633,7 @@ describe('seed: comunicação, grupos, parceiros e governança', () => {
     expect(act(10)).toMatchObject({ kind: 'training', status: 'full' });
     expect(enr(10, 'waitlist')).toHaveLength(2);
     expect(enr(10).every((e) => e.paid === true && e.priceCents === 8000)).toBe(true);
-    // Terapia de grupo só com Cuida e Sustenta; Ana e Lourdes em terapia de grupo; João só em roda aberta; Maria em capacitação incluída.
+    // Terapia em grupo só com Cuida e Sustenta; Ana e Lourdes em terapia em grupo; João em nenhum encontro; Maria em capacitação incluída.
     const plans = new Map(c.subscriptions.map((s) => [s.caregiverId, s.planId] as const));
     c.activityEnrollments
       .filter((e) => e.caregiverId && act(Number(e.activityId.slice(4))).kind === 'group_therapy')
@@ -644,7 +641,7 @@ describe('seed: comunicação, grupos, parceiros e governança', () => {
     expect(c.activityEnrollments.some((e) => e.caregiverId === caregiverId(1) && e.activityId === act(1).id && e.status === 'enrolled')).toBe(true);
     expect(c.activityEnrollments.some((e) => e.caregiverId === caregiverId(24) && e.activityId === act(3).id && e.status === 'enrolled')).toBe(true);
     const joao = c.activityEnrollments.filter((e) => e.caregiverId === caregiverId(3));
-    expect(joao.every((e) => act(Number(e.activityId.slice(4))).kind === 'open_circle')).toBe(true);
+    expect(joao).toHaveLength(0);
     expect(c.activityEnrollments.find((e) => e.caregiverId === caregiverId(2) && e.activityId === act(2).id)).toMatchObject({
       includedInPlan: true,
       paid: false,

@@ -55,7 +55,7 @@ const line = (key: string, icon: IconName, label: string): Perk => ({ key, icon,
 export function planLines(planId: PlanId): Perk[] {
   const q = PLAN_QUOTAS[planId];
   const sessions = line('individual_session', 'heart-handshake', `Atendimento psicológico individual: ${limitText(q.individualSessionsPerMonth, 'sessões')}`);
-  const therapy = line('group_therapy', 'users-round', `Terapia de grupo: ${limitText(q.groupTherapyPerMonth, 'encontros')}`);
+  const therapy = line('group_therapy', 'users-round', `Terapia em grupo: ${limitText(q.groupTherapyPerMonth, 'encontros')}`);
   const trainings = line(
     'trainings',
     'book-open',
@@ -65,7 +65,6 @@ export function planLines(planId: PlanId): Perk[] {
         ? `Capacitações avulsas (${singlePriceText('training')})`
         : `${limitText(q.trainingsPerMonth, 'capacitações')} incluídas`,
   );
-  const circles = line('open_circle', 'messages-square', 'Rodas de conversa abertas');
   const card = line('card', 'credit-card', 'Cartão Nexus, com descontos nos parceiros');
   switch (planId) {
     case 'livre':
@@ -73,7 +72,6 @@ export function planLines(planId: PlanId): Perk[] {
         line('organization', 'clipboard-check', 'Organização básica da rotina: agenda, lembretes e remédios'),
         line('content', 'book-open', 'Conteúdos abertos'),
         line('network', 'handshake', 'Rede credenciada: consultar, comparar e pedir serviço'),
-        circles,
         trainings,
       ];
     case 'essencial':
@@ -83,7 +81,6 @@ export function planLines(planId: PlanId): Perk[] {
         line('content', 'star', 'Conteúdos abertos e exclusivos'),
         line('network', 'handshake', 'Rede credenciada, com condições especiais'),
         trainings,
-        circles,
       ];
     case 'cuida':
       return [
@@ -94,7 +91,6 @@ export function planLines(planId: PlanId): Perk[] {
         card,
         line('content', 'star', 'Conteúdos abertos e exclusivos'),
         line('network', 'handshake', 'Rede credenciada, com condições especiais'),
-        circles,
       ];
     case 'sustenta':
       return [
@@ -105,7 +101,6 @@ export function planLines(planId: PlanId): Perk[] {
         trainings,
         card,
         line('content', 'star', 'Conteúdos abertos e exclusivos'),
-        circles,
       ];
   }
 }
@@ -115,12 +110,12 @@ export function planPerks(planId: PlanId, _plans: readonly PlanDefinition[], cou
   return planLines(planId).slice(0, count);
 }
 
-/** As três linhas de cota que o quadro compara entre os planos (docs/20): atendimento individual, terapia de grupo e capacitações. */
+/** As três linhas de cota que o quadro compara entre os planos (docs/20): atendimento individual, terapia em grupo e capacitações. */
 export function quotaLines(planId: PlanId): { key: string; label: string; value: string }[] {
   const q = PLAN_QUOTAS[planId];
   return [
     { key: 'individual_session', label: 'Atendimento individual', value: limitText(q.individualSessionsPerMonth, 'sessões') },
-    { key: 'group_therapy', label: 'Terapia de grupo', value: limitText(q.groupTherapyPerMonth, 'encontros') },
+    { key: 'group_therapy', label: 'Terapia em grupo', value: limitText(q.groupTherapyPerMonth, 'encontros') },
     {
       key: 'trainings',
       label: 'Capacitações',
@@ -163,7 +158,7 @@ function lostGroupsLine(lost: readonly LostGroup[]): string {
     return '';
   }
   const list = lost.map((g) => `${g.title} (${dayMonth(g.startDate)})`).join(', ');
-  return `Você sai das turmas de terapia de grupo que começam depois dessa data: ${list}. As turmas em andamento continuam até o fim do ciclo.`;
+  return `Você sai das turmas de terapia em grupo que começam depois dessa data: ${list}. As turmas em andamento continuam até o fim do ciclo.`;
 }
 
 /** Texto do botão de cada plano no quadro e na folha, pelo tipo de troca. `null` quando não há troca (mesmo plano). */
@@ -214,7 +209,7 @@ export function changeCopy(quote: ChangeQuote, priceOf: (plan: PlanId) => string
       showNotice: false,
     };
   }
-  const groups = canAccessGroupTherapy(quote.from) ? ', inclusive a terapia de grupo' : '';
+  const groups = canAccessGroupTherapy(quote.from) ? ', inclusive a terapia em grupo' : '';
   return {
     kind: quote.kind,
     heading: `Mudar para o ${to} no fim do ciclo?`,

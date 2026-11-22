@@ -78,16 +78,20 @@ describe('Zarit: faixas e conduta (RN-ZRT-08 a 13, A.5)', () => {
   });
 
   it('a conduta da equipe segue a tabela A.5, por plano nas faixas 21 a 60 (docs/20)', () => {
-    expect(zaritConduct(10)).toContain('rodas de conversa abertas');
-    expect(zaritConductFor(30, 'livre')).toBe('Conteúdos de orientação, rodas de conversa abertas, capacitações e encaminhamento à rede pública ou a clínicas-escola.');
+    expect(zaritConduct(10)).toBe('Conteúdos de orientação e convite para as capacitações.');
+    expect(zaritConductFor(30, 'livre')).toBe('Conteúdos de orientação, capacitações e encaminhamento à rede pública ou a clínicas-escola.');
     expect(zaritConductFor(30, 'essencial')).not.toContain('atendimento psicológico');
     expect(zaritConductFor(30, 'cuida')).toContain('atendimento psicológico');
-    expect(zaritConductFor(30, 'sustenta')).toContain('terapia de grupo');
+    expect(zaritConductFor(30, 'sustenta')).toContain('terapia em grupo');
     expect(zaritConductFor(50, 'essencial')).toContain('clínicas-escola');
     expect(zaritConductFor(50, 'cuida')).toContain('acompanhamento psicológico prioritário');
     expect(zaritConductFor(70, 'livre')).toBe(zaritConductFor(70, 'sustenta'));
     (['livre', 'essencial', 'cuida', 'sustenta'] as const).forEach((p) =>
-      [10, 30, 50, 70].forEach((t) => expect(zaritConductFor(t, p)).not.toMatch(/plano|upgrade|assine/i)),
+      [10, 30, 50, 70].forEach((t) => {
+        expect(zaritConductFor(t, p)).not.toMatch(/plano|upgrade|assine/i);
+        // A Nexus não tem roda de conversa: nenhuma conduta a cita.
+        expect(zaritConductFor(t, p)).not.toMatch(/roda/i);
+      }),
     );
     expect(zaritConduct(30)).toContain('atendimento psicológico');
     expect(zaritConduct(45)).toContain('Alerta amarelo');

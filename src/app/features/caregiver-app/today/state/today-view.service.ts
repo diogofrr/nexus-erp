@@ -55,7 +55,7 @@ export interface DailyInvite {
   actionLabel: string;
   link: string;
   query: Record<string, string> | null;
-  /** O tipo do encontro (roda aberta ou capacitação), para o selo; `null` na conversa e na leitura. */
+  /** O tipo do encontro (terapia em grupo ou capacitação), para o selo; `null` na conversa e na leitura. */
   eventType: CgEventType | null;
 }
 
@@ -210,8 +210,8 @@ export class TodayViewService {
   /**
    * O convite do dia. Não aparece quando há nota de cuidado (contato da equipe): a oferta não fica ao lado do contato
    * (S-11). Essa ocultação usa o estado do contato só para CUIDAR, nunca para vender (RN-PLN-19, RN-LGPD-17). Só entra o
-   * que a pessoa pode usar de verdade (docs/20): a conversa só para Cuida e Sustenta, a capacitação só quando incluída, a
-   * roda aberta e a leitura aberta para todos. Encontro em que a pessoa já está inscrita não é convite (já é dela).
+   * que a pessoa pode usar de verdade (docs/20): a conversa e a terapia em grupo só para Cuida e Sustenta, a capacitação
+   * só quando incluída, a leitura aberta para todos. Encontro em que a pessoa já está inscrita não é convite (já é dela).
    */
   readonly invite = computed<DailyInvite | null>(() => {
     if (this.ctx.staffContact() !== 'none') {
@@ -222,15 +222,15 @@ export class TodayViewService {
     const access = eventAccessOf(this.ctx);
     const mine = new Set(this.enrolled().map((m) => m.activityId));
     const activities = this.db.activities.list();
-    const circle = nextOpenMeetingOf('open_circle', activities, now, mine);
+    const group = access.groupTherapy ? nextOpenMeetingOf('group_therapy', activities, now, mine) : null;
     const training = access.trainingIncluded ? nextOpenMeetingOf('training', activities, now, mine) : null;
     const reading = this.readingOfTheDay();
     const available: InviteKind[] = [];
     if (canBookSession(this.ctx)) {
       available.push('conversation');
     }
-    if (circle) {
-      available.push('circle');
+    if (group) {
+      available.push('group');
     }
     if (training) {
       available.push('training');
@@ -239,8 +239,8 @@ export class TodayViewService {
       available.push('reading');
     }
     const kind = inviteKindFor(today, available);
-    const meeting = kind === 'circle' ? circle : kind === 'training' ? training : null;
-    if ((kind === 'circle' || kind === 'training') && meeting) {
+    const meeting = kind === 'group' ? group : kind === 'training' ? training : null;
+    if ((kind === 'group' || kind === 'training') && meeting) {
       const invite: DailyInvite = {
         kind,
         title: meeting.title,

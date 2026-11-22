@@ -12,7 +12,7 @@ import { GroupMembershipService } from './group-membership.service';
 
 /** Situação da pessoa diante de um encontro (para a tela decidir o botão, sem recalcular regra). */
 export type ActivityStanding =
-  /** O plano não inclui o tipo (terapia de grupo no Livre e no Essencial). A tela nem lista esses encontros. */
+  /** O plano não inclui o tipo (terapia em grupo no Livre e no Essencial). A tela nem lista esses encontros. */
   | { kind: 'plan_locked' }
   /** Já está inscrita. */
   | { kind: 'enrolled'; enrollment: ActivityEnrollment }
@@ -27,8 +27,8 @@ export type EnrollOutcome =
   | { ok: true; waitlisted: boolean; enrollment: ActivityEnrollment; position: number | null; offer: EnrollmentOffer }
   | { ok: false; error: string };
 
-/** Mensagem do domínio quando o plano não inclui a terapia de grupo. A tela do cuidador não a mostra (regra de exibição 1). */
-export const GROUP_THERAPY_PLAN_BLOCKED = 'A terapia de grupo faz parte dos planos Cuida e Sustenta.';
+/** Mensagem do domínio quando o plano não inclui a terapia em grupo. A tela do cuidador não a mostra (regra de exibição 1). */
+export const GROUP_THERAPY_PLAN_BLOCKED = 'A terapia em grupo faz parte dos planos Cuida e Sustenta.';
 
 /**
  * Encontros vistos pelo cuidador (docs/20-regras-planos-v2.md; RN-GRP-03, 09, 13, 17, RN-PLN-19). O miolo das vagas, da
@@ -37,9 +37,9 @@ export const GROUP_THERAPY_PLAN_BLOCKED = 'A terapia de grupo faz parte dos plan
  *
  * - Só aparecem encontros abertos, lotados ou em andamento (rascunho, cancelado e encerrado não).
  * - **Regra de exibição 2 do docs/20**: o que o plano não dá acesso NÃO é listado (nem como vitrine). Livre e Essencial
- *   veem rodas abertas e capacitações; Cuida e Sustenta veem tudo. Quem já está inscrita vê o que é dela (RN-GRP-17).
- * - Roda aberta: todos, sem cota. Capacitação: todos os cadastrados, incluída quando cabe na cota, senão avulsa a R$ 40,00
- *   o encontro (pagamento simulado). Terapia de grupo: só Cuida e Sustenta, 2 encontros por mês na cota, além dela avulsa.
+ *   veem capacitações; Cuida e Sustenta veem tudo. Quem já está inscrita vê o que é dela (RN-GRP-17).
+ * - Capacitação: todos os cadastrados, incluída quando cabe na cota, senão avulsa a R$ 40,00
+ *   o encontro (pagamento simulado). Terapia em grupo: só Cuida e Sustenta, 2 encontros por mês na cota, além dela avulsa.
  * - O aceite do contrato de sigilo é obrigatório e é gravado com data e hora (RN-GRP-09).
  * - Nenhuma frase fala de pontuação, faixa ou alerta (RN-PLN-19).
  */
@@ -70,7 +70,7 @@ export class CaregiverActivitiesService {
   /** Os tipos de encontro que a pessoa pode ver (para a tela montar as seções e o filtro). */
   visibleKinds(caregiverId: ID): ActivityKind[] {
     const planId = planIdOfCaregiver(this.db, caregiverId);
-    return (['open_circle', 'training', 'group_therapy'] as const).filter((kind) => canAccessActivity(planId, kind).allowed);
+    return (['training', 'group_therapy'] as const).filter((kind) => canAccessActivity(planId, kind).allowed);
   }
 
   /** Um encontro da programação; `undefined` para rascunho, cancelado, encerrado ou inexistente. */

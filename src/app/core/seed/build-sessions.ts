@@ -43,7 +43,7 @@ const NOTE_TEXTS: readonly string[] = [
   'Sessão de acompanhamento. Relato de cansaço e dificuldade para organizar a rotina. Combinado retorno em duas semanas.',
   'Conversa sobre divisão de tarefas com a família. Orientação sobre pausas curtas ao longo do dia.',
   'Acompanhamento do manejo do estresse. Cuidador relata melhora do sono nesta semana.',
-  'Escuta sobre a relação com a pessoa idosa e os limites do cuidado. Sugerida a roda de conversa aberta.',
+  'Escuta sobre a relação com a pessoa idosa e os limites do cuidado. Sugeridas as capacitações abertas.',
   'Revisão da rede de apoio da família. Definidos dois contatos para pedir ajuda nos fins de semana.',
 ];
 

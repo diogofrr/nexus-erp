@@ -30,7 +30,7 @@ function therapyForm(svc: GroupsService, overrides: Partial<ActivityForm> = {}):
   return {
     ...svc.emptyForm(),
     kind: 'group_therapy',
-    title: 'Terapia de grupo sobre rotina e descanso',
+    title: 'Terapia em grupo sobre rotina e descanso',
     theme: 'emotional_health',
     leaderType: 'psychologist',
     leaderId: 'psy_0003',
@@ -42,10 +42,10 @@ function therapyForm(svc: GroupsService, overrides: Partial<ActivityForm> = {}):
 }
 
 describe('M07 programação (SCR-M07-01, AC-M07-11, AC-M07-04)', () => {
-  it('lista os 11 encontros da seed (docs/20) com caráter e vagas; a lotada mostra a lista de espera', async () => {
+  it('lista os 9 encontros da seed (docs/20, sem roda de conversa) com caráter e vagas; a lotada mostra a lista de espera', async () => {
     const app = await bootApp({ userId: 'u1', url: '/app/grupos' });
     const rows = Array.from(app.root.querySelectorAll('app-data-table tbody tr, app-data-table .table tbody tr'));
-    expect(rows.length).toBe(11);
+    expect(rows.length).toBe(9);
     const content = rows.map((r) => r.textContent?.replace(/\s+/g, ' ') ?? '');
     const g1 = content.find((c) => c.includes('Sobrecarga e autocuidado')) ?? '';
     expect(g1).toContain('Lotada');
@@ -87,7 +87,7 @@ describe('M07 programação (SCR-M07-01, AC-M07-11, AC-M07-04)', () => {
 });
 
 describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
-  it('Essencial na terapia de grupo é bloqueado com a explicação "planos Cuida e Sustenta" (AC-M07-01, docs/20)', async () => {
+  it('Essencial na terapia em grupo é bloqueado com a explicação "planos Cuida e Sustenta" (AC-M07-01, docs/20)', async () => {
     const app = await bootApp({ userId: 'u7', url: '/app/grupos/act_0008' });
     const svc = TestBed.inject(GroupsService);
     const checks = svc.checksFor(app.db.activities.require('act_0008'), { caregiverId: 'cg_0006' });
@@ -134,17 +134,33 @@ describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
     expect(text(app, '[data-role="enrolled"]')).toContain('04/11/2026 12:00');
   });
 
-  it('a roda de conversa aberta aceita Livre e participante externo (AC-M07-03)', async () => {
-    const app = await bootApp({ userId: 'u7', url: '/app/grupos/act_0004' });
+  it('nenhum encontro aceita participante externo; o Livre entra na capacitação, avulsa (AC-M07-03, sem roda de conversa)', async () => {
+    const app = await bootApp({ userId: 'u7', url: '/app/grupos/act_0009' });
     const svc = TestBed.inject(GroupsService);
-    expect(svc.enroll({ activityId: 'act_0004', caregiverId: 'cg_0013', ...accepted }).ok).toBe(true);
-    const badMail = svc.enroll({ activityId: 'act_0004', external: { name: 'Visitante Teste', email: 'visitante@gmail.com' }, ...accepted });
-    expect(badMail.ok).toBe(false);
-    const external = svc.enroll({ activityId: 'act_0004', external: { name: 'Visitante Teste', email: 'visitante@exemplo.com.br' }, ...accepted });
-    expect(external.ok && external.value.enrollment.external?.name).toBe('Visitante Teste');
-    // Externo não entra em grupo de apoio.
-    expect(svc.enroll({ activityId: 'act_0008', external: { name: 'Visitante Teste', email: 'visitante@exemplo.com.br' }, ...accepted }).ok).toBe(false);
-    expect(app.db.activityEnrollments.count((e) => e.activityId === 'act_0004')).toBe(13);
+    const before = app.db.activityEnrollments.count((e) => e.activityId === 'act_0009');
+    // João (Livre): a capacitação não está no plano, então entra avulsa (pagamento simulado).
+    const livre = svc.enroll({ activityId: 'act_0009', caregiverId: 'cg_0003', ...accepted });
+    expect(livre.ok && livre.value.enrollment).toMatchObject({ caregiverId: 'cg_0003', paid: true, includedInPlan: false, priceCents: 4000 });
+    // Participante externo não entra em nenhum tipo de encontro, nem com e-mail válido.
+    const visitor = { name: 'Visitante Teste', email: 'visitante@exemplo.com.br' };
+    ['act_0009', 'act_0008', 'act_0002'].forEach((id) => {
+      const result = svc.enroll({ activityId: id, external: visitor, ...accepted });
+      expect(result.ok, id).toBe(false);
+      expect(
+        result.ok === false && result.errors.some((e) => e.field === 'plan' && e.message.includes('não aceitam participante externo')),
+        id,
+      ).toBe(true);
+      const plan = svc.checksFor(app.db.activities.require(id), { external: true }).find((c) => c.id === 'plan');
+      expect(plan?.state, id).toBe('fail');
+    });
+    expect(app.db.activityEnrollments.count((e) => e.activityId === 'act_0009')).toBe(before + 1);
+    // A seed não tem participante externo e a gaveta de inscrição não oferece essa opção.
+    expect(app.db.activityEnrollments.count((e) => !!e.external)).toBe(0);
+    click(q(app, '[data-role="enroll"]'));
+    await settle(app.fixture);
+    const drawer = app.root.querySelector('app-enroll-drawer dialog') as HTMLDialogElement;
+    expect(drawer.textContent).not.toContain('Participante externo');
+    expect(drawer.querySelector('app-radio-group')).toBeNull();
   });
 
   it('o grupo lotado tem 6 inscritos e 2 na fila; cancelar promove o primeiro e o estado acompanha as vagas (AC-M07-04)', async () => {
@@ -176,7 +192,7 @@ describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
     expect(app.db.activities.get('act_0001')?.status).toBe('open');
   });
 
-  it('terapia de grupo: selo de psicoterapia; só Cuida e Sustenta entram, sem exigir a indicação do psicólogo (AC-M07-05, docs/20)', async () => {
+  it('terapia em grupo: selo de psicoterapia; só Cuida e Sustenta entram, sem exigir a indicação do psicólogo (AC-M07-05, docs/20)', async () => {
     const partner = await bootApp({ userId: 'u1', url: '/app/grupos/novo' });
     const svc = TestBed.inject(GroupsService);
     const created = svc.save(therapyForm(svc), true);
@@ -200,7 +216,7 @@ describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
     expect(svcSupport.enroll({ activityId: therapyId, caregiverId: 'cg_0006', ...accepted, eligible: true }).ok).toBe(false);
     expect(svcSupport.checksFor(support.db.activities.require(therapyId), { caregiverId: 'cg_0021' }).find((c) => c.id === 'eligibility')).toMatchObject({
       state: 'na',
-      text: 'Não é exigida: a terapia de grupo vale para os planos Cuida e Sustenta.',
+      text: 'Não é exigida: a terapia em grupo vale para os planos Cuida e Sustenta.',
     });
     const sustenta = svcSupport.enroll({ activityId: therapyId, caregiverId: 'cg_0021', ...accepted });
     expect(sustenta.ok && sustenta.value.enrollment.eligibleForGroupTherapy).toBeUndefined();
@@ -268,7 +284,7 @@ describe('M07 nova atividade (SCR-M07-02, AC-M07-06, AC-M07-10)', () => {
     expect(right.ok && right.value.status).toBe('draft');
   });
 
-  it('terapia de grupo só com psicólogo da Nexus com CRP ativo; divulgação sem promessa de resultado (RN-GRP-04, 15)', async () => {
+  it('terapia em grupo só com psicólogo da Nexus com CRP ativo; divulgação sem promessa de resultado (RN-GRP-04, 15)', async () => {
     await bootApp({ userId: 'u1', url: '/app/grupos/novo' });
     const svc = TestBed.inject(GroupsService);
     const guest = svc.save(therapyForm(svc, { leaderType: 'guest', guestName: 'Convidado Exemplo' }), true);
@@ -326,7 +342,7 @@ describe('M07 detalhe, sigilo e privacidade (SCR-M07-03, AC-M07-07)', () => {
     expect(text(app)).not.toMatch(FORBIDDEN_WORDS);
   });
 
-  it('a sócia vê só códigos; o atendimento não vê quem está na terapia de grupo; o RT valida o enquadramento', async () => {
+  it('a sócia vê só códigos; o atendimento não vê quem está na terapia em grupo; o RT valida o enquadramento', async () => {
     const partner = await bootApp({ userId: 'u1', url: '/app/grupos/act_0001' });
     const content = text(partner, '[data-role="enrolled"]');
     expect(content).toContain('CUI-0001');
@@ -401,7 +417,7 @@ describe('M07 presença e indicadores (SCR-M07-05 e 06, AC-M07-08)', () => {
 });
 
 describe('M07 mudança de plano (RN-GRP-17, AC-M07-09)', () => {
-  it('Cuida para Essencial tira o cuidador das turmas futuras de terapia de grupo; a capacitação e a turma em andamento ficam (docs/20)', async () => {
+  it('Cuida para Essencial tira o cuidador das turmas futuras de terapia em grupo; a capacitação e a turma em andamento ficam (docs/20)', async () => {
     const app = await bootApp({ userId: 'u1', url: '/app/grupos' });
     const membership = TestBed.inject(GroupMembershipService);
     // Turma em andamento (ciclo já pago) com a mesma pessoa: permanece.

@@ -45,18 +45,18 @@ export interface ZaritBandInfo {
 
 /**
  * Conduta por grupo de plano nas faixas 21 a 60 (docs/20-regras-planos-v2.md): o atendimento psicológico da equipe não é
- * vendido a quem está no Livre ou no Essencial; para esses planos a conduta é conteúdos, rodas abertas, capacitações e
+ * vendido a quem está no Livre ou no Essencial; para esses planos a conduta é conteúdos, capacitações e
  * encaminhamento à rede pública ou a clínicas-escola (Quadro 15). Para Cuida e Sustenta, oferta de atendimento psicológico
- * e convite para a terapia de grupo. O alerta vermelho é igual para todos. Nenhum texto sugere troca de plano (RN-PLN-19).
+ * e convite para a terapia em grupo. O alerta vermelho é igual para todos. Nenhum texto sugere troca de plano (RN-PLN-19).
  */
 export const ZARIT_CONDUCT_BY_PLAN: Readonly<Record<'moderate' | 'moderate_to_severe', { free: string; paid: string }>> = {
   moderate: {
-    free: 'Conteúdos de orientação, rodas de conversa abertas, capacitações e encaminhamento à rede pública ou a clínicas-escola.',
-    paid: 'Oferta de atendimento psicológico e convite para a terapia de grupo e as capacitações.',
+    free: 'Conteúdos de orientação, capacitações e encaminhamento à rede pública ou a clínicas-escola.',
+    paid: 'Oferta de atendimento psicológico e convite para a terapia em grupo e as capacitações.',
   },
   moderate_to_severe: {
-    free: 'Alerta amarelo: acompanhamento com conteúdos, rodas de conversa abertas e capacitações, encaminhamento à rede pública ou a clínicas-escola e revisão da rede de apoio da família.',
-    paid: 'Alerta amarelo: acompanhamento psicológico prioritário, com foco no manejo do estresse, convite para a terapia de grupo e revisão da rede de apoio da família.',
+    free: 'Alerta amarelo: acompanhamento com conteúdos e capacitações, encaminhamento à rede pública ou a clínicas-escola e revisão da rede de apoio da família.',
+    paid: 'Alerta amarelo: acompanhamento psicológico prioritário, com foco no manejo do estresse, convite para a terapia em grupo e revisão da rede de apoio da família.',
   },
 };
 
@@ -67,7 +67,7 @@ export const ZARIT_BANDS: readonly ZaritBandInfo[] = [
     min: 0,
     max: 20,
     label: 'Sobrecarga ausente ou pequena',
-    conduct: 'Conteúdos de orientação e convite para as rodas de conversa abertas.',
+    conduct: 'Conteúdos de orientação e convite para as capacitações.',
     alert: null,
   },
   {

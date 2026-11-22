@@ -5,11 +5,10 @@ import type { BadgeVariant, IconName } from '@shared/ui';
 
 export const KIND_LABELS: Readonly<Record<ActivityKind, string>> = {
   training: 'Capacitação',
-  group_therapy: 'Terapia de grupo',
-  open_circle: 'Roda de conversa aberta',
+  group_therapy: 'Terapia em grupo',
 };
 
-/** Temas dos grupos (RN-GRP-05): os únicos oferecidos para grupo de apoio, terapia de grupo e roda de conversa. */
+/** Temas dos grupos (RN-GRP-05): os únicos oferecidos para a terapia em grupo. */
 export const GROUP_THEMES: readonly GroupTheme[] = [
   'caregiver_burden',
   'communication_with_elder',

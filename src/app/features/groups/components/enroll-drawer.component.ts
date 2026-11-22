@@ -14,8 +14,6 @@ import {
   IconComponent,
   NxInputDirective,
   PLAN_NAMES,
-  RadioGroupComponent,
-  RadioOption,
 } from '@shared/ui';
 import { DrawerComponent, ToastService } from '@shared/ui/overlay';
 import { valueOf } from '@shared/ui/util/form-events';
@@ -24,24 +22,18 @@ import { FieldError, GroupsService } from '../state/groups.service';
 const MAX_OPTIONS = 30;
 
 /**
- * SCR-M07-04, Inscrever (F11, A-31): escolhe o cuidador (ou, na roda aberta, um participante externo) e mostra
+ * SCR-M07-04, Inscrever (F11, A-31): escolhe o cuidador e mostra
  * TODAS as checagens de uma vez: plano, elegibilidade, sala e vaga. O contrato de sigilo exige aceite, com data
  * e hora gravadas. Sem aceite, o botão fica com o motivo escrito ao lado. Lotada, a ação diz o que vai
  * acontecer: "Entrar na lista de espera". O bloqueio por plano é informativo, com o caminho (do Cuida em diante).
  */
 @Component({
   selector: 'app-enroll-drawer',
-  imports: [CheckboxComponent, ChecklistComponent, DrawerComponent, FormFieldComponent, IconComponent, NxInputDirective, RadioGroupComponent, RouterLink],
+  imports: [CheckboxComponent, ChecklistComponent, DrawerComponent, FormFieldComponent, IconComponent, NxInputDirective, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-drawer [(open)]="open" [heading]="full() ? 'Entrar na lista de espera' : 'Inscrever participante'" [subtitle]="activity()?.title ?? ''">
       <div class="stack stack--6" data-role="enroll-form">
-        @if (canExternal()) {
-          <app-form-field label="Quem entra" group controlId="enroll-type">
-            <app-radio-group [options]="typeOptions" [value]="type()" (valueChange)="type.set($event ?? 'caregiver')" />
-          </app-form-field>
-        }
-
         @if (type() === 'caregiver') {
           <app-form-field label="Cuidador" controlId="enroll-caregiver" [error]="err('caregiver')" [hint]="isPartner() ? 'Busque pelo código, por exemplo CUI-0001, e escolha na lista.' : 'Busque pelo nome ou pelo código e escolha na lista.'">
             <input class="input mb-2" type="search" aria-label="Buscar cuidador por nome ou código" placeholder="Buscar cuidador" [value]="term()" (input)="term.set(valueOf($event))" />
@@ -77,7 +69,7 @@ const MAX_OPTIONS = 30;
 
         @if (showEligibility()) {
           <app-checkbox [checked]="eligible()" (checkedChange)="eligible.set($event)" data-role="eligible">
-            Indico este cuidador para a terapia de grupo (opcional)
+            Indico este cuidador para a terapia em grupo (opcional)
           </app-checkbox>
         }
 
@@ -124,11 +116,6 @@ export class EnrollDrawerComponent {
   readonly enrolled = output<{ enrollment: ActivityEnrollment; waitlisted: boolean }>();
 
   protected readonly valueOf = valueOf;
-  protected readonly typeOptions: RadioOption<'caregiver' | 'external'>[] = [
-    { value: 'caregiver', label: 'Cuidador' },
-    { value: 'external', label: 'Participante externo' },
-  ];
-
   protected readonly type = signal<'caregiver' | 'external'>('caregiver');
   protected readonly term = signal('');
   protected readonly caregiverId = signal('');
@@ -141,7 +128,6 @@ export class EnrollDrawerComponent {
 
   protected readonly activity = computed(() => this.db.activities.get(this.activityId()));
   protected readonly isPartner = computed(() => this.auth.role() === 'partner');
-  protected readonly canExternal = computed(() => this.activity()?.kind === 'open_circle');
   protected readonly full = computed(() => {
     const a = this.activity();
     return !!a && this.membership.seatsFree(a) === 0;

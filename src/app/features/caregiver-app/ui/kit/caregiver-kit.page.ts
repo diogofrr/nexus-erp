@@ -178,7 +178,6 @@ import { CgTrendComponent, CgTrendItem } from '../cg-trend.component';
       <app-cg-section title="Encontros" [count]="3" [headingLevel]="3">
         <button cgSectionEnd type="button" class="cg-link-btn">Ver todos</button>
         <p class="cg-tags">
-          <app-cg-event-badge type="open_circle" />
           <app-cg-event-badge type="training" />
           <app-cg-event-badge type="group_therapy" />
           <app-cg-event-badge type="training" size="sm" />

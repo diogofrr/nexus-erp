@@ -11,7 +11,6 @@ const TABLE: Readonly<Record<CaregiverFeature, readonly [boolean, boolean, boole
   content: [true, true, true, true],
   network_search: [true, true, true, true],
   request_service: [true, true, true, true],
-  open_circle: [true, true, true, true],
   training_paid: [true, true, true, true],
   training_included: [false, true, true, true],
   group_therapy: [false, false, true, true],
@@ -33,9 +32,8 @@ describe('Acesso do cuidador por plano (docs/20, RN-PLN-01 a 08, RN-CRT-02, RN-R
     );
   });
 
-  it('roda aberta, capacitação avulsa e pedido de serviço valem para todos (S-09, docs/20)', () => {
+  it('capacitação avulsa e pedido de serviço valem para todos (S-09, docs/20)', () => {
     PLAN_ORDER.forEach((plan) => {
-      expect(canUseFeature(plan, 'open_circle')).toBe(true);
       expect(canUseFeature(plan, 'training_paid')).toBe(true);
       expect(canUseFeature(plan, 'request_service')).toBe(true);
     });
@@ -50,7 +48,7 @@ describe('Acesso do cuidador por plano (docs/20, RN-PLN-01 a 08, RN-CRT-02, RN-R
     });
   });
 
-  it('concorda com as regras de plans.ts (Cartão e terapia de grupo)', () => {
+  it('concorda com as regras de plans.ts (Cartão e terapia em grupo)', () => {
     PLAN_ORDER.forEach((plan) => {
       expect(canUseFeature(plan, 'card'), plan).toBe(hasBenefitCard(plan));
       expect(canUseFeature(plan, 'group_therapy'), plan).toBe(canAccessActivity(plan, 'group_therapy').allowed);
@@ -62,7 +60,7 @@ describe('Acesso do cuidador por plano (docs/20, RN-PLN-01 a 08, RN-CRT-02, RN-R
     expect(minimumPlanForFeature('training_included')).toBe('essencial');
     expect(minimumPlanForFeature('individual_session')).toBe('cuida');
     expect(minimumPlanForFeature('network_differentiated')).toBe('sustenta');
-    expect(minimumPlanForFeature('open_circle')).toBe('livre');
+    expect(minimumPlanForFeature('training_paid')).toBe('livre');
     expect(featureAccess('cuida', 'group_therapy')).toEqual({ allowed: true, minPlan: 'cuida' });
     expect(featureAccess('essencial', 'individual_session')).toMatchObject({ allowed: false, minPlan: 'cuida' });
   });

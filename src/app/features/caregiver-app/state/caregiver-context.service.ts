@@ -54,7 +54,7 @@ export interface CaregiverQuotas {
   month: YearMonth;
   /** Sessões de atendimento individual (Cuida 2, Sustenta 4). */
   individualSessions: QuotaUsage;
-  /** Encontros de terapia de grupo (Cuida e Sustenta, 2). */
+  /** Encontros de terapia em grupo (Cuida e Sustenta, 2). */
   groupTherapy: QuotaUsage;
   /** Encontros de capacitação incluídos (Essencial 2; Cuida e Sustenta todos). */
   trainings: QuotaUsage;

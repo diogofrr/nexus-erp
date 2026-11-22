@@ -74,7 +74,7 @@ describe('SubscriptionService (RN-PLN-14, RN-CRT-02, 03, 11)', () => {
     expect(quote.effectiveAt).toBe(sub.nextCycleAt);
     expect(quote.actionLabel).toBe('Agendar mudança para o Essencial');
     expect(quote.effect).toContain('Vale no fim do ciclo');
-    expect(quote.effect).toContain('inclusive a terapia de grupo');
+    expect(quote.effect).toContain('inclusive a terapia em grupo');
     const result = service.changePlan(sub.id, 'essencial');
     expect(result.subscription.status).toBe('cancel_scheduled');
     expect(result.subscription.planId).toBe('cuida');

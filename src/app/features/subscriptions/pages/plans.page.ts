@@ -167,7 +167,7 @@ export class PlansPage {
     return [
       { id: 'price', label: 'Preço por mês', cells: byPlan((id) => ({ kind: 'text', text: id === 'livre' ? 'R$ 0,00' : formatMoney(this.db.plans.get(id)?.monthlyPriceCents ?? 0) })) },
       { id: 'sessions', label: 'Sessões de atendimento individual por mês', cells: byPlan((id) => ({ kind: 'text', text: limitText(PLAN_QUOTAS[id].individualSessionsPerMonth, 'sessões') })) },
-      { id: 'group_therapy', label: 'Encontros de terapia de grupo por mês', cells: byPlan((id) => ({ kind: 'text', text: limitText(PLAN_QUOTAS[id].groupTherapyPerMonth, 'encontros') })) },
+      { id: 'group_therapy', label: 'Encontros de terapia em grupo por mês', cells: byPlan((id) => ({ kind: 'text', text: limitText(PLAN_QUOTAS[id].groupTherapyPerMonth, 'encontros') })) },
       { id: 'trainings', label: 'Capacitações incluídas por mês', cells: byPlan((id) => ({ kind: 'text', text: PLAN_QUOTAS[id].trainingsPerMonth === 0 ? `Avulsas, ${singlePriceText('training')}` : limitText(PLAN_QUOTAS[id].trainingsPerMonth, 'capacitações') })) },
       ...all.map((b): ComparisonRow => ({
         id: b,

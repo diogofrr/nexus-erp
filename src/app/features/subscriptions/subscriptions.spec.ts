@@ -64,15 +64,15 @@ describe('M04 Planos, assinaturas e Cartão Nexus', () => {
       expect(content).not.toMatch(/Integral/i);
     });
 
-    it('terapia de grupo a partir do Cuida (docs/20): o cartão do Essencial não a mostra (AC-M04-03)', async () => {
+    it('terapia em grupo a partir do Cuida (docs/20): o cartão do Essencial não a mostra (AC-M04-03)', async () => {
       await open('u7', '/app/assinaturas/planos');
       const cards = all('.plan-card');
-      expect(text(cards[1] ?? null)).not.toContain('Terapia de grupo');
+      expect(text(cards[1] ?? null)).not.toContain('Terapia em grupo');
       expect(text(cards[1] ?? null)).not.toContain('2 sessões');
-      expect(text(cards[2] ?? null)).toContain('Terapia de grupo');
+      expect(text(cards[2] ?? null)).toContain('Terapia em grupo');
       expect(text(cards[2] ?? null)).toContain('Capacitações');
       // A tabela de comparação diz em texto, não só por cor.
-      const row = all('tbody tr').find((r) => text(r).startsWith('Terapia de grupo'));
+      const row = all('tbody tr').find((r) => text(r).startsWith('Terapia em grupo'));
       expect(row).toBeTruthy();
       expect(text(row ?? null)).toContain('Não inclui');
       expect(text(row ?? null)).toContain('Inclui');

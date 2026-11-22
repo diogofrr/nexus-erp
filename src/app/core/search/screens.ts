@@ -83,7 +83,7 @@ export const NAV_ITEMS: readonly NavItemDef[] = [
     group: 'care',
     icon: 'users-round',
     label: 'Grupos',
-    keywords: ['capacitacoes', 'programacao', 'rodas'],
+    keywords: ['capacitacoes', 'programacao', 'terapia', 'encontros'],
   },
   {
     key: 'network',

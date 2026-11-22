@@ -6,7 +6,7 @@
  */
 
 /** Versão atual do esquema dos dados (também gravada nas exportações JSON). */
-export const SCHEMA_VERSION = '2';
+export const SCHEMA_VERSION = '3';
 
 /** Acesso restrito que uma migração recebe para ler e reescrever coleções. */
 export interface MigrationContext {
@@ -35,7 +35,7 @@ const DEFAULT_CONTENT_CATEGORY = 'routine_organization';
 
 /**
  * v1 para v2 (docs/20-regras-planos-v2.md): os tipos de atividade viram `open_circle | training | group_therapy`
- * (`support_group` vira `group_therapy`, `open_conversation_circle` vira `open_circle`); a terapia de grupo é do Cuida em
+ * (`support_group` vira `group_therapy`, `open_conversation_circle` vira `open_circle`); a terapia em grupo é do Cuida em
  * diante e a capacitação passa a valer para todos (`minPlan` refeito, `requiresEligibility` falso); as inscrições e as
  * sessões ganham `includedInPlan` (sessão de R$ 0,00 = incluída); os conteúdos ganham `category`.
  */
@@ -84,8 +84,41 @@ export const MIGRATION_V1_TO_V2: Migration = {
   },
 };
 
+/**
+ * v2 para v3: a Nexus não tem roda de conversa (decisão do dono, 22/11/2026). As atividades `open_circle` (e as antigas
+ * `open_conversation_circle`) saem, junto com as inscrições delas; os encontros passam a ser só capacitação e terapia em grupo.
+ */
+export const MIGRATION_V2_TO_V3: Migration = {
+  from: '2',
+  to: '3',
+  description: 'Remove a roda de conversa aberta (os encontros são capacitação e terapia em grupo).',
+  run(ctx) {
+    const activities = rows(ctx, 'activities');
+    if (!activities) {
+      return;
+    }
+    const gone = new Set(
+      activities.filter((a) => a['kind'] === 'open_circle' || a['kind'] === 'open_conversation_circle').map((a) => String(a['id'])),
+    );
+    if (gone.size === 0) {
+      return;
+    }
+    ctx.write(
+      'activities',
+      activities.filter((a) => !gone.has(String(a['id']))),
+    );
+    const enrollments = rows(ctx, 'activityEnrollments');
+    if (enrollments) {
+      ctx.write(
+        'activityEnrollments',
+        enrollments.filter((e) => !gone.has(String(e['activityId']))),
+      );
+    }
+  },
+};
+
 /** Cadeia de migrações. */
-export const MIGRATIONS: readonly Migration[] = [MIGRATION_V1_TO_V2];
+export const MIGRATIONS: readonly Migration[] = [MIGRATION_V1_TO_V2, MIGRATION_V2_TO_V3];
 
 export type MigrationPlan =
   | { kind: 'none' }

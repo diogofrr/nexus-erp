@@ -22,9 +22,9 @@ export interface MembershipChange {
  *
  * - A turma lotada abre lista de espera; vaga liberada promove o primeiro da fila (promoção automática).
  * - `Activity.status` vai de `open` a `full` e volta conforme as vagas.
- * - Cuidador que cai de plano e perde o acesso (terapia de grupo, docs/20) sai das turmas que ainda não começaram; as turmas
+ * - Cuidador que cai de plano e perde o acesso (terapia em grupo, docs/20) sai das turmas que ainda não começaram; as turmas
  *   em andamento no ciclo já pago permanecem (AC-M07-09, RN-GRP-17). A capacitação já inscrita fica (incluída ou avulsa).
- * - As cotas mensais (terapia de grupo e capacitação incluída) e a oferta de cada inscrição (`offerFor`) também ficam
+ * - As cotas mensais (terapia em grupo e capacitação incluída) e a oferta de cada inscrição (`offerFor`) também ficam
  *   aqui, para a equipe e o cuidador decidirem pelo mesmo cálculo.
  *
  * O módulo de assinaturas (M04) chama `reconcilePlanLoss(caregiverId)` quando uma descida de plano ou um
@@ -80,7 +80,7 @@ export class GroupMembershipService {
     return this.db.activityEnrollments.query((e) => e.caregiverId === caregiverId);
   }
 
-  /** Cota de encontros de terapia de grupo do cuidador no mês (padrão: o mês de hoje). */
+  /** Cota de encontros de terapia em grupo do cuidador no mês (padrão: o mês de hoje). */
   groupTherapyQuotaOf(caregiverId: ID, month: YearMonth = monthOf(this.clock.today())): QuotaUsage {
     return groupTherapyQuota(planIdOfCaregiver(this.db, caregiverId), month, this.enrollmentsOf(caregiverId), this.db.activities.all());
   }
@@ -91,8 +91,8 @@ export class GroupMembershipService {
   }
 
   /**
-   * O que a inscrição custa e se consome cota, pela regra do docs/20 (a MESMA para a equipe e para o cuidador): roda aberta
-   * grátis; terapia de grupo só Cuida e Sustenta (incluída na cota, senão avulsa); capacitação incluída quando cabe na cota,
+   * O que a inscrição custa e se consome cota, pela regra do docs/20 (a MESMA para a equipe e para o cuidador):
+   * terapia em grupo só Cuida e Sustenta (incluída na cota, senão avulsa); capacitação incluída quando cabe na cota,
    * senão avulsa a R$ 40,00 o encontro, em qualquer plano.
    */
   offerFor(activity: Activity, caregiverId: ID): EnrollmentOffer {

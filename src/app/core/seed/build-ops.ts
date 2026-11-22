@@ -1,5 +1,5 @@
 /**
- * Encontros (docs/20: rodas de conversa abertas, capacitações e terapia de grupo; G1 a G11), governança (5.14: 10 POPs,
+ * Encontros (docs/20: capacitações e terapia em grupo; G1 a G10, sem G4), governança (5.14: 10 POPs,
  * 12 riscos, formação, conteúdos, normas) e piloto (5.15: 15 cuidadores com TCLE).
  */
 import { addMonths } from '../clock/date-utils';
@@ -33,20 +33,18 @@ const CONFIDENTIALITY =
  *
  * | Id | Tipo | Título | Situação | Inscritos |
  * |---|---|---|---|---|
- * | G1 | terapia de grupo | Sobrecarga e autocuidado (presencial, 6 vagas, quinzenal: D+3, D+17, D+31) | lotada | Ana, Rita e mais 4 (Cuida e Sustenta); Lourdes e Elza na lista de espera |
+ * | G1 | terapia em grupo | Sobrecarga e autocuidado (presencial, 6 vagas, quinzenal: D+3, D+17, D+31) | lotada | Ana, Rita e mais 4 (Cuida e Sustenta); Lourdes e Elza na lista de espera |
  * | G2 | capacitação | Prevenção de quedas (presencial, 12 vagas, D+10 e D+17) | aberta | 7 do Cuida e Sustenta (incluída) e Maria (Essencial, incluída: 2 encontros cabem na cota de 2) |
- * | G3 | terapia de grupo | Lidar com as perdas, em grupo (presencial, 8 vagas, quinzenal desde D-21) | em andamento | Lourdes, Elza e mais 2 (Sustenta) |
- * | G4 | roda aberta | Roda de conversa: cuidar de quem cuida (presencial, CRAS, D+15) | aberta | João e mais 6 do Livre; 4 participantes externos |
+ * | G3 | terapia em grupo | Lidar com as perdas, em grupo (presencial, 8 vagas, quinzenal desde D-21) | em andamento | Lourdes, Elza e mais 2 (Sustenta) |
  * | G5 | capacitação | Comunicação com pessoas com demência (on-line, D-60) | encerrada | 9 presentes, 2 ausentes |
  * | G6 | capacitação | Administração segura de medicamentos (on-line) | cancelada | 3 inscrições canceladas |
- * | G7 | terapia de grupo | Prevenção de conflitos familiares (on-line) | rascunho | ninguém |
- * | G8 | terapia de grupo | Organização da rotina (on-line, 12 vagas, quinzenal: D+6, D+20, D+34) | aberta | ninguém (12 vagas) |
+ * | G7 | terapia em grupo | Prevenção de conflitos familiares (on-line) | rascunho | ninguém |
+ * | G8 | terapia em grupo | Organização da rotina (on-line, 12 vagas, quinzenal: D+6, D+20, D+34) | aberta | ninguém (12 vagas) |
  * | G9 | capacitação | Primeiros socorros em casa (on-line, 12 vagas, D+8) | aberta | 2 do Cuida |
  * | G10 | capacitação | Higiene e banho no leito (presencial, 10 vagas, D+12 e D+19) | lotada | 10 do Livre (avulsa, R$ 40,00 por encontro); 2 na lista de espera |
- * | G11 | roda aberta | Roda de conversa: a rede de apoio da família (on-line, UBS, D+22) | aberta | João e mais 2 do Livre |
  *
- * As cotas do mês (docs/20) ficam coerentes: Ana usa os 2 encontros de terapia de grupo de novembro na G1 (a G8 fica
- * avulsa para ela); Lourdes e Elza usam os 2 na G3; Maria usa as 2 capacitações do Essencial na G2; João só está em rodas abertas.
+ * As cotas do mês (docs/20) ficam coerentes: Ana usa os 2 encontros de terapia em grupo de novembro na G1 (a G8 fica
+ * avulsa para ela); Lourdes e Elza usam os 2 na G3; Maria usa as 2 capacitações do Essencial na G2; João não está em nenhum encontro.
  */
 export function buildGroups(s: SeedState): void {
   const { ctx, c } = s;
@@ -123,9 +121,6 @@ export function buildGroups(s: SeedState): void {
   activity(3, 'group_therapy', 'Lidar com as perdas, em grupo', 'emotional_health', psy('leticia'), 'in_person', 8, 'in_progress', meetings(3, -21, 6, 2, '16:00', 14), {
     roomId: ROOM.ipe,
   });
-  activity(4, 'open_circle', 'Roda de conversa: cuidar de quem cuida', 'self_care', psy('beatriz'), 'in_person', 30, 'open', meetings(4, 15, 1, 0, '15:00'), {
-    partnerOrg: 'CRAS',
-  });
   activity(
     5,
     'training',
@@ -173,9 +168,6 @@ export function buildGroups(s: SeedState): void {
     meetings(10, 12, 2, 0, '09:00'),
     { roomId: ROOM.ipe },
   );
-  activity(11, 'open_circle', 'Roda de conversa: a rede de apoio da família', 'basic_care_guidance', psy('beatriz'), 'online', 30, 'open', meetings(11, 22, 1, 0, '19:00'), {
-    partnerOrg: 'UBS Centro',
-  });
 
   /** Encontros da atividade no mês do primeiro encontro (o que a cota cobre ou o que se paga avulso). */
   const monthMeetings = (act: Activity): number => {
@@ -198,8 +190,8 @@ export function buildGroups(s: SeedState): void {
         : status === 'absent'
           ? act.meetings.map((m) => ({ meetingId: m.id, present: false }))
           : done.map((m) => ({ meetingId: m.id, present: true }));
-    // Roda aberta e participante externo: sem cota e sem valor. Terapia de grupo e capacitação: incluída, salvo quando avulsa.
-    const counts = 'caregiver' in who && act.kind !== 'open_circle';
+    // Participante externo: sem cota e sem valor. Terapia em grupo e capacitação: incluída, salvo quando avulsa.
+    const counts = 'caregiver' in who;
     const unit = act.kind === 'group_therapy' ? SINGLE_PRICES_CENTS.group_therapy : SINGLE_PRICES_CENTS.training;
     c.activityEnrollments.push(
       ctx.entity<ActivityEnrollment>(ctx.nextId('enr'), ctx.dt(-30), {
@@ -223,15 +215,6 @@ export function buildGroups(s: SeedState): void {
   [1, 8, 9, 21, 22, 23, 27, 2].forEach((n) => enroll(2, { caregiver: n }, 'enrolled'));
   // G3 em andamento: só Sustenta (Lourdes e Elza entre elas).
   [11, 17, 24, 27].forEach((n) => enroll(3, { caregiver: n }, 'enrolled'));
-  // G4 roda aberta: Livre e externos.
-  [3, 4, 5, 10, 15, 19, 25].forEach((n) => enroll(4, { caregiver: n }, 'enrolled'));
-  ['Ana Cláudia Ramos', 'Bento Siqueira', 'Cida Nogueira', 'Dario Esteves'].forEach((name, k) =>
-    enroll(
-      4,
-      { external: { name, email: `participante.externo${k + 1}@exemplo.com.br` } },
-      'enrolled',
-    ),
-  );
   // G5 encerrada: presenças e ausências (histórico).
   [1, 8, 9, 11, 21, 22, 23, 24, 27].forEach((n) => enroll(5, { caregiver: n }, 'attended'));
   [17, 26].forEach((n) => enroll(5, { caregiver: n }, 'absent'));
@@ -243,8 +226,6 @@ export function buildGroups(s: SeedState): void {
   [30, 31, 32, 33, 34, 35, 36, 37, 38, 39].forEach((n) => enroll(10, { caregiver: n }, 'enrolled', {}, true));
   enroll(10, { caregiver: 40 }, 'waitlist', { waitlistPosition: 1 }, true);
   enroll(10, { caregiver: 41 }, 'waitlist', { waitlistPosition: 2 }, true);
-  // G11 roda aberta on-line: João e mais 2 do Livre.
-  [3, 13, 14].forEach((n) => enroll(11, { caregiver: n }, 'enrolled'));
 }
 
 interface PopDef {
@@ -464,8 +445,8 @@ const RISKS: readonly [
     'Mercado',
     4,
     4,
-    'Comunicação de orientação; indicação de profissionais; rodas de conversa abertas',
-    ['Rodas de conversa abertas (M07)', 'Conteúdos de orientação (M13)'],
+    'Comunicação de orientação; indicação de profissionais; capacitações abertas a todos os cadastrados',
+    ['Capacitações (M07)', 'Conteúdos de orientação (M13)'],
   ],
   [
     'R3',

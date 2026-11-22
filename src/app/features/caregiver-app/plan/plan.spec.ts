@@ -70,7 +70,7 @@ describe('Área plan (Meu plano)', () => {
       // Só 4 destaques de cara: a lista longa fica atrás de "Ver tudo que inclui".
       expect(Array.from(card.querySelectorAll('[data-role="perks"] li')).map((li) => norm(li.textContent))).toEqual([
         'Atendimento psicológico individual: 2 sessões por mês',
-        'Terapia de grupo: 2 encontros por mês',
+        'Terapia em grupo: 2 encontros por mês',
         'Todas as capacitações do mês',
         'Maior suporte à organização da rotina',
       ]);
@@ -93,13 +93,12 @@ describe('Área plan (Meu plano)', () => {
       expect(openSheet(app)?.querySelector('.cg-sheet__title')?.textContent?.trim()).toBe('O que o plano Cuida inclui');
       expect(Array.from(openSheet(app)?.querySelectorAll('[data-role="all-benefits"] li') ?? []).map((li) => norm(li.textContent))).toEqual([
         'Atendimento psicológico individual: 2 sessões por mês',
-        'Terapia de grupo: 2 encontros por mês',
+        'Terapia em grupo: 2 encontros por mês',
         'Todas as capacitações do mês',
         'Maior suporte à organização da rotina',
         'Cartão Nexus, com descontos nos parceiros',
         'Conteúdos abertos e exclusivos',
         'Rede credenciada, com condições especiais',
-        'Rodas de conversa abertas',
       ]);
       await click(app, openSheet(app)?.querySelector('[data-role="close-all"]'));
       expect(openSheet(app)).toBeNull();
@@ -107,9 +106,9 @@ describe('Área plan (Meu plano)', () => {
 
     it('cada plano tem a sua cor, o seu nome e os seus 4 destaques', async () => {
       const expected = [
-        ['cg_0003', 'livre', 'Plano Livre', ['Organização básica da rotina: agenda, lembretes e remédios', 'Conteúdos abertos', 'Rede credenciada: consultar, comparar e pedir serviço', 'Rodas de conversa abertas']],
+        ['cg_0003', 'livre', 'Plano Livre', ['Organização básica da rotina: agenda, lembretes e remédios', 'Conteúdos abertos', 'Rede credenciada: consultar, comparar e pedir serviço', 'Capacitações avulsas (R$ 40,00 por encontro)']],
         ['cg_0002', 'essencial', 'Plano Essencial', ['Organização ampliada da rotina', 'Cartão Nexus, com descontos nos parceiros', 'Conteúdos abertos e exclusivos', 'Rede credenciada, com condições especiais']],
-        ['cg_0027', 'sustenta', 'Plano Sustenta', ['Atendimento psicológico individual: 4 sessões por mês', 'Terapia de grupo: 2 encontros por mês', 'Rede credenciada, com benefícios diferenciados', 'Acompanhamento próximo da organização da rotina']],
+        ['cg_0027', 'sustenta', 'Plano Sustenta', ['Atendimento psicológico individual: 4 sessões por mês', 'Terapia em grupo: 2 encontros por mês', 'Rede credenciada, com benefícios diferenciados', 'Acompanhamento próximo da organização da rotina']],
       ] as const;
       for (const [id, tone, name, perks] of expected) {
         const app = await bootCaregiverApp(id, { url: URL });
@@ -143,9 +142,10 @@ describe('Área plan (Meu plano)', () => {
         'Organização básica da rotina: agenda, lembretes e remédios',
         'Conteúdos abertos',
         'Rede credenciada: consultar, comparar e pedir serviço',
-        'Rodas de conversa abertas',
         'Capacitações avulsas (R$ 40,00 por encontro)',
       ]);
+      // A Nexus não tem roda de conversa: nenhum plano a lista.
+      expect(norm(openSheet(joao)?.textContent)).not.toMatch(/roda/i);
     });
   });
 
@@ -304,7 +304,7 @@ describe('Área plan (Meu plano)', () => {
       await choose(app, 'essencial');
       expect(openSheet(app)?.querySelector('.cg-sheet__title')?.textContent?.trim()).toBe('Mudar para o Essencial no fim do ciclo?');
       expect(paragraphs(openSheet(app)?.querySelector('[data-role="effect"]'))).toBe(
-        'Vale no fim do ciclo, em 06/11/2026. Até lá, o Cuida continua, inclusive a terapia de grupo. Você sai das turmas de terapia de grupo que começam depois dessa data: Sobrecarga e autocuidado (07/11). As turmas em andamento continuam até o fim do ciclo. Se mudar de ideia, é só mudar de plano de novo.',
+        'Vale no fim do ciclo, em 06/11/2026. Até lá, o Cuida continua, inclusive a terapia em grupo. Você sai das turmas de terapia em grupo que começam depois dessa data: Sobrecarga e autocuidado (07/11). As turmas em andamento continuam até o fim do ciclo. Se mudar de ideia, é só mudar de plano de novo.',
       );
       expect(norm(confirmButton(app)?.textContent)).toBe('Agendar mudança para o Essencial');
       await click(app, confirmButton(app));

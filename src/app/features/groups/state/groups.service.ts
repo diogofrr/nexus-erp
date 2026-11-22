@@ -75,7 +75,7 @@ export interface EnrollInput {
   contractAccepted: boolean;
   /** Instante em que a caixa foi marcada (data e hora gravadas). */
   acceptedAt?: string;
-  /** Terapia de grupo: o psicólogo do caso marcou o cuidador como elegível (RN-GRP-14). */
+  /** Terapia em grupo: o psicólogo do caso marcou o cuidador como elegível (RN-GRP-14). */
   eligible?: boolean;
 }
 
@@ -135,7 +135,7 @@ export class GroupsService {
     return this.auth.role() === 'technical_lead' && canUseSubArea('technical_lead', 'groups', 'framing_validation');
   }
 
-  /** Quem pode marcar a elegibilidade para terapia de grupo: o psicólogo do caso (RN-GRP-14). */
+  /** Quem pode marcar a elegibilidade para terapia em grupo: o psicólogo do caso (RN-GRP-14). */
   canMarkEligible(caregiverId: ID | undefined): boolean {
     const mine = this.myPsychologistId();
     const caregiver = caregiverId ? this.db.caregivers.get(caregiverId) : undefined;
@@ -143,7 +143,7 @@ export class GroupsService {
   }
 
   /**
-   * Nomes dos participantes: a gestão só vê código (LP-08); o atendimento não vê quem está em terapia de grupo;
+   * Nomes dos participantes: a gestão só vê código (LP-08); o atendimento não vê quem está em terapia em grupo;
    * o psicólogo só nos grupos que conduz; o RT vê (supervisão).
    */
   canSeeNames(activity: Pick<Activity, 'leaders' | 'kind'>): boolean {
@@ -224,16 +224,13 @@ export class GroupsService {
       checks.push({
         id: 'plan',
         title: 'Plano',
-        state: activity.kind === 'open_circle' ? 'ok' : 'fail',
-        text:
-          activity.kind === 'open_circle'
-            ? 'Roda aberta: aceita qualquer plano e participante externo.'
-            : 'Só a roda de conversa aberta aceita participante externo.',
+        state: 'fail',
+        text: 'Os encontros da Nexus são só para cuidadores cadastrados: não aceitam participante externo.',
       });
     } else if (who.caregiverId) {
       const plan = planIdOfCaregiver(this.db, who.caregiverId);
       const access = canAccessActivity(plan, activity.kind);
-      // docs/20: roda aberta sem cota; capacitação incluída conforme o plano, senão avulsa; terapia de grupo só Cuida e Sustenta.
+      // docs/20: capacitação incluída conforme o plano, senão avulsa; terapia em grupo só Cuida e Sustenta.
       const offer = access.allowed ? this.membership.offerFor(activity, who.caregiverId) : null;
       checks.push({
         id: 'plan',
@@ -241,7 +238,7 @@ export class GroupsService {
         state: access.allowed ? 'ok' : 'fail',
         text: access.allowed
           ? `${this.planName(plan)}: ${offer ? offerText(offer) : 'ok.'}`
-          : `${this.planName(plan)}: a terapia de grupo é dos planos Cuida e Sustenta.`,
+          : `${this.planName(plan)}: a terapia em grupo é dos planos Cuida e Sustenta.`,
       });
     } else {
       checks.push({ id: 'plan', title: 'Plano', state: 'pending', text: 'Escolha o participante para conferir o plano.' });
@@ -253,7 +250,7 @@ export class GroupsService {
         id: 'eligibility',
         title: 'Indicação do psicólogo',
         state: ok ? 'ok' : 'na',
-        text: ok ? 'Indicado pelo psicólogo do caso.' : 'Não é exigida: a terapia de grupo vale para os planos Cuida e Sustenta.',
+        text: ok ? 'Indicado pelo psicólogo do caso.' : 'Não é exigida: a terapia em grupo vale para os planos Cuida e Sustenta.',
       });
     } else {
       checks.push({ id: 'eligibility', title: 'Elegibilidade', state: 'na', text: 'Não se aplica a este tipo de atividade.' });
@@ -499,7 +496,7 @@ export class GroupsService {
       mode: form.mode,
       capacity: form.capacity as number,
       minPlan: activityMinPlan(kind),
-      // docs/20: a terapia de grupo não exige mais a indicação do psicólogo (o plano decide).
+      // docs/20: a terapia em grupo não exige mais a indicação do psicólogo (o plano decide).
       requiresEligibility: false,
       confidentialityText: form.confidentialityText.trim(),
       ...(form.mode === 'in_person' ? { roomId: form.roomId } : {}),
@@ -548,7 +545,7 @@ export class GroupsService {
       return { type: 'psychologist', id: psy.id, name: psy.displayName, professionalRegistration: `${psy.crp} (fictício)` };
     }
     if (form.kind === 'group_therapy') {
-      errors.push({ field: 'leader', message: 'A terapia de grupo é conduzida por psicólogo da Nexus com CRP ativo.' });
+      errors.push({ field: 'leader', message: 'A terapia em grupo é conduzida por psicólogo da Nexus com CRP ativo.' });
       return null;
     }
     if (form.leaderType === 'provider') {
@@ -698,11 +695,9 @@ export class GroupsService {
   }
 }
 
-/** "incluída na cota do plano (2 de 2 encontros no mês)." ou "avulsa, R$ 80,00 (2 encontros)." ou "roda aberta, sem cota." */
+/** "incluída na cota do plano (2 de 2 encontros no mês)." ou "avulsa, R$ 80,00 (2 encontros)." */
 function offerText(offer: EnrollmentOffer): string {
   switch (offer.kind) {
-    case 'free':
-      return 'roda aberta, sem cota.';
     case 'included':
       return offer.usage && offer.usage.limit !== 'all'
         ? `incluída na cota do plano (${Math.min(offer.usage.limit, offer.usage.used + offer.meetings)} de ${offer.usage.limit} encontros no mês).`

@@ -1,44 +1,41 @@
 /**
- * Tipo de encontro visto pelo cuidador (docs/20-regras-planos-v2.md, "Tipos de atividade"): roda de conversa aberta,
- * capacitação e terapia de grupo. Nada mais existe. Funções PURAS: recebem o que precisam, nunca leem relógio nem banco.
+ * Tipo de encontro visto pelo cuidador (docs/20-regras-planos-v2.md, "Tipos de atividade"): capacitação e terapia em
+ * grupo. Nada mais existe (a roda de conversa aberta saiu na migração v3). Funções PURAS: recebem o que precisam, nunca leem relógio nem banco.
  *
  * - `eventTypeOf` traduz a chave gravada na atividade (`Activity.kind`) para o tipo de tela, inclusive as chaves antigas
- *   (`support_group` virou `group_therapy`; `open_conversation_circle` virou `open_circle`), para o app não quebrar
- *   enquanto o núcleo migra.
+ *   (`support_group` virou `group_therapy`); a roda aberta (`open_circle`, `open_conversation_circle`) vira `null` e
+ *   não aparece.
  * - `canSeeEventType` é a regra de exibição 2 do dono: quem não tem acesso ao tipo NÃO o vê (nem como vitrine). Livre e
- *   Essencial veem rodas abertas e capacitações; Cuida e Sustenta veem tudo. A única exceção é estar inscrito: a pessoa
+ *   Essencial veem capacitações; Cuida e Sustenta veem tudo. A única exceção é estar inscrito: a pessoa
  *   vê o que já é dela (`enrolled`).
  */
 import { compareDateTimes } from '../../../core/clock/date-utils';
 import { Activity, ActivityEnrollment, ID, ISODateTime } from '../../../core/models';
 import { IconName } from '../../../shared/ui/display/icon.component';
 
-export const CG_EVENT_TYPES = ['open_circle', 'training', 'group_therapy'] as const;
+export const CG_EVENT_TYPES = ['training', 'group_therapy'] as const;
 export type CgEventType = (typeof CG_EVENT_TYPES)[number];
 
 /** O que a tela precisa saber do plano para decidir o que mostra (o contexto do cuidador atende a este contrato). */
 export interface EventPlanAccess {
-  /** Terapia de grupo (e a sessão individual) são de Cuida e Sustenta. */
+  /** Terapia em grupo (e a sessão individual) são de Cuida e Sustenta. */
   groupTherapy: boolean;
   /** A capacitação do mês está incluída no plano (senão a pessoa paga avulsa). */
   trainingIncluded: boolean;
 }
 
 export const EVENT_TYPE_LABELS: Readonly<Record<CgEventType, string>> = {
-  open_circle: 'Roda de conversa aberta',
   training: 'Capacitação',
-  group_therapy: 'Terapia de grupo',
+  group_therapy: 'Terapia em grupo',
 };
 
 /** A frase curta de quem pode participar, para o cartão do convite. */
 export const EVENT_TYPE_WHO: Readonly<Record<CgEventType, string>> = {
-  open_circle: 'Aberta a todos.',
   training: 'Sem custo para você.',
   group_therapy: 'Com o psicólogo da Nexus.',
 };
 
 export const EVENT_TYPE_ICONS: Readonly<Record<CgEventType, IconName>> = {
-  open_circle: 'messages-square',
   training: 'book-open',
   group_therapy: 'heart-handshake',
 };
@@ -46,9 +43,6 @@ export const EVENT_TYPE_ICONS: Readonly<Record<CgEventType, IconName>> = {
 /** A chave gravada na atividade, nova ou antiga, vira o tipo de tela; chave desconhecida vira `null` (não se mostra). */
 export function eventTypeOf(kind: string): CgEventType | null {
   switch (kind) {
-    case 'open_circle':
-    case 'open_conversation_circle':
-      return 'open_circle';
     case 'training':
       return 'training';
     case 'group_therapy':
@@ -60,8 +54,8 @@ export function eventTypeOf(kind: string): CgEventType | null {
 }
 
 /**
- * O plano deixa a pessoa ver este tipo de encontro? Roda aberta e capacitação, todos (a capacitação avulsa existe para
- * qualquer cadastro); terapia de grupo, só com o acesso. Quem já está inscrita vê sempre (`enrolled`).
+ * O plano deixa a pessoa ver este tipo de encontro? Capacitação, todos (a capacitação avulsa existe para
+ * qualquer cadastro); terapia em grupo, só com o acesso. Quem já está inscrita vê sempre (`enrolled`).
  */
 export function canSeeEventType(type: CgEventType, access: EventPlanAccess, enrolled = false): boolean {
   if (enrolled) {

@@ -13,7 +13,7 @@ export interface BoardPlan {
   inherits: boolean;
   /** Os 3 destaques PRÓPRIOS do plano, nunca a lista inteira. */
   perks: Perk[];
-  /** As linhas de cota do docs/20 (atendimento individual, terapia de grupo, capacitações), iguais nos 4 cartões para comparar. */
+  /** As linhas de cota do docs/20 (atendimento individual, terapia em grupo, capacitações), iguais nos 4 cartões para comparar. */
   quotas: { key: string; label: string; value: string }[];
   current: boolean;
   /** `true` quando a pessoa pode trocar para este plano (não é o atual e o plano não é da empresa). */

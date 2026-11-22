@@ -81,7 +81,7 @@ const SAVE_FAILED = 'Não foi possível salvar. Tente de novo; se continuar, fal
  * Rotina, aba Agenda (UX C5, `/cuidador/rotina/agenda`): um **calendário do mês** (`app-cg-calendar`) com o detalhe do dia
  * escolhido (hoje, de começo). No celular o calendário fica em cima e o dia embaixo; em tela larga (1024 px ou mais) ficam
  * lado a lado. O dia mostra os compromissos da pessoa idosa e, no mesmo dia, a conversa do próprio cuidador com o psicólogo
- * ("Para você") e os encontros em que ele está inscrito (com o selo do tipo: roda aberta, capacitação, terapia de grupo;
+ * ("Para você") e os encontros em que ele está inscrito (com o selo do tipo: capacitação ou terapia em grupo;
  * docs/20, regra 2: na Agenda só entra o que já é da pessoa, nunca a vitrine), e a ação principal é **Adicionar
  * compromisso neste dia** (a data já vai preenchida). Tocar num dia vazio
  * diz "Nada marcado para este dia". Um alternador "Calendário | Lista" guarda o jeito preferido no navegador: a lista

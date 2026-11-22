@@ -34,7 +34,7 @@ const enr = (activityId: string, status: ActivityEnrollment['status'] = 'enrolle
 });
 
 describe('cotas mensais por plano (docs/20)', () => {
-  it('a tabela: sessões 0, 0, 2, 4; terapia de grupo 0, 0, 2, 2; capacitações 0, 2, todas, todas', () => {
+  it('a tabela: sessões 0, 0, 2, 4; terapia em grupo 0, 0, 2, 2; capacitações 0, 2, todas, todas', () => {
     expect([PLAN_QUOTAS.livre, PLAN_QUOTAS.essencial, PLAN_QUOTAS.cuida, PLAN_QUOTAS.sustenta].map((q) => q.individualSessionsPerMonth)).toEqual([0, 0, 2, 4]);
     expect([PLAN_QUOTAS.livre, PLAN_QUOTAS.essencial, PLAN_QUOTAS.cuida, PLAN_QUOTAS.sustenta].map((q) => q.groupTherapyPerMonth)).toEqual([0, 0, 2, 2]);
     expect([PLAN_QUOTAS.livre, PLAN_QUOTAS.essencial, PLAN_QUOTAS.cuida, PLAN_QUOTAS.sustenta].map((q) => q.trainingsPerMonth)).toEqual([0, 2, 'all', 'all']);
@@ -44,7 +44,7 @@ describe('cotas mensais por plano (docs/20)', () => {
     expect(PLAN_QUOTAS.sustenta.networkDifferentiated).toBe(true);
   });
 
-  it('avulsos: sessão R$ 120,00, terapia de grupo R$ 60,00 e capacitação R$ 40,00 por encontro', () => {
+  it('avulsos: sessão R$ 120,00, terapia em grupo R$ 60,00 e capacitação R$ 40,00 por encontro', () => {
     expect(SINGLE_PRICES_CENTS).toEqual({ individual_session: 12000, group_therapy: 6000, training: 4000 });
     expect(singlePriceText('training')).toBe('R$ 40,00 por encontro');
     expect(singlePriceText('individual_session')).toBe('R$ 120,00 por sessão');
@@ -77,11 +77,10 @@ describe('cotas mensais por plano (docs/20)', () => {
     expect(trainingQuota('sustenta', '2026-11', [enr('t1')], activities)).toEqual({ limit: 'all', used: 1, left: 'all' });
   });
 
-  it('a oferta da inscrição: roda aberta grátis; terapia de grupo bloqueada no Livre, incluída na cota e avulsa além dela', () => {
+  it('a oferta da inscrição: terapia em grupo bloqueada no Livre e no Essencial, incluída na cota e avulsa além dela', () => {
     const g1 = act('g1', 'group_therapy', ['2026-11-07', '2026-11-21']);
     const g2 = act('g2', 'group_therapy', ['2026-11-10', '2026-11-24']);
-    const circle = act('c1', 'open_circle', ['2026-11-19']);
-    expect(enrollmentOffer('livre', circle, '2026-11', [], [circle]).kind).toBe('free');
+    expect(enrollmentOffer('livre', g1, '2026-11', [], [g1]).kind).toBe('blocked');
     expect(enrollmentOffer('essencial', g1, '2026-11', [], [g1]).kind).toBe('blocked');
     expect(enrollmentOffer('cuida', g1, '2026-11', [], [g1, g2])).toMatchObject({ kind: 'included', priceCents: 0, meetings: 2 });
     expect(enrollmentOffer('cuida', g2, '2026-11', [enr('g1')], [g1, g2])).toMatchObject({ kind: 'paid', priceCents: 12000 });

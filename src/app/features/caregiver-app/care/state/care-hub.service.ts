@@ -7,7 +7,7 @@ import { ConversationsService } from './conversations.service';
 export const HUB_CONVERSATION_DEFAULT = 'Escolha o formato e o horário.';
 export const HUB_WELLBEING_DEFAULT = 'Veja como o seu cansaço tem andado e conte como você está.';
 export const HUB_WELLBEING_PAUSED = 'Acompanhamento pausado.';
-export const HUB_GROUPS_DEFAULT = 'Rodas de conversa, capacitações e grupos com quem também cuida.';
+export const HUB_GROUPS_DEFAULT = 'Capacitações e encontros com quem também cuida.';
 export const HUB_CONTENT_DEFAULT = 'Leituras curtas sobre cuidar e sobre cuidar de você.';
 
 function groups(n: number): string {

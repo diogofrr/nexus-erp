@@ -70,8 +70,7 @@ const VIEWS: SegmentOption<'lista' | 'calendario'>[] = [
 ];
 
 /**
- * SCR-M07-01, Programação: lista e calendário mensal de grupos de apoio, capacitações, terapia de grupo e rodas
- * de conversa abertas. Filtros por tipo, tema, estado e local ficam na URL. Cada atividade mostra o caráter
+ * SCR-M07-01, Programação: lista e calendário mensal de capacitações e terapia em grupo. Filtros por tipo, tema, estado e local ficam na URL. Cada atividade mostra o caráter
  * ("orientação e psicoeducação" ou "psicoterapia") e as vagas; a lotada mostra a lista de espera. O psicólogo vê
  * por padrão os grupos que conduz.
  */
@@ -97,7 +96,7 @@ const VIEWS: SegmentOption<'lista' | 'calendario'>[] = [
       <app-page-header
         title="Grupos e capacitações"
         [count]="count()"
-        description="Programação mensal: grupos de apoio, capacitações, terapia de grupo e rodas de conversa abertas."
+        description="Programação mensal: capacitações e terapia em grupo."
       >
         @if (canCreate()) {
           <a class="btn btn--primary" routerLink="/app/grupos/novo" data-role="new-activity">

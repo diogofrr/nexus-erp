@@ -2,16 +2,16 @@
  * Cotas mensais e valores avulsos por plano (docs/20-regras-planos-v2.md, decisão do dono em 06/11 e 11/11/2026). Funções
  * PURAS, sem Angular e sem relógio: o mês de referência vem de fora (do `Clock`, pela tela ou pelo serviço).
  *
- * - Tabela do docs/20: atendimento individual 0, 0, 2 e 4 sessões por mês; terapia de grupo 0, 0, 2 e 2 encontros por mês;
+ * - Tabela do docs/20: atendimento individual 0, 0, 2 e 4 sessões por mês; terapia em grupo 0, 0, 2 e 2 encontros por mês;
  *   capacitações incluídas nenhuma, 2 por mês [suposição], todas, todas; Cartão, conteúdos exclusivos e condições na rede do
  *   Essencial em diante; benefícios diferenciados na rede só no Sustenta.
  * - **Cotas mensais não acumulam** (docs/20): o que não foi usado no mês não passa para o seguinte.
  * - Cancelamento com menos de 24 h consome a cota (RN-ATD-16): a sessão `no_show` continua contando.
- * - Avulsos (docs/20, suposições): sessão R$ 120,00; encontro de terapia de grupo R$ 60,00 (só Cuida e Sustenta, além da
+ * - Avulsos (docs/20, suposições): sessão R$ 120,00; encontro de terapia em grupo R$ 60,00 (só Cuida e Sustenta, além da
  *   cota); capacitação R$ 40,00 por encontro (qualquer cadastrado, em qualquer plano). Pagamento simulado.
  * - O desconto por plano na sessão (RN-ATD-05 antiga) deixou de existir: o que vale é a cota e o avulso.
  * - A cota de encontros conta os ENCONTROS do mês das atividades em que a pessoa está inscrita (não a inscrição): uma turma
- *   de terapia de grupo com dois encontros em novembro usa os 2 encontros da cota de novembro [suposição de protótipo].
+ *   de terapia em grupo com dois encontros em novembro usa os 2 encontros da cota de novembro [suposição de protótipo].
  * - RN-PLN-19: nada aqui lê pontuação, faixa, alerta ou ARBE.
  */
 import { Activity, ActivityEnrollment, ActivityKind } from '../models/groups';
@@ -25,7 +25,7 @@ export type MonthlyLimit = number | 'all';
 export interface PlanQuotas {
   /** Sessões de atendimento psicológico individual por mês. */
   individualSessionsPerMonth: number;
-  /** Encontros de terapia de grupo por mês. */
+  /** Encontros de terapia em grupo por mês. */
   groupTherapyPerMonth: number;
   /** Encontros de capacitação incluídos por mês (`'all'` = todas as do mês). */
   trainingsPerMonth: MonthlyLimit;
@@ -167,7 +167,7 @@ export function meetingsUsedInMonth(
     }, 0);
 }
 
-/** Cota de encontros de terapia de grupo no mês. */
+/** Cota de encontros de terapia em grupo no mês. */
 export function groupTherapyQuota(
   planId: PlanId,
   month: YearMonth,
@@ -189,18 +189,18 @@ export function trainingQuota(
 
 /** O que a inscrição vai custar e se consome cota, decidido ANTES de gravar (a tela mostra e o serviço confirma). */
 export interface EnrollmentOffer {
-  /** `blocked`: o plano não inclui o tipo (terapia de grupo no Livre e no Essencial). */
-  kind: 'included' | 'paid' | 'free' | 'blocked';
+  /** `blocked`: o plano não inclui o tipo (terapia em grupo no Livre e no Essencial). */
+  kind: 'included' | 'paid' | 'blocked';
   /** Encontros da atividade no mês de referência (o que a cota cobre ou o que se paga). */
   meetings: number;
   priceCents: Cents;
-  /** Cota do tipo no mês, antes desta inscrição (`null` na roda aberta). */
+  /** Cota do tipo no mês, antes desta inscrição (`null` quando não se aplica). */
   usage: QuotaUsage | null;
   month: YearMonth;
 }
 
 /**
- * Decide a oferta de uma inscrição (docs/20): roda aberta é grátis e sem cota; terapia de grupo só Cuida e Sustenta, dentro
+ * Decide a oferta de uma inscrição (docs/20): terapia em grupo só Cuida e Sustenta, dentro
  * da cota incluída, além dela avulsa a R$ 60,00 o encontro; capacitação incluída quando os encontros do mês cabem na cota,
  * senão avulsa a R$ 40,00 o encontro (qualquer plano). O mês de referência é o do próximo encontro da atividade.
  */
@@ -213,9 +213,6 @@ export function enrollmentOffer(
   prices: Readonly<Record<SingleItemKind, Cents>> = SINGLE_PRICES_CENTS,
 ): EnrollmentOffer {
   const meetings = meetingsInMonth(activity, month);
-  if (activity.kind === 'open_circle') {
-    return { kind: 'free', meetings, priceCents: 0, usage: null, month };
-  }
   if (activity.kind === 'group_therapy') {
     if (PLAN_QUOTAS[planId].groupTherapyPerMonth === 0) {
       return { kind: 'blocked', meetings, priceCents: 0, usage: null, month };

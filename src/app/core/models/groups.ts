@@ -1,11 +1,11 @@
 import { Audited, Cents, ID, ISODateTime } from './primitives';
 
 /**
- * Os três tipos de encontro (docs/20-regras-planos-v2.md, "Tipos de atividade"): roda de conversa aberta (todos, inclusive
- * sem plano), capacitação (todos os cadastrados; incluída conforme o plano, senão avulsa) e terapia de grupo (só Cuida e
- * Sustenta). O antigo `support_group` virou `group_therapy` e `open_conversation_circle` virou `open_circle` (migração v2).
+ * Os dois tipos de encontro (docs/20-regras-planos-v2.md, "Tipos de atividade"): capacitação (todos os cadastrados;
+ * incluída conforme o plano, senão avulsa) e terapia em grupo (só Cuida e Sustenta). A Nexus não tem roda de conversa:
+ * o antigo `open_circle` deixou de existir (migração v3, que apaga essas atividades e as inscrições delas).
  */
-export type ActivityKind = 'open_circle' | 'training' | 'group_therapy';
+export type ActivityKind = 'training' | 'group_therapy';
 export type ActivityStatus = 'draft' | 'open' | 'full' | 'in_progress' | 'finished' | 'cancelled';
 
 /** Temas dos grupos (RN-GRP-05). */
@@ -58,9 +58,9 @@ export interface Activity extends Audited {
   /** Padrão 12 (editável). */
   capacity: number;
   status: ActivityStatus;
-  /** `cuida` na terapia de grupo (Cuida e Sustenta); `null` = aberta a todos (roda aberta e capacitação). */
+  /** `cuida` na terapia em grupo (Cuida e Sustenta); `null` = aberta a todos os cadastrados (capacitação). */
   minPlan: 'cuida' | null;
-  /** Compatibilidade: a terapia de grupo não exige mais indicação do psicólogo (docs/20). Sempre `false` nos dados novos. */
+  /** Compatibilidade: a terapia em grupo não exige mais indicação do psicólogo (docs/20). Sempre `false` nos dados novos. */
   requiresEligibility: boolean;
   confidentialityText: string;
 }
@@ -73,7 +73,7 @@ export interface ActivityAttendance {
 export interface ActivityEnrollment extends Audited {
   activityId: ID;
   caregiverId?: ID;
-  /** Participante externo (roda aberta): nome e e-mail mínimos. */
+  /** Participante externo (só em dado antigo; os encontros não aceitam mais): nome e e-mail mínimos. */
   external?: { name: string; email: string };
   status: 'enrolled' | 'waitlist' | 'attended' | 'absent' | 'cancelled';
   waitlistPosition?: number;
@@ -81,11 +81,11 @@ export interface ActivityEnrollment extends Audited {
   confidentialityAcceptedAt?: ISODateTime;
   /** Compatibilidade (RN-GRP-14 antiga): marcação do psicólogo do caso; não é mais exigida. */
   eligibleForGroupTherapy?: boolean;
-  /** A inscrição consome a cota mensal do plano (terapia de grupo e capacitação incluída). Roda aberta nunca. */
+  /** A inscrição consome a cota mensal do plano (terapia em grupo e capacitação incluída). */
   includedInPlan?: boolean;
   /** Avulsa: paga por encontro (pagamento simulado). */
   paid?: boolean;
-  /** Valor da inscrição avulsa (0 quando incluída ou roda aberta). */
+  /** Valor da inscrição avulsa (0 quando incluída). */
   priceCents?: Cents;
   attendance: ActivityAttendance[];
 }

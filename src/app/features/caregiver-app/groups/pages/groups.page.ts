@@ -40,7 +40,6 @@ import {
 
 /** O desenho e o ícone de cada tipo de encontro (a cor vem do selo do kit, `app-cg-event-badge`). */
 const KIND_LOOK: Readonly<Record<ActivityKind, { icon: IconName; art: CgIllustrationName; rowIcon: IconName }>> = {
-  open_circle: { icon: 'messages-square', art: 'chat', rowIcon: 'messages-square' },
   training: { icon: 'book-open', art: 'book', rowIcon: 'book-open' },
   group_therapy: { icon: 'heart-handshake', art: 'heart', rowIcon: 'heart-handshake' },
 };
@@ -55,7 +54,7 @@ interface ActivityCard {
   next: string;
   format: string;
   seats: string;
-  /** "Incluída no seu plano", "R$ 40,00 por encontro" ou nada (roda aberta). */
+  /** "Incluída no seu plano", "R$ 40,00 por encontro" ou nada. */
   offer: string | null;
 }
 
@@ -99,15 +98,15 @@ interface Banner {
 
 /**
  * Encontros (docs/20-regras-planos-v2.md; UX C10, `/cuidador/cuidar-de-mim/grupos`). A programação organizada por tipo, cada um
- * em uma seção com título, ícone e cor próprios, nesta ordem: Minhas inscrições, Rodas de conversa abertas, Capacitações e
- * Terapia de grupo. Filtro por tipo quando há mais de um. Cada cartão: o tipo (selo), data e hora, local (on-line ou coworking),
+ * em uma seção com título, ícone e cor próprios, nesta ordem: Minhas inscrições, Capacitações e
+ * Terapia em grupo. Filtro por tipo quando há mais de um. Cada cartão: o tipo (selo), data e hora, local (on-line ou coworking),
  * vagas ou "Lista de espera" e, na capacitação, "Incluída no seu plano" ou o valor avulso. O detalhe abre em folha de tela cheia
  * com `?atividade=` (S-21).
  *
  * - **Regra de exibição 2 do dono**: o que o plano não dá acesso NÃO aparece (nem como vitrine, nem com cadeado). Livre e
- *   Essencial veem rodas abertas e capacitações; Cuida e Sustenta veem tudo. A seção "Terapia de grupo" só existe para eles.
+ *   Essencial veem capacitações; Cuida e Sustenta veem tudo. A seção "Terapia em grupo" só existe para eles.
  * - A ação principal é **Quero participar**; ela abre a folha do contrato de sigilo (aceite com data e hora, RN-GRP-09). Lotado,
- *   vira **Entrar na lista de espera** (S-20: a posição é visível). A capacitação incluída e a terapia de grupo consomem a cota
+ *   vira **Entrar na lista de espera** (S-20: a posição é visível). A capacitação incluída e a terapia em grupo consomem a cota
  *   do mês; a avulsa diz o valor por encontro antes de entrar (pagamento simulado, sem campo de cartão).
  * - Nada aqui nasce de pontuação, faixa ou alerta, e nenhum texto promete resultado (RN-PLN-19).
  */
@@ -130,7 +129,6 @@ interface Banner {
       .nx-cards .cg-card__chevron { grid-column: 3; grid-row: 1; }
       .nx-cards .nx-kind { grid-column: 1; grid-row: 1; }
       .nx-kind { display: grid; place-items: center; flex: none; inline-size: 3rem; block-size: 3rem; border-radius: 50%; background: var(--cg-acc-strong); color: var(--cg-acc-ink); }
-      [data-kind='open_circle'] .nx-kind { background: var(--cg-sec-rotina-strong); color: var(--cg-sec-rotina-ink); }
       [data-kind='training'] .nx-kind { background: var(--cg-sec-hoje-strong); color: var(--cg-sec-hoje-ink); }
       [data-kind='group_therapy'] .nx-kind { background: var(--cg-sec-cuidar-strong); color: var(--cg-sec-cuidar-ink); }
       .nx-meta { display: flex; align-items: center; gap: 0.5rem; margin: 0; color: var(--cg-text-soft); font-size: var(--cg-fs-small); line-height: 1.4; }
@@ -275,7 +273,7 @@ interface Banner {
         </ng-container>
       </app-cg-sheet>
     } @else {
-      <app-cg-hero title="Encontros" description="Rodas de conversa, capacitações e terapia de grupo." illustration="group" backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
+      <app-cg-hero title="Encontros" description="Capacitações e encontros com quem também cuida." illustration="group" backLink="/cuidador/cuidar-de-mim" backLabel="Cuidar de mim" />
 
       @if (missing()) {
         <app-cg-note variant="soft" icon="info">

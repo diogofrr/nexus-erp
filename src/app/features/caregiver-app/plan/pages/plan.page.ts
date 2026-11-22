@@ -33,7 +33,7 @@ import {
 /**
  * Meu plano (UX C18 e B9, `/cuidador/mais/plano`). Um único herói: o plano atual num cartão com a COR do plano (Figura 1), o
  * nome em serifa grande, o preço, a próxima cobrança, a cota do mês (Cuida e Sustenta: "Neste mês: 1 de 2 sessões usadas",
- * docs/20) e 4 destaques com ícone (atendimento individual, terapia de grupo e capacitações com as cotas do docs/20; nenhuma
+ * docs/20) e 4 destaques com ícone (atendimento individual, terapia em grupo e capacitações com as cotas do docs/20; nenhuma
  * menção a Zarit); a lista inteira fica atrás de **Ver tudo que
  * inclui** (folha). Uma ação principal, **Ver outros planos** (no Livre, **Ver os planos**); **Cancelar plano** é um link calmo
  * no fim, só em plano pago. Mudança agendada vira uma faixa "Seu plano muda para X em DD/MM" com **Manter meu plano** (um

@@ -6,7 +6,6 @@
  * - `individual_session` e `group_therapy`: só Cuida e Sustenta (2 ou 4 sessões e 2 encontros por mês).
  * - `training_included`: há capacitação incluída no plano (Essencial 2 por mês; Cuida e Sustenta todas). `training_paid`:
  *   qualquer pessoa cadastrada participa pagando avulsa (R$ 40,00 por encontro), em qualquer plano.
- * - `open_circle`: as rodas de conversa abertas são ação de comunidade, para todos (RN-GRP-03).
  * - `card`, `exclusive_content`, `network_conditions`: do Essencial em diante (RN-PLN-05, 08, RN-CRT-02);
  *   `network_differentiated`: só o Sustenta (RN-PLN-07).
  * - RN-REDE-25 e decisão do líder (S-09): a jornada não tem restrição de plano; no Livre a pessoa também PEDE serviço
@@ -27,7 +26,6 @@ export type CaregiverFeature =
   | 'content'
   | 'network_search'
   | 'request_service'
-  | 'open_circle'
   | 'training_paid'
   | 'training_included'
   | 'group_therapy'
@@ -48,10 +46,9 @@ export const FEATURE_LABELS: Readonly<Record<CaregiverFeature, string>> = {
   content: 'Conteúdos',
   network_search: 'Busca na rede',
   request_service: 'Pedir um serviço da rede',
-  open_circle: 'Rodas de conversa abertas',
   training_paid: 'Capacitações avulsas',
   training_included: 'Capacitações incluídas',
-  group_therapy: 'Terapia de grupo',
+  group_therapy: 'Terapia em grupo',
   individual_session: 'Atendimento psicológico individual',
   extended_organization: 'Organização ampliada',
   card: 'Cartão Nexus',
@@ -60,7 +57,7 @@ export const FEATURE_LABELS: Readonly<Record<CaregiverFeature, string>> = {
   organization_support: 'Maior suporte à organização',
   close_follow_up: 'Acompanhamento mais próximo',
   network_differentiated: 'Benefícios diferenciados na rede',
-  groups: 'Terapia de grupo',
+  groups: 'Terapia em grupo',
 };
 
 /** O plano libera o recurso? (a tabela do docs/20, lida das cotas; o quadro de planos editável de M15 não muda isto). */
@@ -72,7 +69,6 @@ function allowedBy(planId: PlanId, feature: CaregiverFeature): boolean {
     case 'content':
     case 'network_search':
     case 'request_service':
-    case 'open_circle':
     case 'training_paid':
       return true;
     case 'training_included':

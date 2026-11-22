@@ -361,7 +361,7 @@
 .cg-app .cg-bignum--sm { font-size: calc(1.75rem * min(var(--cg-zoom), 1.15)); }
 
 // ---------------------------------------------------------------------------
-// Selo do tipo de encontro (app-cg-event-badge): roda aberta (sálvia), capacitação (azul-céu), terapia de grupo (areia).
+// Selo do tipo de encontro (app-cg-event-badge): capacitação (azul-céu), terapia em grupo (areia).
 // Sempre com o nome escrito; a cor só reforça. Pares de cor das seções, conferidos em scripts/check-caregiver-a11y.mjs.
 // ---------------------------------------------------------------------------
 .cg-event {
@@ -380,7 +380,6 @@
   svg { flex-shrink: 0; }
 }
 .cg-event--sm { min-height: 1.5rem; padding-inline: 0.5rem; }
-.cg-event--open_circle { background: var(--cg-sec-rotina-strong); color: var(--cg-sec-rotina-ink); }
 .cg-event--training { background: var(--cg-sec-hoje-strong); color: var(--cg-sec-hoje-ink); }
 .cg-event--group_therapy { background: var(--cg-sec-cuidar-strong); color: var(--cg-sec-cuidar-ink); }
 

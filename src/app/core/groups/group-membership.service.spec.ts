@@ -20,7 +20,7 @@ describe('vagas, lista de espera e mudança de plano (RN-GRP-13, RN-GRP-17)', ()
     expect(db.activities.get('act_0001')?.status).toBe('full');
   });
 
-  it('o cuidador que cai de plano sai das turmas futuras de terapia de grupo; a capacitação e a encerrada ficam (docs/20, RN-GRP-17)', () => {
+  it('o cuidador que cai de plano sai das turmas futuras de terapia em grupo; a capacitação e a encerrada ficam (docs/20, RN-GRP-17)', () => {
     const { db } = configureCoreTest({ seed: true });
     loginAs('u7');
     const membership = TestBed.inject(GroupMembershipService);
@@ -35,7 +35,7 @@ describe('vagas, lista de espera e mudança de plano (RN-GRP-13, RN-GRP-17)', ()
 });
 
 describe('cotas e oferta da inscrição (docs/20)', () => {
-  it('Ana usa os 2 encontros de terapia de grupo de novembro na G1: a G8 fica avulsa; Maria usou as 2 capacitações; João paga a capacitação', () => {
+  it('Ana usa os 2 encontros de terapia em grupo de novembro na G1: a G8 fica avulsa; Maria usou as 2 capacitações; João paga a capacitação e não tem terapia em grupo', () => {
     const { db } = configureCoreTest({ seed: true });
     loginAs('u7');
     const membership = TestBed.inject(GroupMembershipService);
@@ -45,7 +45,9 @@ describe('cotas e oferta da inscrição (docs/20)', () => {
     expect(membership.offerFor(db.activities.require('act_0009'), 'cg_0002')).toMatchObject({ kind: 'paid', priceCents: 4000 });
     expect(membership.offerFor(db.activities.require('act_0009'), 'cg_0003')).toMatchObject({ kind: 'paid', priceCents: 4000 });
     expect(membership.offerFor(db.activities.require('act_0009'), 'cg_0001')).toMatchObject({ kind: 'included', priceCents: 0 });
-    expect(membership.offerFor(db.activities.require('act_0004'), 'cg_0003').kind).toBe('free');
+    // Sem roda de conversa: nenhum encontro sai de graça fora da cota; a terapia em grupo segue fechada para o Livre.
+    expect(membership.offerFor(db.activities.require('act_0008'), 'cg_0003').kind).toBe('blocked');
+    expect(db.activities.all().every((a) => a.kind === 'training' || a.kind === 'group_therapy')).toBe(true);
     expect(membership.offerFor(db.activities.require('act_0008'), 'cg_0002').kind).toBe('blocked');
   });
 });

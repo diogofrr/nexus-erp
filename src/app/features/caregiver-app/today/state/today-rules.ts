@@ -14,18 +14,18 @@ export function greetingFor(now: ISODateTime): 'Bom dia' | 'Boa tarde' | 'Boa no
 }
 
 /**
- * Os convites do dia (S-11, docs/20 regra de exibição 1 e 2): a conversa com o psicólogo (só Cuida e Sustenta), a roda de
- * conversa aberta (todos), a capacitação incluída no plano e uma leitura aberta (todos). Só entra no rodízio o que a
+ * Os convites do dia (S-11, docs/20 regra de exibição 1 e 2): a conversa com o psicólogo e a terapia em grupo (só Cuida e
+ * Sustenta), a capacitação incluída no plano e uma leitura aberta (todos). Só entra no rodízio o que a
  * pessoa pode usar de verdade: o que o plano não inclui não é convite.
  */
-export type InviteKind = 'conversation' | 'circle' | 'training' | 'reading';
+export type InviteKind = 'conversation' | 'group' | 'training' | 'reading';
 
-const INVITE_ORDER: readonly InviteKind[] = ['conversation', 'circle', 'training', 'reading'];
+const INVITE_ORDER: readonly InviteKind[] = ['conversation', 'group', 'training', 'reading'];
 
 /**
  * O convite do dia é um RODÍZIO POR CALENDÁRIO entre os itens disponíveis para a pessoa: o dia decide, nunca a
- * pontuação, a faixa, o alerta nem a ARBE (RN-PLN-19, RN-LGPD-17). Se o item do dia não está disponível (não há roda
- * aberta, o plano não inclui a conversa), vale o próximo da ordem; sem nada disponível, `null` (a seção não aparece).
+ * pontuação, a faixa, o alerta nem a ARBE (RN-PLN-19, RN-LGPD-17). Se o item do dia não está disponível (não há terapia
+ * em grupo aberta, o plano não inclui a conversa), vale o próximo da ordem; sem nada disponível, `null` (a seção não aparece).
  */
 export function inviteKindFor(date: ISODate, available: readonly InviteKind[]): InviteKind | null {
   if (available.length === 0) {

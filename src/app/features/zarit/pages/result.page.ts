@@ -100,7 +100,7 @@ import { RESULT_SUPPORT_NOTE } from '../state/zarit-labels';
           <p>{{ conduct() }}</p>
           @switch (info().band) {
             @case ('absent_or_small') {
-              <p class="t-caption">O convite é informativo: as rodas de conversa abertas valem para todos os planos.</p>
+              <p class="t-caption">O convite é informativo: as capacitações valem para todos os planos (incluídas ou avulsas).</p>
               <div><a class="btn" routerLink="/app/grupos">Ver a programação de encontros</a></div>
             }
             @case ('moderate') {

@@ -53,12 +53,13 @@ describe('Área groups (Encontros)', () => {
   });
 
   describe('a programação por tipo (docs/20, regras 2 e 3)', () => {
-    it('Cuida: Minhas inscrições, Rodas de conversa abertas, Capacitações e Terapia de grupo, nesta ordem, com contagem e selo', async () => {
+    it('Cuida: Minhas inscrições, Capacitações e Terapia em grupo, nesta ordem, com contagem e selo (sem roda de conversa)', async () => {
       const app = await bootCaregiverApp('cg_0001', { url: URL });
       expect(app.root.querySelector('main h1')?.textContent?.trim()).toBe('Encontros');
       expect(norm(app.root.querySelector('[data-role="mine"] .cg-section__title')?.textContent)).toBe('Minhas inscrições (2)');
-      expect(sections(app)).toEqual(['Rodas de conversa abertas', 'Capacitações', 'Terapia de grupo']);
-      expect(sectionCards(app, 'open_circle')).toEqual(['Roda de conversa: cuidar de quem cuida', 'Roda de conversa: a rede de apoio da família']);
+      expect(sections(app)).toEqual(['Capacitações', 'Terapia em grupo']);
+      expect(app.root.querySelector('main app-cg-section[data-kind="open_circle"]')).toBeNull();
+      expect(mainText(app)).not.toMatch(/roda de conversa/i);
       expect(sectionCards(app, 'training')).toEqual(['Primeiros socorros em casa', 'Higiene e banho no leito']);
       expect(sectionCards(app, 'group_therapy')).toEqual(['Organização da rotina', 'Lidar com as perdas, em grupo']);
       // Cada seção leva o selo do tipo, com ícone e nome (nunca só a cor).
@@ -72,13 +73,14 @@ describe('Área groups (Encontros)', () => {
       expect(norm(card(app, 'Organização da rotina')?.textContent)).toContain('On-line');
     });
 
-    it('Livre e Essencial: a terapia de grupo não aparece em lugar nenhum, sem cadeado nem "Disponível no plano"', async () => {
-      // João já está nas duas rodas abertas: elas ficam em "Minhas inscrições" e a seção de rodas não se repete.
-      for (const [id, expected] of [['cg_0002', ['Rodas de conversa abertas', 'Capacitações']], ['cg_0003', ['Capacitações']]] as const) {
+    it('Livre e Essencial: a terapia em grupo não aparece em lugar nenhum, sem cadeado nem "Disponível no plano"', async () => {
+      // Sem roda de conversa, Livre e Essencial só têm a seção de capacitações; com um tipo só, o filtro não aparece.
+      for (const id of ['cg_0002', 'cg_0003']) {
         const app = await bootCaregiverApp(id, { url: URL });
-        expect(sections(app)).toEqual(expected);
+        expect(sections(app), id).toEqual(['Capacitações']);
+        expect(app.root.querySelector('[data-role="filter"]'), id).toBeNull();
         const text = mainText(app);
-        ['Terapia de grupo', 'Sobrecarga e autocuidado', 'Organização da rotina', 'Lidar com as perdas'].forEach((t) => expect(text, id).not.toContain(t));
+        ['Terapia em grupo', 'Sobrecarga e autocuidado', 'Organização da rotina', 'Lidar com as perdas'].forEach((t) => expect(text, id).not.toContain(t));
         expect(text).not.toMatch(/Disponível no plano|a partir do plano|Plano Cuida|Ver os planos/);
         expect(app.root.querySelector('main svg[data-icon="lock"], .cg-plan-lock, [data-role="plan-tag"]')).toBeNull();
         TestBed.resetTestingModule();
@@ -91,20 +93,25 @@ describe('Área groups (Encontros)', () => {
       TestBed.resetTestingModule();
       const joao = await bootCaregiverApp('cg_0003', { url: URL });
       expect(norm(card(joao, 'Prevenção de quedas')?.querySelector('[data-role="card-offer"]')?.textContent)).toBe('Você pode participar pagando por encontro');
-      // A roda aberta não fala de valor.
-      expect(card(joao, 'Roda de conversa: cuidar de quem cuida')).toBeUndefined();
-      expect(norm(joao.root.querySelector('[data-role="mine"]')?.textContent)).toContain('Roda de conversa: cuidar de quem cuida');
+      // João não está em nenhum encontro: sem "Minhas inscrições", todas as capacitações ficam na seção, cada uma com o valor.
+      expect(joao.root.querySelector('[data-role="mine"]')).toBeNull();
+      expect(sectionCards(joao, 'training')).toEqual(['Primeiros socorros em casa', 'Prevenção de quedas', 'Higiene e banho no leito']);
+      sectionCards(joao, 'training').forEach((title) =>
+        expect(norm(card(joao, title)?.querySelector('[data-role="card-offer"]')?.textContent), title).toBe('Você pode participar pagando por encontro'),
+      );
     });
 
     it('o filtro por tipo aparece com mais de um tipo e mostra só a seção escolhida', async () => {
       const app = await bootCaregiverApp('cg_0001', { url: URL });
       const chips = Array.from(app.root.querySelectorAll<HTMLButtonElement>('[data-role="filter"] button'));
-      expect(chips.map((c) => norm(c.textContent))).toEqual(['Todos', 'Roda de conversa aberta', 'Capacitação', 'Terapia de grupo']);
-      await click(app, chips[3]);
-      expect(sections(app)).toEqual(['Terapia de grupo']);
+      expect(chips.map((c) => norm(c.textContent))).toEqual(['Todos', 'Capacitação', 'Terapia em grupo']);
+      await click(app, chips[2]);
+      expect(sections(app)).toEqual(['Terapia em grupo']);
       expect(app.root.querySelector('[data-role="mine"]')).toBeNull();
+      await click(app, chips[1]);
+      expect(sections(app)).toEqual(['Capacitações']);
       await click(app, chips[0]);
-      expect(sections(app)).toHaveLength(3);
+      expect(sections(app)).toHaveLength(2);
     });
 
     it('"Minhas inscrições" mostra o próximo encontro e a posição na lista de espera', async () => {
@@ -139,7 +146,7 @@ describe('Área groups (Encontros)', () => {
       expect(app.root.querySelector('main h1')?.textContent?.trim()).toBe('Encontros');
     });
 
-    it('encontro em rascunho, cancelado, inexistente ou de terapia de grupo para o Essencial: "Não encontramos este encontro."', async () => {
+    it('encontro em rascunho, cancelado, inexistente ou de terapia em grupo para o Essencial: "Não encontramos este encontro."', async () => {
       for (const [who, id] of [['cg_0001', 'act_0007'], ['cg_0001', 'act_0006'], ['cg_0001', 'nao-existe'], ['cg_0002', 'act_0008']] as const) {
         const app = await bootCaregiverApp(who, { url: detail(id) });
         expect(mainText(app)).toContain('Não encontramos este encontro.');
@@ -152,7 +159,7 @@ describe('Área groups (Encontros)', () => {
   describe('o detalhe', () => {
     it('mostra o tipo, o caráter explicado, todos os encontros, quem conduz e as vagas', async () => {
       const app = await bootCaregiverApp('cg_0008', { url: detail('act_0001') });
-      expect(norm(app.root.querySelector('[data-role="kind"]')?.textContent)).toBe('Terapia de grupo');
+      expect(norm(app.root.querySelector('[data-role="kind"]')?.textContent)).toBe('Terapia em grupo');
       expect(norm(app.root.querySelector('[data-role="character"]')?.textContent)).toBe('Psicoterapia em grupo');
       expect(Array.from(app.root.querySelectorAll('main dl li')).map((li) => norm(li.textContent))).toEqual([
         'sáb, 07/11, às 14:00',
@@ -167,7 +174,7 @@ describe('Área groups (Encontros)', () => {
     });
 
     it('não fala de pontuação, faixa, alerta nem promete resultado (AC-CG-108)', async () => {
-      for (const [id, url] of [['cg_0001', detail('act_0001')], ['cg_0002', URL], ['cg_0003', detail('act_0004')]] as const) {
+      for (const [id, url] of [['cg_0001', detail('act_0001')], ['cg_0002', URL], ['cg_0003', detail('act_0009')]] as const) {
         const app = await bootCaregiverApp(id, { url });
         expect(mainText(app).toLowerCase()).not.toMatch(/zarit|pontua|faixa|alerta|arbe|sobrecarga severa|vai melhorar|vai aliviar|cura\b/);
         TestBed.resetTestingModule();
@@ -223,24 +230,25 @@ describe('Área groups (Encontros)', () => {
       });
     });
 
-    it('terapia de grupo dentro da cota: "Incluída no seu plano (2 de 2 neste mês)"; a roda aberta entra sem valor', async () => {
+    it('terapia em grupo dentro da cota: "Incluída no seu plano (2 de 2 neste mês)"; entra no grupo sem valor e consome a cota', async () => {
       const app = await bootCaregiverApp('cg_0027', { url: URL });
-      // Elza sai da G3: a cota de terapia de grupo de novembro fica livre para a G8.
+      // Elza sai da G3: a cota de terapia em grupo de novembro fica livre para a G8.
       app.db.activityEnrollments.removeWhere((e) => e.caregiverId === 'cg_0027' && e.activityId === 'act_0003');
       await app.router.navigateByUrl(detail('act_0008'));
       await settleCaregiver(app.fixture);
       expect(norm(app.root.querySelector('[data-role="offer"]')?.textContent)).toBe('Incluída no seu plano (2 de 2 neste mês)');
-      TestBed.resetTestingModule();
-      const roda = await bootCaregiverApp('cg_0002', { url: detail('act_0004') });
-      expect(roda.root.querySelector('[data-role="offer"]')).toBeNull();
-      await click(roda, roda.root.querySelector('[data-role="join"]'));
-      await click(roda, openSheet(roda)?.querySelector('input[type="checkbox"]'));
-      expect(openSheet(roda)?.querySelector('[data-role="confirm-join"]')?.textContent?.trim()).toBe('Entrar na roda');
-      await click(roda, openSheet(roda)?.querySelector('[data-role="confirm-join"]'));
-      expect(roda.db.activityEnrollments.find((e) => e.activityId === 'act_0004' && e.caregiverId === 'cg_0002')).toMatchObject({ status: 'enrolled', paid: false });
+      await click(app, app.root.querySelector('[data-role="join"]'));
+      await click(app, openSheet(app)?.querySelector('input[type="checkbox"]'));
+      expect(openSheet(app)?.querySelector('[data-role="confirm-join"]')?.textContent?.trim()).toBe('Entrar no grupo');
+      await click(app, openSheet(app)?.querySelector('[data-role="confirm-join"]'));
+      expect(app.db.activityEnrollments.find((e) => e.activityId === 'act_0008' && e.caregiverId === 'cg_0027')).toMatchObject({
+        status: 'enrolled',
+        includedInPlan: true,
+        paid: false,
+      });
     });
 
-    it('terapia de grupo além da cota: avulsa a R$ 60,00 o encontro (Ana já usou os 2 da G1)', async () => {
+    it('terapia em grupo além da cota: avulsa a R$ 60,00 o encontro (Ana já usou os 2 da G1)', async () => {
       const app = await bootCaregiverApp('cg_0001', { url: detail('act_0008') });
       expect(norm(app.root.querySelector('[data-role="offer"]')?.textContent)).toBe('R$ 60,00 por encontro');
       await click(app, app.root.querySelector('[data-role="join"]'));

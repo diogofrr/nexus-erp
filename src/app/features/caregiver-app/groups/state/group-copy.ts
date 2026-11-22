@@ -10,17 +10,16 @@ import { KIND_LABELS as TEAM_KIND_LABELS, THEME_LABELS } from '../../../groups/s
 
 export { THEME_LABELS };
 
-/** O tipo do encontro, o mesmo nome para a equipe e para o cuidador (docs/20: "Terapia de grupo" é o nome oficial). */
+/** O tipo do encontro, o mesmo nome para a equipe e para o cuidador (docs/20: "Terapia em grupo" é o nome oficial). */
 export const KIND_LABELS: Readonly<Record<ActivityKind, string>> = { ...TEAM_KIND_LABELS };
 
-/** A ordem das seções da tela (docs/20): rodas abertas, capacitações, terapia de grupo. */
-export const KIND_ORDER: readonly ActivityKind[] = ['open_circle', 'training', 'group_therapy'];
+/** A ordem das seções da tela (docs/20): capacitações, terapia em grupo. */
+export const KIND_ORDER: readonly ActivityKind[] = ['training', 'group_therapy'];
 
 /** Título de cada seção. */
 export const KIND_SECTION_TITLES: Readonly<Record<ActivityKind, string>> = {
-  open_circle: 'Rodas de conversa abertas',
   training: 'Capacitações',
-  group_therapy: 'Terapia de grupo',
+  group_therapy: 'Terapia em grupo',
 };
 
 /**
@@ -40,18 +39,15 @@ export const CHARACTER_TEXT: Readonly<Record<Activity['character'], string>> = {
 
 /** O que é, em uma frase, sem prometer resultado (RN-GRP-15, RN-ETICA-05). */
 export const KIND_TEXT: Readonly<Record<ActivityKind, string>> = {
-  open_circle: 'Uma roda de conversa aberta: qualquer pessoa pode participar.',
   training: 'Uma capacitação para aprender a cuidar com mais segurança, com a equipe e profissionais parceiros.',
-  group_therapy: 'Terapia de grupo com psicólogo da Nexus, em turma pequena, para conversar sobre o que você sente.',
+  group_therapy: 'Terapia em grupo com psicólogo da Nexus, em turma pequena, para conversar sobre o que você sente.',
 };
 
-/** Como a pessoa chama o encontro nas frases ("Entrar no grupo", "Entrar na capacitação", "Entrar na roda"). */
+/** Como a pessoa chama o encontro nas frases ("Entrar no grupo", "Entrar na capacitação"). */
 export function placeOf(kind: ActivityKind): { enter: string; leave: string; inside: string; left: string } {
   switch (kind) {
     case 'training':
       return { enter: 'Entrar na capacitação', leave: 'Sair da capacitação', inside: 'na capacitação', left: 'saiu da capacitação' };
-    case 'open_circle':
-      return { enter: 'Entrar na roda', leave: 'Sair da roda', inside: 'na roda', left: 'saiu da roda' };
     default:
       return { enter: 'Entrar no grupo', leave: 'Sair do grupo', inside: 'no grupo', left: 'saiu do grupo' };
   }
@@ -63,12 +59,12 @@ export function seatsText(free: number): string {
 }
 
 /**
- * A linha de valor do cartão e do detalhe (docs/20): roda aberta nada diz; capacitação "Incluída no seu plano" ou o valor
- * avulso ("Você pode participar pagando por encontro" no Livre); terapia de grupo "Incluída no seu plano" ou o avulso.
+ * A linha de valor do cartão e do detalhe (docs/20): capacitação "Incluída no seu plano" ou o valor
+ * avulso ("Você pode participar pagando por encontro" no Livre); terapia em grupo "Incluída no seu plano" ou o avulso.
  * `null` quando não há nada a dizer. Nunca fala do que o plano não inclui.
  */
 export function offerLine(kind: ActivityKind, offer: EnrollmentOffer, planId: PlanId): string | null {
-  if (kind === 'open_circle' || offer.kind === 'free' || offer.kind === 'blocked') {
+  if (offer.kind === 'blocked') {
     return null;
   }
   if (offer.kind === 'included') {

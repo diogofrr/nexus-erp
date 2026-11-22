@@ -87,7 +87,7 @@ export const BENEFIT_LABELS: Readonly<Record<BenefitKey, string>> = {
   exclusive_content: 'Conteúdos exclusivos',
   network_special_conditions: 'Condições especiais na rede',
   greater_organization_support: 'Maior suporte à organização',
-  support_groups: 'Terapia de grupo',
+  support_groups: 'Terapia em grupo',
   trainings: 'Capacitações',
   close_organizational_follow_up: 'Acompanhamento organizacional mais próximo',
   higher_support_level: 'Maior nível de suporte',
@@ -153,7 +153,7 @@ export function hasBenefitCard(planId: PlanId): boolean {
   return planHasBenefit(planId, 'card_discounts');
 }
 
-/** Terapia de grupo: só Cuida e Sustenta (docs/20; RN-GRP-02 lida à luz do docs/20). */
+/** Terapia em grupo: só Cuida e Sustenta (docs/20; RN-GRP-02 lida à luz do docs/20). */
 export function canAccessGroupTherapy(planId: PlanId): boolean {
   return PLAN_QUOTAS[planId].groupTherapyPerMonth > 0;
 }
@@ -162,27 +162,27 @@ export interface ActivityAccess {
   allowed: boolean;
   /** Mensagem de bloqueio (só para a equipe e para o domínio; o app do cuidador não anuncia o que o plano não inclui). */
   reason?: string;
-  /** Compatibilidade: a terapia de grupo não exige mais indicação do psicólogo (docs/20). Sempre `false`. */
+  /** Compatibilidade: a terapia em grupo não exige mais indicação do psicólogo (docs/20). Sempre `false`. */
   requiresEligibility: false;
   /** Plano mínimo da atividade (`null` = qualquer plano). */
   minPlan: 'cuida' | null;
 }
 
-/** Plano mínimo por tipo de atividade (docs/20): só a terapia de grupo é do Cuida em diante. */
+/** Plano mínimo por tipo de atividade (docs/20): só a terapia em grupo é do Cuida em diante. */
 export function activityMinPlan(kind: ActivityKind): 'cuida' | null {
   return kind === 'group_therapy' ? 'cuida' : null;
 }
 
 /**
- * Acesso do plano ao tipo de atividade (docs/20): roda aberta para todos; capacitação para todos os cadastrados (incluída
- * ou avulsa, ver `enrollmentOffer`); terapia de grupo só Cuida e Sustenta.
+ * Acesso do plano ao tipo de atividade (docs/20): capacitação para todos os cadastrados (incluída
+ * ou avulsa, ver `enrollmentOffer`); terapia em grupo só Cuida e Sustenta.
  */
 export function canAccessActivity(planId: PlanId, kind: ActivityKind): ActivityAccess {
   const minPlan = activityMinPlan(kind);
   if (minPlan === 'cuida' && !canAccessGroupTherapy(planId)) {
     return {
       allowed: false,
-      reason: 'A terapia de grupo faz parte dos planos Cuida e Sustenta.',
+      reason: 'A terapia em grupo faz parte dos planos Cuida e Sustenta.',
       requiresEligibility: false,
       minPlan,
     };

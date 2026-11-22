@@ -54,7 +54,7 @@ describe('Hoje (UX C4)', () => {
     });
 
     it('o convite do dia é rodízio por calendário e só pula o item que a pessoa não tem (S-11, docs/20)', () => {
-      const kinds = ['conversation', 'circle', 'training', 'reading'] as const;
+      const kinds = ['conversation', 'group', 'training', 'reading'] as const;
       const dates = ['2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07'];
       const picked = dates.map((d) => inviteKindFor(d, [...kinds]));
       expect(new Set(picked).size).toBe(4);
@@ -63,11 +63,11 @@ describe('Hoje (UX C4)', () => {
       // Sem nada disponível não há convite: a conversa só entra quando o plano a inclui.
       dates.forEach((d) => expect(inviteKindFor(d, [])).toBeNull());
       dates.forEach((d) => expect(inviteKindFor(d, ['reading'])).toBe('reading'));
-      // Sem roda, o dia da roda vira o próximo da ordem.
-      const circleDay = dates[picked.indexOf('circle')] as string;
-      expect(inviteKindFor(circleDay, ['training', 'reading'])).toBe('training');
-      expect(inviteKindFor(circleDay, ['reading'])).toBe('reading');
-      expect(toDayNumber(circleDay)).toBeGreaterThan(0);
+      // Sem terapia em grupo, o dia dela vira o próximo da ordem.
+      const groupDay = dates[picked.indexOf('group')] as string;
+      expect(inviteKindFor(groupDay, ['training', 'reading'])).toBe('training');
+      expect(inviteKindFor(groupDay, ['reading'])).toBe('reading');
+      expect(toDayNumber(groupDay)).toBeGreaterThan(0);
     });
 
     it('a conversa é "com a Dra." ou "com o Dr."', () => {
@@ -532,54 +532,66 @@ describe('Hoje (UX C4)', () => {
           href: q('[data-role="for-you"] a.btn')?.getAttribute('href') ?? '',
         });
         expect(text(q('main')), `${id} ${day}`).not.toMatch(NEVER_IN_TODAY);
-        expect(all('app-cg-event-badge[data-type="group_therapy"]'), `${id} ${day}`).toHaveLength(0);
+        // Livre e Essencial não veem terapia em grupo em lugar nenhum de Hoje.
+        if (app.context.planId() === 'livre' || app.context.planId() === 'essencial') {
+          expect(all('app-cg-event-badge[data-type="group_therapy"]'), `${id} ${day}`).toHaveLength(0);
+        }
       }
       return seen;
     };
     const titlesOf = (kind: string): string[] =>
       app.db.activities.query((a) => a.kind === kind).map((a) => a.title);
 
-    it('Livre (João, Raimunda) e Essencial (Sônia): nunca a conversa nem terapia de grupo; roda aberta e leitura entram', async () => {
+    it('Livre (João, Raimunda) e Essencial (Sônia): nunca a conversa nem terapia em grupo; a leitura entra para todos', async () => {
       for (const id of ['cg_0003', 'cg_0018', 'cg_0016']) {
         const seen = await invites(id, true);
         const therapy = titlesOf('group_therapy');
         expect(seen.map((x) => x.title), id).not.toContain('Uma conversa só para você');
         seen.forEach((x) => expect(therapy, `${id} ${x.day}`).not.toContain(x.title));
-        expect(seen.some((x) => x.type === 'open_circle'), id).toBe(true);
+        expect(seen.some((x) => x.type === 'group_therapy'), id).toBe(false);
         expect(seen.some((x) => /Leitura de \d+ minuto/.test(x.title)), id).toBe(true);
       }
     });
 
-    it('Livre: a capacitação não é convite (o plano não a inclui); Essencial e Sustenta podem receber a capacitação incluída', async () => {
+    it('Livre: só a leitura (a capacitação não está no plano); Essencial recebe a capacitação incluída; Sustenta, a conversa e a terapia em grupo', async () => {
       const livre = await invites('cg_0003', true);
       expect(livre.some((x) => x.type === 'training')).toBe(false);
+      livre.forEach((x) => {
+        expect(x.type, x.day).toBeNull();
+        expect(x.title, x.day).toMatch(/Leitura de \d+ minuto/);
+      });
+      const essencial = await invites('cg_0016', true);
+      expect(essencial.some((x) => x.type === 'training')).toBe(true);
       const sustenta = await invites('cg_0027', true);
       expect(sustenta.map((x) => x.title)).toContain('Uma conversa só para você');
-      expect(sustenta.some((x) => x.type === 'open_circle')).toBe(true);
-      sustenta.filter((x) => x.type === 'training').forEach((x) => expect(text(q('main'))).not.toContain('R$'));
+      expect(sustenta.some((x) => x.type === 'group_therapy')).toBe(true);
+      sustenta.filter((x) => x.type === 'training').forEach((x) => expect(text(q('main')), x.day).not.toContain('R$'));
     });
 
-    it('o convite de roda aberta leva o selo do tipo, com o nome escrito, e leva à atividade', async () => {
-      const seen = await invites('cg_0016', true);
-      const circle = seen.find((x) => x.type === 'open_circle');
-      expect(circle).toBeDefined();
+    it('o convite de terapia em grupo (Cuida e Sustenta) leva o selo do tipo, com o nome escrito, e leva à atividade', async () => {
+      const seen = await invites('cg_0027', true);
+      const group = seen.find((x) => x.type === 'group_therapy');
+      expect(group).toBeDefined();
+      expect(titlesOf('group_therapy')).toContain(group?.title);
       TestBed.resetTestingModule();
-      app = await bootCaregiverApp('cg_0016', { url: '/cuidador/hoje', today: circle?.day ?? DAYS[0] });
-      app.db.activityEnrollments.removeWhere((e) => e.caregiverId === 'cg_0016');
-      app.db.serviceRequests.removeWhere((r) => r.caregiverId === 'cg_0016');
+      app = await bootCaregiverApp('cg_0027', { url: '/cuidador/hoje', today: group?.day ?? DAYS[0] });
+      app.db.activityEnrollments.removeWhere((e) => e.caregiverId === 'cg_0027');
+      app.db.serviceRequests.removeWhere((r) => r.caregiverId === 'cg_0027');
       await flush();
       const badge = q('[data-role="for-you"] app-cg-event-badge');
-      expect(badge?.getAttribute('data-type')).toBe('open_circle');
-      expect(text(badge)).toBe('Roda de conversa aberta');
-      expect(text(q('[data-role="for-you"]'))).toContain('Aberta a todos.');
-      expect(circle?.href).toMatch(/^\/cuidador\/cuidar-de-mim\/grupos\?atividade=act_\d+$/);
+      expect(badge?.getAttribute('data-type')).toBe('group_therapy');
+      expect(text(badge)).toBe('Terapia em grupo');
+      expect(text(q('[data-role="for-you"]'))).toContain('Com o psicólogo da Nexus.');
+      expect(group?.href).toMatch(/^\/cuidador\/cuidar-de-mim\/grupos\?atividade=act_\d+$/);
     });
 
     it('encontro em que a pessoa já está inscrita não é convite', async () => {
-      const seen = await invites('cg_0003');
+      // Elza (Sustenta) está na G2 (capacitação) e na G3 (terapia em grupo): nenhuma das duas vira convite.
+      const seen = await invites('cg_0027');
       const mine = new Set(
-        app.db.activityEnrollments.query((e) => e.caregiverId === 'cg_0003' && e.status === 'enrolled').map((e) => e.activityId),
+        app.db.activityEnrollments.query((e) => e.caregiverId === 'cg_0027' && e.status === 'enrolled').map((e) => e.activityId),
       );
+      expect(mine.size).toBeGreaterThan(0);
       seen.forEach((x) => {
         const id = /atividade=(act_\d+)/.exec(x.href)?.[1];
         expect(id ? mine.has(id) : false, x.day).toBe(false);

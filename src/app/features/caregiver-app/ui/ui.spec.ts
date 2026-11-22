@@ -82,7 +82,6 @@ const text = (el: Element | null | undefined): string =>
     }
     <app-cg-section title="Encontros" [count]="2" data-role="events">
       <button cgSectionEnd type="button" class="cg-link-btn" data-role="events-end">Ver todos</button>
-      <app-cg-event-badge type="open_circle" />
       <app-cg-event-badge type="training" size="sm" />
       <app-cg-event-badge type="group_therapy" />
     </app-cg-section>
@@ -386,20 +385,21 @@ describe('Kit visual do aplicativo do cuidador (UX Parte A)', () => {
     expect(text(title)).toBe('Encontros (2)');
     expect(section?.getAttribute('aria-labelledby')).toBe(title?.id);
     expect(section?.querySelector('.cg-section-head [data-role="events-end"]')).not.toBeNull();
-    expect(section?.querySelectorAll('.cg-section__body app-cg-event-badge')).toHaveLength(3);
+    expect(section?.querySelectorAll('.cg-section__body app-cg-event-badge')).toHaveLength(2);
   });
 
   it('selo do tipo de encontro: nome escrito, ícone e classe por tipo (nunca só cor); sem cadeado, preço nem plano', () => {
     const f = mountKit('cg_0003');
     const badges = all(f, 'app-cg-event-badge');
-    expect(badges.map(text)).toEqual(['Roda de conversa aberta', 'Capacitação', 'Terapia de grupo']);
-    expect(badges.map((b) => b.getAttribute('data-type'))).toEqual(['open_circle', 'training', 'group_therapy']);
+    expect(badges.map(text)).toEqual(['Capacitação', 'Terapia em grupo']);
+    expect(badges.map((b) => b.getAttribute('data-type'))).toEqual(['training', 'group_therapy']);
     badges.forEach((b) => {
       expect(b.classList.contains(`cg-event--${b.getAttribute('data-type')}`)).toBe(true);
       expect(b.querySelector('svg')).not.toBeNull();
       expect(text(b)).not.toMatch(/R\$|plano|assine|bloque/i);
     });
-    expect(badges[1]?.classList.contains('cg-event--sm')).toBe(true);
+    expect(badges[0]?.classList.contains('cg-event--sm')).toBe(true);
+    expect(badges[1]?.classList.contains('cg-event--sm')).toBe(false);
     // O kit público não tem mais o bloqueio por plano (docs/20, regra de exibição 1).
     expect(all(f, '.cg-plan-lock, app-cg-plan-lock')).toHaveLength(0);
   });

@@ -25,7 +25,7 @@ const URLS: readonly string[] = [
   '/cuidador/cuidar-de-mim/grupos',
   '/cuidador/cuidar-de-mim/grupos?atividade=act_0001',
   '/cuidador/cuidar-de-mim/grupos?atividade=act_0002',
-  '/cuidador/cuidar-de-mim/grupos?atividade=act_0004',
+  '/cuidador/cuidar-de-mim/grupos?atividade=act_0009',
   '/cuidador/cuidar-de-mim/conteudos',
   '/cuidador/cuidar-de-mim/conteudos?conteudo=gdc_0001',
   '/cuidador/rede',
@@ -385,7 +385,10 @@ describe('QAC varredura: minimização de dados (RN-LGPD-08) e planos na rede', 
 
   it('a tela de um encontro é idêntica para duas pessoas do mesmo plano, com alertas diferentes (Maria x Terezinha, Essencial; docs/20)', async () => {
     const lock = async (id: string): Promise<string> => {
-      const app = await bootCaregiverApp(id, { url: '/cuidador/cuidar-de-mim/grupos?atividade=act_0004' });
+      const app = await bootCaregiverApp(id, { url: '/cuidador/cuidar-de-mim/grupos?atividade=act_0009' });
+      // A capacitação conta na cota do Essencial: com as mesmas inscrições (nenhuma), só o alerta difere entre as duas.
+      app.db.activityEnrollments.removeWhere((e) => e.caregiverId === id);
+      await settleCaregiver(app.fixture);
       const text = norm(app.root.querySelector('main')?.textContent);
       TestBed.resetTestingModule();
       return text;

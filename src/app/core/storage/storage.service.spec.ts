@@ -192,7 +192,8 @@ describe('Versão de esquema e migrações', () => {
       reason: 'newer_than_app',
     });
     expect(planMigrations('0', '3', steps)).toEqual({ kind: 'unsupported', reason: 'no_path' });
-    expect(MIGRATIONS.map((m) => `${m.from}>${m.to}`)).toEqual(['1>2']);
+    expect(MIGRATIONS.map((m) => `${m.from}>${m.to}`)).toEqual(['1>2', '2>3']);
+    expect(SCHEMA_VERSION).toBe('3');
     expect(compareVersions('1.2', '1.10')).toBeLessThan(0);
     expect(compareVersions('2', '1.9')).toBeGreaterThan(0);
   });
@@ -221,5 +222,101 @@ describe('migração v1 para v2 (docs/20)', () => {
     expect((store.get('activityEnrollments') as { includedInPlan: boolean }[]).map((e) => e.includedInPlan)).toEqual([true, false, true]);
     expect((store.get('careSessions') as { includedInPlan: boolean }[]).map((s) => s.includedInPlan)).toEqual([true, false]);
     expect(store.get('guidanceContents')).toEqual([{ id: 'g1', category: 'routine_organization' }]);
+  });
+});
+
+describe('migração v2 para v3 (sem roda de conversa)', () => {
+  function context(store: Map<string, unknown>, writes: string[] = []): Parameters<Migration['run']>[0] {
+    return {
+      names: () => [...store.keys()],
+      read: (n) => store.get(n),
+      write: (n, v) => {
+        writes.push(n);
+        store.set(n, v);
+      },
+      remove: (n) => void store.delete(n),
+    };
+  }
+
+  it('apaga as rodas abertas (também as do tipo antigo) e as inscrições delas; capacitação e terapia em grupo ficam', async () => {
+    const { MIGRATION_V2_TO_V3 } = await import('./migrations');
+    const store = new Map<string, unknown>([
+      [
+        'activities',
+        [
+          { id: 'a1', kind: 'group_therapy' },
+          { id: 'a2', kind: 'open_circle' },
+          { id: 'a3', kind: 'training' },
+          { id: 'a4', kind: 'open_conversation_circle' },
+        ],
+      ],
+      [
+        'activityEnrollments',
+        [
+          { id: 'e1', activityId: 'a1' },
+          { id: 'e2', activityId: 'a2' },
+          { id: 'e3', activityId: 'a3' },
+          { id: 'e4', activityId: 'a4' },
+          { id: 'e5', activityId: 'a2' },
+        ],
+      ],
+    ]);
+    MIGRATION_V2_TO_V3.run(context(store));
+    expect(store.get('activities')).toEqual([
+      { id: 'a1', kind: 'group_therapy' },
+      { id: 'a3', kind: 'training' },
+    ]);
+    expect((store.get('activityEnrollments') as { id: string }[]).map((e) => e.id)).toEqual(['e1', 'e3']);
+  });
+
+  it('sem roda aberta (ou sem atividades guardadas) não reescreve nada', async () => {
+    const { MIGRATION_V2_TO_V3 } = await import('./migrations');
+    const writes: string[] = [];
+    const store = new Map<string, unknown>([
+      ['activities', [{ id: 'a1', kind: 'training' }]],
+      ['activityEnrollments', [{ id: 'e1', activityId: 'a1' }]],
+    ]);
+    MIGRATION_V2_TO_V3.run(context(store, writes));
+    expect(writes).toEqual([]);
+    const empty = new Map<string, unknown>();
+    MIGRATION_V2_TO_V3.run(context(empty, writes));
+    expect(writes).toEqual([]);
+    expect(empty.size).toBe(0);
+  });
+
+  it('dados guardados na v2 sobem para a v3 na inicialização, sem as rodas', () => {
+    const { service } = setup();
+    service.writeLocal('schema-version', '2');
+    service.writeLocal('activities', [
+      { id: 'a1', kind: 'open_circle' },
+      { id: 'a2', kind: 'group_therapy' },
+    ]);
+    service.writeLocal('activityEnrollments', [
+      { id: 'e1', activityId: 'a1' },
+      { id: 'e2', activityId: 'a2' },
+    ]);
+    expect(service.ensureSchema()).toBe(true);
+    expect(service.storedSchemaVersion()).toBe('3');
+    expect(service.readLocal<{ id: string }[]>('activities', []).map((a) => a.id)).toEqual(['a2']);
+    expect(service.readLocal<{ id: string }[]>('activityEnrollments', []).map((e) => e.id)).toEqual(['e2']);
+  });
+
+  it('dados da v1 passam pelas duas migrações: a roda antiga vira roda aberta e depois sai', () => {
+    const { service } = setup();
+    service.writeLocal('schema-version', '1');
+    service.writeLocal('activities', [
+      { id: 'a1', kind: 'support_group', minPlan: 'cuida' },
+      { id: 'a2', kind: 'open_conversation_circle', minPlan: null },
+    ]);
+    service.writeLocal('activityEnrollments', [
+      { id: 'e1', activityId: 'a1' },
+      { id: 'e2', activityId: 'a2' },
+    ]);
+    expect(service.ensureSchema()).toBe(true);
+    expect(service.storedSchemaVersion()).toBe('3');
+    expect(service.readLocal<{ id: string; kind: string }[]>('activities', [])).toEqual([
+      { id: 'a1', kind: 'group_therapy', minPlan: 'cuida', requiresEligibility: false },
+    ]);
+    expect(service.readLocal<{ id: string }[]>('activityEnrollments', []).map((e) => e.id)).toEqual(['e1']);
   });
 });

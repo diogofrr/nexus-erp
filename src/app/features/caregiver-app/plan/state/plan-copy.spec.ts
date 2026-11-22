@@ -20,16 +20,16 @@ function quote(partial: Partial<ChangeQuote> & Pick<ChangeQuote, 'from' | 'to' |
 }
 
 describe('textos de Meu plano (docs/20; UX C18 e B9)', () => {
-  it('os destaques: 4 no herói, 3 no quadro; Cuida e Sustenta começam pelo atendimento e pela terapia de grupo', () => {
+  it('os destaques: 4 no herói, 3 no quadro; Cuida e Sustenta começam pelo atendimento e pela terapia em grupo', () => {
     expect(planPerks('cuida', plans, 4).map((p) => p.label)).toEqual([
       'Atendimento psicológico individual: 2 sessões por mês',
-      'Terapia de grupo: 2 encontros por mês',
+      'Terapia em grupo: 2 encontros por mês',
       'Todas as capacitações do mês',
       'Maior suporte à organização da rotina',
     ]);
     expect(planPerks('sustenta', plans, 3).map((p) => p.label)).toEqual([
       'Atendimento psicológico individual: 4 sessões por mês',
-      'Terapia de grupo: 2 encontros por mês',
+      'Terapia em grupo: 2 encontros por mês',
       'Rede credenciada, com benefícios diferenciados',
     ]);
     expect(planPerks('essencial', plans, 3).map((p) => p.label)).toEqual([
@@ -101,8 +101,8 @@ describe('textos de Meu plano (docs/20; UX C18 e B9)', () => {
     );
     expect(copy.heading).toBe('Mudar para o Essencial no fim do ciclo?');
     expect(copy.lines).toEqual([
-      'Vale no fim do ciclo, em 18/11/2026. Até lá, o Cuida continua, inclusive a terapia de grupo.',
-      'Você sai das turmas de terapia de grupo que começam depois dessa data: Sobrecarga e autocuidado (03/12). As turmas em andamento continuam até o fim do ciclo.',
+      'Vale no fim do ciclo, em 18/11/2026. Até lá, o Cuida continua, inclusive a terapia em grupo.',
+      'Você sai das turmas de terapia em grupo que começam depois dessa data: Sobrecarga e autocuidado (03/12). As turmas em andamento continuam até o fim do ciclo.',
       'Se mudar de ideia, é só mudar de plano de novo.',
     ]);
     expect(copy.showNotice).toBe(false);

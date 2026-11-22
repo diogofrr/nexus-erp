@@ -18,33 +18,34 @@ describe('encontros vistos pelo cuidador (docs/20; RN-GRP-03, 09, 13, 17)', () =
 
   it('a programação só tem encontros abertos, lotados e em andamento, o mais próximo primeiro', () => {
     const programme = service.programme();
-    // Próximos encontros: G1 07/11, G8 10/11, G3 11/11, G9 12/11, G2 14/11, G10 16/11, G4 19/11, G11 26/11.
-    expect(programme.map((a) => a.id)).toEqual(['act_0001', 'act_0008', 'act_0003', 'act_0009', 'act_0002', 'act_0010', 'act_0004', 'act_0011']);
-    ['act_0005', 'act_0006', 'act_0007'].forEach((id) => {
+    // Próximos encontros: G1 07/11, G8 10/11, G3 11/11, G9 12/11, G2 14/11, G10 16/11 (sem roda de conversa: G4 e G11 saíram).
+    expect(programme.map((a) => a.id)).toEqual(['act_0001', 'act_0008', 'act_0003', 'act_0009', 'act_0002', 'act_0010']);
+    expect(new Set(programme.map((a) => a.kind))).toEqual(new Set(['training', 'group_therapy']));
+    ['act_0005', 'act_0006', 'act_0007', 'act_0004', 'act_0011'].forEach((id) => {
       expect(programme.map((a) => a.id)).not.toContain(id);
       expect(service.visible(id)).toBeUndefined();
     });
     expect(service.visible('act_0001')?.status).toBe('full');
   });
 
-  it('regra de exibição 2: Livre e Essencial não veem terapia de grupo em lugar nenhum; Cuida e Sustenta veem tudo', () => {
+  it('regra de exibição 2: Livre e Essencial não veem terapia em grupo em lugar nenhum; Cuida e Sustenta veem tudo', () => {
     ['cg_0002', 'cg_0003', 'cg_0026'].forEach((id) => {
-      expect(service.visibleKinds(id)).toEqual(['open_circle', 'training']);
+      expect(service.visibleKinds(id)).toEqual(['training']);
       expect(service.visibleProgramme(id).some((a) => a.kind === 'group_therapy')).toBe(false);
       expect(service.visibleTo(id, 'act_0008')).toBeUndefined();
       expect(service.visibleTo(id, 'act_0009')?.id).toBe('act_0009');
     });
-    expect(service.visibleKinds('cg_0001')).toEqual(['open_circle', 'training', 'group_therapy']);
+    expect(service.visibleKinds('cg_0001')).toEqual(['training', 'group_therapy']);
     expect(service.visibleProgramme('cg_0027').map((a) => a.id)).toContain('act_0008');
   });
 
-  it('roda aberta grátis para todos; capacitação incluída ou avulsa; terapia de grupo travada no Livre e no Essencial', () => {
-    expect(standing('cg_0002', 'act_0004')).toMatchObject({ kind: 'can_join', full: false, offer: { kind: 'free' } });
-    expect(standing('cg_0003', 'act_0004').kind).toBe('enrolled');
+  it('capacitação incluída ou avulsa; terapia em grupo travada no Livre e no Essencial', () => {
+    // Maria (Essencial) já usou as 2 capacitações de novembro na G2: a G9 sai avulsa.
+    expect(standing('cg_0002', 'act_0009')).toMatchObject({ kind: 'can_join', full: false, offer: { kind: 'paid', priceCents: 4000 } });
     expect(standing('cg_0003', 'act_0009')).toMatchObject({ kind: 'can_join', offer: { kind: 'paid', priceCents: 4000 } });
     expect(standing('cg_0001', 'act_0009')).toMatchObject({ kind: 'can_join', offer: { kind: 'included', priceCents: 0 } });
     ['cg_0002', 'cg_0003', 'cg_0026', 'cg_0016'].forEach((id) => expect(standing(id, 'act_0008').kind).toBe('plan_locked'));
-    // Ana já usou os 2 encontros de terapia de grupo de novembro na G1: a G8 sai avulsa (R$ 60,00 por encontro).
+    // Ana já usou os 2 encontros de terapia em grupo de novembro na G1: a G8 sai avulsa (R$ 60,00 por encontro).
     expect(standing('cg_0001', 'act_0008')).toMatchObject({ kind: 'can_join', offer: { kind: 'paid', priceCents: 12000 } });
     expect(standing('cg_0027', 'act_0008')).toMatchObject({ kind: 'can_join', full: false });
   });
@@ -57,7 +58,7 @@ describe('encontros vistos pelo cuidador (docs/20; RN-GRP-03, 09, 13, 17)', () =
     expect(standing('cg_0024', 'act_0003').kind).toBe('enrolled');
   });
 
-  it('terapia de grupo não exige indicação do psicólogo (docs/20): Cuida e Sustenta entram com o sigilo', () => {
+  it('terapia em grupo não exige indicação do psicólogo (docs/20): Cuida e Sustenta entram com o sigilo', () => {
     db.activities.update('act_0003', { status: 'open' });
     const ok = service.enroll('cg_0009', 'act_0003', { contractAccepted: true });
     expect(ok).toMatchObject({ ok: true, waitlisted: false });
@@ -71,7 +72,8 @@ describe('encontros vistos pelo cuidador (docs/20; RN-GRP-03, 09, 13, 17)', () =
       ['act_0003', 'enrolled'],
     ]);
     expect(service.myEnrollments('cg_0002').map((m) => m.activity.id)).toEqual(['act_0002']);
-    expect(service.myEnrollments('cg_0003').map((m) => m.activity.id)).toEqual(['act_0004', 'act_0011']);
+    // João (Livre) não está em nenhum encontro.
+    expect(service.myEnrollments('cg_0003')).toEqual([]);
   });
 
   it('entra com o aceite do sigilo, gravado com data e hora, e grava se é incluída ou avulsa', () => {
@@ -137,7 +139,7 @@ describe('encontros vistos pelo cuidador (docs/20; RN-GRP-03, 09, 13, 17)', () =
     const answers = [
       service.enroll('cg_0002', 'act_0008', { contractAccepted: true }),
       service.enroll('cg_0002', 'act_0003', { contractAccepted: true }),
-      service.enroll('cg_0002', 'act_0004', { contractAccepted: false }),
+      service.enroll('cg_0002', 'act_0009', { contractAccepted: false }),
     ].map((r) => (r.ok ? '' : r.error.toLowerCase()));
     answers.forEach((a) => expect(a).not.toMatch(/zarit|pontua|faixa|alerta|risco|arbe/));
   });

@@ -41,7 +41,7 @@ interface ParticipantRow {
  * SCR-M07-03, Detalhe da atividade: caráter ("orientação e psicoeducação" ou "psicoterapia") e o aviso de que não
  * promete resultado terapêutico, número de inscrição profissional de quem conduz, encontros, inscritos, lista
  * de espera, contrato de sigilo e indicadores. As ações dizem o que vão fazer: "Inscrever" vira "Entrar na lista
- * de espera" quando lotado. Nomes só para quem pode (a gestão vê códigos; terapia de grupo não aparece ao atendimento).
+ * de espera" quando lotado. Nomes só para quem pode (a gestão vê códigos; terapia em grupo não aparece ao atendimento).
  */
 @Component({
   selector: 'app-activity-detail-page',
@@ -96,7 +96,7 @@ interface ParticipantRow {
           <h2 id="gd-framing" class="card__title">Sobre a atividade</h2>
           <p class="t-ui" data-role="framing-text">
             @if (a.kind === 'group_therapy') {
-              Terapia de grupo é psicoterapia, conduzida por psicólogo da Nexus com CRP ativo, com objetivo clínico definido. Não é um grupo de apoio.
+              Terapia em grupo é psicoterapia, conduzida por psicólogo da Nexus com CRP ativo, com objetivo clínico definido. Não é um grupo de apoio.
             } @else {
               Atividade de orientação e psicoeducação. Não é psicoterapia.
             }
@@ -158,7 +158,7 @@ interface ParticipantRow {
         <section class="card card--pad stack stack--3" aria-labelledby="gd-enrolled" data-role="enrolled">
           <h2 id="gd-enrolled" class="card__title">Inscritos</h2>
           @if (!canSeeNames() && a.kind === 'group_therapy') {
-            <app-placeholder-line reason="other-psychologist" text="Quem participa da terapia de grupo só aparece para quem a conduz." />
+            <app-placeholder-line reason="other-psychologist" text="Quem participa da terapia em grupo só aparece para quem a conduz." />
           }
           @if (rows().length === 0) {
             <app-empty-state compact title="Ninguém inscrito ainda" text="Quando alguém se inscrever, aparece aqui, com plano e aceite do sigilo." />
@@ -318,7 +318,7 @@ export class ActivityDetailPageComponent {
     const a = this.activity();
     return !!a && this.svc.canSeeNames(a);
   });
-  /** Quem vê a lista (com nome ou código): todos, menos o atendimento na terapia de grupo. */
+  /** Quem vê a lista (com nome ou código): todos, menos o atendimento na terapia em grupo. */
   protected readonly canSeeList = computed(() => {
     const a = this.activity();
     return !!a && (this.canSeeNames() || this.auth.role() === 'partner');
@@ -346,7 +346,7 @@ export class ActivityDetailPageComponent {
       enrollment,
       name,
       code: caregiver?.code ?? '',
-      plan: caregiver ? `${PLAN_NAMES[planIdOfCaregiver(this.db, caregiver.id)]}${enrollmentPlanNote(enrollment)}` : 'Roda aberta',
+      plan: caregiver ? `${PLAN_NAMES[planIdOfCaregiver(this.db, caregiver.id)]}${enrollmentPlanNote(enrollment)}` : 'Participante externo',
     };
   }
 
@@ -496,7 +496,7 @@ export class ActivityDetailPageComponent {
   }
 }
 
-/** ", incluída no plano" ou ", avulsa" na coluna Plano (docs/20); a roda aberta não leva nota. */
+/** ", incluída no plano" ou ", avulsa" na coluna Plano (docs/20); participante externo não leva nota. */
 function enrollmentPlanNote(enrollment: ActivityEnrollment): string {
   if (enrollment.paid) {
     return ', avulsa';

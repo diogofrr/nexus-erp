@@ -159,11 +159,6 @@ const DRAFT_FORM = 'activity';
               <app-radio-group [options]="roomOptions()" [value]="form().roomId || null" (valueChange)="set('roomId', $event ?? '')" />
             </app-form-field>
           }
-          @if (form().kind === 'open_circle') {
-            <app-form-field label="Em parceria com" controlId="na-partner" [optional]="true" hint="CRAS, unidade básica de saúde ou associação de bairro.">
-              <input appInput [value]="form().partnerOrg" (input)="set('partnerOrg', valueOf($event))" />
-            </app-form-field>
-          }
 
           <app-form-field label="Vagas" controlId="na-capacity" [error]="err('capacity')" hint="Padrão 12. Lotada, abre lista de espera.">
             <input appInput type="number" min="1" max="60" [value]="form().capacity ?? ''" (input)="setCapacity(valueOf($event))" data-role="capacity" />

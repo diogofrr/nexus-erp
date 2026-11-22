@@ -25,7 +25,7 @@ interface IndicatorRow {
 /**
  * SCR-M07-06, Indicadores de participação (RN-KPI-08, K28): inscritos, presentes, taxa de presença e
  * preenchimento de vagas, por atividade e no total. A sócia e o psicólogo veem; o psicólogo só as suas atividades.
- * Participação em terapia de grupo é dado de saúde: para a gestão, recorte com menos de 5 pessoas aparece como "menos de 5".
+ * Participação em terapia em grupo é dado de saúde: para a gestão, recorte com menos de 5 pessoas aparece como "menos de 5".
  */
 @Component({
   selector: 'app-indicators-page',

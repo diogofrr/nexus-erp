@@ -70,7 +70,7 @@ describe('Planos (RN-PLN-01 a 10; Figura 1)', () => {
     expect(planHasBenefit('livre', 'card_discounts')).toBe(false);
   });
 
-  it('cartão só com plano pago (RN-CRT-02) e terapia de grupo só a partir do Cuida (docs/20)', () => {
+  it('cartão só com plano pago (RN-CRT-02) e terapia em grupo só a partir do Cuida (docs/20)', () => {
     expect(hasBenefitCard('livre')).toBe(false);
     expect(hasBenefitCard('essencial')).toBe(true);
     expect(canAccessGroupTherapy('essencial')).toBe(false);
@@ -80,10 +80,10 @@ describe('Planos (RN-PLN-01 a 10; Figura 1)', () => {
     expect(isPaidPlan('sustenta')).toBe(true);
   });
 
-  it('elegibilidade por tipo de encontro (docs/20): roda aberta e capacitação para todos, terapia de grupo só Cuida e Sustenta', () => {
+  it('elegibilidade por tipo de encontro (docs/20): capacitação para todos, terapia em grupo só Cuida e Sustenta', () => {
     expect(canAccessActivity('essencial', 'group_therapy')).toMatchObject({
       allowed: false,
-      reason: 'A terapia de grupo faz parte dos planos Cuida e Sustenta.',
+      reason: 'A terapia em grupo faz parte dos planos Cuida e Sustenta.',
       minPlan: 'cuida',
     });
     expect(canAccessActivity('livre', 'group_therapy').allowed).toBe(false);
@@ -91,7 +91,6 @@ describe('Planos (RN-PLN-01 a 10; Figura 1)', () => {
     expect(canAccessActivity('sustenta', 'group_therapy').allowed).toBe(true);
     (['livre', 'essencial', 'cuida', 'sustenta'] as const).forEach((plan) => {
       expect(canAccessActivity(plan, 'training')).toMatchObject({ allowed: true, minPlan: null });
-      expect(canAccessActivity(plan, 'open_circle')).toMatchObject({ allowed: true, minPlan: null });
     });
   });
 

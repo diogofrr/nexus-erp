@@ -297,21 +297,24 @@ describe('QAC UI: adulteração de parâmetros', () => {
     }
   });
 
-  it('Grupos (docs/20): a terapia de grupo não existe para quem é Essencial, nem por endereço direto, e sem "Disponível no plano"', async () => {
+  it('Grupos (docs/20): a terapia em grupo não existe para quem é Essencial, nem por endereço direto, e sem "Disponível no plano"', async () => {
     const app = await bootCaregiverApp(MARIA, { url: '/cuidador/cuidar-de-mim/grupos?atividade=act_0008' });
     const text = mainText(app);
     expect(text).toContain('Não encontramos este encontro.');
     expect(text).not.toMatch(/Disponível no plano|Organização da rotina/);
     expect(app.root.querySelector('[data-role="join"]')).toBeNull();
-    // roda aberta vale para todos
-    await go(app, '/cuidador/cuidar-de-mim/grupos?atividade=act_0004');
+    // a capacitação vale para todos os cadastrados (incluída ou avulsa)
+    await go(app, '/cuidador/cuidar-de-mim/grupos?atividade=act_0009');
     expect(mainText(app)).toContain('Quero participar');
+    // a roda de conversa não existe mais: o endereço antigo cai na mesma frase
+    await go(app, '/cuidador/cuidar-de-mim/grupos?atividade=act_0004');
+    expect(mainText(app)).toContain('Não encontramos este encontro.');
   });
 
-  it('Grupos: terapia de grupo não tem botão de entrar e não explica o motivo clínico', async () => {
+  it('Grupos: terapia em grupo não tem botão de entrar e não explica o motivo clínico', async () => {
     const app = await bootCaregiverApp(ANA, { url: '/cuidador/cuidar-de-mim/grupos?atividade=act_0003' });
     const text = mainText(app);
-    // a única terapia de grupo do seed já está em andamento: as inscrições estão encerradas para todos
+    // a única terapia em grupo do seed já está em andamento: as inscrições estão encerradas para todos
     expect(text).toContain('As inscrições estão encerradas.');
     expect(text).not.toContain('Quero participar');
     expect(text).not.toMatch(/Zarit|pontua|faixa|alerta|risco/i);

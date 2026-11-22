@@ -37,15 +37,14 @@ describe('textos de Grupos e capacitações (UX C10)', () => {
     expect(placeOf('group_therapy')).toMatchObject({ enter: 'Entrar no grupo', leave: 'Sair do grupo', inside: 'no grupo' });
     expect(placeOf('group_therapy').enter).toBe('Entrar no grupo');
     expect(placeOf('training')).toMatchObject({ enter: 'Entrar na capacitação', leave: 'Sair da capacitação', left: 'saiu da capacitação' });
-    expect(placeOf('open_circle')).toMatchObject({ enter: 'Entrar na roda', inside: 'na roda' });
   });
 });
 
 describe('valor do encontro (docs/20)', () => {
   const base = { meetings: 2, month: '2026-11' } as const;
-  it('roda aberta não diz valor; capacitação incluída diz a cota; avulsa diz o valor, e no Livre o convite neutro', async () => {
+  it('bloqueado não diz valor; capacitação incluída diz a cota; avulsa diz o valor, e no Livre o convite neutro', async () => {
     const { offerLine, paidDetail } = await import('./group-copy');
-    expect(offerLine('open_circle', { ...base, kind: 'free', priceCents: 0, usage: null }, 'livre')).toBeNull();
+    expect(offerLine('group_therapy', { ...base, kind: 'blocked', priceCents: 0, usage: null }, 'livre')).toBeNull();
     expect(offerLine('training', { ...base, kind: 'included', priceCents: 0, usage: { limit: 'all', used: 0, left: 'all' } }, 'cuida')).toBe('Incluída no seu plano');
     expect(offerLine('training', { ...base, kind: 'included', priceCents: 0, usage: { limit: 2, used: 0, left: 2 } }, 'essencial')).toBe(
       'Incluída no seu plano (2 de 2 neste mês)',
