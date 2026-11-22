@@ -1,1 +1,0 @@
-import{Li as ir,o as A,v as B}from"./chunk-BuiNpI3C.js";var a=new B(`HARD_NAVIGATE`,{providedIn:`root`,factory:()=>{let o=A(ir);return r=>{let t=o.defaultView;t&&t.location.assign(new URL(r.replace(/^\//,``),o.baseURI).toString())}}});export{a as t};
