@@ -1,0 +1,1 @@
+var o=[{path:``,loadComponent:()=>import(`./chunk-DyIuu8Bi.js`).then(t=>t.ContentPage),data:{title:`Conteúdos`}}];export{o as ROUTES};

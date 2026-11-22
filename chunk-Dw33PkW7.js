@@ -1,1 +1,0 @@
-var t=[{path:``,loadComponent:()=>import(`./chunk-C-1G67I9.js`).then(o=>o.MyWellbeingPage),data:{title:`Como estou`}}];export{t as ROUTES};
