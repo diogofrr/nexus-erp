@@ -1,0 +1,1 @@
+var o=[{path:``,loadComponent:()=>import(`./chunk-CCWYj833.js`).then(t=>t.PrivacyPage),data:{title:`Privacidade e meus dados`}}];export{o as ROUTES};
