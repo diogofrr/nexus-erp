@@ -1,0 +1,1 @@
+var o=[{path:``,loadComponent:()=>import(`./chunk-gXEPzwgQ.js`).then(t=>t.StartPage),data:{title:`Começar`}}];var e=[{path:``,loadComponent:()=>import(`./chunk-CmbAPYUd.js`).then(t=>t.ProfilePage),data:{title:`Meu perfil`}}];export{e as PROFILE_ROUTES,o as ROUTES};

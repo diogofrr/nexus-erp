@@ -1,1 +1,0 @@
-var e=[{path:``,loadComponent:()=>import(`./chunk-BrdqEKHp.js`).then(t=>t.GuideFirstStepsPage),data:{title:`Começando a cuidar`}},{path:`perguntas`,loadComponent:()=>import(`./chunk-BySLPL9i.js`).then(t=>t.GuideFaqPage),data:{title:`Perguntas frequentes`}}];export{e as ROUTES};
