@@ -3,7 +3,7 @@
  * PURAS, sem Angular e sem relógio: o mês de referência vem de fora (do `Clock`, pela tela ou pelo serviço).
  *
  * - Tabela do docs/20 (revista pelo dono em 22/11/2026): atendimento individual 0, 0, 1 e 2 sessões por mês; terapia em
- *   grupo 0, 0, 2 e 2 encontros por mês; capacitações incluídas 1, 2, todas, todas; Cartão, conteúdos exclusivos e condições na rede do
+ *   grupo 0, 0, 2 e 2 encontros por mês; capacitações incluídas 0 (o Livre só paga avulsa), 2, todas, todas; Cartão, conteúdos exclusivos e condições na rede do
  *   Essencial em diante; benefícios diferenciados na rede só no Sustenta.
  * - **Cotas mensais não acumulam** (docs/20): o que não foi usado no mês não passa para o seguinte.
  * - Cancelamento com menos de 24 h consome a cota (RN-ATD-16): a sessão `no_show` continua contando.
@@ -40,7 +40,7 @@ export const PLAN_QUOTAS: Readonly<Record<PlanId, PlanQuotas>> = {
   livre: {
     individualSessionsPerMonth: 0,
     groupTherapyPerMonth: 0,
-    trainingsPerMonth: 1,
+    trainingsPerMonth: 0,
     card: false,
     exclusiveContent: false,
     networkConditions: false,

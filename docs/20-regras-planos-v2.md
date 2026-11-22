@@ -10,11 +10,11 @@ Substitui, no que conflitar, RN-PLN-04 a 11, RN-GRP-01 a 03 e RN-ATD-03 a 05 de 
 | Conteúdos | abertos | abertos e exclusivos | idem | idem |
 | Rede credenciada | consulta, compara e pede serviço | + condições especiais | idem | + benefícios diferenciados |
 | Cartão Nexus | não | sim | sim | sim |
-| Capacitações incluídas | 1 por mês | 2 por mês | todas do mês | todas do mês |
+| Capacitações incluídas | nenhuma (paga avulsa) | 2 por mês | todas do mês | todas do mês |
 | Terapia em grupo (= grupo de apoio) | não | não | 2 encontros por mês | 2 encontros por mês |
 | Atendimento psicológico individual (on-line ou presencial, à escolha) | não | não | 1 sessão por mês | 2 sessões por mês |
 
-Tabela revista pelo dono em 22/11/2026 (quadro "Os planos" do material da Nexus): Livre com 1 capacitação por mês, Cuida com 1 sessão individual e Sustenta com 2. Preços sem mudança (R$ 0, R$ 49,90, R$ 119,90 e R$ 149,90). Além da cota, a capacitação continua avulsa para qualquer plano.
+Tabela revista pelo dono em 22/11/2026 (quadro "Os planos" do material da Nexus): Cuida com 1 sessão individual e Sustenta com 2. No Livre a capacitação é só avulsa, nenhuma incluída (correção do dono ao quadro, que mostrava 1 por mês). Preços sem mudança (R$ 0, R$ 49,90, R$ 119,90 e R$ 149,90). Além da cota, a capacitação continua avulsa para qualquer plano.
 
 - **Não existe roda de conversa** (decisão do dono, 22/11/2026): os encontros da Nexus são só capacitação e terapia em grupo. O tipo `open_circle` saiu do código; a migração v3 apaga as rodas e as inscrições delas.
 - **Cotas mensais não acumulam.** Cancelamento com menos de 24 h consome a cota (RN-ATD-16).

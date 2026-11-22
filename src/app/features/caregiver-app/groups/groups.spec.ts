@@ -87,23 +87,18 @@ describe('Área groups (Encontros)', () => {
       }
     });
 
-    it('a capacitação diz se é incluída ou o valor: Maria (2 de 2 usadas) paga a próxima; o Livre tem 1 incluída e, além dela, lê "Você pode participar pagando por encontro"', async () => {
+    it('a capacitação diz se é incluída ou o valor: Maria (2 de 2 usadas) paga a próxima; o Livre lê "Você pode participar pagando por encontro"', async () => {
       const maria = await bootCaregiverApp('cg_0002', { url: URL });
       expect(norm(card(maria, 'Primeiros socorros em casa')?.querySelector('[data-role="card-offer"]')?.textContent)).toBe('R$ 40,00 por encontro');
       TestBed.resetTestingModule();
       const joao = await bootCaregiverApp('cg_0003', { url: URL });
       expect(norm(card(joao, 'Prevenção de quedas')?.querySelector('[data-role="card-offer"]')?.textContent)).toBe('Você pode participar pagando por encontro');
       // João não está em nenhum encontro: sem "Minhas inscrições", todas as capacitações ficam na seção, cada uma com o valor.
-      // O Livre tem 1 capacitação por mês: a de 1 encontro em novembro cabe; as de 2 encontros não cabem e são avulsas.
+      // O Livre não tem capacitação incluída: todas, mesmo a de 1 encontro, são avulsas.
       expect(joao.root.querySelector('[data-role="mine"]')).toBeNull();
       expect(sectionCards(joao, 'training')).toEqual(['Primeiros socorros em casa', 'Prevenção de quedas', 'Higiene e banho no leito']);
-      const offers: Record<string, string> = {
-        'Primeiros socorros em casa': 'Incluída no seu plano (1 de 1 neste mês)',
-        'Prevenção de quedas': 'Você pode participar pagando por encontro',
-        'Higiene e banho no leito': 'Você pode participar pagando por encontro',
-      };
       sectionCards(joao, 'training').forEach((title) =>
-        expect(norm(card(joao, title)?.querySelector('[data-role="card-offer"]')?.textContent), title).toBe(offers[title]),
+        expect(norm(card(joao, title)?.querySelector('[data-role="card-offer"]')?.textContent), title).toBe('Você pode participar pagando por encontro'),
       );
     });
 
@@ -250,21 +245,23 @@ describe('Área groups (Encontros)', () => {
       expect(norm(app.root.querySelector('[data-role="mine"]')?.textContent)).toContain('Primeiros socorros em casa');
     });
 
-    it('capacitação incluída no Livre (1 por mês): a de 1 encontro entra sem valor e consome a cota', async () => {
+    it('no Livre toda capacitação é avulsa: a de 1 encontro também sai paga, R$ 40,00 (simulado)', async () => {
       const app = await bootCaregiverApp('cg_0003', { url: detail('act_0009') });
-      expect(norm(app.root.querySelector('[data-role="offer"]')?.textContent)).toBe('Incluída no seu plano (1 de 1 neste mês)');
+      expect(norm(app.root.querySelector('[data-role="offer"]')?.textContent)).toBe('Você pode participar pagando por encontro');
       await click(app, app.root.querySelector('[data-role="join"]'));
-      expect(openSheet(app)?.querySelector('[data-role="paid"]')).toBeNull();
+      expect(norm(openSheet(app)?.querySelector('[data-role="paid"]')?.textContent)).toBe(
+        'R$ 40,00 por encontro: R$ 40,00 por 1 encontro neste mês. O pagamento é combinado depois. No protótipo não há cobrança.',
+      );
       await click(app, openSheet(app)?.querySelector('input[type="checkbox"]'));
       await click(app, openSheet(app)?.querySelector('[data-role="confirm-join"]'));
       expect(app.db.activityEnrollments.find((e) => e.activityId === 'act_0009' && e.caregiverId === 'cg_0003')).toMatchObject({
-        paid: false,
-        priceCents: 0,
-        includedInPlan: true,
+        paid: true,
+        priceCents: 4000,
+        includedInPlan: false,
       });
     });
 
-    it('capacitação avulsa no Livre: além da cota, a folha diz o valor por encontro, sem campo de cartão, e grava paga (simulado)', async () => {
+    it('capacitação avulsa no Livre: a folha diz o valor por encontro, sem campo de cartão, e grava paga (simulado)', async () => {
       const app = await bootCaregiverApp('cg_0003', { url: detail('act_0002') });
       expect(norm(app.root.querySelector('[data-role="offer"]')?.textContent)).toBe('Você pode participar pagando por encontro');
       await click(app, app.root.querySelector('[data-role="join"]'));

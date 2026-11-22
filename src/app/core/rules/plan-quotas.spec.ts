@@ -34,10 +34,10 @@ const enr = (activityId: string, status: ActivityEnrollment['status'] = 'enrolle
 });
 
 describe('cotas mensais por plano (docs/20)', () => {
-  it('a tabela: sessões 0, 0, 1, 2; terapia em grupo 0, 0, 2, 2; capacitações 1, 2, todas, todas', () => {
+  it('a tabela: sessões 0, 0, 1, 2; terapia em grupo 0, 0, 2, 2; capacitações 0, 2, todas, todas', () => {
     expect([PLAN_QUOTAS.livre, PLAN_QUOTAS.essencial, PLAN_QUOTAS.cuida, PLAN_QUOTAS.sustenta].map((q) => q.individualSessionsPerMonth)).toEqual([0, 0, 1, 2]);
     expect([PLAN_QUOTAS.livre, PLAN_QUOTAS.essencial, PLAN_QUOTAS.cuida, PLAN_QUOTAS.sustenta].map((q) => q.groupTherapyPerMonth)).toEqual([0, 0, 2, 2]);
-    expect([PLAN_QUOTAS.livre, PLAN_QUOTAS.essencial, PLAN_QUOTAS.cuida, PLAN_QUOTAS.sustenta].map((q) => q.trainingsPerMonth)).toEqual([1, 2, 'all', 'all']);
+    expect([PLAN_QUOTAS.livre, PLAN_QUOTAS.essencial, PLAN_QUOTAS.cuida, PLAN_QUOTAS.sustenta].map((q) => q.trainingsPerMonth)).toEqual([0, 2, 'all', 'all']);
     expect(PLAN_QUOTAS.livre.card).toBe(false);
     expect(PLAN_QUOTAS.essencial.card && PLAN_QUOTAS.essencial.exclusiveContent && PLAN_QUOTAS.essencial.networkConditions).toBe(true);
     expect(PLAN_QUOTAS.cuida.networkDifferentiated).toBe(false);
@@ -89,12 +89,13 @@ describe('cotas mensais por plano (docs/20)', () => {
     expect(enrollmentOffer('cuida', g2, '2026-11', [enr('g1')], [g1, g2])).toMatchObject({ kind: 'paid', priceCents: 12000 });
   });
 
-  it('a oferta da capacitação: Livre incluída até 1 encontro no mês; Essencial até 2; Cuida sempre incluída', () => {
+  it('a oferta da capacitação: Livre sempre avulsa; Essencial incluída até 2 encontros no mês; Cuida sempre incluída', () => {
     const t1 = act('t1', 'training', ['2026-11-14', '2026-11-21']);
     const t2 = act('t2', 'training', ['2026-11-12']);
     expect(enrollmentOffer('livre', t1, '2026-11', [], [t1])).toMatchObject({ kind: 'paid', priceCents: 8000 });
-    expect(enrollmentOffer('livre', t2, '2026-11', [], [t1, t2])).toMatchObject({ kind: 'included', priceCents: 0, meetings: 1 });
-    expect(enrollmentOffer('livre', t2, '2026-11', [enr('t1')], [t1, t2])).toMatchObject({ kind: 'paid', priceCents: 4000 });
+    // Nem a de 1 encontro cabe: o Livre não tem capacitação incluída.
+    expect(enrollmentOffer('livre', t2, '2026-11', [], [t1, t2])).toMatchObject({ kind: 'paid', priceCents: 4000, meetings: 1 });
+    expect(trainingQuota('livre', '2026-11', [], [t1, t2])).toEqual({ limit: 0, used: 0, left: 0 });
     expect(enrollmentOffer('essencial', t1, '2026-11', [], [t1, t2])).toMatchObject({ kind: 'included', priceCents: 0 });
     expect(enrollmentOffer('essencial', t2, '2026-11', [enr('t1')], [t1, t2])).toMatchObject({ kind: 'paid', priceCents: 4000 });
     expect(enrollmentOffer('cuida', t2, '2026-11', [enr('t1')], [t1, t2]).kind).toBe('included');

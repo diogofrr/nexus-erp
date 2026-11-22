@@ -35,7 +35,7 @@ describe('vagas, lista de espera e mudança de plano (RN-GRP-13, RN-GRP-17)', ()
 });
 
 describe('cotas e oferta da inscrição (docs/20)', () => {
-  it('Ana usa os 2 encontros de terapia em grupo de novembro na G1: a G8 fica avulsa; Maria usou as 2 capacitações; João tem 1 capacitação incluída e não tem terapia em grupo', () => {
+  it('Ana usa os 2 encontros de terapia em grupo de novembro na G1: a G8 fica avulsa; Maria usou as 2 capacitações; João paga a capacitação e não tem terapia em grupo', () => {
     const { db } = configureCoreTest({ seed: true });
     loginAs('u7');
     const membership = TestBed.inject(GroupMembershipService);
@@ -43,9 +43,9 @@ describe('cotas e oferta da inscrição (docs/20)', () => {
     expect(membership.offerFor(db.activities.require('act_0008'), 'cg_0001')).toMatchObject({ kind: 'paid', priceCents: 12000 });
     expect(membership.trainingQuotaOf('cg_0002')).toEqual({ limit: 2, used: 2, left: 0 });
     expect(membership.offerFor(db.activities.require('act_0009'), 'cg_0002')).toMatchObject({ kind: 'paid', priceCents: 4000 });
-    // João (Livre, 1 capacitação por mês): a G9 tem 1 encontro em novembro e cabe; a G2 tem 2 e sai avulsa.
-    expect(membership.trainingQuotaOf('cg_0003')).toEqual({ limit: 1, used: 0, left: 1 });
-    expect(membership.offerFor(db.activities.require('act_0009'), 'cg_0003')).toMatchObject({ kind: 'included', priceCents: 0, meetings: 1 });
+    // João (Livre): nenhuma capacitação incluída; a G9 (1 encontro) e a G2 (2 encontros) saem avulsas.
+    expect(membership.trainingQuotaOf('cg_0003')).toEqual({ limit: 0, used: 0, left: 0 });
+    expect(membership.offerFor(db.activities.require('act_0009'), 'cg_0003')).toMatchObject({ kind: 'paid', priceCents: 4000, meetings: 1 });
     expect(membership.offerFor(db.activities.require('act_0002'), 'cg_0003')).toMatchObject({ kind: 'paid', priceCents: 8000, meetings: 2 });
     expect(membership.offerFor(db.activities.require('act_0009'), 'cg_0001')).toMatchObject({ kind: 'included', priceCents: 0 });
     // Sem roda de conversa: nenhum encontro sai de graça fora da cota; a terapia em grupo segue fechada para o Livre.

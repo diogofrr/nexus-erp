@@ -106,7 +106,7 @@ describe('Área plan (Meu plano)', () => {
 
     it('cada plano tem a sua cor, o seu nome e os seus 4 destaques', async () => {
       const expected = [
-        ['cg_0003', 'livre', 'Plano Livre', ['Organização básica da rotina: agenda, lembretes e remédios', 'Conteúdos abertos', 'Rede credenciada: consultar, comparar e pedir serviço', '1 capacitação por mês']],
+        ['cg_0003', 'livre', 'Plano Livre', ['Organização básica da rotina: agenda, lembretes e remédios', 'Conteúdos abertos', 'Rede credenciada: consultar, comparar e pedir serviço', 'Capacitações avulsas (R$ 40,00 por encontro)']],
         ['cg_0002', 'essencial', 'Plano Essencial', ['Organização ampliada da rotina', 'Cartão Nexus, com descontos nos parceiros', 'Conteúdos abertos e exclusivos', 'Rede credenciada, com condições especiais']],
         ['cg_0027', 'sustenta', 'Plano Sustenta', ['Atendimento psicológico individual: 2 sessões por mês', 'Terapia em grupo: 2 encontros por mês', 'Rede credenciada, com benefícios diferenciados', 'Acompanhamento próximo da organização da rotina']],
       ] as const;
@@ -142,7 +142,7 @@ describe('Área plan (Meu plano)', () => {
         'Organização básica da rotina: agenda, lembretes e remédios',
         'Conteúdos abertos',
         'Rede credenciada: consultar, comparar e pedir serviço',
-        '1 capacitação por mês',
+        'Capacitações avulsas (R$ 40,00 por encontro)',
       ]);
       // A Nexus não tem roda de conversa: nenhum plano a lista.
       expect(norm(openSheet(joao)?.textContent)).not.toMatch(/roda/i);
@@ -174,7 +174,7 @@ describe('Área plan (Meu plano)', () => {
         Array.from(p.querySelectorAll('[data-role="quotas"] dd')).map((d) => norm(d.textContent)),
       );
       expect(quotas).toEqual([
-        ['Não inclui', 'Não inclui', '1 capacitação por mês'],
+        ['Não inclui', 'Não inclui', 'Avulsas, R$ 40,00 por encontro'],
         ['Não inclui', 'Não inclui', '2 capacitações por mês'],
         ['1 sessão por mês', '2 encontros por mês', 'Todas as do mês'],
         ['2 sessões por mês', '2 encontros por mês', 'Todas as do mês'],

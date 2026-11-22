@@ -134,14 +134,14 @@ describe('M07 inscrição por plano (F11, AC-M07-01 a 05)', () => {
     expect(text(app, '[data-role="enrolled"]')).toContain('04/11/2026 12:00');
   });
 
-  it('nenhum encontro aceita participante externo; o Livre entra na capacitação, incluída na cota de 1 e avulsa além dela (AC-M07-03, sem roda de conversa)', async () => {
+  it('nenhum encontro aceita participante externo; o Livre entra na capacitação, sempre avulsa (AC-M07-03, sem roda de conversa)', async () => {
     const app = await bootApp({ userId: 'u7', url: '/app/grupos/act_0009' });
     const svc = TestBed.inject(GroupsService);
     const before = app.db.activityEnrollments.count((e) => e.activityId === 'act_0009');
-    // João (Livre, 1 capacitação por mês): a G9 tem 1 encontro em novembro e cabe na cota, sem valor.
+    // João (Livre): a capacitação não está incluída no plano, então entra avulsa (pagamento simulado, R$ 40,00 por encontro).
     const livre = svc.enroll({ activityId: 'act_0009', caregiverId: 'cg_0003', ...accepted });
-    expect(livre.ok && livre.value.enrollment).toMatchObject({ caregiverId: 'cg_0003', paid: false, includedInPlan: true, priceCents: 0 });
-    // A G2 tem 2 encontros em novembro: não cabe na cota e entra avulsa (pagamento simulado, R$ 40,00 por encontro).
+    expect(livre.ok && livre.value.enrollment).toMatchObject({ caregiverId: 'cg_0003', paid: true, includedInPlan: false, priceCents: 4000 });
+    // A G2 tem 2 encontros em novembro: R$ 80,00.
     const extra = svc.enroll({ activityId: 'act_0002', caregiverId: 'cg_0003', ...accepted });
     expect(extra.ok && extra.value.enrollment).toMatchObject({ caregiverId: 'cg_0003', paid: true, includedInPlan: false, priceCents: 8000 });
     // Participante externo não entra em nenhum tipo de encontro, nem com e-mail válido.
